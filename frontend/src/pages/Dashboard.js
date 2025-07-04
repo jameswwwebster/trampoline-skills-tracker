@@ -1,8 +1,24 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import CreateClubForm from '../components/CreateClubForm';
 
 const Dashboard = () => {
-  const { user, isClubAdmin } = useAuth();
+  const { user, isClubAdmin, updateUser } = useAuth();
+
+  const handleClubCreated = (club, updatedUser) => {
+    // Update the user context with the new club information
+    updateUser(updatedUser);
+  };
+
+  // Show club creation form for club admins without a club
+  if (isClubAdmin && !user?.club) {
+    return (
+      <div>
+        <h1>Welcome, {user?.firstName}!</h1>
+        <CreateClubForm onClubCreated={handleClubCreated} />
+      </div>
+    );
+  }
 
   return (
     <div>

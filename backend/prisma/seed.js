@@ -78,14 +78,23 @@ async function main() {
             skillMap.set(routineSkillData.name, skill);
           }
 
-          // Create routine-skill junction
-          await prisma.routineSkill.create({
-            data: {
+          // Create routine-skill junction (check for duplicates)
+          const existingConnection = await prisma.routineSkill.findFirst({
+            where: {
               routineId: routine.id,
-              skillId: skill.id,
-              order: skillIndex + 1
+              skillId: skill.id
             }
           });
+          
+          if (!existingConnection) {
+            await prisma.routineSkill.create({
+              data: {
+                routineId: routine.id,
+                skillId: skill.id,
+                order: skillIndex + 1
+              }
+            });
+          }
         }
       }
     }
