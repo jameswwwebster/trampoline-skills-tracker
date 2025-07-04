@@ -1,0 +1,23 @@
+{
+  "name": "trampoline-tracker",
+  "version": "1.0.0",
+  "description": "A web application for tracking gymnast trampoline skills and progress",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && npm run dev",
+    "client": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "setup": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "db:migrate": "cd backend && npx prisma migrate dev",
+    "db:seed": "cd backend && npx prisma db seed",
+    "db:studio": "cd backend && npx prisma studio"
+  },
+  "keywords": ["trampoline", "gymnastics", "skills", "tracking", "react", "node"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+} 

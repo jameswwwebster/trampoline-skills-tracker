@@ -1,0 +1,228 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CLUB_ADMIN
+  COACH
+  GYMNAST
+  PARENT
+}
+
+enum LevelType {
+  SEQUENTIAL
+  SIDE_PATH
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole
+  clubId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  club               Club?               @relation(fields: [clubId], references: [id])
+  gymnasts           Gymnast[]           @relation("UserGymnasts")
+  guardedGymnasts    Gymnast[]           @relation("GuardianGymnasts")
+  skillProgress      SkillProgress[]
+  levelProgress      LevelProgress[]
+  guardianRequests   GuardianRequest[]   @relation("GuardianRequests")
+  processedRequests  GuardianRequest[]   @relation("ProcessedRequests")
+
+  @@map("users")
+}
+
+model Club {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users     User[]
+  gymnasts  Gymnast[]
+
+  @@map("clubs")
+}
+
+model Gymnast {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  dateOfBirth DateTime?
+  clubId    String
+  userId    String?   // Optional - gymnast might not have their own account
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  club              Club                @relation(fields: [clubId], references: [id])
+  user              User?               @relation("UserGymnasts", fields: [userId], references: [id])
+  guardians         User[]              @relation("GuardianGymnasts")
+  skillProgress     SkillProgress[]
+  levelProgress     LevelProgress[]
+  guardianRequests  GuardianRequest[]
+
+  @@map("gymnasts")
+}
+
+model Level {
+  id          String    @id @default(cuid())
+  number      Int       // Base number (1-10 for sequential levels, 3,8,9 for side paths)
+  identifier  String    @unique // Full identifier: "1", "2", "3a", "8b", etc.
+  name        String
+  description String?
+  type        LevelType? // Made optional since some levels might not have a type
+  prerequisiteId String? // For sequential levels, points to previous level
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  prerequisite    Level?            @relation("LevelPrerequisites", fields: [prerequisiteId], references: [id])
+  dependentLevels Level[]           @relation("LevelPrerequisites")
+  skills          Skill[]
+  routines        Routine[]
+  levelProgress   LevelProgress[]
+
+  @@map("levels")
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  levelId     String
+  order       Int      // Order within the level
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  level         Level           @relation(fields: [levelId], references: [id])
+  skillProgress SkillProgress[]
+  routineSkills RoutineSkill[]
+
+  @@map("skills")
+}
+
+model Routine {
+  id          String   @id @default(cuid())
+  name        String?  // Made optional since routines might not have names
+  description String?
+  levelId     String
+  order       Int      // Order within the level (for multiple routines)
+  isAlternative Boolean @default(false) // For levels with multiple routine options
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  level         Level           @relation(fields: [levelId], references: [id])
+  levelProgress LevelProgress[]
+  routineSkills RoutineSkill[]
+
+  @@map("routines")
+}
+
+model RoutineSkill {
+  id        String   @id @default(cuid())
+  routineId String
+  skillId   String
+  order     Int      // Order within the routine
+  createdAt DateTime @default(now())
+
+  // Relations
+  routine Routine @relation(fields: [routineId], references: [id])
+  skill   Skill   @relation(fields: [skillId], references: [id])
+
+  @@unique([routineId, skillId])
+  @@map("routine_skills")
+}
+
+model SkillProgress {
+  id         String         @id @default(cuid())
+  gymnastId  String
+  skillId    String
+  userId     String         // Coach or admin who marked it
+  status     ProgressStatus @default(NOT_STARTED)
+  notes      String?
+  completedAt DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  // Relations
+  gymnast Gymnast @relation(fields: [gymnastId], references: [id])
+  skill   Skill   @relation(fields: [skillId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([gymnastId, skillId])
+  @@map("skill_progress")
+}
+
+model LevelProgress {
+  id         String         @id @default(cuid())
+  gymnastId  String
+  levelId    String
+  routineId  String?        // For levels with routine requirements
+  userId     String         // Coach or admin who marked it
+  status     ProgressStatus @default(NOT_STARTED)
+  notes      String?
+  completedAt DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  // Relations
+  gymnast Gymnast @relation(fields: [gymnastId], references: [id])
+  level   Level   @relation(fields: [levelId], references: [id])
+  routine Routine? @relation(fields: [routineId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([gymnastId, levelId])
+  @@map("level_progress")
+}
+
+model GuardianRequest {
+  id         String        @id @default(cuid())
+  guardianId String
+  gymnastId  String
+  requestedBy String       // User who made the request
+  processedBy String?      // Coach who approved/rejected
+  status     RequestStatus @default(PENDING)
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  // Relations
+  guardian    User    @relation("GuardianRequests", fields: [guardianId], references: [id])
+  gymnast     Gymnast @relation(fields: [gymnastId], references: [id])
+  requestedByUser User @relation("ProcessedRequests", fields: [requestedBy], references: [id])
+
+  @@unique([guardianId, gymnastId])
+  @@map("guardian_requests")
+} 

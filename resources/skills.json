@@ -1,0 +1,459 @@
+{
+    "levels": [
+      {
+        "number": 1,
+        "name": "Basic Skills 1",
+        "description": "Introduction to basic trampoline shapes and simple twisting jumps.",
+
+        "skills": [
+          { "name": "Tuck Jump" },
+          { "name": "Pike Jump" },
+          { "name": "Straddle Jump" },
+          { "name": "½ Twist" },
+          { "name": "Full Twist" }
+        ],
+        "routines": [
+          {
+            "skills": [
+                { "name": "Pike Jump" },
+                { "name": "½ Twist" },
+                { "name": "Straddle Jump" },
+                { "name": "Tuck Jump" }
+              ]
+          }
+        ]
+      },
+      {
+        "number": 2,
+        "name": "Body Landings 2",
+        "description": "Introduction to basic body landings and transitions.",
+
+        "skills": [
+          { "name": "Seat Landing" },
+          { "name": "Seat ½ Twist to Feet" },
+          { "name": "½ Twist to Seat" },
+          { "name": "Swivelhips" },
+          { "name": "Front Landing" },
+          { "name": "Back Landing" }
+        ],
+        "routines": [
+            {
+                "skills": [
+                    { "name": "Front Landing" },
+                    { "name": "To Feet" },
+                    { "name": "Straddle Jump" },
+                    { "name": "Seat Landing" },
+                    { "name": "½ Twist to Feet" },
+                    { "name": "½ Twist" },
+                    { "name": "Tuck Jump" },
+                    { "name": "Pike Jump" },
+                    { "name": "Back Landing to Feet" },
+                    { "name": "Back Landing" },
+                    { "name": "To Feet" }
+                  ]
+              }
+        ]
+      },
+      {
+        "number": 3,
+        "name": "Body Landing Combinations 3",
+        "description": "Combining body landings and twists into routines.",
+
+        "skills": [
+          { "name": "Seat to Front" },
+          { "name": "Front to Seat" },
+          { "name": "½ Twist to Front" },
+          { "name": "Back ½ Twist to Feet" },
+          { "name": "Back to Front" },
+          { "name": "½ to Front" },
+          { "name": "Front to Feet" },
+          { "name": "Straddle Jump" },
+          { "name": "Seat Landing" },
+          { "name": "½ Twist to Seat" },
+          { "name": "½ Twist" },
+          { "name": "Tuck Jump" },
+          { "name": "Pike Jump" },
+          { "name": "Back Landing" },
+          { "name": "½ Twist to Feet" }
+        ],
+        "routines": [
+            {
+                "skills": [
+                    { "name": "½ to Front" },
+                    { "name": "To Feet" },
+                    { "name": "Straddle Jump" },
+                    { "name": "Seat Landing" },
+                    { "name": "½ Twist to Seat" },
+                    { "name": "½ Twist to Feet" },
+                    { "name": "½ Twist" },
+                    { "name": "Tuck Jump" },
+                    { "name": "Pike Jump" },
+                    { "name": "Back Landing" },
+                    { "name": "½ Twist to Feet" }
+                  ]
+              }
+        ]
+      },
+      {
+        "number": 4,
+        "name": "Forward Fundamentals 4",
+        "description": "Introduction to front somersaults and turnovers.",
+
+        "skills": [
+          { "name": "Forward Roll" },
+          { "name": "Forward Turnover" },
+          { "name": "Front Somersault (T)" },
+          { "name": "Front Somersault (P)" }
+        ],
+        "routines": [
+          {
+            "skills": [
+                { "name": "Full Twist" },
+                { "name": "Straddle Jump" },
+                { "name": "Seat Landing" },
+                { "name": "½ Twist to Seat" },
+                { "name": "½ Twist" },
+                { "name": "Pike Jump" },
+                { "name": "Back Landing" },
+                { "name": "½ Twist to Feet" },
+                { "name": "Tuck Jump" },
+                { "name": "Front Somersault (T)" }
+            ]
+          }
+        ]
+      },
+      {
+        "number": 5,
+        "name": "Backward Fundamentals 5",
+        "description": "Introduction to backward rolls and somersaults.",
+
+        "skills": [
+          { "name": "Backward Roll" },
+          { "name": "Back Pullover" },
+          { "name": "Back Somersault (T)" }
+        ],
+        "routines": [
+            {
+                "skills": [
+                    { "name": "Backward Somersault (T)" },
+                    { "name": "Straddle Jump" },
+                    { "name": "Seat Landing" },
+                    { "name": "½ Twist to Seat" },
+                    { "name": "½ Twist" },
+                    { "name": "Pike Jump" },
+                    { "name": "Back Landing" },
+                    { "name": "½ Twist to Feet" },
+                    { "name": "Tuck Jump" },
+                    { "name": "Front Somersault (P)" }
+                ]
+            }
+        ]
+      },
+      {
+        "number": 6,
+        "name": "Developing More Somersaults 6",
+        "description": "Introduce somersault combinations and linking.",
+
+        "skills": [
+          { "name": "Back Somersault (S)" },
+          { "name": "Barani (T)" },
+          { "name": "Back Somersault (T) to Seat" }
+        ],
+        "routines": [
+            {
+                "skills": [
+                    { "name": "Back Somersault (S)" },
+                    { "name": "Straddle Jump" },
+                    { "name": "Back Somersault (T)" },
+                    { "name": "Barani (T)" },
+                    { "name": "½ Twist" },
+                    { "name": "Tuck Jump" },
+                    { "name": "Back Somersault (T) to Seat" },
+                    { "name": "½ Twist to Feet" },
+                    { "name": "Pike Jump" },
+                    { "name": "Front Somersault (P)" }
+                ]
+            }
+        ]
+      },
+      {
+        "number": 7,
+        "name": "More Somersault Links 7",
+        "description": "Linking multiple somersaults and Barani variations.",
+
+        "skills": [
+          { "name": "Back Somersault (P)" },
+          { "name": "Barani (P)" },
+          { "name": "Barani (S)" }
+        ],
+        "routines": [
+            {
+                "skills": [
+                    { "name": "Back Somersault (S)" },
+                    { "name": "Barani (S)" },
+                    { "name": "Straddle Jump" },
+                    { "name": "Back Somersault (P)" },
+                    { "name": "Barani (P)" },
+                    { "name": "Tuck Jump" },    
+                    { "name": "Barani (T)" },
+                    { "name": "Back Somersault (T)" },
+                    { "name": "Pike Jump" },
+                    { "name": "Front Somersault (P)" }
+                ]
+            }
+        ]
+      },
+      {
+        "number": 8,
+        "name": "Body Somersaults 8",
+        "description": "¾ somersaults and advanced back/front sequences.",
+
+        "skills": [
+          { "name": "¾ Front (S)" },
+          { "name": "¾ Back (S)" },
+          { "name": "Ball-out Barani (T)" },
+          { "name": "Cody (T)" }
+        ],
+        "routines": [
+          {
+            "skills": [
+                { "name": "¾ Back (S)" },
+                { "name": "To Feet" },
+                { "name": "Straddle Jump" },
+                { "name": "Back Somersault (S)" },
+                { "name": "Barani (S)" },
+                { "name": "Back Somersault (T)" },
+                { "name": "Barani (T)" },
+                { "name": "Tuck Jump" },
+                { "name": "¾ Front (S)" },
+                { "name": "Ball-out Barani (T)" }
+            ]
+          },
+          {
+            "skills": [
+                { "name": "¾ Back (S)" },
+                { "name": "Cody (T)" },
+                { "name": "Straddle Jump" },
+                { "name": "Back Somersault (S)" },
+                { "name": "Barani (S)" },
+                { "name": "Back Somersault (T)" },
+                { "name": "Barani (T)" },
+                { "name": "Tuck Jump" },
+                { "name": "¾ Front (S)" },
+                { "name": "½ Twist to Feet" }
+            ]
+          }
+        ]
+      },
+      {
+        "number": 9,
+        "name": "Twisting Somersaults 9",
+        "description": "Combining twisting and somersaults.",
+
+        "skills": [
+          { "name": "Full" },
+          { "name": "Rudi" }
+        ],
+        "routines": [
+          {
+            "skills": [
+                { "name": "Back Somersault (S)" },
+                { "name": "Barani (S)" },
+                { "name": "Full" },
+                { "name": "Straddle Jump" },
+                { "name": "Back Somersault (P)" },
+                { "name": "Barani (P)" },
+                { "name": "Back Somersault (T)" },
+                { "name": "Tuck Jump" },
+                { "name": "¾ Front (S)" },
+                { "name": "Ball-out Barani (T)" }
+            ]
+          },
+          {
+            "skills": [
+                { "name": "¾ Back (S)" },
+                { "name": "Cody (T)" },
+                { "name": "Straddle Jump" },
+                { "name": "Back Somersault (S)" },
+                { "name": "Barani (S)" },
+                { "name": "Back Somersault (P)" },
+                { "name": "Barani (P)" },
+                { "name": "Back Somersault (T)" },
+                { "name": "Tuck Jump" },
+                { "name": "Rudi" }
+            ]
+          }
+        ]
+      },
+      {
+        "number": 10,
+        "name": "Double Somersaults 10",
+        "description": "Introduction to double somersaulting elements.",
+
+        "skills": [
+          { "name": "Half Out (T)" },
+          { "name": "Double Back (T)" }
+        ],
+       "routines": [
+          {
+            "skills": [
+                { "name": "¾ Back (S)" },
+                { "name": "Cody (T)" },
+                { "name": "Back Somersault (S)" },
+                { "name": "Barani (S)" },
+                { "name": "Full" },
+                { "name": "Rudi" },
+                { "name": "Tuck Jump" },
+                { "name": "Back Somersault (T)" },
+                { "name": "Barani (T)" },
+                { "name": "Double Back (T)" }
+            ]
+          },
+          {
+            "skills": [
+                { "name": "Half Out (T)" },
+                { "name": "Back Somersault (S)" },
+                { "name": "Barani (S)" },
+                { "name": "Full" },
+                { "name": "Rudi" },
+                { "name": "Straddle Jump" },
+                { "name": "Barani (T)" },
+                { "name": "Back Somersault (T)" },
+                { "name": "¾ Front (S)" },
+                { "name": "Ball-out Barani (T)" }
+            ]
+          }
+        ]
+      }
+    ],
+    "sidePaths": [
+      {
+        "number": "3a",
+        "name": "Body Landing Combinations 3a",
+        "description": "More seat/front landing transitions.",
+        "skills": [
+          { "name": "Front ½ to Feet" },
+          { "name": "½ to Front" },
+          { "name": "Seat to Front" },
+          { "name": "Front to Seat" },
+          { "name": "½ Turntable" },
+          { "name": "Cruise" },
+          { "name": "Front Full Twist to Feet" }
+        ]
+      },
+      {
+        "number": "3b",
+        "name": "Body Landing Combinations 3b",
+        "description": "Advanced back landings and twists.",
+
+        "skills": [
+          { "name": "½ to Back" },
+          { "name": "Seat ½ to Back" },
+          { "name": "Back ½ to Seat" },
+          { "name": "5x Back Bounces" },
+          { "name": "Cradle" },
+          { "name": "Back Full Twist to Feet" }
+        ]
+      },
+      {
+        "number": "3c",
+        "name": "Body Landing Combinations 3c",
+        "description": "Twist and roll drills.",
+
+        "skills": [
+          { "name": "Roller" },
+          { "name": "Cat Twist" },
+          { "name": "Log Roll" },
+          { "name": "Back Full Twist to Front" },
+          { "name": "Front Full Twist to Back" },
+          { "name": "Corkscrew" },
+          { "name": "Forkscrew" }
+        ]
+      },
+      {
+        "number": "8a",
+        "name": "Body Somersaults 8a",
+        "description": "",
+
+        "skills": [
+          { "name": "Bounce Roll (T)" },
+          { "name": "Bounce Roll (P)" },
+          { "name": "Ball-out Barani (P)" },
+          { "name": "Ball-out Barani (S)" },
+          { "name": "½ Twist to ¾ Front (S)" }
+        ]
+      },
+      {
+        "number": "8b",
+        "name": "Body Somersaults 8b",
+        "description": "",
+
+        "skills": [
+          { "name": "¾ Back (P)" },
+          { "name": "¾ Back (T)" },
+          { "name": "Cody (P)" },
+          { "name": "Cody (S)" }
+        ]
+      },
+      {
+        "number": "8c",
+        "name": "Body Somersaults 8c",
+        "description": "",
+
+        "skills": [
+          { "name": "1¼ Back S/S (T)" },
+          { "name": "1¼ Back S/S (P)" },
+          { "name": "1¼ Back S/S (S)" }
+        ]
+      },
+      {
+        "number": "8d",
+        "name": "Body Somersaults 8d",
+        "description": "",
+
+        "skills": [
+          { "name": "1¼ Front S/S (T)" },
+          { "name": "1¼ Front S/S (P)" },
+          { "name": "1¾ Front S/S (T)" },
+          { "name": "1¾ Front S/S (P)" }
+        ]
+      },
+      {
+        "number": "9a",
+        "name": "Twisting Somersaults 9a",
+        "description": "",
+
+        "skills": [
+          { "name": "Full Front" },
+          { "name": "Full Twisting ¾ Front" },
+          { "name": "Barani to Back" },
+          { "name": "Barani to Front" },
+          { "name": "Full Twisting Bounce Roll" },
+          { "name": "Barani Ball-out (T)" }
+        ]
+      },
+      {
+        "number": "9b",
+        "name": "Twisting Somersaults 9b",
+        "description": "",
+
+        "skills": [
+          { "name": "Double Full" },
+          { "name": "Full Twisting Cody" },
+          { "name": "Double Full Back" }
+        ]
+      },
+      {
+        "number": "9c",
+        "name": "Twisting Somersaults 9c",
+        "description": "",
+
+        "skills": [
+          { "name": "Ball-out Rudi (T)" },
+          { "name": "Ball-out Rudi (P)" },
+          { "name": "Ball-out Rudi (S)" }
+        ]
+      }
+    ]
+  }
+  

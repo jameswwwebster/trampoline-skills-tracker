@@ -1,0 +1,124 @@
+const jwt = require('jsonwebtoken');
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
+
+const auth = async (req, res, next) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ error: 'No token, authorization denied' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: {
+        club: true,
+        gymnasts: true,
+        guardedGymnasts: true
+      }
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'Token is not valid' });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    res.status(401).json({ error: 'Token is not valid' });
+  }
+};
+
+// Role-based access control middleware
+const requireRole = (roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    next();
+  };
+};
+
+// Check if user has access to a specific club
+const requireClubAccess = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const clubId = req.params.clubId || req.body.clubId;
+  
+  if (req.user.role === 'CLUB_ADMIN' || req.user.role === 'COACH') {
+    if (req.user.clubId !== clubId) {
+      return res.status(403).json({ error: 'Access denied to this club' });
+    }
+  }
+
+  next();
+};
+
+// Check if user has access to a specific gymnast
+const requireGymnastAccess = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const gymnastId = req.params.gymnastId || req.body.gymnastId;
+    
+    if (!gymnastId) {
+      return res.status(400).json({ error: 'Gymnast ID required' });
+    }
+
+    const gymnast = await prisma.gymnast.findUnique({
+      where: { id: gymnastId },
+      include: {
+        guardians: true,
+        club: true
+      }
+    });
+
+    if (!gymnast) {
+      return res.status(404).json({ error: 'Gymnast not found' });
+    }
+
+    // Club admins and coaches can access gymnasts in their club
+    if (req.user.role === 'CLUB_ADMIN' || req.user.role === 'COACH') {
+      if (req.user.clubId !== gymnast.clubId) {
+        return res.status(403).json({ error: 'Access denied to this gymnast' });
+      }
+    }
+    // Gymnasts can only access their own data
+    else if (req.user.role === 'GYMNAST') {
+      if (req.user.id !== gymnast.userId) {
+        return res.status(403).json({ error: 'Access denied to this gymnast' });
+      }
+    }
+    // Parents can only access their guarded gymnasts
+    else if (req.user.role === 'PARENT') {
+      const hasAccess = gymnast.guardians.some(guardian => guardian.id === req.user.id);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied to this gymnast' });
+      }
+    }
+
+    req.gymnast = gymnast;
+    next();
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+module.exports = {
+  auth,
+  requireRole,
+  requireClubAccess,
+  requireGymnastAccess
+}; 
