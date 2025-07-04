@@ -9,6 +9,8 @@ import Dashboard from './pages/Dashboard';
 import Gymnasts from './pages/Gymnasts';
 import Levels from './pages/Levels';
 import Progress from './pages/Progress';
+import Invites from './pages/Invites';
+import AcceptInvite from './pages/AcceptInvite';
 import './App.css';
 
 function App() {
@@ -18,6 +20,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/invite/:token" element={<AcceptInvite />} />
           <Route path="/" element={
             <ProtectedRoute>
               <Layout />
@@ -27,6 +30,7 @@ function App() {
             <Route path="gymnasts" element={<Gymnasts />} />
             <Route path="levels" element={<Levels />} />
             <Route path="progress/:gymnastId" element={<Progress />} />
+            <Route path="invites" element={<Invites />} />
           </Route>
         </Routes>
       </div>

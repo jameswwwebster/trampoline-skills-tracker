@@ -34,6 +34,13 @@ enum RequestStatus {
   REJECTED
 }
 
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -53,6 +60,8 @@ model User {
   levelProgress      LevelProgress[]
   guardianRequests   GuardianRequest[]   @relation("GuardianRequests")
   processedRequests  GuardianRequest[]   @relation("ProcessedRequests")
+  sentInvites        Invite[]            @relation("SentInvites")
+  receivedInvites    Invite[]            @relation("ReceivedInvites")
 
   @@map("users")
 }
@@ -69,6 +78,7 @@ model Club {
   // Relations
   users     User[]
   gymnasts  Gymnast[]
+  invites   Invite[]
 
   @@map("clubs")
 }
@@ -225,4 +235,26 @@ model GuardianRequest {
 
   @@unique([guardianId, gymnastId])
   @@map("guardian_requests")
+}
+
+model Invite {
+  id         String       @id @default(cuid())
+  email      String
+  clubId     String
+  invitedById String      // Club admin who sent the invite
+  acceptedById String?    // User who accepted the invite
+  role       UserRole     @default(COACH) // Role being invited for
+  token      String       @unique @default(cuid()) // Unique token for acceptance
+  status     InviteStatus @default(PENDING)
+  expiresAt  DateTime
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  // Relations
+  club        Club  @relation(fields: [clubId], references: [id])
+  invitedBy   User  @relation("SentInvites", fields: [invitedById], references: [id])
+  acceptedBy  User? @relation("ReceivedInvites", fields: [acceptedById], references: [id])
+
+  @@unique([email, clubId, status]) // Prevent duplicate pending invites
+  @@map("invites")
 } 

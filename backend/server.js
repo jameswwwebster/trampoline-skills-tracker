@@ -12,6 +12,7 @@ const gymnastRoutes = require('./routes/gymnasts');
 const levelRoutes = require('./routes/levels');
 const skillRoutes = require('./routes/skills');
 const progressRoutes = require('./routes/progress');
+const inviteRoutes = require('./routes/invites');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -42,6 +43,7 @@ app.use('/api/gymnasts', gymnastRoutes);
 app.use('/api/levels', levelRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/invites', inviteRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
