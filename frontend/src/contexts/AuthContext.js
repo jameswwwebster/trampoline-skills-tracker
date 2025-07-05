@@ -131,7 +131,10 @@ export const AuthProvider = ({ children }) => {
     canEditCompetitions: user?.role === 'CLUB_ADMIN',
     canEditLevels: user?.role === 'CLUB_ADMIN',
     canReadCompetitions: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
-    canReadLevels: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH'
+    canReadLevels: true, // All authenticated users can read levels
+    canViewProgress: true, // All authenticated users can view progress (with backend access controls)
+    canViewOwnProgress: user?.role === 'PARENT', // Only parents can view their children's progress
+    needsProgressNavigation: user?.role === 'PARENT' // Only parents need the progress navigation
   };
 
   return (

@@ -190,6 +190,8 @@ const Gymnasts = () => {
           <div className="card-header">
             <h3 className="card-title">Club Gymnasts</h3>
           </div>
+          
+          {/* Desktop Table */}
           <table className="table">
             <thead>
               <tr>
@@ -275,6 +277,102 @@ const Gymnasts = () => {
               ))}
             </tbody>
           </table>
+
+          {/* Mobile Cards */}
+          <div className="mobile-table-cards">
+            {gymnasts.map(gymnast => (
+              <div 
+                key={gymnast.id}
+                className="mobile-table-card"
+                onClick={() => handleRowClick(gymnast)}
+                style={{ cursor: 'pointer' }}
+                title="Tap to view progress"
+              >
+                <div className="mobile-card-header">
+                  <div className="mobile-card-title">
+                    {gymnast.firstName} {gymnast.lastName}
+                  </div>
+                  <div className="mobile-card-actions">
+                    {canManageGymnasts && (
+                      <button 
+                        onClick={(e) => handleEditClick(e, gymnast)}
+                        className="btn btn-xs btn-outline"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="mobile-card-body">
+                  <div className="mobile-card-row">
+                    <span className="mobile-card-label">Date of Birth:</span>
+                    <span className="mobile-card-value">
+                      {gymnast.dateOfBirth 
+                        ? new Date(gymnast.dateOfBirth).toLocaleDateString()
+                        : 'Not specified'
+                      }
+                    </span>
+                  </div>
+                  
+                  <div className="mobile-card-row">
+                    <span className="mobile-card-label">Current Level:</span>
+                    <span className="mobile-card-value">
+                      {(() => {
+                        const currentLevel = getCurrentLevel(gymnast, levels);
+                        return currentLevel ? (
+                          <span className="level-badge">
+                            Level {currentLevel.identifier}: {currentLevel.name}
+                          </span>
+                        ) : (
+                          <span className="badge badge-secondary">
+                            Not started
+                          </span>
+                        );
+                      })()}
+                    </span>
+                  </div>
+                  
+                  <div className="mobile-card-row">
+                    <span className="mobile-card-label">Competition Level:</span>
+                    <span className="mobile-card-value">
+                      {(() => {
+                        const highestCompletedLevel = getHighestCompletedLevel(gymnast, levels);
+                        return highestCompletedLevel && highestCompletedLevel.competitions && highestCompletedLevel.competitions.length > 0 ? (
+                          <div className="competition-levels">
+                            {highestCompletedLevel.competitions.map((competition, index) => (
+                              <span key={index} className="competition-badge">
+                                {competition.name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted">No competitions</span>
+                        );
+                      })()}
+                    </span>
+                  </div>
+                  
+                  <div className="mobile-card-row">
+                    <span className="mobile-card-label">Guardians:</span>
+                    <span className="mobile-card-value">
+                      {gymnast.guardians.length > 0 ? (
+                        <div>
+                          {gymnast.guardians.map(guardian => (
+                            <div key={guardian.id}>
+                              <small>{guardian.firstName} {guardian.lastName}</small>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted">No guardians</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

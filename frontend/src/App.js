@@ -10,6 +10,7 @@ import Gymnasts from './pages/Gymnasts';
 import Levels from './pages/Levels';
 import Competitions from './pages/Competitions';
 import Progress from './pages/Progress';
+import MyProgress from './pages/MyProgress';
 import Invites from './pages/Invites';
 import AcceptInvite from './pages/AcceptInvite';
 import './App.css';
@@ -32,6 +33,7 @@ function App() {
             <Route path="levels" element={<Levels />} />
             <Route path="competitions" element={<Competitions />} />
             <Route path="progress/:gymnastId" element={<Progress />} />
+            <Route path="my-progress" element={<MyProgress />} />
             <Route path="invites" element={<Invites />} />
           </Route>
         </Routes>

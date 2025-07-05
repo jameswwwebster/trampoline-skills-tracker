@@ -21,6 +21,128 @@ const updateGymnastSchema = Joi.object({
   coachNotes: Joi.string().allow('').optional()
 });
 
+// Get children for current parent/guardian
+router.get('/my-children', auth, requireRole(['PARENT']), async (req, res) => {
+  try {
+    const myChildren = await prisma.gymnast.findMany({
+      where: {
+        guardians: {
+          some: {
+            id: req.user.id
+          }
+        }
+      },
+      include: {
+        guardians: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        },
+        skillProgress: {
+          where: {
+            status: 'COMPLETED'
+          },
+          include: {
+            skill: {
+              include: {
+                level: {
+                  include: {
+                    competitions: {
+                      include: {
+                        competition: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        levelProgress: {
+          include: {
+            level: {
+              include: {
+                competitions: {
+                  include: {
+                    competition: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        _count: {
+          select: {
+            skillProgress: {
+              where: {
+                status: 'COMPLETED'
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        firstName: 'asc'
+      }
+    });
+
+    // Calculate current level for each gymnast
+    const childrenWithProgress = myChildren.map(gymnast => {
+      // Get highest completed level
+      const completedLevels = gymnast.levelProgress
+        .filter(lp => lp.status === 'COMPLETED')
+        .map(lp => {
+          const level = lp.level;
+          return {
+            ...level,
+            competitionLevel: level.competitions ? level.competitions.map(lc => lc.competition.code) : []
+          };
+        })
+        .sort((a, b) => {
+          // Sort by number, handling side paths (e.g., 3a, 3b)
+          const aNum = parseFloat(a.number);
+          const bNum = parseFloat(b.number);
+          return aNum - bNum;
+        });
+
+      // Get current working level (highest incomplete level with progress)
+      const workingLevels = gymnast.levelProgress
+        .filter(lp => lp.status !== 'COMPLETED')
+        .map(lp => {
+          const level = lp.level;
+          return {
+            ...level,
+            competitionLevel: level.competitions ? level.competitions.map(lc => lc.competition.code) : []
+          };
+        })
+        .sort((a, b) => {
+          const aNum = parseFloat(a.number);
+          const bNum = parseFloat(b.number);
+          return aNum - bNum;
+        });
+
+      const currentLevel = completedLevels.length > 0 ? completedLevels[completedLevels.length - 1] : null;
+      const workingLevel = workingLevels.length > 0 ? workingLevels[0] : null;
+
+      return {
+        ...gymnast,
+        currentLevel,
+        workingLevel,
+        completedLevelsCount: completedLevels.length,
+        completedSkillsCount: gymnast._count.skillProgress
+      };
+    });
+
+    res.json(childrenWithProgress);
+  } catch (error) {
+    console.error('Get my children error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get all gymnasts in current user's club
 router.get('/', auth, async (req, res) => {
   try {
@@ -289,7 +411,7 @@ router.get('/:id', auth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    if (req.user.role === 'GYMNAST' && gymnast.id !== req.user.id) {
+    if (req.user.role === 'GYMNAST' && gymnast.userId !== req.user.id) {
       return res.status(403).json({ error: 'Access denied' });
     }
 

@@ -454,7 +454,7 @@ router.get('/skill/:skillId/gymnast/:gymnastId/history', auth, async (req, res) 
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    if (req.user.role === 'GYMNAST' && gymnast.id !== req.user.id) {
+    if (req.user.role === 'GYMNAST' && gymnast.userId !== req.user.id) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -527,7 +527,7 @@ router.get('/gymnast/:gymnastId/history', auth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    if (req.user.role === 'GYMNAST' && gymnast.id !== req.user.id) {
+    if (req.user.role === 'GYMNAST' && gymnast.userId !== req.user.id) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
