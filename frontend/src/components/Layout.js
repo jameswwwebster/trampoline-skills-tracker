@@ -77,7 +77,7 @@ const Layout = () => {
 
           {canReadCompetitions && (
             <Link to="/competitions" className={isActive('/competitions')}>
-              Competitions
+              Competition Categories
             </Link>
           )}
 
@@ -91,9 +91,6 @@ const Layout = () => {
         <div className="navbar-nav">
           <span className="nav-link">
             {user?.firstName} {user?.lastName}
-          </span>
-          <span className="nav-link">
-            ({user?.role?.replace('_', ' ')})
           </span>
           <button onClick={handleLogout} className="btn btn-outline btn-sm">
             Logout
@@ -151,7 +148,7 @@ const Layout = () => {
 
           {canReadCompetitions && (
             <Link to="/competitions" className={isActive('/competitions')}>
-              Competitions
+              Competition Categories
             </Link>
           )}
 

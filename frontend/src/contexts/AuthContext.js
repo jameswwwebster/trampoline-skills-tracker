@@ -107,13 +107,53 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const childLogin = async (firstName, lastName, familyAccessCode) => {
+  const childLogin = async (firstName, lastName, accessCode) => {
     try {
       setError(null);
       const response = await axios.post('/api/auth/child-login', { 
         firstName, 
         lastName, 
-        familyAccessCode 
+        accessCode 
+      });
+      
+      // Handle name disambiguation
+      if (response.data.needsDisambiguation) {
+        return { 
+          success: false, 
+          needsDisambiguation: true,
+          gymnasts: response.data.gymnasts,
+          error: response.data.message
+        };
+      }
+      
+      const { child, token } = response.data;
+      
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Create a child user object that looks like a regular user
+      const childUser = {
+        ...child,
+        role: 'CHILD',
+        isChild: true
+      };
+      
+      setUser(childUser);
+      
+      return { success: true, user: childUser };
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Child login failed';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const childLoginDisambiguate = async (gymnastId, accessCode) => {
+    try {
+      setError(null);
+      const response = await axios.post('/api/auth/child-login-disambiguate', { 
+        gymnastId, 
+        accessCode 
       });
       const { child, token } = response.data;
       
@@ -137,17 +177,63 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const generateFamilyCode = async () => {
+  // Generate share code (formerly family code)
+  const generateShareCode = async () => {
     try {
       setError(null);
-      const response = await axios.post('/api/auth/generate-family-code');
-      const { user: updatedUser, familyAccessCode } = response.data;
-      
-      setUser(updatedUser);
-      
-      return { success: true, familyAccessCode };
-    } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Failed to generate family code';
+      const response = await axios.post('/api/auth/generate-share-code');
+      return { success: true, shareCode: response.data.shareCode };
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to generate share code';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // Generate code of the day
+  const generateCodeOfTheDay = async (expiresInHours = 24) => {
+    try {
+      setError(null);
+      const response = await axios.post('/api/auth/generate-code-of-day', { expiresInHours });
+      return { 
+        success: true, 
+        codeOfTheDay: response.data.codeOfTheDay,
+        expiresAt: response.data.expiresAt,
+        isActive: true
+      };
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to generate code of the day';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // Get current code of the day
+  const getCodeOfTheDay = async () => {
+    try {
+      setError(null);
+      const response = await axios.get('/api/auth/code-of-day');
+      return { 
+        success: true, 
+        codeOfTheDay: response.data.codeOfTheDay,
+        expiresAt: response.data.expiresAt,
+        isActive: response.data.isActive
+      };
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to get code of the day';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // Clear code of the day
+  const clearCodeOfTheDay = async () => {
+    try {
+      setError(null);
+      const response = await axios.delete('/api/auth/code-of-day');
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to clear code of the day';
       setError(errorMessage);
       return { success: false, error: errorMessage };
     }
@@ -157,23 +243,32 @@ export const AuthProvider = ({ children }) => {
     setUser(updatedUser);
   };
 
+  // Helper functions for checking user roles
+  const isClubAdmin = user?.role === 'CLUB_ADMIN';
+  const isParent = user?.role === 'PARENT';
+  const isChild = user?.role === 'CHILD';
+  const isCoach = user?.role === 'COACH';
+
   const value = {
     user,
     login,
-    register,
     logout,
-    devLogin,
-    childLogin,
-    generateFamilyCode,
-    updateUser,
-    loading,
+    register,
     error,
+    loading,
+    isClubAdmin,
+    isParent,
+    isChild,
+    isCoach,
+    generateShareCode,
+    generateCodeOfTheDay,
+    getCodeOfTheDay,
+    clearCodeOfTheDay,
+    childLogin,
+    childLoginDisambiguate,
+    devLogin,
+    updateUser,
     isAuthenticated: !!user,
-    isClubAdmin: user?.role === 'CLUB_ADMIN',
-    isCoach: user?.role === 'COACH',
-    isGymnast: user?.role === 'GYMNAST',
-    isParent: user?.role === 'PARENT',
-    isChild: user?.role === 'CHILD',
     canManageClub: user?.role === 'CLUB_ADMIN',
     canManageGymnasts: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
     canMarkProgress: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
@@ -184,7 +279,8 @@ export const AuthProvider = ({ children }) => {
     canViewProgress: true, // All authenticated users can view progress (with backend access controls)
     canViewOwnProgress: user?.role === 'PARENT' || user?.role === 'CHILD', // Parents and children can view progress
     needsProgressNavigation: user?.role === 'PARENT' || user?.role === 'CHILD', // Parents and children need progress navigation
-    needsFamilyCodeManagement: user?.role === 'PARENT' // Only parents need family code management
+    needsShareCodeManagement: user?.role === 'PARENT', // Only parents need share code management
+    needsCodeOfDayManagement: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH' // Club admins and coaches can manage code of the day
   };
 
   return (

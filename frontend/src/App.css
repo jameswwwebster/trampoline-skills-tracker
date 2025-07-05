@@ -328,6 +328,11 @@ p, li, td, th {
   font-size: 1.5rem;
 }
 
+.card .btn {
+  width: 100%;
+  margin-top: 1rem;
+}
+
 /* Forms */
 .form-group {
   margin-bottom: 1.5rem;
@@ -782,6 +787,11 @@ textarea.form-control {
 
   .card-title {
     font-size: 1.25rem;
+  }
+
+  .card.btn {
+    width: 100%;
+    margin: 1rem;
   }
 
   /* Buttons */
@@ -2596,7 +2606,6 @@ textarea.form-control {
 .competition-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
-  background-color: #e3f2fd;
   color: #1976d2;
   border: 1px solid #1976d2;
   border-radius: 1rem;
@@ -2716,7 +2725,6 @@ textarea.form-control {
 }
 
 .competition-badge {
-  background-color: #e9ecef;
   color: #495057;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;

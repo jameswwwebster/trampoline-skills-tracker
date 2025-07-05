@@ -163,7 +163,6 @@ const CompetitionCard = ({ competition, onEdit, onDelete }) => {
       <div className="competition-header">
         <div className="competition-info">
           <h4>{competition.name}</h4>
-          <p className="competition-code">{competition.code}</p>
           {competition.description && (
             <p className="competition-description">{competition.description}</p>
           )}
@@ -327,11 +326,10 @@ const Competitions = () => {
   return (
     <div className="competitions-page">
       <div className="page-header">
-        <h1>Competition Management</h1>
-        <p>Manage competition levels and their associations with skill levels</p>
+        <h1>Competition Categories</h1>
         {canEditCompetitions && (
           <button className="btn btn-primary" onClick={handleCreateCompetition}>
-            Create Competition
+            Create Competition Category
           </button>
         )}
       </div>

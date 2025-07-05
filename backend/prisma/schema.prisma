@@ -13,7 +13,7 @@ datasource db {
 enum UserRole {
   CLUB_ADMIN
   COACH
-  GUARDIAN
+  PARENT
   GYMNAST
 }
 
@@ -57,7 +57,7 @@ model User {
   lastName  String
   role      UserRole
   clubId    String?
-  familyAccessCode String? // Simple code for children to access their progress
+  shareCode String? // Share code for gymnasts to access their progress (renamed from familyAccessCode)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -72,7 +72,6 @@ model User {
   processedRequests  GuardianRequest[]   @relation("ProcessedRequests")
   sentInvites        Invite[]            @relation("SentInvites")
   receivedInvites    Invite[]            @relation("ReceivedInvites")
-
   @@map("users")
 }
 
@@ -82,6 +81,8 @@ model Club {
   address   String?
   phone     String?
   email     String?
+  codeOfTheDay String? // Daily code that any gymnast in the club can use
+  codeOfTheDayExpiresAt DateTime? // When the code expires
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -7,12 +7,14 @@ const ChildLogin = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    familyAccessCode: ''
+    accessCode: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [gymnasts, setGymnasts] = useState([]);
+  const [needsDisambiguation, setNeedsDisambiguation] = useState(false);
   const navigate = useNavigate();
-  const { childLogin } = useAuth();
+  const { childLogin, childLoginDisambiguate } = useAuth();
 
   const handleChange = (e) => {
     setFormData({
@@ -25,9 +27,32 @@ const ChildLogin = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setNeedsDisambiguation(false);
 
     try {
-      const result = await childLogin(formData.firstName, formData.lastName, formData.familyAccessCode);
+      const result = await childLogin(formData.firstName, formData.lastName, formData.accessCode);
+      if (result.success) {
+        navigate('/my-progress');
+      } else if (result.needsDisambiguation) {
+        setNeedsDisambiguation(true);
+        setGymnasts(result.gymnasts);
+        setError(null);
+      } else {
+        setError(result.error);
+      }
+    } catch (error) {
+      setError('Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGymnastSelect = async (gymnastId) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await childLoginDisambiguate(gymnastId, formData.accessCode);
       if (result.success) {
         navigate('/my-progress');
       } else {
@@ -40,12 +65,67 @@ const ChildLogin = () => {
     }
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No date';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  if (needsDisambiguation) {
+    return (
+      <div className="auth-container">
+        <div className="auth-card">
+          <div className="auth-header">
+            <h2>👧👦 Select Your Profile</h2>
+            <p>We found multiple gymnasts with the name "{formData.firstName} {formData.lastName}". Please select your profile:</p>
+          </div>
+
+          <div className="gymnast-selection">
+            {gymnasts.map((gymnast) => (
+              <div key={gymnast.id} className="gymnast-option">
+                <button
+                  onClick={() => handleGymnastSelect(gymnast.id)}
+                  className="btn btn-outline btn-full"
+                  disabled={loading}
+                >
+                  <div className="gymnast-info">
+                    <h3>{gymnast.firstName} {gymnast.lastName}</h3>
+                    <p>Date of Birth: {formatDate(gymnast.dateOfBirth)}</p>
+                    <p>Club: {gymnast.club?.name}</p>
+                  </div>
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {error && (
+            <div className="alert alert-error">
+              {error}
+            </div>
+          )}
+
+          <div className="auth-footer">
+            <button 
+              onClick={() => {
+                setNeedsDisambiguation(false);
+                setGymnasts([]);
+                setError(null);
+              }}
+              className="btn btn-secondary"
+            >
+              ← Back to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
           <h2>👧👦 Kids Login</h2>
-          <p>Enter your name and family code to see your progress!</p>
+          <p>Enter your name and access code to see your progress!</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
@@ -78,21 +158,21 @@ const ChildLogin = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="familyAccessCode">Family Code</label>
+            <label htmlFor="accessCode">Access Code</label>
             <input
               type="text"
-              id="familyAccessCode"
-              name="familyAccessCode"
-              value={formData.familyAccessCode}
+              id="accessCode"
+              name="accessCode"
+              value={formData.accessCode}
               onChange={handleChange}
               required
-              placeholder="Ask your parent for the family code"
+              placeholder="6-digit access code"
               maxLength={6}
               pattern="[0-9]{6}"
-              title="Family code should be 6 digits"
+              title="Access code should be 6 digits"
             />
             <small className="form-help">
-              💡 Ask your parent or guardian for the 6-digit family code
+              💡 Ask your parent, guardian, or coach for the 6-digit access code
             </small>
           </div>
 
@@ -113,10 +193,10 @@ const ChildLogin = () => {
 
         <div className="auth-footer">
           <p>
-            <Link to="/login">👨‍👩‍👧‍👦 Parent/Guardian Login</Link>
+            <Link to="/login">👨‍👩‍👧‍👦 Parent/Guardian/Coach Login</Link>
           </p>
           <p>
-            <small>Don't have a family code? Ask your parent to generate one!</small>
+            <small>Don't have an access code? Ask your parent, guardian, or coach to generate one!</small>
           </p>
         </div>
       </div>

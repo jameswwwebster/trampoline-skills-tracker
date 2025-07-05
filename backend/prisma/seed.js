@@ -92,21 +92,25 @@ async function main() {
 
   const guardianUser = await prisma.user.upsert({
     where: { email: 'parent@test.com' },
-    update: {},
+    update: {
+      shareCode: '123456' // Test share code for development
+    },
     create: {
       email: 'parent@test.com',
       password: hashedPassword,
       firstName: 'Sarah',
       lastName: 'Johnson',
-      role: 'GUARDIAN',
-      clubId: devClub.id
+      role: 'PARENT',
+      clubId: devClub.id,
+      shareCode: '123456' // Test share code for development
     }
   });
 
-  console.log('✅ Test guardian user created:');
+  console.log('✅ Test parent user created:');
   console.log(`   Email: parent@test.com`);
   console.log(`   Password: password123`);
-  console.log(`   Role: GUARDIAN`);
+  console.log(`   Role: PARENT`);
+  console.log(`   Share Code: 123456`);
   console.log(`   Club: ${devClub.name}`);
 
   const coachUser = await prisma.user.upsert({

@@ -4,20 +4,38 @@ import { useAuth } from '../contexts/AuthContext';
 import CreateClubForm from '../components/CreateClubForm';
 
 const Dashboard = () => {
-  const { user, isClubAdmin, isParent, isChild, generateFamilyCode, updateUser } = useAuth();
-  const [familyCodeModal, setFamilyCodeModal] = useState(false);
+  const { user, isClubAdmin, isParent, isChild, isCoach, generateShareCode, generateCodeOfTheDay, getCodeOfTheDay, clearCodeOfTheDay, updateUser } = useAuth();
+  const [shareCodeModal, setShareCodeModal] = useState(false);
+  const [codeOfDayModal, setCodeOfDayModal] = useState(false);
   const [generatedCode, setGeneratedCode] = useState(null);
+  const [codeOfDayInfo, setCodeOfDayInfo] = useState(null);
 
   const handleClubCreated = (club, updatedUser) => {
     // Update the user context with the new club information
     updateUser(updatedUser);
   };
 
-  const handleGenerateFamilyCode = async () => {
-    const result = await generateFamilyCode();
+  const handleGenerateShareCode = async () => {
+    const result = await generateShareCode();
     if (result.success) {
-      setGeneratedCode(result.familyAccessCode);
-      setFamilyCodeModal(true);
+      setGeneratedCode(result.shareCode);
+      setShareCodeModal(true);
+    }
+  };
+
+  const handleGenerateCodeOfDay = async () => {
+    const result = await generateCodeOfTheDay(8); // 8 hours expiration
+    if (result.success) {
+      setCodeOfDayInfo(result);
+      setCodeOfDayModal(true);
+    }
+  };
+
+  const handleGetCodeOfDay = async () => {
+    const result = await getCodeOfTheDay();
+    if (result.success) {
+      setCodeOfDayInfo(result);
+      setCodeOfDayModal(true);
     }
   };
 
@@ -72,11 +90,11 @@ const Dashboard = () => {
             
             {isParent && (
               <div style={{ marginTop: '1rem' }}>
-                <Link to="/my-progress" className="btn btn-primary" style={{ marginRight: '1rem' }}>
+                <Link to="/my-progress" className="btn btn-primary" style={{ marginRight: '1.5rem' }}>
                   📊 View My Children's Progress
                 </Link>
-                <button onClick={handleGenerateFamilyCode} className="btn btn-outline">
-                  🔑 Generate Family Code
+                <button onClick={handleGenerateShareCode} className="btn btn-outline">
+                  🔑 Generate Share Code
                 </button>
                 <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
                   Monitor your children's skill development and generate access codes for them
@@ -84,13 +102,30 @@ const Dashboard = () => {
               </div>
             )}
             
-            {(isClubAdmin || user?.role === 'COACH') && (
+            {isCoach && (
               <div style={{ marginTop: '1rem' }}>
-                <Link to="/gymnasts" className="btn btn-primary">
-                  Manage Gymnasts
+                <Link to="/gymnasts" className="btn btn-primary" style={{ marginRight: '1.5rem' }}>
+                  👥 Manage Gymnasts
                 </Link>
+                <button onClick={handleGetCodeOfDay} className="btn btn-secondary">
+                  📅 Code of the Day
+                </button>
                 <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
-                  Track and update gymnast progress
+                  Track gymnast progress and manage club-wide access codes
+                </p>
+              </div>
+            )}
+            
+            {isClubAdmin && (
+              <div style={{ marginTop: '1rem' }}>
+                <Link to="/gymnasts" className="btn btn-primary" style={{ marginRight: '1.5rem' }}>
+                  👥 Manage Gymnasts
+                </Link>
+                <button onClick={handleGetCodeOfDay} className="btn btn-secondary">
+                  📅 Code of the Day
+                </button>
+                <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
+                  Full club management and code of the day controls
                 </p>
               </div>
             )}
@@ -101,7 +136,7 @@ const Dashboard = () => {
                 <li>
                   <Link to="/levels">View and explore trampoline levels</Link>
                 </li>
-                {(isClubAdmin || user?.role === 'COACH') && (
+                {(isClubAdmin || isCoach) && (
                   <li>
                     <Link to="/competitions">Manage competitions</Link>
                   </li>
@@ -142,11 +177,23 @@ const Dashboard = () => {
                 <h4 style={{ color: '#495057', marginBottom: '0.5rem' }}>👪 For Parents:</h4>
                 <ul style={{ marginBottom: '0' }}>
                   <li>Use <strong>"Children's Progress"</strong> to view your child's skill development</li>
-                  <li>Generate a <strong>Family Code</strong> so your children can login and see their own progress</li>
+                  <li>Generate a <strong>Share Code</strong> so your children and others you trust can login and see progress</li>
                   <li>See which skills they've mastered and what they're working on next</li>
-                  <li>Track their progression through the 10 trampoline levels</li>
+                  <li>Track their progression through the trampoline levels</li>
                   <li>Monitor their competition eligibility as they advance</li>
                   <li>View their complete progress history and achievements</li>
+                </ul>
+              </div>
+            )}
+
+            {isCoach && (
+              <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#fff3cd', borderRadius: '8px' }}>
+                <h4 style={{ color: '#856404', marginBottom: '0.5rem' }}>🏃‍♂️ For Coaches:</h4>
+                <ul style={{ marginBottom: '0' }}>
+                  <li>Use <strong>Code of the Day</strong> for club-wide access during training sessions</li>
+                  <li>All gymnasts in your club can use the same code to access their progress</li>
+                  <li>Track all gymnasts' progress and update skill achievements</li>
+                  <li>Manage competition preparation and level progression</li>
                 </ul>
               </div>
             )}
@@ -154,15 +201,15 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Family Code Modal */}
-      {familyCodeModal && (
-        <div className="modal-overlay active" onClick={() => setFamilyCodeModal(false)}>
+      {/* Share Code Modal */}
+      {shareCodeModal && (
+        <div className="modal-overlay active" onClick={() => setShareCodeModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>🔑 Family Access Code Generated!</h3>
+              <h3>🔑 Share Access Code Generated!</h3>
               <button 
                 className="modal-close"
-                onClick={() => setFamilyCodeModal(false)}
+                onClick={() => setShareCodeModal(false)}
                 aria-label="Close modal"
               >
                 ×
@@ -184,23 +231,94 @@ const Dashboard = () => {
                 </div>
               </div>
               <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
-                <p><strong>📱 Share this code with your children so they can:</strong></p>
+                <p><strong>📱 Share this code with gymnasts so they can:</strong></p>
                 <ul style={{ marginLeft: '1rem' }}>
                   <li>Go to the "Kids Login" page</li>
-                  <li>Enter their name and this family code</li>
+                  <li>Enter their name and this access code</li>
                   <li>View their own progress independently!</li>
                 </ul>
                 <p style={{ marginTop: '1rem', color: '#dc3545', fontWeight: 'bold' }}>
                   ⚠️ Keep this code safe! You can generate a new one anytime if needed.
                 </p>
+                {isCoach && (
+                  <p style={{ marginTop: '1rem', color: '#0066cc', fontStyle: 'italic' }}>
+                    💡 As a coach, this code gives access to all gymnasts in your club.
+                  </p>
+                )}
               </div>
             </div>
             <div className="modal-footer">
               <button 
-                onClick={() => setFamilyCodeModal(false)}
+                onClick={() => setShareCodeModal(false)}
                 className="btn btn-primary"
               >
                 Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Code of the Day Modal */}
+      {codeOfDayModal && (
+        <div className="modal-overlay active" onClick={() => setCodeOfDayModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📅 Code of the Day</h3>
+              <button 
+                className="modal-close"
+                onClick={() => setCodeOfDayModal(false)}
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              {codeOfDayInfo?.isActive ? (
+                <div>
+                  <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                    <div style={{ 
+                      fontSize: '2rem', 
+                      fontWeight: 'bold', 
+                      backgroundColor: '#f8f9fa', 
+                      padding: '1rem', 
+                      borderRadius: '8px',
+                      border: '2px solid #007bff',
+                      color: '#007bff',
+                      letterSpacing: '0.2em'
+                    }}>
+                      {codeOfDayInfo.codeOfTheDay}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
+                    <p><strong>🏫 Current club-wide access code</strong></p>
+                    <p><strong>Expires:</strong> {new Date(codeOfDayInfo.expiresAt).toLocaleString()}</p>
+                    <p style={{ marginTop: '1rem' }}>Any gymnast in your club can use this code to access their progress.</p>
+                  </div>
+                  <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
+                    <button onClick={handleGenerateCodeOfDay} className="btn btn-outline">
+                      🔄 Generate New Code
+                    </button>
+                    <button onClick={() => clearCodeOfTheDay().then(() => setCodeOfDayModal(false))} className="btn btn-secondary">
+                      🗑️ Clear Code
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p>No active code of the day. Generate one for club-wide access.</p>
+                  <button onClick={handleGenerateCodeOfDay} className="btn btn-primary">
+                    📅 Generate Code of the Day
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button 
+                onClick={() => setCodeOfDayModal(false)}
+                className="btn btn-secondary"
+              >
+                Close
               </button>
             </div>
           </div>
