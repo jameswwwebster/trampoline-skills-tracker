@@ -3,9 +3,16 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Layout = () => {
-  const { user, logout, canManageGymnasts, isClubAdmin, canReadCompetitions, needsProgressNavigation } = useAuth();
+  const { user, logout, canManageGymnasts, isClubAdmin, canReadCompetitions, needsProgressNavigation, isChild, isParent } = useAuth();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Dynamic navigation text based on user type
+  const getProgressNavText = () => {
+    if (isChild) return "My Progress";
+    if (isParent) return "Children's Progress";
+    return "Progress";
+  };
 
   const isActive = (path) => {
     return location.pathname === path ? 'nav-link active' : 'nav-link';
@@ -54,7 +61,7 @@ const Layout = () => {
           
           {needsProgressNavigation && (
             <Link to="/my-progress" className={isActive('/my-progress')}>
-              Children's Progress
+              {getProgressNavText()}
             </Link>
           )}
           
@@ -128,7 +135,7 @@ const Layout = () => {
           
           {needsProgressNavigation && (
             <Link to="/my-progress" className={isActive('/my-progress')}>
-              Children's Progress
+              {getProgressNavText()}
             </Link>
           )}
           

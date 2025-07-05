@@ -160,6 +160,102 @@ router.get('/validate', auth, (req, res) => {
   res.json({ valid: true, user: req.user });
 });
 
+// Generate or regenerate family access code for parents
+router.post('/generate-family-code', auth, requireRole(['PARENT']), async (req, res) => {
+  try {
+    // Generate a 6-digit family access code
+    const familyAccessCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Update the parent's family access code
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { familyAccessCode },
+      include: {
+        club: true,
+        guardedGymnasts: true
+      }
+    });
+
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = updatedUser;
+
+    res.json({
+      message: 'Family access code generated successfully',
+      user: userWithoutPassword,
+      familyAccessCode
+    });
+  } catch (error) {
+    console.error('Generate family code error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Child login endpoint - no email/password required
+router.post('/child-login', async (req, res) => {
+  try {
+    const { firstName, lastName, familyAccessCode } = req.body;
+
+    if (!firstName || !lastName || !familyAccessCode) {
+      return res.status(400).json({ error: 'First name, last name, and family code are required' });
+    }
+
+    // Find parent with this family access code
+    const parent = await prisma.user.findFirst({
+      where: {
+        familyAccessCode,
+        role: 'PARENT'
+      },
+      include: {
+        guardedGymnasts: {
+          include: {
+            club: true
+          }
+        }
+      }
+    });
+
+    if (!parent) {
+      return res.status(400).json({ error: 'Invalid family code' });
+    }
+
+    // Find the child gymnast with matching name
+    const child = parent.guardedGymnasts.find(gymnast => 
+      gymnast.firstName.toLowerCase() === firstName.toLowerCase() && 
+      gymnast.lastName.toLowerCase() === lastName.toLowerCase()
+    );
+
+    if (!child) {
+      return res.status(400).json({ error: 'Child not found. Please check the name spelling.' });
+    }
+
+    // Create a temporary session token for the child
+    const token = jwt.sign(
+      { 
+        gymnastId: child.id,
+        isChild: true,
+        parentId: parent.id
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' } // Shorter session for children
+    );
+
+    res.json({
+      message: 'Child login successful',
+      child: {
+        id: child.id,
+        firstName: child.firstName,
+        lastName: child.lastName,
+        club: child.club
+      },
+      token,
+      isChild: true
+    });
+  } catch (error) {
+    console.error('Child login error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Development-only login endpoint
 router.post('/dev-login', async (req, res) => {
   try {

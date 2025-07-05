@@ -113,6 +113,21 @@ const Login = () => {
           Don't have an account? <Link to="/register">Register here</Link>
         </div>
 
+        <div className="auth-link" style={{ marginTop: '1rem' }}>
+          <Link to="/child-login" className="child-login-link" style={{ 
+            display: 'inline-block',
+            padding: '0.75rem 1.5rem',
+            backgroundColor: '#28a745',
+            color: 'white',
+            textDecoration: 'none',
+            borderRadius: '0.375rem',
+            fontWeight: 'bold',
+            fontSize: '1.1rem'
+          }}>
+            👧👦 Kids Click Here!
+          </Link>
+        </div>
+
         {isDevelopment && (
           <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid #dee2e6' }}>
             <div style={{ textAlign: 'center', marginBottom: '1rem' }}>

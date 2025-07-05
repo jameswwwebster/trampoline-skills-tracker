@@ -107,6 +107,52 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const childLogin = async (firstName, lastName, familyAccessCode) => {
+    try {
+      setError(null);
+      const response = await axios.post('/api/auth/child-login', { 
+        firstName, 
+        lastName, 
+        familyAccessCode 
+      });
+      const { child, token } = response.data;
+      
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Create a child user object that looks like a regular user
+      const childUser = {
+        ...child,
+        role: 'CHILD',
+        isChild: true
+      };
+      
+      setUser(childUser);
+      
+      return { success: true, user: childUser };
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Child login failed';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const generateFamilyCode = async () => {
+    try {
+      setError(null);
+      const response = await axios.post('/api/auth/generate-family-code');
+      const { user: updatedUser, familyAccessCode } = response.data;
+      
+      setUser(updatedUser);
+      
+      return { success: true, familyAccessCode };
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Failed to generate family code';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
   };
@@ -117,6 +163,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     devLogin,
+    childLogin,
+    generateFamilyCode,
     updateUser,
     loading,
     error,
@@ -125,6 +173,7 @@ export const AuthProvider = ({ children }) => {
     isCoach: user?.role === 'COACH',
     isGymnast: user?.role === 'GYMNAST',
     isParent: user?.role === 'PARENT',
+    isChild: user?.role === 'CHILD',
     canManageClub: user?.role === 'CLUB_ADMIN',
     canManageGymnasts: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
     canMarkProgress: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
@@ -133,8 +182,9 @@ export const AuthProvider = ({ children }) => {
     canReadCompetitions: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
     canReadLevels: true, // All authenticated users can read levels
     canViewProgress: true, // All authenticated users can view progress (with backend access controls)
-    canViewOwnProgress: user?.role === 'PARENT', // Only parents can view their children's progress
-    needsProgressNavigation: user?.role === 'PARENT' // Only parents need the progress navigation
+    canViewOwnProgress: user?.role === 'PARENT' || user?.role === 'CHILD', // Parents and children can view progress
+    needsProgressNavigation: user?.role === 'PARENT' || user?.role === 'CHILD', // Parents and children need progress navigation
+    needsFamilyCodeManagement: user?.role === 'PARENT' // Only parents need family code management
   };
 
   return (

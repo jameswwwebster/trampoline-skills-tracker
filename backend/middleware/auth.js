@@ -12,6 +12,38 @@ const auth = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Handle child sessions
+    if (decoded.isChild) {
+      const gymnast = await prisma.gymnast.findUnique({
+        where: { id: decoded.gymnastId },
+        include: {
+          club: true,
+          guardians: true
+        }
+      });
+
+      if (!gymnast) {
+        return res.status(401).json({ error: 'Child session is not valid' });
+      }
+
+      // Create a child session object that mimics a user
+      req.child = {
+        id: gymnast.id,
+        firstName: gymnast.firstName,
+        lastName: gymnast.lastName,
+        role: 'CHILD',
+        club: gymnast.club,
+        clubId: gymnast.clubId,
+        gymnastsId: gymnast.id, // For easy access to own gymnast record
+        isChild: true
+      };
+      req.user = req.child; // For backward compatibility
+      next();
+      return;
+    }
+
+    // Regular user session
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: {

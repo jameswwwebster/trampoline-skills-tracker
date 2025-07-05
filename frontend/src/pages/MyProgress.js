@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import GymnastProgress from '../components/GymnastProgress';
 
 const MyProgress = () => {
-  const { user, isParent } = useAuth();
+  const { user, isParent, isChild } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [children, setChildren] = useState([]);
@@ -18,23 +18,31 @@ const MyProgress = () => {
         setLoading(true);
         setError(null);
 
-        if (!isParent) {
-          setError('Access denied. This page is only available for parents and guardians.');
-          return;
-        }
+        if (isChild) {
+          // For children, show their own progress directly
+          setSelectedChild({
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            club: user.club
+          });
+        } else if (isParent) {
+          // For parents, get their children using the dedicated endpoint
+          const response = await axios.get('/api/gymnasts/my-children');
+          const myChildren = response.data;
 
-        // For parents, get their children using the dedicated endpoint
-        const response = await axios.get('/api/gymnasts/my-children');
-        const myChildren = response.data;
-
-        if (myChildren.length === 0) {
-          setError('No children found. You may not be registered as a guardian for any gymnasts. Please contact your club administrator to be added as a guardian.');
-        } else if (myChildren.length === 1) {
-          // If only one child, show their progress directly
-          setSelectedChild(myChildren[0]);
+          if (myChildren.length === 0) {
+            setError('No children found. You may not be registered as a guardian for any gymnasts. Please contact your club administrator to be added as a guardian.');
+          } else if (myChildren.length === 1) {
+            // If only one child, show their progress directly
+            setSelectedChild(myChildren[0]);
+          } else {
+            // Multiple children, show selection
+            setChildren(myChildren);
+          }
         } else {
-          // Multiple children, show selection
-          setChildren(myChildren);
+          setError('Access denied. This page is only available for parents, guardians, and children.');
+          return;
         }
       } catch (error) {
         console.error('Failed to fetch gymnast data:', error);
@@ -45,7 +53,7 @@ const MyProgress = () => {
     };
 
     fetchData();
-  }, [user, isParent]);
+  }, [user, isParent, isChild]);
 
   const handleChildSelect = (child) => {
     setSelectedChild(child);

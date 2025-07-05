@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Login from './pages/Login';
+import ChildLogin from './pages/ChildLogin';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Gymnasts from './pages/Gymnasts';
@@ -21,6 +22,7 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/child-login" element={<ChildLogin />} />
           <Route path="/register" element={<Register />} />
           <Route path="/invite/:token" element={<AcceptInvite />} />
           <Route path="/" element={
