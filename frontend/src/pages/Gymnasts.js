@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import AddGymnastForm from '../components/AddGymnastForm';
 
 const Gymnasts = () => {
   const [gymnasts, setGymnasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
     const fetchGymnasts = async () => {
@@ -22,6 +24,15 @@ const Gymnasts = () => {
 
     fetchGymnasts();
   }, []);
+
+  const handleAddSuccess = (newGymnast) => {
+    setGymnasts(prev => [...prev, newGymnast]);
+    setShowAddForm(false);
+  };
+
+  const handleCancelAdd = () => {
+    setShowAddForm(false);
+  };
 
   if (loading) {
     return (
@@ -43,10 +54,20 @@ const Gymnasts = () => {
     <div>
       <div className="flex-between">
         <h1>Gymnasts</h1>
-        <button className="btn btn-primary">
-          Add New Gymnast
+        <button 
+          className="btn btn-primary"
+          onClick={() => setShowAddForm(!showAddForm)}
+        >
+          {showAddForm ? 'Cancel' : 'Add New Gymnast'}
         </button>
       </div>
+
+      {showAddForm && (
+        <AddGymnastForm 
+          onSuccess={handleAddSuccess}
+          onCancel={handleCancelAdd}
+        />
+      )}
 
       {gymnasts.length === 0 ? (
         <div className="card">
@@ -68,8 +89,9 @@ const Gymnasts = () => {
               <tr>
                 <th>Name</th>
                 <th>Date of Birth</th>
-                <th>Guardians</th>
+                <th>Current Level</th>
                 <th>Progress</th>
+                <th>Guardians</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -86,25 +108,67 @@ const Gymnasts = () => {
                     }
                   </td>
                   <td>
+                    {gymnast.currentLevel ? (
+                      <div>
+                        <span className="level-badge">
+                          Level {gymnast.currentLevel.number}
+                        </span>
+                        <br />
+                        <small className="text-muted">
+                          {gymnast.currentLevel.name}
+                        </small>
+                        {gymnast.workingLevel && (
+                          <div style={{ marginTop: '0.5rem' }}>
+                            <span className="badge badge-warning">
+                              Working on {gymnast.workingLevel.number}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        {gymnast.workingLevel ? (
+                          <div>
+                            <span className="badge badge-warning">
+                              Starting Level {gymnast.workingLevel.number}
+                            </span>
+                            <br />
+                            <small className="text-muted">
+                              {gymnast.workingLevel.name}
+                            </small>
+                          </div>
+                        ) : (
+                          <span className="badge badge-secondary">
+                            Not started
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    <div className="progress-stats">
+                      <div className="stat-item">
+                        <div className="stat-number">{gymnast.completedSkillsCount}</div>
+                        <div className="stat-label">Skills</div>
+                      </div>
+                      <div className="stat-item">
+                        <div className="stat-number">{gymnast.completedLevelsCount}</div>
+                        <div className="stat-label">Levels</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
                     {gymnast.guardians.length > 0 ? (
                       <div>
                         {gymnast.guardians.map(guardian => (
                           <div key={guardian.id}>
-                            {guardian.firstName} {guardian.lastName}
+                            <small>{guardian.firstName} {guardian.lastName}</small>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <span>No guardians</span>
+                      <span className="text-muted">No guardians</span>
                     )}
-                  </td>
-                  <td>
-                    <div>
-                      <small>
-                        Skills: {gymnast._count.skillProgress} | 
-                        Levels: {gymnast._count.levelProgress}
-                      </small>
-                    </div>
                   </td>
                   <td>
                     <div className="flex">
