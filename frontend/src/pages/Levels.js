@@ -16,7 +16,22 @@ const Levels = () => {
   const [showAddSkillToRoutineForm, setShowAddSkillToRoutineForm] = useState(null);
   const [expandedLevels, setExpandedLevels] = useState(new Set());
   const [expandedRoutines, setExpandedRoutines] = useState(new Set());
+  const [editMode, setEditMode] = useState(false);
   const { user, canEditLevels } = useAuth();
+
+  // Close any open modals when edit mode is turned off
+  const toggleEditMode = () => {
+    if (editMode) {
+      // Close all open modals when exiting edit mode
+      setEditingLevel(null);
+      setEditingSkill(null);
+      setEditingRoutine(null);
+      setShowAddSkillForm(null);
+      setShowAddRoutineForm(null);
+      setShowAddSkillToRoutineForm(null);
+    }
+    setEditMode(!editMode);
+  };
 
   useEffect(() => {
     fetchLevels();
@@ -314,10 +329,20 @@ const Levels = () => {
       <div className="flex-between">
         <h1>Trampoline Levels</h1>
         {canEditLevels && (
-          <div className="level-management-info">
-            <span className="text-muted">
-              ✏️ Edit Mode: Click items to edit, use + buttons to add new content
-            </span>
+          <div className="flex-end">
+            <button
+              onClick={toggleEditMode}
+              className={`btn ${editMode ? 'btn-danger' : 'btn-outline'}`}
+            >
+              {editMode ? '🔒 Exit Edit Mode' : '✏️ Edit Mode'}
+            </button>
+            {editMode && (
+              <div className="level-management-info">
+                <span className="text-muted">
+                  Click items to edit, use + buttons to add new content
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -346,7 +371,7 @@ const Levels = () => {
                   <LevelCard
                     key={level.id}
                     level={level}
-                    canEdit={canEditLevels}
+                    canEdit={canEditLevels && editMode}
                     isExpanded={expandedLevels.has(level.id)}
                     onToggleExpansion={() => toggleLevelExpansion(level.id)}
                     onEditLevel={() => setEditingLevel(level)}
@@ -383,7 +408,7 @@ const Levels = () => {
                     <LevelCard
                       key={level.id}
                       level={level}
-                      canEdit={canEditLevels}
+                      canEdit={canEditLevels && editMode}
                       isExpanded={expandedLevels.has(level.id)}
                       onToggleExpansion={() => toggleLevelExpansion(level.id)}
                       onEditLevel={() => setEditingLevel(level)}
@@ -411,7 +436,7 @@ const Levels = () => {
       )}
 
       {/* Edit Level Modal */}
-      {editingLevel && (
+      {editingLevel && editMode && (
         <EditLevelModal
           level={editingLevel}
           competitions={competitions}
@@ -421,7 +446,7 @@ const Levels = () => {
       )}
 
       {/* Edit Skill Modal */}
-      {editingSkill && (
+      {editingSkill && editMode && (
         <EditSkillModal
           skill={editingSkill}
           onSave={(skillData) => handleUpdateSkill(editingSkill.levelId, editingSkill.id, skillData)}
@@ -430,7 +455,7 @@ const Levels = () => {
       )}
 
       {/* Edit Routine Modal */}
-      {editingRoutine && (
+      {editingRoutine && editMode && (
         <EditRoutineModal
           routine={editingRoutine}
           onSave={(routineData) => handleUpdateRoutine(editingRoutine.levelId, editingRoutine.id, routineData)}
@@ -439,7 +464,7 @@ const Levels = () => {
       )}
 
       {/* Add Skill Modal */}
-      {showAddSkillForm && (
+      {showAddSkillForm && editMode && (
         <AddSkillModal
           levelId={showAddSkillForm}
           onSave={(skillData) => handleCreateSkill(showAddSkillForm, skillData)}
@@ -448,7 +473,7 @@ const Levels = () => {
       )}
 
       {/* Add Routine Modal */}
-      {showAddRoutineForm && (
+      {showAddRoutineForm && editMode && (
         <AddRoutineModal
           levelId={showAddRoutineForm}
           onSave={(routineData) => handleCreateRoutine(showAddRoutineForm, routineData)}
@@ -457,7 +482,7 @@ const Levels = () => {
       )}
 
       {/* Add Skill to Routine Modal */}
-      {showAddSkillToRoutineForm && (
+      {showAddSkillToRoutineForm && editMode && (
         <AddSkillToRoutineModal
           levelId={showAddSkillToRoutineForm.levelId}
           routineId={showAddSkillToRoutineForm.routineId}
