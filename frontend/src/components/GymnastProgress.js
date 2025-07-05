@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-import SkillProgressTracker from './SkillProgressTracker';
 import ProgressHistory from './ProgressHistory';
+import CoachNotes from './CoachNotes';
+import EditGymnastForm from './EditGymnastForm';
 
 const GymnastProgress = ({ gymnastId }) => {
   const [gymnast, setGymnast] = useState(null);
@@ -10,12 +11,95 @@ const GymnastProgress = ({ gymnastId }) => {
   const [error, setError] = useState(null);
   const [levels, setLevels] = useState([]);
   const [coachingMode, setCoachingMode] = useState(false);
-  const [selectedLevel, setSelectedLevel] = useState(null);
+
   const [activeTab, setActiveTab] = useState('overview');
+  const [collapsedLevels, setCollapsedLevels] = useState(new Set());
+  const [editingGymnast, setEditingGymnast] = useState(false);
   const { user } = useAuth();
 
   // Only coaches and club admins can use coaching tools
   const canCoach = user?.role === 'COACH' || user?.role === 'CLUB_ADMIN';
+
+  // Set coaching mode to true by default for coaches and club admins
+  useEffect(() => {
+    if (canCoach) {
+      setCoachingMode(true);
+    }
+  }, [canCoach]);
+
+  // Helper function to extract base level number from identifier
+  const getBaseLevelNumber = (identifier) => {
+    const match = identifier.match(/^(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  // Helper function to check if a level is a side-track
+  const isSideTrack = (identifier) => {
+    return /^\d+[a-z]$/.test(identifier);
+  };
+
+  // Helper function to determine the gymnast's current working level number
+  const getCurrentLevelNumber = (gymnast, levels) => {
+    if (!gymnast || !levels.length) return 1;
+
+    // Get all completed main track levels (ignore side tracks)
+    const completedMainTrackLevels = gymnast.levelProgress
+      .filter(lp => lp.status === 'COMPLETED')
+      .map(lp => lp.level)
+      .filter(level => !isSideTrack(level.identifier)) // Only main track levels
+      .map(level => parseInt(level.identifier))
+      .sort((a, b) => a - b);
+
+    // Find the next main track level to work on
+    if (completedMainTrackLevels.length === 0) {
+      return 1; // Start with level 1
+    }
+
+    // Find the highest completed main track level
+    const highestCompleted = Math.max(...completedMainTrackLevels);
+    
+    // Return the next level in sequence
+    return highestCompleted + 1;
+  };
+
+  // Helper function to check if a side-track should be available
+  const isSideTrackAvailable = (level, currentLevelNumber) => {
+    if (!isSideTrack(level.identifier)) {
+      return true; // Regular levels are always available
+    }
+
+    const baseLevelNumber = getBaseLevelNumber(level.identifier);
+    return currentLevelNumber >= baseLevelNumber;
+  };
+
+  // Helper function to toggle level collapse
+  const toggleLevelCollapse = (levelId) => {
+    setCollapsedLevels(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(levelId)) {
+        newSet.delete(levelId);
+      } else {
+        newSet.add(levelId);
+      }
+      return newSet;
+    });
+  };
+
+  // Helper function to determine which levels should be auto-collapsed
+  const getAutoCollapsedLevels = (levelProgressData, currentLevelNumber) => {
+    const autoCollapsed = new Set();
+    levelProgressData.forEach(({ level, progressPercentage }) => {
+      // Never collapse the current main track level
+      const isCurrentMainTrackLevel = !isSideTrack(level.identifier) && 
+                                     parseInt(level.identifier) === currentLevelNumber;
+      
+      // Collapse levels that are 0% or 100% complete, except the current level
+      if (!isCurrentMainTrackLevel && (progressPercentage === 0 || progressPercentage === 100)) {
+        autoCollapsed.add(level.id);
+      }
+    });
+    return autoCollapsed;
+  };
 
   // Helper function to sort levels by identifier
   const sortLevelsByIdentifier = (a, b) => {
@@ -35,6 +119,28 @@ const GymnastProgress = ({ gymnastId }) => {
     return aId.localeCompare(bId);
   };
 
+  // Helper function to scroll to and expand a specific level
+  const scrollToLevel = (levelId) => {
+    // Expand the level if it's collapsed
+    setCollapsedLevels(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(levelId); // Remove from collapsed set to expand it
+      return newSet;
+    });
+
+    // Scroll to the level after a brief delay to ensure it's expanded
+    setTimeout(() => {
+      const levelElement = document.getElementById(`level-${levelId}`);
+      if (levelElement) {
+        levelElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }, 100);
+  };
+
   const handleProgressUpdate = async () => {
     try {
       const [gymnastResponse, levelsResponse] = await Promise.all([
@@ -44,6 +150,32 @@ const GymnastProgress = ({ gymnastId }) => {
       
       setGymnast(gymnastResponse.data);
       setLevels(levelsResponse.data);
+      
+      // Auto-collapse levels after data update
+      if (gymnastResponse.data && levelsResponse.data.length > 0) {
+        const currentLevelNum = getCurrentLevelNumber(gymnastResponse.data, levelsResponse.data);
+        const availableLvls = levelsResponse.data.filter(level => 
+          isSideTrackAvailable(level, currentLevelNum)
+        );
+
+        const levelProgressData = availableLvls.map(level => {
+          const completedSkills = gymnastResponse.data.skillProgress
+            .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id)
+            .map(sp => sp.skill);
+
+          const totalSkills = level.skills ? level.skills.length : 0;
+          const completedCount = completedSkills.length;
+          const progressPercentage = totalSkills > 0 ? (completedCount / totalSkills) * 100 : 0;
+          
+          return {
+            level,
+            progressPercentage
+          };
+        });
+
+        const autoCollapsed = getAutoCollapsedLevels(levelProgressData, currentLevelNum);
+        setCollapsedLevels(autoCollapsed);
+      }
     } catch (error) {
       console.error('Failed to refresh progress:', error);
     }
@@ -79,6 +211,20 @@ const GymnastProgress = ({ gymnastId }) => {
     }
   };
 
+  const handleEditGymnastClick = () => {
+    setEditingGymnast(true);
+  };
+
+  const handleEditGymnastSuccess = (updatedGymnast) => {
+    // Refresh the complete gymnast data with progress info
+    handleProgressUpdate();
+    setEditingGymnast(false);
+  };
+
+  const handleCancelEditGymnast = () => {
+    setEditingGymnast(false);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -89,6 +235,41 @@ const GymnastProgress = ({ gymnastId }) => {
         
         setGymnast(gymnastResponse.data);
         setLevels(levelsResponse.data);
+        
+        // Auto-collapse levels on initial load
+        if (gymnastResponse.data && levelsResponse.data.length > 0) {
+          const currentLevelNum = getCurrentLevelNumber(gymnastResponse.data, levelsResponse.data);
+          const availableLvls = levelsResponse.data.filter(level => 
+            isSideTrackAvailable(level, currentLevelNum)
+          );
+
+          const levelProgressData = availableLvls.map(level => {
+            const completedSkills = gymnastResponse.data.skillProgress
+              .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id)
+              .map(sp => sp.skill);
+
+            const totalSkills = level.skills ? level.skills.length : 0;
+            const completedCount = completedSkills.length;
+            const progressPercentage = totalSkills > 0 ? (completedCount / totalSkills) * 100 : 0;
+            
+            return {
+              level,
+              progressPercentage
+            };
+          });
+
+          const autoCollapsed = getAutoCollapsedLevels(levelProgressData, currentLevelNum);
+          setCollapsedLevels(autoCollapsed);
+
+          // Handle URL hash for auto-scrolling to specific level
+          const hash = window.location.hash;
+          if (hash && hash.startsWith('#level-')) {
+            const levelId = hash.substring(7); // Remove '#level-' prefix
+            setTimeout(() => {
+              scrollToLevel(levelId);
+            }, 500); // Wait for rendering to complete
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch gymnast data:', error);
         setError('Failed to load gymnast progress');
@@ -127,7 +308,14 @@ const GymnastProgress = ({ gymnastId }) => {
   }
 
   // Process level progress data
-  const levelProgress = levels.map(level => {
+  const nextMainLevelNumber = getCurrentLevelNumber(gymnast, levels);
+  
+  // Filter levels based on side-track availability
+  const availableLevels = levels.filter(level => 
+    isSideTrackAvailable(level, nextMainLevelNumber)
+  );
+
+  const levelProgress = availableLevels.map(level => {
     const completedSkills = gymnast.skillProgress
       .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id)
       .map(sp => sp.skill);
@@ -156,23 +344,14 @@ const GymnastProgress = ({ gymnastId }) => {
     .map(lp => lp.level)
     .sort(sortLevelsByIdentifier);
 
-  // Current level should be the first level above the highest completed level
+  // Current level should be the next main track level to work on
+  const nextMainTrackLevelNumber = getCurrentLevelNumber(gymnast, levels);
+  const currentLevel = levels.find(level => 
+    !isSideTrack(level.identifier) && parseInt(level.identifier) === nextMainTrackLevelNumber
+  ) || null;
+  
+  // Highest completed level for competition eligibility
   const highestCompletedLevel = completedLevels.length > 0 ? completedLevels[completedLevels.length - 1] : null;
-  
-  // Find the next level in sequence after the highest completed level
-  const allLevelsOrdered = levels.sort(sortLevelsByIdentifier);
-  let currentLevel = null;
-  
-  if (highestCompletedLevel) {
-    // Find the index of the highest completed level and get the next one
-    const highestCompletedIndex = allLevelsOrdered.findIndex(level => level.id === highestCompletedLevel.id);
-    if (highestCompletedIndex >= 0 && highestCompletedIndex < allLevelsOrdered.length - 1) {
-      currentLevel = allLevelsOrdered[highestCompletedIndex + 1];
-    }
-  } else {
-    // If no levels completed, start with the first level
-    currentLevel = allLevelsOrdered[0] || null;
-  }
   
   const workingLevel = gymnast.levelProgress
     .filter(lp => lp.status !== 'COMPLETED')
@@ -204,11 +383,13 @@ const GymnastProgress = ({ gymnastId }) => {
         {/* Current Level Status */}
         <div className="current-level">
           {currentLevel ? (
-            <div>
-              <span className="level-badge">Current Level: {currentLevel.identifier}</span>
-              <span style={{ marginLeft: '1rem', fontWeight: 'normal' }}>
-                {currentLevel.name}
-              </span>
+            <div 
+              onClick={() => scrollToLevel(currentLevel.id)}
+              style={{ cursor: 'pointer' }}
+              title="Click to scroll to this level"
+            >
+              <span className="coaching-label">Current Level:</span>
+              <span className="level-badge clickable">{currentLevel.name}</span>
             </div>
           ) : (
             <span className="badge badge-secondary">Not started</span>
@@ -221,28 +402,25 @@ const GymnastProgress = ({ gymnastId }) => {
               </span>
             </div>
           )}
+
+          {/* Current Competition Eligibility */}
+          {highestCompletedLevel && highestCompletedLevel.competitions && highestCompletedLevel.competitions.length > 0 && (
+            <div className="current-competition-eligibility">
+              <span className="competition-label">
+                Current competition eligibility
+              </span>
+              <div style={{ marginTop: '0.25rem' }}>
+                {highestCompletedLevel.competitions.map((competition, index) => (
+                  <span key={index} className="competition-badge">
+                    {competition.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Progress Statistics */}
-        <div className="progress-stats">
-          <div className="stat-item">
-            <div className="stat-number">{completedSkills.length}</div>
-            <div className="stat-label">Skills Completed</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">{completedLevels.length}</div>
-            <div className="stat-label">Levels Completed</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">
-              {gymnast.dateOfBirth 
-                ? Math.floor((new Date() - new Date(gymnast.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000))
-                : 'N/A'
-              }
-            </div>
-            <div className="stat-label">Age</div>
-          </div>
-        </div>
+
       </div>
 
       {/* Coaching Interface */}
@@ -256,51 +434,51 @@ const GymnastProgress = ({ gymnastId }) => {
               Overview
             </button>
             <button
-              onClick={() => setActiveTab('skill-tracking')}
-              className={`tab-btn ${activeTab === 'skill-tracking' ? 'active' : ''}`}
-            >
-              Track Skills
-            </button>
-            <button
               onClick={() => setActiveTab('progress-history')}
               className={`tab-btn ${activeTab === 'progress-history' ? 'active' : ''}`}
             >
               Progress History
             </button>
+            <button
+              onClick={() => setActiveTab('coach-notes')}
+              className={`tab-btn ${activeTab === 'coach-notes' ? 'active' : ''}`}
+            >
+              Coach Notes
+            </button>
+            <button
+              onClick={() => setActiveTab('edit-gymnast')}
+              className={`tab-btn ${activeTab === 'edit-gymnast' ? 'active' : ''}`}
+            >
+              Edit Gymnast
+            </button>
           </div>
 
           <div className="coaching-content">
-            {activeTab === 'skill-tracking' && (
-              <div className="skill-tracking-section">
-                <div className="level-selector">
-                  <h4>Select Level for Skill Tracking</h4>
-                  <div className="level-buttons">
-                    {levels.map(level => (
-                      <button
-                        key={level.id}
-                        onClick={() => setSelectedLevel(level.id)}
-                        className={`btn btn-sm ${selectedLevel === level.id ? 'btn-primary' : 'btn-outline'}`}
-                      >
-                        Level {level.identifier}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                {selectedLevel && (
-                  <SkillProgressTracker
-                    gymnastId={gymnastId}
-                    levelId={selectedLevel}
-                    onProgressUpdate={handleProgressUpdate}
-                  />
-                )}
-              </div>
-            )}
-
             {activeTab === 'progress-history' && (
               <div className="progress-history-section">
                 <h4>Progress History</h4>
                 <ProgressHistory gymnastId={gymnastId} />
+              </div>
+            )}
+
+            {activeTab === 'coach-notes' && (
+              <div className="coach-notes-section">
+                <CoachNotes 
+                  gymnast={gymnast} 
+                  onNotesUpdate={(updatedGymnast) => {
+                    setGymnast(updatedGymnast);
+                  }}
+                />
+              </div>
+            )}
+
+            {activeTab === 'edit-gymnast' && (
+              <div className="edit-gymnast-section">
+                <EditGymnastForm
+                  gymnast={gymnast}
+                  onSuccess={handleEditGymnastSuccess}
+                  onCancel={() => setActiveTab('overview')}
+                />
               </div>
             )}
           </div>
@@ -312,6 +490,11 @@ const GymnastProgress = ({ gymnastId }) => {
         <div className="card">
           <div className="card-header">
             <h4 className="card-title">Level Progress</h4>
+            <div className="collapse-info">
+              <small className="text-muted">
+                💡 Levels with 0% or 100% progress are collapsed by default. Click ▼/▲ to expand/collapse.
+              </small>
+            </div>
           </div>
           <div className="level-progress-list">
             {levelProgress.map(({ level, completedSkills, totalSkills, completedCount, isCompleted, progressPercentage }) => {
@@ -321,11 +504,21 @@ const GymnastProgress = ({ gymnastId }) => {
                 levelRoutines.some(lr => lr.id === rp.routine.id)
               ) || [];
 
+              const isCollapsed = collapsedLevels.has(level.id);
+              const levelClass = `level-progress-item ${isCompleted ? 'completed' : ''} ${isSideTrack(level.identifier) ? 'side-track-level' : ''}`;
+
               return (
-                <div key={level.id} className={`level-progress-item ${isCompleted ? 'completed' : ''}`}>
+                <div key={level.id} id={`level-${level.id}`} className={levelClass}>
                   <div className="level-header">
                     <div className="level-info">
-                      <h5>Level {level.identifier}: {level.name}</h5>
+                      <div className="level-title-row">
+                        <h5>
+                          {level.identifier} - {level.name}
+                          {isSideTrack(level.identifier) && (
+                            <span className="side-track-badge">Side-track</span>
+                          )}
+                        </h5>
+                      </div>
                       <div className="level-stats">
                         <span className="progress-text">
                           {completedCount} of {totalSkills} skills completed
@@ -343,112 +536,133 @@ const GymnastProgress = ({ gymnastId }) => {
                         />
                       </div>
                       <span className="progress-percentage">{Math.round(progressPercentage)}%</span>
+
+                      <button
+                          onClick={() => toggleLevelCollapse(level.id)}
+                          className="btn btn-xs btn-outline collapse-toggle"
+                          title={isCollapsed ? 'Expand level' : 'Collapse level'}
+                        >
+                          {isCollapsed ? '▼' : '▲'}
+                        </button>
                     </div>
                   </div>
                   
-                  {level.skills && level.skills.length > 0 && (
-                    <div className="level-skills">
-                      <h6>Skills:</h6>
-                      <div className="skills-grid">
-                        {level.skills.map(skill => {
-                          const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
-                          const currentStatus = skillProgress?.status || 'NOT_STARTED';
-                          
-                          return (
-                            <div key={skill.id} className={`skill-card skill-${currentStatus.toLowerCase()}`}>
-                              <div className="skill-name">{skill.name}</div>
-                              {canCoach && coachingMode && (
-                                <div className="skill-controls">
-                                  <button
-                                    onClick={() => handleSkillStatusChange(skill.id, 'NOT_STARTED')}
-                                    className={`btn btn-xs ${currentStatus === 'NOT_STARTED' ? 'btn-secondary' : 'btn-outline'}`}
-                                    title="Not Started"
-                                  >
-                                    ○
-                                  </button>
-                                  <button
-                                    onClick={() => handleSkillStatusChange(skill.id, 'IN_PROGRESS')}
-                                    className={`btn btn-xs ${currentStatus === 'IN_PROGRESS' ? 'btn-warning' : 'btn-outline'}`}
-                                    title="In Progress"
-                                  >
-                                    ◐
-                                  </button>
-                                  <button
-                                    onClick={() => handleSkillStatusChange(skill.id, 'COMPLETED')}
-                                    className={`btn btn-xs ${currentStatus === 'COMPLETED' ? 'btn-success' : 'btn-outline'}`}
-                                    title="Completed"
-                                  >
-                                    ✓
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Routine Section */}
-                  {levelRoutines.length > 0 && (
-                    <div className="level-routines">
-                      <h6>Routine:</h6>
-                      {levelRoutines.map(routine => {
-                        const routineProgressData = routineProgress.find(rp => rp.routine.id === routine.id);
-                        const routineStatus = routineProgressData?.status || 'NOT_STARTED';
-                        const routineSkills = routine.routineSkills || [];
-                        
-                        return (
-                          <div key={routine.id} className={`routine-card routine-${routineStatus.toLowerCase()}`}>
-                            <div className="routine-header">
-                              <div className="routine-info">
-                                <div className="routine-name">
-                                  {routine.name || `Level ${level.identifier} Routine`}
-                                </div>
-                                <div className="routine-status">
-                                  {routineStatus === 'COMPLETED' && (
-                                    <span className="badge badge-success">Routine Completed</span>
-                                  )}
-                                  {routineStatus === 'NOT_STARTED' && (
-                                    <span className="badge badge-secondary">Not Started</span>
+                  {!isCollapsed && (
+                    <div className="level-content">
+                      {level.competitions && level.competitions.length > 0 && (
+                        <div className="competition-levels">
+                          {level.competitions.map((competition, index) => (
+                            <span key={index} className="competition-badge">
+                              {competition.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {level.skills && level.skills.length > 0 && (
+                        <div className="level-skills">
+                          <h6>Skills:</h6>
+                          <div className="skills-grid">
+                            {level.skills.map(skill => {
+                              const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
+                              const currentStatus = skillProgress?.status || 'NOT_STARTED';
+                              
+                              return (
+                                <div key={skill.id} className={`skill-card skill-${currentStatus.toLowerCase()}`}>
+                                  <div className="skill-name">{skill.name}</div>
+                                  {canCoach && coachingMode && (
+                                    <div className="skill-controls">
+                                      <button
+                                        onClick={() => handleSkillStatusChange(skill.id, 'NOT_STARTED')}
+                                        className={`btn btn-xs ${currentStatus === 'NOT_STARTED' ? 'btn-secondary' : 'btn-outline'}`}
+                                        title="Not Started"
+                                      >
+                                        ○
+                                      </button>
+                                      <button
+                                        onClick={() => handleSkillStatusChange(skill.id, 'IN_PROGRESS')}
+                                        className={`btn btn-xs ${currentStatus === 'IN_PROGRESS' ? 'btn-warning' : 'btn-outline'}`}
+                                        title="In Progress"
+                                      >
+                                        ◐
+                                      </button>
+                                      <button
+                                        onClick={() => handleSkillStatusChange(skill.id, 'COMPLETED')}
+                                        className={`btn btn-xs ${currentStatus === 'COMPLETED' ? 'btn-success' : 'btn-outline'}`}
+                                        title="Completed"
+                                      >
+                                        ✓
+                                      </button>
+                                    </div>
                                   )}
                                 </div>
-                              </div>
-                              {canCoach && coachingMode && (
-                                <div className="routine-controls">
-                                  <button
-                                    onClick={() => handleRoutineStatusChange(routine.id, 'NOT_STARTED')}
-                                    className={`btn btn-sm ${routineStatus === 'NOT_STARTED' ? 'btn-secondary' : 'btn-outline'}`}
-                                    title="Not Started"
-                                  >
-                                    Not Started
-                                  </button>
-                                  <button
-                                    onClick={() => handleRoutineStatusChange(routine.id, 'COMPLETED')}
-                                    className={`btn btn-sm ${routineStatus === 'COMPLETED' ? 'btn-success' : 'btn-outline'}`}
-                                    title="Completed"
-                                  >
-                                    Completed
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {routineSkills.length > 0 && (
-                              <div className="routine-skills">
-                                <div className="routine-skills-header">Required Skills:</div>
-                                <div className="routine-skills-list">
-                                  {routineSkills.map(rs => (
-                                    <span key={rs.id} className="routine-skill-item">
-                                      {rs.skill.name}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                              );
+                            })}
                           </div>
-                        );
-                      })}
+                        </div>
+                      )}
+
+                      {/* Routine Section */}
+                      {levelRoutines.length > 0 && (
+                        <div className="level-routines">
+                          <h6>Routine:</h6>
+                          {levelRoutines.map(routine => {
+                            const routineProgressData = routineProgress.find(rp => rp.routine.id === routine.id);
+                            const routineStatus = routineProgressData?.status || 'NOT_STARTED';
+                            const routineSkills = routine.routineSkills || [];
+                            
+                            return (
+                              <div key={routine.id} className={`routine-card routine-${routineStatus.toLowerCase()}`}>
+                                <div className="routine-header">
+                                  <div className="routine-info">
+                                    <div className="routine-name">
+                                      {routine.name || `Level ${level.identifier} Routine`}
+                                    </div>
+                                    <div className="routine-status">
+                                      {routineStatus === 'COMPLETED' && (
+                                        <span className="badge badge-success">Routine Completed</span>
+                                      )}
+                                      {routineStatus === 'NOT_STARTED' && (
+                                        <span className="badge badge-secondary">Not Started</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {canCoach && coachingMode && (
+                                    <div className="routine-controls">
+                                      <button
+                                        onClick={() => handleRoutineStatusChange(routine.id, 'NOT_STARTED')}
+                                        className={`btn btn-sm ${routineStatus === 'NOT_STARTED' ? 'btn-secondary' : 'btn-outline'}`}
+                                        title="Not Started"
+                                      >
+                                        Not Started
+                                      </button>
+                                      <button
+                                        onClick={() => handleRoutineStatusChange(routine.id, 'COMPLETED')}
+                                        className={`btn btn-sm ${routineStatus === 'COMPLETED' ? 'btn-success' : 'btn-outline'}`}
+                                        title="Completed"
+                                      >
+                                        Completed
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {routineSkills.length > 0 && (
+                                  <div className="routine-skills">
+                                    <div className="routine-skills-header">Required Skills:</div>
+                                    <div className="routine-skills-list">
+                                      {routineSkills.map(rs => (
+                                        <span key={rs.id} className="routine-skill-item">
+                                          {rs.skill.name}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

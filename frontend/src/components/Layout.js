@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Layout = () => {
-  const { user, logout, canManageGymnasts, isClubAdmin } = useAuth();
+  const { user, logout, canManageGymnasts, isClubAdmin, canReadCompetitions } = useAuth();
   const location = useLocation();
 
   const isActive = (path) => {
@@ -35,6 +35,12 @@ const Layout = () => {
           <Link to="/levels" className={isActive('/levels')}>
             Levels
           </Link>
+
+          {canReadCompetitions && (
+            <Link to="/competitions" className={isActive('/competitions')}>
+              Competitions
+            </Link>
+          )}
 
           {isClubAdmin && (
             <Link to="/invites" className={isActive('/invites')}>

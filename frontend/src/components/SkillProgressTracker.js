@@ -122,8 +122,18 @@ const SkillProgressTracker = ({ gymnastId, levelId, onProgressUpdate }) => {
       <div className="card">
         <div className="card-header">
           <h4 className="card-title">
-            {levelData.name}
+            Level {levelData.identifier} - {levelData.name}
           </h4>
+          {levelData.competitions && levelData.competitions.length > 0 && (
+            <div className="competition-levels">
+              <span className="competition-label">Competition eligibility:</span>
+              {levelData.competitions.map((competition, index) => (
+                <span key={index} className="competition-badge">
+                  {competition.name}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {!canMarkProgress && (

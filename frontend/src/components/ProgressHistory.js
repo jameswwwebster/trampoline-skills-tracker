@@ -181,11 +181,7 @@ const ProgressHistory = ({ gymnastId }) => {
                               by {level.user.firstName} {level.user.lastName}
                             </span>
                           </div>
-                          {level.notes && (
-                            <div className="item-notes">
-                              <em>"{level.notes}"</em>
-                            </div>
-                          )}
+
                         </div>
                       </div>
                     ))}

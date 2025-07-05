@@ -20,7 +20,6 @@ const levelProgressSchema = Joi.object({
   levelId: Joi.string().required(),
   routineId: Joi.string().optional(),
   status: Joi.string().valid('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED').required(),
-  notes: Joi.string().optional().allow(''),
   completedAt: Joi.date().optional()
 });
 
@@ -37,7 +36,15 @@ router.get('/gymnast/:gymnastId', auth, requireGymnastAccess, async (req, res) =
         include: {
           skill: {
             include: {
-              level: true
+              level: {
+                include: {
+                  competitions: {
+                    include: {
+                      competition: true
+                    }
+                  }
+                }
+              }
             }
           },
           user: {
@@ -53,7 +60,15 @@ router.get('/gymnast/:gymnastId', auth, requireGymnastAccess, async (req, res) =
           gymnastId
         },
         include: {
-          level: true,
+          level: {
+            include: {
+              competitions: {
+                include: {
+                  competition: true
+                }
+              }
+            }
+          },
           routine: true,
           user: {
             select: {
@@ -70,7 +85,15 @@ router.get('/gymnast/:gymnastId', auth, requireGymnastAccess, async (req, res) =
         include: {
           routine: {
             include: {
-              level: true,
+              level: {
+                include: {
+                  competitions: {
+                    include: {
+                      competition: true
+                    }
+                  }
+                }
+              },
               routineSkills: {
                 include: {
                   skill: true
@@ -91,10 +114,41 @@ router.get('/gymnast/:gymnastId', auth, requireGymnastAccess, async (req, res) =
       })
     ]);
 
+    // Transform competition data for backward compatibility
+    const transformedSkillProgress = skillProgress.map(item => ({
+      ...item,
+      skill: {
+        ...item.skill,
+        level: {
+          ...item.skill.level,
+          competitionLevel: item.skill.level.competitions ? item.skill.level.competitions.map(lc => lc.competition.code) : []
+        }
+      }
+    }));
+
+    const transformedLevelProgress = levelProgress.map(item => ({
+      ...item,
+      level: {
+        ...item.level,
+        competitionLevel: item.level.competitions ? item.level.competitions.map(lc => lc.competition.code) : []
+      }
+    }));
+
+    const transformedRoutineProgress = routineProgress.map(item => ({
+      ...item,
+      routine: {
+        ...item.routine,
+        level: {
+          ...item.routine.level,
+          competitionLevel: item.routine.level.competitions ? item.routine.level.competitions.map(lc => lc.competition.code) : []
+        }
+      }
+    }));
+
     res.json({
-      skillProgress,
-      levelProgress,
-      routineProgress
+      skillProgress: transformedSkillProgress,
+      levelProgress: transformedLevelProgress,
+      routineProgress: transformedRoutineProgress
     });
   } catch (error) {
     console.error('Get progress error:', error);
@@ -228,7 +282,7 @@ router.post('/level', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { gymnastId, levelId, routineId, status, notes, completedAt } = value;
+    const { gymnastId, levelId, routineId, status, completedAt } = value;
 
     // Prevent manual completion - levels should only be completed automatically
     if (status === 'COMPLETED') {
@@ -294,7 +348,6 @@ router.post('/level', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
         data: {
           status,
           routineId: routineId || null,
-          notes: notes || null,
           completedAt: status === 'COMPLETED' ? (completedAt ? new Date(completedAt) : new Date()) : null,
           userId: req.user.id
         },
@@ -317,7 +370,6 @@ router.post('/level', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
           levelId,
           routineId: routineId || null,
           status,
-          notes: notes || null,
           completedAt: status === 'COMPLETED' ? (completedAt ? new Date(completedAt) : new Date()) : null,
           userId: req.user.id
         },
@@ -420,7 +472,15 @@ router.get('/skill/:skillId/gymnast/:gymnastId/history', auth, async (req, res) 
       include: {
         skill: {
           include: {
-            level: true
+            level: {
+              include: {
+                competitions: {
+                  include: {
+                    competition: true
+                  }
+                }
+              }
+            }
           }
         },
         user: {
@@ -431,6 +491,12 @@ router.get('/skill/:skillId/gymnast/:gymnastId/history', auth, async (req, res) 
         }
       }
     });
+
+    // Transform competition data for backward compatibility
+    if (progress) {
+      progress.skill.level.competitionLevel = progress.skill.level.competitions ? 
+        progress.skill.level.competitions.map(lc => lc.competition.code) : [];
+    }
 
     res.json(progress);
   } catch (error) {
@@ -479,10 +545,12 @@ router.get('/gymnast/:gymnastId/history', auth, async (req, res) => {
         skill: {
           include: {
             level: {
-              select: {
-                id: true,
-                name: true,
-                number: true
+              include: {
+                competitions: {
+                  include: {
+                    competition: true
+                  }
+                }
               }
             }
           }
@@ -508,10 +576,12 @@ router.get('/gymnast/:gymnastId/history', auth, async (req, res) => {
       },
       include: {
         level: {
-          select: {
-            id: true,
-            name: true,
-            number: true
+          include: {
+            competitions: {
+              include: {
+                competition: true
+              }
+            }
           }
         },
         routine: {
@@ -541,13 +611,19 @@ router.get('/gymnast/:gymnastId/history', auth, async (req, res) => {
         ...item,
         type: 'skill',
         itemName: item.skill.name,
-        levelInfo: item.skill.level
+        levelInfo: {
+          ...item.skill.level,
+          competitionLevel: item.skill.level.competitions ? item.skill.level.competitions.map(lc => lc.competition.code) : []
+        }
       })),
       ...levelProgressHistory.map(item => ({
         ...item,
         type: 'level',
         itemName: item.level.name,
-        levelInfo: item.level,
+        levelInfo: {
+          ...item.level,
+          competitionLevel: item.level.competitions ? item.level.competitions.map(lc => lc.competition.code) : []
+        },
         routineInfo: item.routine
       }))
     ].sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
@@ -729,21 +805,38 @@ async function checkAndCompleteLevel(gymnastId, levelId, userId) {
 
     const allSkillsCompleted = completedSkills.length === level.skills.length;
 
-    // Check if primary routine is completed
-    const completedRoutines = await prisma.routineProgress.findMany({
-      where: {
-        gymnastId,
-        routineId: {
-          in: level.routines.map(r => r.id)
-        },
-        status: 'COMPLETED'
-      }
-    });
+    // Check if level has routines (side tracks typically don't have routines)
+    const hasRoutines = level.routines.length > 0;
+    let routineCompleted = true; // Default to true for levels without routines
 
-    const routineCompleted = completedRoutines.length > 0;
+    if (hasRoutines) {
+      // Check if primary routine is completed
+      const completedRoutines = await prisma.routineProgress.findMany({
+        where: {
+          gymnastId,
+          routineId: {
+            in: level.routines.map(r => r.id)
+          },
+          status: 'COMPLETED'
+        }
+      });
 
-    // If both conditions are met, automatically complete the level
+      routineCompleted = completedRoutines.length > 0;
+    }
+
+    // Complete level if all skills are done AND (no routines OR routines are completed)
     if (allSkillsCompleted && routineCompleted) {
+      const routineId = hasRoutines && level.routines.length > 0 ? 
+        (await prisma.routineProgress.findFirst({
+          where: {
+            gymnastId,
+            routineId: {
+              in: level.routines.map(r => r.id)
+            },
+            status: 'COMPLETED'
+          }
+        }))?.routineId : null;
+
       await prisma.levelProgress.upsert({
         where: {
           gymnastId_levelId: {
@@ -755,8 +848,7 @@ async function checkAndCompleteLevel(gymnastId, levelId, userId) {
           status: 'COMPLETED',
           completedAt: new Date(),
           userId,
-          routineId: completedRoutines[0].routineId,
-          notes: 'Automatically completed when all skills and routine were finished'
+          routineId: routineId
         },
         create: {
           gymnastId,
@@ -764,12 +856,11 @@ async function checkAndCompleteLevel(gymnastId, levelId, userId) {
           status: 'COMPLETED',
           completedAt: new Date(),
           userId,
-          routineId: completedRoutines[0].routineId,
-          notes: 'Automatically completed when all skills and routine were finished'
+          routineId: routineId
         }
       });
 
-      console.log(`✅ Level ${level.identifier} automatically completed for gymnast ${gymnastId}`);
+      console.log(`✅ Level ${level.identifier} automatically completed for gymnast ${gymnastId}${hasRoutines ? ' (with routine)' : ' (side track)'}`);
     }
   } catch (error) {
     console.error('Error checking level completion:', error);
@@ -822,20 +913,26 @@ async function checkAndInvalidateLevel(gymnastId, levelId, userId) {
 
     const allSkillsCompleted = completedSkills.length === level.skills.length;
 
-    // Check if primary routine is still completed
-    const completedRoutines = await prisma.routineProgress.findMany({
-      where: {
-        gymnastId,
-        routineId: {
-          in: level.routines.map(r => r.id)
-        },
-        status: 'COMPLETED'
-      }
-    });
+    // Check if level has routines (side tracks typically don't have routines)
+    const hasRoutines = level.routines.length > 0;
+    let routineCompleted = true; // Default to true for levels without routines
 
-    const routineCompleted = completedRoutines.length > 0;
+    if (hasRoutines) {
+      // Check if primary routine is still completed
+      const completedRoutines = await prisma.routineProgress.findMany({
+        where: {
+          gymnastId,
+          routineId: {
+            in: level.routines.map(r => r.id)
+          },
+          status: 'COMPLETED'
+        }
+      });
 
-    // If either condition is no longer met, mark level as incomplete
+      routineCompleted = completedRoutines.length > 0;
+    }
+
+    // If conditions are no longer met, mark level as incomplete
     if (!allSkillsCompleted || !routineCompleted) {
       await prisma.levelProgress.update({
         where: {
@@ -847,12 +944,11 @@ async function checkAndInvalidateLevel(gymnastId, levelId, userId) {
         data: {
           status: 'IN_PROGRESS',
           completedAt: null,
-          userId,
-          notes: 'Level invalidated - skill or routine marked as incomplete'
+          userId
         }
       });
 
-      console.log(`❌ Level ${level.identifier} invalidated for gymnast ${gymnastId} - skill or routine marked incomplete`);
+      console.log(`❌ Level ${level.identifier} invalidated for gymnast ${gymnastId}${hasRoutines ? ' - skill or routine marked incomplete' : ' - skill marked incomplete (side track)'}`);
     }
   } catch (error) {
     console.error('Error checking level invalidation:', error);

@@ -9,7 +9,6 @@ const LevelProgressTracker = ({ gymnastId, levelId, onLevelProgressUpdate }) => 
   const [error, setError] = useState('');
   const [updating, setUpdating] = useState(false);
   const [selectedRoutine, setSelectedRoutine] = useState('');
-  const [notes, setNotes] = useState('');
   const { user } = useAuth();
 
   // Only coaches and club admins can use this component
@@ -33,7 +32,6 @@ const LevelProgressTracker = ({ gymnastId, levelId, onLevelProgressUpdate }) => 
         
         if (existingProgress) {
           setSelectedRoutine(existingProgress.routineId || '');
-          setNotes(existingProgress.notes || '');
         }
       } catch (error) {
         console.error('Failed to fetch level data:', error);
@@ -59,7 +57,6 @@ const LevelProgressTracker = ({ gymnastId, levelId, onLevelProgressUpdate }) => 
         levelId,
         routineId: selectedRoutine || undefined,
         status,
-        notes: notes.trim() || undefined,
         completedAt: status === 'COMPLETED' ? new Date().toISOString() : undefined
       });
 
@@ -129,9 +126,21 @@ const LevelProgressTracker = ({ gymnastId, levelId, onLevelProgressUpdate }) => 
           <h4 className="card-title">
             Level {levelData.identifier} Progress - {levelData.name}
           </h4>
-          <span className={`badge badge-${getStatusColor(currentStatus)}`}>
-            {getStatusText(currentStatus)}
-          </span>
+          <div className="level-header-info">
+            <span className={`badge badge-${getStatusColor(currentStatus)}`}>
+              {getStatusText(currentStatus)}
+            </span>
+            {levelData.competitions && levelData.competitions.length > 0 && (
+              <div className="competition-levels">
+                <span className="competition-label">Competition eligibility:</span>
+                {levelData.competitions.map((competition, index) => (
+                  <span key={index} className="competition-badge">
+                    {competition.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {!canMarkProgress && (
@@ -161,11 +170,6 @@ const LevelProgressTracker = ({ gymnastId, levelId, onLevelProgressUpdate }) => 
                     <strong>Routine:</strong> {levelProgress.routine.name || `Routine ${levelProgress.routine.order}`}
                   </div>
                 )}
-                {levelProgress.notes && (
-                  <div className="progress-notes">
-                    <strong>Notes:</strong> {levelProgress.notes}
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -191,25 +195,6 @@ const LevelProgressTracker = ({ gymnastId, levelId, onLevelProgressUpdate }) => 
                     </option>
                   ))}
                 </select>
-              </div>
-            </div>
-          )}
-
-          {/* Notes Section (for coaches) */}
-          {canMarkProgress && (
-            <div className="notes-section">
-              <h5>Notes</h5>
-              <div className="form-group">
-                <label htmlFor="notes">Coach Notes:</label>
-                <textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="form-control"
-                  rows={3}
-                  placeholder="Add notes about the gymnast's progress, areas for improvement, etc."
-                  disabled={updating}
-                />
               </div>
             </div>
           )}

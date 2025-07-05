@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Gymnasts from './pages/Gymnasts';
 import Levels from './pages/Levels';
+import Competitions from './pages/Competitions';
 import Progress from './pages/Progress';
 import Invites from './pages/Invites';
 import AcceptInvite from './pages/AcceptInvite';
@@ -29,6 +30,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="gymnasts" element={<Gymnasts />} />
             <Route path="levels" element={<Levels />} />
+            <Route path="competitions" element={<Competitions />} />
             <Route path="progress/:gymnastId" element={<Progress />} />
             <Route path="invites" element={<Invites />} />
           </Route>

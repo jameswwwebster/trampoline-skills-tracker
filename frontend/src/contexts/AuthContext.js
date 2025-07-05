@@ -87,10 +87,12 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const devLogin = async () => {
+  const devLogin = async (email = null) => {
     try {
       setError(null);
-      const response = await axios.post('/api/auth/dev-login');
+      console.log('DevLogin called with email:', email);
+      const response = await axios.post('/api/auth/dev-login', { email });
+      console.log('DevLogin response:', response.data);
       const { user, token } = response.data;
       
       localStorage.setItem('token', token);
@@ -125,7 +127,11 @@ export const AuthProvider = ({ children }) => {
     isParent: user?.role === 'PARENT',
     canManageClub: user?.role === 'CLUB_ADMIN',
     canManageGymnasts: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
-    canMarkProgress: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH'
+    canMarkProgress: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
+    canEditCompetitions: user?.role === 'CLUB_ADMIN',
+    canEditLevels: user?.role === 'CLUB_ADMIN',
+    canReadCompetitions: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
+    canReadLevels: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH'
   };
 
   return (

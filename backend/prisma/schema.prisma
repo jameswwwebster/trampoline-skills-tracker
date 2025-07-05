@@ -13,8 +13,8 @@ datasource db {
 enum UserRole {
   CLUB_ADMIN
   COACH
+  GUARDIAN
   GYMNAST
-  PARENT
 }
 
 enum LevelType {
@@ -39,6 +39,14 @@ enum InviteStatus {
   ACCEPTED
   REJECTED
   EXPIRED
+}
+
+enum CompetitionCategory {
+  CLUB
+  REGIONAL
+  LEAGUE
+  NATIONAL
+  INTERNATIONAL
 }
 
 model User {
@@ -91,6 +99,7 @@ model Gymnast {
   dateOfBirth DateTime?
   clubId    String
   userId    String?   // Optional - gymnast might not have their own account
+  coachNotes String?  // Notes from coaches about the gymnast's progress
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -123,6 +132,7 @@ model Level {
   skills          Skill[]
   routines        Routine[]
   levelProgress   LevelProgress[]
+  competitions    LevelCompetition[] // Many-to-many relationship with competitions
 
   @@map("levels")
 }
@@ -225,7 +235,6 @@ model LevelProgress {
   routineId  String?        // For levels with routine requirements
   userId     String         // Coach or admin who marked it
   status     ProgressStatus @default(NOT_STARTED)
-  notes      String?
   completedAt DateTime?
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
@@ -280,4 +289,35 @@ model Invite {
 
   @@unique([email, clubId, status]) // Prevent duplicate pending invites
   @@map("invites")
+}
+
+model Competition {
+  id          String             @id @default(cuid())
+  name        String             // Display name: "Club Level 1", "Regional Level 2", etc.
+  code        String             @unique // Unique code: "club-level-1", "regional-level-2", etc.
+  description String?            // Optional description of the competition
+  category    CompetitionCategory
+  order       Int                // For sorting competitions within categories
+  isActive    Boolean            @default(true) // Allow deactivating competitions without deleting
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  // Relations
+  levels      LevelCompetition[] // Many-to-many relationship with levels
+
+  @@map("competitions")
+}
+
+model LevelCompetition {
+  id            String      @id @default(cuid())
+  levelId       String
+  competitionId String
+  createdAt     DateTime    @default(now())
+
+  // Relations
+  level       Level       @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@unique([levelId, competitionId])
+  @@map("level_competitions")
 } 

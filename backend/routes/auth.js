@@ -168,9 +168,29 @@ router.post('/dev-login', async (req, res) => {
       return res.status(404).json({ error: 'Not found' });
     }
 
+    const { email } = req.body;
+    console.log('Dev login request received:', { email, body: req.body });
+    
+    // Default to dev@test.com if no email provided (backward compatibility)
+    const loginEmail = email || 'dev@test.com';
+    console.log('Using login email:', loginEmail);
+
+    // Validate that it's a test user
+    const allowedTestUsers = [
+      'admin@test.com',
+      'dev@test.com',
+      'coach2@test.com',
+      'gymnast@test.com',
+      'parent@test.com'
+    ];
+
+    if (!allowedTestUsers.includes(loginEmail)) {
+      return res.status(400).json({ error: 'Invalid test user email' });
+    }
+
     // Find the development user
     const user = await prisma.user.findUnique({
-      where: { email: 'dev@test.com' },
+      where: { email: loginEmail },
       include: {
         club: true,
         gymnasts: true,

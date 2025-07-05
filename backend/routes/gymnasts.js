@@ -17,7 +17,8 @@ const createGymnastSchema = Joi.object({
 const updateGymnastSchema = Joi.object({
   firstName: Joi.string().min(2).max(50).optional(),
   lastName: Joi.string().min(2).max(50).optional(),
-  dateOfBirth: Joi.date().optional()
+  dateOfBirth: Joi.date().optional(),
+  coachNotes: Joi.string().allow('').optional()
 });
 
 // Get all gymnasts in current user's club
@@ -44,10 +45,12 @@ router.get('/', auth, async (req, res) => {
             skill: {
               include: {
                 level: {
-                  select: {
-                    id: true,
-                    name: true,
-                    number: true
+                  include: {
+                    competitions: {
+                      include: {
+                        competition: true
+                      }
+                    }
                   }
                 }
               }
@@ -57,10 +60,12 @@ router.get('/', auth, async (req, res) => {
         levelProgress: {
           include: {
             level: {
-              select: {
-                id: true,
-                name: true,
-                number: true
+              include: {
+                competitions: {
+                  include: {
+                    competition: true
+                  }
+                }
               }
             }
           }
@@ -85,7 +90,13 @@ router.get('/', auth, async (req, res) => {
       // Get highest completed level
       const completedLevels = gymnast.levelProgress
         .filter(lp => lp.status === 'COMPLETED')
-        .map(lp => lp.level)
+        .map(lp => {
+          const level = lp.level;
+          return {
+            ...level,
+            competitionLevel: level.competitions ? level.competitions.map(lc => lc.competition.code) : []
+          };
+        })
         .sort((a, b) => {
           // Sort by number, handling side paths (e.g., 3a, 3b)
           const aNum = parseFloat(a.number);
@@ -96,7 +107,13 @@ router.get('/', auth, async (req, res) => {
       // Get current working level (highest incomplete level with progress)
       const workingLevels = gymnast.levelProgress
         .filter(lp => lp.status !== 'COMPLETED')
-        .map(lp => lp.level)
+        .map(lp => {
+          const level = lp.level;
+          return {
+            ...level,
+            competitionLevel: level.competitions ? level.competitions.map(lc => lc.competition.code) : []
+          };
+        })
         .sort((a, b) => {
           const aNum = parseFloat(a.number);
           const bNum = parseFloat(b.number);
@@ -210,11 +227,12 @@ router.get('/:id', auth, async (req, res) => {
             skill: {
               include: {
                 level: {
-                  select: {
-                    id: true,
-                    name: true,
-                    number: true,
-                    identifier: true
+                  include: {
+                    competitions: {
+                      include: {
+                        competition: true
+                      }
+                    }
                   }
                 }
               }
@@ -224,11 +242,12 @@ router.get('/:id', auth, async (req, res) => {
         levelProgress: {
           include: {
             level: {
-              select: {
-                id: true,
-                name: true,
-                number: true,
-                identifier: true
+              include: {
+                competitions: {
+                  include: {
+                    competition: true
+                  }
+                }
               }
             }
           }
@@ -238,11 +257,12 @@ router.get('/:id', auth, async (req, res) => {
             routine: {
               include: {
                 level: {
-                  select: {
-                    id: true,
-                    name: true,
-                    number: true,
-                    identifier: true
+                  include: {
+                    competitions: {
+                      include: {
+                        competition: true
+                      }
+                    }
                   }
                 },
                 routineSkills: {
@@ -277,7 +297,29 @@ router.get('/:id', auth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    res.json(gymnast);
+    // Transform competition data for backward compatibility
+    const transformedGymnast = {
+      ...gymnast,
+      skillProgress: gymnast.skillProgress.map(sp => ({
+        ...sp,
+        skill: {
+          ...sp.skill,
+          level: {
+            ...sp.skill.level,
+            competitionLevel: sp.skill.level.competitions ? sp.skill.level.competitions.map(lc => lc.competition.code) : []
+          }
+        }
+      })),
+      levelProgress: gymnast.levelProgress.map(lp => ({
+        ...lp,
+        level: {
+          ...lp.level,
+          competitionLevel: lp.level.competitions ? lp.level.competitions.map(lc => lc.competition.code) : []
+        }
+      }))
+    };
+
+    res.json(transformedGymnast);
   } catch (error) {
     console.error('Get gymnast error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -293,7 +335,7 @@ router.put('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) 
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { firstName, lastName, dateOfBirth } = value;
+    const { firstName, lastName, dateOfBirth, coachNotes } = value;
 
     // Check if gymnast exists and belongs to user's club
     const existingGymnast = await prisma.gymnast.findUnique({
@@ -313,7 +355,8 @@ router.put('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) 
       data: {
         firstName,
         lastName,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        coachNotes: coachNotes !== undefined ? coachNotes : undefined
       },
       include: {
         guardians: {
@@ -336,6 +379,60 @@ router.put('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) 
     res.json(gymnast);
   } catch (error) {
     console.error('Update gymnast error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update coach notes for a gymnast (coaches only)
+router.patch('/:id/coach-notes', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { coachNotes } = req.body;
+
+    // Validate coach notes
+    const schema = Joi.object({
+      coachNotes: Joi.string().allow('').required()
+    });
+
+    const { error } = schema.validate({ coachNotes });
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // Check if gymnast exists and belongs to user's club
+    const existingGymnast = await prisma.gymnast.findUnique({
+      where: { id }
+    });
+
+    if (!existingGymnast) {
+      return res.status(404).json({ error: 'Gymnast not found' });
+    }
+
+    if (existingGymnast.clubId !== req.user.clubId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Update coach notes
+    const gymnast = await prisma.gymnast.update({
+      where: { id },
+      data: {
+        coachNotes: coachNotes || null
+      },
+      include: {
+        guardians: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    res.json(gymnast);
+  } catch (error) {
+    console.error('Update coach notes error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

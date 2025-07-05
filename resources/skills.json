@@ -2,9 +2,9 @@
     "levels": [
       {
         "number": 1,
-        "name": "Basic Skills 1",
+        "name": "Basic Skills",
         "description": "Introduction to basic trampoline shapes and simple twisting jumps.",
-
+        "competitionLevel": null,
         "skills": [
           { "name": "Tuck Jump" },
           { "name": "Pike Jump" },
@@ -25,9 +25,11 @@
       },
       {
         "number": 2,
-        "name": "Body Landings 2",
+        "name": "Body Landings",
         "description": "Introduction to basic body landings and transitions.",
-
+        "competitionLevel": [
+            "club-level-1"
+        ],
         "skills": [
           { "name": "Seat Landing" },
           { "name": "Seat ½ Twist to Feet" },
@@ -56,9 +58,11 @@
       },
       {
         "number": 3,
-        "name": "Body Landing Combinations 3",
+        "name": "Body Landing Combinations",
         "description": "Combining body landings and twists into routines.",
-
+        "competitionLevel": [
+            "club-level-2"  
+        ],
         "skills": [
           { "name": "Seat to Front" },
           { "name": "Front to Seat" },
@@ -87,9 +91,11 @@
       },
       {
         "number": 4,
-        "name": "Forward Fundamentals 4",
+        "name": "Forward Fundamentals",
         "description": "Introduction to front somersaults and turnovers.",
-
+        "competitionLevel": [
+            "club-level-3"
+        ],
         "skills": [
           { "name": "Forward Roll" },
           { "name": "Forward Turnover" },
@@ -115,9 +121,11 @@
       },
       {
         "number": 5,
-        "name": "Backward Fundamentals 5",
+        "name": "Backward Fundamentals",
         "description": "Introduction to backward rolls and somersaults.",
-
+        "competitionLevel": [
+            "regional-level-1"
+        ],
         "skills": [
           { "name": "Backward Roll" },
           { "name": "Back Pullover" },
@@ -142,9 +150,11 @@
       },
       {
         "number": 6,
-        "name": "Developing More Somersaults 6",
+        "name": "Developing More Somersaults",
         "description": "Introduce somersault combinations and linking.",
-
+        "competitionLevel": [
+            "regional-level-2"
+        ],
         "skills": [
           { "name": "Back Somersault (S)" },
           { "name": "Barani (T)" },
@@ -169,9 +179,12 @@
       },
       {
         "number": 7,
-        "name": "More Somersault Links 7",
+        "name": "More Somersault Links",
         "description": "Linking multiple somersaults and Barani variations.",
-
+        "competitionLevel": [
+            "regional-level-3",
+            "league-level-3"
+        ],
         "skills": [
           { "name": "Back Somersault (P)" },
           { "name": "Barani (P)" },
@@ -196,9 +209,12 @@
       },
       {
         "number": 8,
-        "name": "Body Somersaults 8",
+        "name": "Body Somersaults",
         "description": "¾ somersaults and advanced back/front sequences.",
-
+        "competitionLevel": [
+            "regional-level-4(ages 10-12)",
+            "league-level2"
+        ],
         "skills": [
           { "name": "¾ Front (S)" },
           { "name": "¾ Back (S)" },
@@ -238,9 +254,12 @@
       },
       {
         "number": 9,
-        "name": "Twisting Somersaults 9",
+        "name": "Twisting Somersaults",
         "description": "Combining twisting and somersaults.",
-
+        "competitionLevel": [
+            "regional-level-4(ages 13+)",
+            "league-level-2"
+        ],
         "skills": [
           { "name": "Full" },
           { "name": "Rudi" }
@@ -278,9 +297,12 @@
       },
       {
         "number": 10,
-        "name": "Double Somersaults 10",
+        "name": "Double Somersaults",
         "description": "Introduction to double somersaulting elements.",
-
+        "competitionLevel": [
+            "league-level-2",
+            "english-silver"
+        ],
         "skills": [
           { "name": "Half Out (T)" },
           { "name": "Double Back (T)" }
@@ -320,7 +342,7 @@
     "sidePaths": [
       {
         "number": "3a",
-        "name": "Body Landing Combinations 3a",
+        "name": "Body Landing Combinations",
         "description": "More seat/front landing transitions.",
         "skills": [
           { "name": "Front ½ to Feet" },
@@ -334,7 +356,7 @@
       },
       {
         "number": "3b",
-        "name": "Body Landing Combinations 3b",
+        "name": "Body Landing Combinations",
         "description": "Advanced back landings and twists.",
 
         "skills": [
@@ -348,7 +370,7 @@
       },
       {
         "number": "3c",
-        "name": "Body Landing Combinations 3c",
+        "name": "Body Landing Combinations",
         "description": "Twist and roll drills.",
 
         "skills": [
@@ -363,7 +385,7 @@
       },
       {
         "number": "8a",
-        "name": "Body Somersaults 8a",
+        "name": "Body Somersaults",
         "description": "",
 
         "skills": [
@@ -376,7 +398,7 @@
       },
       {
         "number": "8b",
-        "name": "Body Somersaults 8b",
+        "name": "Body Somersaults",
         "description": "",
 
         "skills": [
@@ -388,7 +410,7 @@
       },
       {
         "number": "8c",
-        "name": "Body Somersaults 8c",
+        "name": "Body Somersaults",
         "description": "",
 
         "skills": [
@@ -399,7 +421,7 @@
       },
       {
         "number": "8d",
-        "name": "Body Somersaults 8d",
+        "name": "Body Somersaults",
         "description": "",
 
         "skills": [
@@ -411,7 +433,7 @@
       },
       {
         "number": "9a",
-        "name": "Twisting Somersaults 9a",
+        "name": "Twisting Somersaults",
         "description": "",
 
         "skills": [
@@ -425,7 +447,7 @@
       },
       {
         "number": "9b",
-        "name": "Twisting Somersaults 9b",
+        "name": "Twisting Somersaults",
         "description": "",
 
         "skills": [
@@ -436,7 +458,7 @@
       },
       {
         "number": "9c",
-        "name": "Twisting Somersaults 9c",
+        "name": "Twisting Somersaults",
         "description": "",
 
         "skills": [
@@ -445,6 +467,78 @@
           { "name": "Ball-out Rudi (S)" }
         ]
       }
+    ],
+    "competitions": [
+        {
+            "id": "club-level-1",
+            "name": "Club Level 1",
+            "category": "club"
+        },
+        {
+            "id": "club-level-2",
+            "name": "Club Level 2",
+            "category": "club"
+        },
+        {
+            "id": "club-level-3",
+            "name": "Club Level 3",
+            "category": "club"
+        },
+        {
+            "id": "regional-level-1",
+            "name": "Regional Level 1",
+            "category": "regional"
+        },
+        {
+            "id": "regional-level-2",
+            "name": "Regional Level 2",
+            "category": "regional"
+        },
+        {
+            "id": "regional-level-3",
+            "name": "Regional Level 3",
+            "category": "regional"
+        },
+        {
+            "id": "regional-level-4(ages 10-12)",
+            "name": "Regional Level 4 (Ages 10-12)",
+            "category": "regional"
+        },
+        {
+            "id": "regional-level-4(ages 13+)",
+            "name": "Regional Level 4 (Ages 13+)",
+            "category": "regional"
+        },
+        {
+            "id": "league-level-3",
+            "name": "League Level 3",
+            "category": "national"
+        },  
+        {
+            "id": "league-level-2",
+            "name": "League Level 2",
+            "category": "national"
+        },
+        {
+            "id": "league-level-1",
+            "name": "League Level 1",
+            "category": "national"
+        },
+        {
+            "id": "english-silver",
+            "name": "English Silver",
+            "category": "national"
+        },
+        {
+            "id": "english-gold",
+            "name": "English Gold",
+            "category": "national"
+        },
+        {
+            "id": "fig",
+            "name": "FIG",
+            "category": "national"
+        }
     ]
   }
   
