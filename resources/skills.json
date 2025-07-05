@@ -65,21 +65,12 @@
           { "name": "½ Twist to Front" },
           { "name": "Back ½ Twist to Feet" },
           { "name": "Back to Front" },
-          { "name": "½ to Front" },
-          { "name": "Front to Feet" },
-          { "name": "Straddle Jump" },
-          { "name": "Seat Landing" },
-          { "name": "½ Twist to Seat" },
-          { "name": "½ Twist" },
-          { "name": "Tuck Jump" },
-          { "name": "Pike Jump" },
-          { "name": "Back Landing" },
-          { "name": "½ Twist to Feet" }
+          { "name": "Front to Back" }
         ],
         "routines": [
             {
                 "skills": [
-                    { "name": "½ to Front" },
+                    { "name": "½ Twist to Front" },
                     { "name": "To Feet" },
                     { "name": "Straddle Jump" },
                     { "name": "Seat Landing" },
@@ -294,7 +285,7 @@
           { "name": "Half Out (T)" },
           { "name": "Double Back (T)" }
         ],
-       "routines": [
+        "routines": [
           {
             "skills": [
                 { "name": "¾ Back (S)" },

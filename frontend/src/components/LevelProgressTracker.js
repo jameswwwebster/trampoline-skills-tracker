@@ -217,28 +217,25 @@ const LevelProgressTracker = ({ gymnastId, levelId, onLevelProgressUpdate }) => 
           {/* Progress Controls (for coaches) */}
           {canMarkProgress && (
             <div className="progress-controls">
-              <h5>Update Progress</h5>
+              <h5>Level Completion</h5>
+              <div className="alert alert-info">
+                <strong>Note:</strong> Levels are automatically completed when all skills and routines are finished. 
+                You cannot manually complete levels.
+              </div>
               <div className="status-buttons">
                 <button
                   onClick={() => updateLevelProgress('NOT_STARTED')}
                   disabled={updating}
                   className={`btn ${currentStatus === 'NOT_STARTED' ? 'btn-secondary' : 'btn-outline'}`}
                 >
-                  Not Started
+                  Reset to Not Started
                 </button>
                 <button
                   onClick={() => updateLevelProgress('IN_PROGRESS')}
                   disabled={updating}
                   className={`btn ${currentStatus === 'IN_PROGRESS' ? 'btn-warning' : 'btn-outline'}`}
                 >
-                  In Progress
-                </button>
-                <button
-                  onClick={() => updateLevelProgress('COMPLETED')}
-                  disabled={updating}
-                  className={`btn btn-success ${currentStatus === 'COMPLETED' ? 'btn-success' : 'btn-outline'}`}
-                >
-                  {updating ? 'Updating...' : 'Mark as Completed'}
+                  Mark as In Progress
                 </button>
               </div>
             </div>

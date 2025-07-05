@@ -29,7 +29,7 @@ router.get('/gymnast/:gymnastId', auth, requireGymnastAccess, async (req, res) =
   try {
     const { gymnastId } = req.params;
 
-    const [skillProgress, levelProgress] = await Promise.all([
+    const [skillProgress, levelProgress, routineProgress] = await Promise.all([
       prisma.skillProgress.findMany({
         where: {
           gymnastId
@@ -62,12 +62,39 @@ router.get('/gymnast/:gymnastId', auth, requireGymnastAccess, async (req, res) =
             }
           }
         }
+      }),
+      prisma.routineProgress.findMany({
+        where: {
+          gymnastId
+        },
+        include: {
+          routine: {
+            include: {
+              level: true,
+              routineSkills: {
+                include: {
+                  skill: true
+                },
+                orderBy: {
+                  order: 'asc'
+                }
+              }
+            }
+          },
+          user: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
+          }
+        }
       })
     ]);
 
     res.json({
       skillProgress,
-      levelProgress
+      levelProgress,
+      routineProgress
     });
   } catch (error) {
     console.error('Get progress error:', error);
@@ -178,6 +205,14 @@ router.post('/skill', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
       });
     }
 
+    // Check if level should be automatically completed when skill is completed
+    if (status === 'COMPLETED') {
+      await checkAndCompleteLevel(gymnastId, skill.level.id, req.user.id);
+    } else if (existingProgress && existingProgress.status === 'COMPLETED' && status !== 'COMPLETED') {
+      // If skill was completed but now marked as incomplete, invalidate level completion
+      await checkAndInvalidateLevel(gymnastId, skill.level.id, req.user.id);
+    }
+
     res.json(progressRecord);
   } catch (error) {
     console.error('Mark skill progress error:', error);
@@ -194,6 +229,13 @@ router.post('/level', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
     }
 
     const { gymnastId, levelId, routineId, status, notes, completedAt } = value;
+
+    // Prevent manual completion - levels should only be completed automatically
+    if (status === 'COMPLETED') {
+      return res.status(400).json({ 
+        error: 'Levels cannot be manually completed. They are automatically completed when all skills and routines are finished.' 
+      });
+    }
 
     // Verify gymnast belongs to coach's club
     const gymnast = await prisma.gymnast.findUnique({
@@ -552,6 +594,314 @@ router.get('/gymnast/:gymnastId/history', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get progress history error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update or create routine progress
+router.put('/routine', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const { gymnastId, routineId, status, notes } = req.body;
+
+    // Validation
+    if (!gymnastId || !routineId || !status) {
+      return res.status(400).json({ 
+        error: 'gymnastId, routineId, and status are required' 
+      });
+    }
+
+    if (!['NOT_STARTED', 'COMPLETED'].includes(status)) {
+      return res.status(400).json({ 
+        error: 'Invalid status. Must be NOT_STARTED or COMPLETED' 
+      });
+    }
+
+    // Verify gymnast exists and user has access
+    const gymnast = await prisma.gymnast.findUnique({
+      where: { id: gymnastId },
+      include: { club: true }
+    });
+
+    if (!gymnast) {
+      return res.status(404).json({ error: 'Gymnast not found' });
+    }
+
+    if (req.user.role !== 'CLUB_ADMIN' && gymnast.clubId !== req.user.clubId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Verify routine exists
+    const routine = await prisma.routine.findUnique({
+      where: { id: routineId },
+      include: { level: true }
+    });
+
+    if (!routine) {
+      return res.status(404).json({ error: 'Routine not found' });
+    }
+
+    // Check if routine was previously completed (before we update it)
+    const existingRoutineProgress = await prisma.routineProgress.findUnique({
+      where: {
+        gymnastId_routineId: {
+          gymnastId,
+          routineId
+        }
+      }
+    });
+
+    // Update or create routine progress
+    const routineProgress = await prisma.routineProgress.upsert({
+      where: {
+        gymnastId_routineId: {
+          gymnastId,
+          routineId
+        }
+      },
+      update: {
+        status,
+        notes: notes || null,
+        completedAt: status === 'COMPLETED' ? new Date() : null,
+        userId: req.user.id
+      },
+      create: {
+        gymnastId,
+        routineId,
+        status,
+        notes: notes || null,
+        completedAt: status === 'COMPLETED' ? new Date() : null,
+        userId: req.user.id
+      },
+      include: {
+        routine: {
+          include: {
+            level: true
+          }
+        },
+        gymnast: true,
+        user: true
+      }
+    });
+
+    // Check if level should be automatically completed
+    if (status === 'COMPLETED') {
+      await checkAndCompleteLevel(gymnastId, routine.levelId, req.user.id);
+    } else if (existingRoutineProgress && existingRoutineProgress.status === 'COMPLETED' && status !== 'COMPLETED') {
+      // If routine was completed but now marked as incomplete, invalidate level completion
+      await checkAndInvalidateLevel(gymnastId, routine.levelId, req.user.id);
+    }
+
+    res.json(routineProgress);
+  } catch (error) {
+    console.error('Update routine progress error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Helper function to check and complete level automatically
+async function checkAndCompleteLevel(gymnastId, levelId, userId) {
+  try {
+    // Get level with skills and routines
+    const level = await prisma.level.findUnique({
+      where: { id: levelId },
+      include: {
+        skills: true,
+        routines: {
+          where: {
+            isAlternative: false // Only check primary routines
+          }
+        }
+      }
+    });
+
+    if (!level) return;
+
+    // Check if all level skills are completed
+    const completedSkills = await prisma.skillProgress.findMany({
+      where: {
+        gymnastId,
+        skill: {
+          levelId
+        },
+        status: 'COMPLETED'
+      }
+    });
+
+    const allSkillsCompleted = completedSkills.length === level.skills.length;
+
+    // Check if primary routine is completed
+    const completedRoutines = await prisma.routineProgress.findMany({
+      where: {
+        gymnastId,
+        routineId: {
+          in: level.routines.map(r => r.id)
+        },
+        status: 'COMPLETED'
+      }
+    });
+
+    const routineCompleted = completedRoutines.length > 0;
+
+    // If both conditions are met, automatically complete the level
+    if (allSkillsCompleted && routineCompleted) {
+      await prisma.levelProgress.upsert({
+        where: {
+          gymnastId_levelId: {
+            gymnastId,
+            levelId
+          }
+        },
+        update: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+          userId,
+          routineId: completedRoutines[0].routineId,
+          notes: 'Automatically completed when all skills and routine were finished'
+        },
+        create: {
+          gymnastId,
+          levelId,
+          status: 'COMPLETED',
+          completedAt: new Date(),
+          userId,
+          routineId: completedRoutines[0].routineId,
+          notes: 'Automatically completed when all skills and routine were finished'
+        }
+      });
+
+      console.log(`✅ Level ${level.identifier} automatically completed for gymnast ${gymnastId}`);
+    }
+  } catch (error) {
+    console.error('Error checking level completion:', error);
+  }
+}
+
+// Helper function to check and invalidate level completion when skills/routines are marked incomplete
+async function checkAndInvalidateLevel(gymnastId, levelId, userId) {
+  try {
+    // Check if level is currently completed
+    const levelProgress = await prisma.levelProgress.findUnique({
+      where: {
+        gymnastId_levelId: {
+          gymnastId,
+          levelId
+        }
+      }
+    });
+
+    // If level is not completed, nothing to invalidate
+    if (!levelProgress || levelProgress.status !== 'COMPLETED') {
+      return;
+    }
+
+    // Get level with skills and routines
+    const level = await prisma.level.findUnique({
+      where: { id: levelId },
+      include: {
+        skills: true,
+        routines: {
+          where: {
+            isAlternative: false // Only check primary routines
+          }
+        }
+      }
+    });
+
+    if (!level) return;
+
+    // Check if all level skills are still completed
+    const completedSkills = await prisma.skillProgress.findMany({
+      where: {
+        gymnastId,
+        skill: {
+          levelId
+        },
+        status: 'COMPLETED'
+      }
+    });
+
+    const allSkillsCompleted = completedSkills.length === level.skills.length;
+
+    // Check if primary routine is still completed
+    const completedRoutines = await prisma.routineProgress.findMany({
+      where: {
+        gymnastId,
+        routineId: {
+          in: level.routines.map(r => r.id)
+        },
+        status: 'COMPLETED'
+      }
+    });
+
+    const routineCompleted = completedRoutines.length > 0;
+
+    // If either condition is no longer met, mark level as incomplete
+    if (!allSkillsCompleted || !routineCompleted) {
+      await prisma.levelProgress.update({
+        where: {
+          gymnastId_levelId: {
+            gymnastId,
+            levelId
+          }
+        },
+        data: {
+          status: 'IN_PROGRESS',
+          completedAt: null,
+          userId,
+          notes: 'Level invalidated - skill or routine marked as incomplete'
+        }
+      });
+
+      console.log(`❌ Level ${level.identifier} invalidated for gymnast ${gymnastId} - skill or routine marked incomplete`);
+    }
+  } catch (error) {
+    console.error('Error checking level invalidation:', error);
+  }
+}
+
+// Get routine progress for a gymnast
+router.get('/gymnast/:gymnastId/routines', auth, async (req, res) => {
+  try {
+    const { gymnastId } = req.params;
+
+    // Verify gymnast exists and user has access
+    const gymnast = await prisma.gymnast.findUnique({
+      where: { id: gymnastId },
+      include: { club: true }
+    });
+
+    if (!gymnast) {
+      return res.status(404).json({ error: 'Gymnast not found' });
+    }
+
+    if (req.user.role !== 'CLUB_ADMIN' && gymnast.clubId !== req.user.clubId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Get routine progress
+    const routineProgress = await prisma.routineProgress.findMany({
+      where: { gymnastId },
+      include: {
+        routine: {
+          include: {
+            level: true,
+            routineSkills: {
+              include: {
+                skill: true
+              },
+              orderBy: {
+                order: 'asc'
+              }
+            }
+          }
+        },
+        user: true
+      }
+    });
+
+    res.json(routineProgress);
+  } catch (error) {
+    console.error('Get routine progress error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

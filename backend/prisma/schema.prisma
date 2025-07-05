@@ -58,6 +58,7 @@ model User {
   guardedGymnasts    Gymnast[]           @relation("GuardianGymnasts")
   skillProgress      SkillProgress[]
   levelProgress      LevelProgress[]
+  routineProgress    RoutineProgress[]
   guardianRequests   GuardianRequest[]   @relation("GuardianRequests")
   processedRequests  GuardianRequest[]   @relation("ProcessedRequests")
   sentInvites        Invite[]            @relation("SentInvites")
@@ -99,6 +100,7 @@ model Gymnast {
   guardians         User[]              @relation("GuardianGymnasts")
   skillProgress     SkillProgress[]
   levelProgress     LevelProgress[]
+  routineProgress   RoutineProgress[]
   guardianRequests  GuardianRequest[]
 
   @@map("gymnasts")
@@ -150,12 +152,13 @@ model Routine {
   order       Int      // Order within the level (for multiple routines)
   isAlternative Boolean @default(false) // For levels with multiple routine options
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
 
   // Relations
-  level         Level           @relation(fields: [levelId], references: [id])
-  levelProgress LevelProgress[]
-  routineSkills RoutineSkill[]
+  level           Level             @relation(fields: [levelId], references: [id])
+  levelProgress   LevelProgress[]
+  routineSkills   RoutineSkill[]
+  routineProgress RoutineProgress[]
 
   @@map("routines")
 }
@@ -173,6 +176,26 @@ model RoutineSkill {
 
   @@unique([routineId, skillId])
   @@map("routine_skills")
+}
+
+model RoutineProgress {
+  id         String         @id @default(cuid())
+  gymnastId  String
+  routineId  String
+  userId     String         // Coach or admin who marked it
+  status     ProgressStatus @default(NOT_STARTED)
+  notes      String?
+  completedAt DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  // Relations
+  gymnast Gymnast @relation(fields: [gymnastId], references: [id])
+  routine Routine @relation(fields: [routineId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([gymnastId, routineId])
+  @@map("routine_progress")
 }
 
 model SkillProgress {

@@ -8,8 +8,12 @@ const Login = () => {
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated, error } = useAuth();
+  const [isDevLoading, setIsDevLoading] = useState(false);
+  const { login, devLogin, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
+
+  // Check if we're in development mode
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -35,6 +39,18 @@ const Login = () => {
     }
     
     setIsLoading(false);
+  };
+
+  const handleDevLogin = async () => {
+    setIsDevLoading(true);
+    
+    const result = await devLogin();
+    
+    if (result.success) {
+      navigate('/', { replace: true });
+    }
+    
+    setIsDevLoading(false);
   };
 
   return (
@@ -92,6 +108,28 @@ const Login = () => {
         <div className="auth-link">
           Don't have an account? <Link to="/register">Register here</Link>
         </div>
+
+        {isDevelopment && (
+          <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid #dee2e6' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+              <small style={{ color: '#6c757d' }}>Development Mode</small>
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={handleDevLogin}
+              disabled={isDevLoading}
+              style={{ width: '100%' }}
+            >
+              {isDevLoading ? 'Logging in...' : 'Quick Login (Dev Coach)'}
+            </button>
+            <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+              <small style={{ color: '#6c757d' }}>
+                Email: dev@test.com | Password: password123
+              </small>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

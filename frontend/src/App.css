@@ -527,8 +527,6 @@
   color: #6c757d;
 }
 
-
-
 .skill-controls {
   display: flex;
   gap: 0.25rem;
@@ -894,11 +892,6 @@
 .routine-skill.completed {
   background: #d4edda;
   color: #155724;
-}
-
-.routine-skill.in_progress {
-  background: #fff3cd;
-  color: #856404;
 }
 
 .routine-skill.not_started {
@@ -1333,5 +1326,156 @@
   
   .view-controls button {
     width: 100%;
+  }
+}
+
+/* Routine Progress Styles */
+.level-routines {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.level-routines h6 {
+  margin-bottom: 1rem;
+  color: #495057;
+  font-weight: 600;
+}
+
+.routine-card {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+}
+
+.routine-card:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.routine-card.routine-completed {
+  border-color: #28a745;
+  background: #f8fff9;
+}
+
+.routine-card.routine-not_started {
+  border-color: #6c757d;
+  background: #f8f9fa;
+}
+
+.routine-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.routine-info {
+  flex: 1;
+}
+
+.routine-name {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.routine-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.routine-controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.routine-controls .btn {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.routine-controls .btn:hover {
+  background: #f8f9fa;
+}
+
+.routine-controls .btn-secondary {
+  background: #6c757d;
+  color: white;
+  border-color: #6c757d;
+}
+
+.routine-controls .btn-success {
+  background: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+.routine-controls .btn-outline {
+  background: white;
+  color: #6c757d;
+  border-color: #dee2e6;
+}
+
+.routine-controls .btn-outline:hover {
+  background: #f8f9fa;
+  border-color: #6c757d;
+}
+
+.routine-skills {
+  margin-top: 1rem;
+}
+
+.routine-skills-header {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.routine-skills-list {
+  display: inline-grid;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.routine-skill-item {
+  background: #e9ecef;
+  color: #495057;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Responsive Design for Routine Components */
+@media (max-width: 768px) {
+  .routine-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .routine-controls {
+    width: 100%;
+    justify-content: stretch;
+  }
+  
+  .routine-controls .btn {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .routine-skills-list {
+    flex-direction: column;
+    gap: 0.25rem;
   }
 } 

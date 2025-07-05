@@ -87,6 +87,24 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const devLogin = async () => {
+    try {
+      setError(null);
+      const response = await axios.post('/api/auth/dev-login');
+      const { user, token } = response.data;
+      
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setUser(user);
+      
+      return { success: true, user };
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Development login failed';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
   };
@@ -96,6 +114,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    devLogin,
     updateUser,
     loading,
     error,

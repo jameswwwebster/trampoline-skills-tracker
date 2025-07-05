@@ -208,21 +208,17 @@ router.get('/:id', auth, async (req, res) => {
         skillProgress: {
           include: {
             skill: {
-              select: {
-                id: true,
-                name: true,
+              include: {
                 level: {
                   select: {
                     id: true,
                     name: true,
-                    number: true
+                    number: true,
+                    identifier: true
                   }
                 }
               }
             }
-          },
-          where: {
-            status: 'COMPLETED'
           }
         },
         levelProgress: {
@@ -231,7 +227,32 @@ router.get('/:id', auth, async (req, res) => {
               select: {
                 id: true,
                 name: true,
-                number: true
+                number: true,
+                identifier: true
+              }
+            }
+          }
+        },
+        routineProgress: {
+          include: {
+            routine: {
+              include: {
+                level: {
+                  select: {
+                    id: true,
+                    name: true,
+                    number: true,
+                    identifier: true
+                  }
+                },
+                routineSkills: {
+                  include: {
+                    skill: true
+                  },
+                  orderBy: {
+                    order: 'asc'
+                  }
+                }
               }
             }
           }

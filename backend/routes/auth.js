@@ -160,4 +160,47 @@ router.get('/validate', auth, (req, res) => {
   res.json({ valid: true, user: req.user });
 });
 
+// Development-only login endpoint
+router.post('/dev-login', async (req, res) => {
+  try {
+    // Only allow in development environment
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    // Find the development user
+    const user = await prisma.user.findUnique({
+      where: { email: 'dev@test.com' },
+      include: {
+        club: true,
+        gymnasts: true,
+        guardedGymnasts: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Development user not found. Please run the database seed script.' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRE || '7d' }
+    );
+
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = user;
+
+    res.json({
+      message: 'Development login successful',
+      user: userWithoutPassword,
+      token
+    });
+  } catch (error) {
+    console.error('Dev login error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router; 
