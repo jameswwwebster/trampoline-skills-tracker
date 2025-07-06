@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [gymnasts, setGymnasts] = useState([]);
+  const [customFields, setCustomFields] = useState([]);
+  const [userCustomFieldValues, setUserCustomFieldValues] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -13,9 +15,11 @@ const Users = () => {
   const [roleFilter, setRoleFilter] = useState('');
   const [editingRole, setEditingRole] = useState(null);
   const [editingProfile, setEditingProfile] = useState(null);
+  const [editingCustomFields, setEditingCustomFields] = useState(null);
   const [addingEmail, setAddingEmail] = useState(null);
   const [newRole, setNewRole] = useState('');
   const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', email: '' });
+  const [customFieldForm, setCustomFieldForm] = useState({});
   const [emailForm, setEmailForm] = useState('');
   const [archivingUser, setArchivingUser] = useState(null);
   const [archiveReason, setArchiveReason] = useState('');
@@ -23,17 +27,32 @@ const Users = () => {
   const [showArchived, setShowArchived] = useState(false);
 
   const { user, isClubAdmin } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [usersResponse, gymnastsResponse] = await Promise.all([
+        const [usersResponse, gymnastsResponse, customFieldsResponse] = await Promise.all([
           axios.get(`/api/users?includeArchived=${showArchived}`),
-          axios.get('/api/gymnasts?includeArchived=true')
+          axios.get('/api/gymnasts?includeArchived=true'),
+          axios.get('/api/user-custom-fields')
         ]);
         setUsers(usersResponse.data);
         setGymnasts(gymnastsResponse.data);
+        setCustomFields(customFieldsResponse.data);
+        
+        // Fetch custom field values for all users
+        const customFieldValuesPromises = usersResponse.data.map(userData => 
+          axios.get(`/api/user-custom-fields/user/${userData.id}`).catch(() => ({ data: [] }))
+        );
+        const customFieldValuesResponses = await Promise.all(customFieldValuesPromises);
+        
+        const customFieldValuesMap = {};
+        usersResponse.data.forEach((userData, index) => {
+          customFieldValuesMap[userData.id] = customFieldValuesResponses[index].data;
+        });
+        setUserCustomFieldValues(customFieldValuesMap);
+        
       } catch (error) {
         console.error('Failed to fetch data:', error);
         setError('Failed to load data');
@@ -368,6 +387,167 @@ const Users = () => {
     return matchesRole && (!search || matchesSearch);
   });
 
+  const startCustomFieldEditing = (userData) => {
+    setEditingCustomFields(userData.id);
+    
+    // Initialize form with existing values
+    const existingValues = userCustomFieldValues[userData.id] || [];
+    const initialForm = {};
+    customFields.forEach(field => {
+      const existingValue = existingValues.find(v => v.customFieldId === field.id);
+      initialForm[field.id] = existingValue ? existingValue.value : '';
+    });
+    setCustomFieldForm(initialForm);
+    setError(null);
+    setSuccess(null);
+  };
+
+  const cancelCustomFieldEditing = () => {
+    setEditingCustomFields(null);
+    setCustomFieldForm({});
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleCustomFieldUpdate = async (userId) => {
+    try {
+      setError(null);
+      setSuccess(null);
+      
+      // Update all custom field values
+      const updatePromises = customFields.map(field => {
+        const value = customFieldForm[field.id] || '';
+        return axios.put(`/api/user-custom-fields/user/${userId}/${field.id}`, { value });
+      });
+      
+      await Promise.all(updatePromises);
+      
+      // Refresh custom field values
+      const response = await axios.get(`/api/user-custom-fields/user/${userId}`);
+      setUserCustomFieldValues(prev => ({
+        ...prev,
+        [userId]: response.data
+      }));
+      
+      setSuccess('Custom fields updated successfully!');
+      setEditingCustomFields(null);
+      setCustomFieldForm({});
+    } catch (error) {
+      setError(error.response?.data?.error || 'Failed to update custom fields');
+    }
+  };
+
+  const renderCustomFieldValue = (field, value) => {
+    if (!value) return '-';
+    
+    switch (field.fieldType) {
+      case 'BOOLEAN':
+        return value === 'true' ? 'Yes' : 'No';
+      case 'DATE':
+        return new Date(value).toLocaleDateString();
+      case 'MULTI_SELECT':
+        return Array.isArray(value) ? value.join(', ') : value;
+      default:
+        return value;
+    }
+  };
+
+  const renderCustomFieldInput = (field, value, onChange) => {
+    switch (field.fieldType) {
+      case 'TEXTAREA':
+        return (
+          <textarea
+            value={value || ''}
+            onChange={(e) => onChange(field.id, e.target.value)}
+            className="form-control"
+            style={{ fontSize: '0.875rem', minHeight: '60px' }}
+            placeholder={field.name}
+          />
+        );
+      case 'NUMBER':
+        return (
+          <input
+            type="number"
+            value={value || ''}
+            onChange={(e) => onChange(field.id, e.target.value)}
+            className="form-control"
+            style={{ fontSize: '0.875rem' }}
+            placeholder={field.name}
+          />
+        );
+      case 'EMAIL':
+        return (
+          <input
+            type="email"
+            value={value || ''}
+            onChange={(e) => onChange(field.id, e.target.value)}
+            className="form-control"
+            style={{ fontSize: '0.875rem' }}
+            placeholder={field.name}
+          />
+        );
+      case 'PHONE':
+        return (
+          <input
+            type="tel"
+            value={value || ''}
+            onChange={(e) => onChange(field.id, e.target.value)}
+            className="form-control"
+            style={{ fontSize: '0.875rem' }}
+            placeholder={field.name}
+          />
+        );
+      case 'DATE':
+        return (
+          <input
+            type="date"
+            value={value || ''}
+            onChange={(e) => onChange(field.id, e.target.value)}
+            className="form-control"
+            style={{ fontSize: '0.875rem' }}
+          />
+        );
+      case 'BOOLEAN':
+        return (
+          <select
+            value={value || ''}
+            onChange={(e) => onChange(field.id, e.target.value)}
+            className="form-control"
+            style={{ fontSize: '0.875rem' }}
+          >
+            <option value="">Select...</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        );
+      case 'DROPDOWN':
+        return (
+          <select
+            value={value || ''}
+            onChange={(e) => onChange(field.id, e.target.value)}
+            className="form-control"
+            style={{ fontSize: '0.875rem' }}
+          >
+            <option value="">Select...</option>
+            {field.options?.map(option => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        );
+      default:
+        return (
+          <input
+            type="text"
+            value={value || ''}
+            onChange={(e) => onChange(field.id, e.target.value)}
+            className="form-control"
+            style={{ fontSize: '0.875rem' }}
+            placeholder={field.name}
+          />
+        );
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading">
@@ -496,6 +676,7 @@ const Users = () => {
                 <th>Role</th>
                 <th>Children</th>
                 <th>Joined Date</th>
+                {customFields.length > 0 && <th>Custom Fields</th>}
                 <th>Actions</th>
               </tr>
             </thead>
@@ -629,6 +810,40 @@ const Users = () => {
                   <td>
                     {new Date(userData.createdAt).toLocaleDateString()}
                   </td>
+                  {customFields.length > 0 && (
+                    <td>
+                      {editingCustomFields === userData.id ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '200px' }}>
+                          {customFields.map(field => {
+                            const currentValue = customFieldForm[field.id] || '';
+                            return (
+                              <div key={field.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.75rem', minWidth: '80px', margin: 0 }}>
+                                  {field.name}:
+                                </label>
+                                {renderCustomFieldInput(field, currentValue, (fieldId, value) => {
+                                  setCustomFieldForm(prev => ({ ...prev, [fieldId]: value }));
+                                })}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.875rem' }}>
+                          {customFields.map(field => {
+                            const userValues = userCustomFieldValues[userData.id] || [];
+                            const fieldValue = userValues.find(v => v.customFieldId === field.id)?.value;
+                            return (
+                              <div key={field.id} style={{ marginBottom: '0.25rem' }}>
+                                <small style={{ fontWeight: 'bold' }}>{field.name}:</small>{' '}
+                                <small>{renderCustomFieldValue(field, fieldValue)}</small>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </td>
+                  )}
                   <td>
                     {userData.id !== user?.id && (
                       <div style={{ display: 'flex', gap: '0.125rem', flexWrap: 'wrap' }}>
@@ -643,6 +858,23 @@ const Users = () => {
                             </button>
                             <button
                               onClick={cancelProfileEditing}
+                              className="btn-link-subtle"
+                              style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : editingCustomFields === userData.id ? (
+                          <>
+                            <button
+                              onClick={() => handleCustomFieldUpdate(userData.id)}
+                              className="btn-link-subtle btn-link-primary"
+                              style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={cancelCustomFieldEditing}
                               className="btn-link-subtle"
                               style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
                             >
@@ -680,6 +912,16 @@ const Users = () => {
                                 >
                                   Edit
                                 </button>
+                                {customFields.length > 0 && (
+                                  <button
+                                    onClick={() => startCustomFieldEditing(userData)}
+                                    className="btn-link-subtle"
+                                    style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
+                                    title="Edit Custom Fields"
+                                  >
+                                    Fields
+                                  </button>
+                                )}
                                 {!userData.email && (
                                   <button
                                     onClick={() => startEmailAdding(userData)}
@@ -857,6 +1099,15 @@ const Users = () => {
                             >
                               Edit
                             </button>
+                            {customFields.length > 0 && (
+                              <button
+                                onClick={() => startCustomFieldEditing(userData)}
+                                className="btn-link-subtle"
+                                style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
+                              >
+                                Fields
+                              </button>
+                            )}
                             {!userData.email && (
                               <button
                                 onClick={() => startEmailAdding(userData)}
@@ -1011,6 +1262,44 @@ const Users = () => {
                       <span className="mobile-card-label">Born:</span>
                       <span className="mobile-card-value">
                         {new Date(userData.dateOfBirth).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {customFields.length > 0 && (
+                    <div className="mobile-card-row">
+                      <span className="mobile-card-label">Custom Fields:</span>
+                      <span className="mobile-card-value">
+                        {editingCustomFields === userData.id ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                            {customFields.map(field => {
+                              const currentValue = customFieldForm[field.id] || '';
+                              return (
+                                <div key={field.id}>
+                                  <label style={{ fontSize: '0.875rem', fontWeight: 'bold', display: 'block' }}>
+                                    {field.name}:
+                                  </label>
+                                  {renderCustomFieldInput(field, currentValue, (fieldId, value) => {
+                                    setCustomFieldForm(prev => ({ ...prev, [fieldId]: value }));
+                                  })}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '0.875rem' }}>
+                            {customFields.map(field => {
+                              const userValues = userCustomFieldValues[userData.id] || [];
+                              const fieldValue = userValues.find(v => v.customFieldId === field.id)?.value;
+                              return (
+                                <div key={field.id} style={{ marginBottom: '0.25rem' }}>
+                                  <strong>{field.name}:</strong>{' '}
+                                  {renderCustomFieldValue(field, fieldValue)}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </span>
                     </div>
                   )}

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 
 const ImportGymnasts = () => {
   const [file, setFile] = useState(null);
   const [previewData, setPreviewData] = useState(null);
+  const [customFields, setCustomFields] = useState([]);
   const [importResult, setImportResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -15,6 +16,22 @@ const ImportGymnasts = () => {
   });
 
   const { user, isClubAdmin } = useAuth();
+
+  // Fetch custom fields on component mount
+  useEffect(() => {
+    const fetchCustomFields = async () => {
+      try {
+        const response = await axios.get('/api/user-custom-fields');
+        setCustomFields(response.data);
+      } catch (error) {
+        console.error('Failed to fetch custom fields:', error);
+      }
+    };
+
+    if (isClubAdmin) {
+      fetchCustomFields();
+    }
+  }, [isClubAdmin]);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -226,6 +243,24 @@ const ImportGymnasts = () => {
               </div>
             </div>
 
+            {customFields.length > 0 && (
+              <div className="custom-fields-mapping">
+                <h4>Custom Field Mappings</h4>
+                <div className="mapping-info">
+                  <p><small>The following custom fields will be populated from matching CSV columns:</small></p>
+                  <div className="mapping-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    {customFields.map(field => (
+                      <div key={field.id} className="mapping-item" style={{ padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px', fontSize: '0.875rem' }}>
+                        <strong>{field.name}</strong><br />
+                        <small>CSV Column: "{field.key}" or "{field.name}"</small><br />
+                        <small>Type: {field.fieldType}</small>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {previewData.data && previewData.data.length > 0 && (
               <div className="preview-table">
                 <h4>Sample Data (first 10 rows)</h4>
@@ -238,6 +273,7 @@ const ImportGymnasts = () => {
                       <th>Age</th>
                       <th>Date of Birth</th>
                       <th>Is Gymnast</th>
+                      {customFields.length > 0 && <th>Custom Fields</th>}
                       <th>Action</th>
                     </tr>
                   </thead>
@@ -254,6 +290,21 @@ const ImportGymnasts = () => {
                             {row.isGymnast ? 'Yes' : 'No'}
                           </span>
                         </td>
+                        {customFields.length > 0 && (
+                          <td>
+                            <div style={{ fontSize: '0.875rem' }}>
+                              {customFields.map(field => {
+                                const fieldValue = row.customFields && row.customFields[field.key];
+                                return (
+                                  <div key={field.id} style={{ marginBottom: '0.25rem' }}>
+                                    <small style={{ fontWeight: 'bold' }}>{field.name}:</small>{' '}
+                                    <small>{fieldValue || '-'}</small>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        )}
                         <td>
                           <span className={`badge ${row.action === 'CREATE' ? 'badge-primary' : 'badge-warning'}`}>
                             {row.action}
