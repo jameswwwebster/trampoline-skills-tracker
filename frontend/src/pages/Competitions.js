@@ -2,18 +2,46 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ChevronRightIcon, ChevronDownIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
-const CompetitionModal = ({ competition, onSave, onCancel, categories }) => {
+const CompetitionModal = ({ competition, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     name: competition?.name || '',
     code: competition?.code || '',
     description: competition?.description || '',
-    category: competition?.category || 'CLUB',
+    category: competition?.category || '',
     order: competition?.order || 1,
     isActive: competition?.isActive ?? true
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [existingCategories, setExistingCategories] = useState([]);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+
+  // Fetch existing categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/competitions/categories', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        if (response.ok) {
+          const categories = await response.json();
+          setExistingCategories(categories);
+          
+          // If editing and category is not in existing list, set as custom
+          if (competition?.category && !categories.includes(competition.category)) {
+            setIsCustomCategory(true);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      }
+    };
+
+    fetchCategories();
+  }, [competition]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -25,6 +53,17 @@ const CompetitionModal = ({ competition, onSave, onCancel, categories }) => {
     // Clear error when field is changed
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleCategoryChange = (e) => {
+    const value = e.target.value;
+    if (value === '__custom__') {
+      setIsCustomCategory(true);
+      setFormData(prev => ({ ...prev, category: '' }));
+    } else {
+      setIsCustomCategory(false);
+      setFormData(prev => ({ ...prev, category: value }));
     }
   };
 
@@ -95,18 +134,42 @@ const CompetitionModal = ({ competition, onSave, onCancel, categories }) => {
 
           <div className="form-group">
             <label>Category *</label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              required
-            >
-              <option value="CLUB">Club</option>
-              <option value="REGIONAL">Regional</option>
-              <option value="LEAGUE">League</option>
-              <option value="NATIONAL">National</option>
-              <option value="INTERNATIONAL">International</option>
-            </select>
+            {!isCustomCategory ? (
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleCategoryChange}
+                required
+              >
+                <option value="">Select a category...</option>
+                {existingCategories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+                <option value="__custom__">+ Create new category</option>
+              </select>
+            ) : (
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  placeholder="Enter new category name..."
+                  required
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomCategory(false);
+                    setFormData(prev => ({ ...prev, category: '' }));
+                  }}
+                  className="btn btn-sm btn-outline"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
             {errors.category && <span className="error">{errors.category}</span>}
           </div>
 
@@ -157,6 +220,102 @@ const CompetitionModal = ({ competition, onSave, onCancel, categories }) => {
   );
 };
 
+const CategoryModal = ({ category, action, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    newCategoryName: action === 'edit' ? category : ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear error when field is changed
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrors({});
+
+    try {
+      if (action === 'edit') {
+        if (!formData.newCategoryName.trim()) {
+          setErrors({ newCategoryName: 'Category name is required' });
+          return;
+        }
+        await onSave(formData);
+      } else if (action === 'delete') {
+        await onSave({});
+      }
+    } catch (error) {
+      setErrors({ submit: error.message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h3>
+            {action === 'edit' ? 'Edit Category' : 'Delete Category'}
+          </h3>
+          <button className="modal-close" onClick={onCancel}>×</button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="modal-body">
+          {action === 'edit' ? (
+            <div className="form-group">
+              <label>Category Name *</label>
+              <input
+                type="text"
+                name="newCategoryName"
+                value={formData.newCategoryName}
+                onChange={handleChange}
+                required
+                placeholder="Enter category name..."
+              />
+              {errors.newCategoryName && <span className="error">{errors.newCategoryName}</span>}
+            </div>
+          ) : (
+            <div className="form-group">
+              <p>Are you sure you want to delete the category <strong>"{category}"</strong>?</p>
+              <p className="text-warning">
+                This action cannot be undone. You can only delete categories that have no competitions.
+              </p>
+            </div>
+          )}
+
+          {errors.submit && <div className="error">{errors.submit}</div>}
+        </form>
+
+        <div className="modal-footer">
+          <button type="button" className="btn btn-secondary" onClick={onCancel}>
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            className={`btn ${action === 'delete' ? 'btn-danger' : 'btn-primary'}`}
+            disabled={isSubmitting}
+            onClick={handleSubmit}
+          >
+            {isSubmitting ? 'Processing...' : (action === 'edit' ? 'Save Changes' : 'Delete Category')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CompetitionCard = ({ competition, onEdit, onDelete }) => {
   return (
     <div className="competition-card">
@@ -191,13 +350,16 @@ const CompetitionCard = ({ competition, onEdit, onDelete }) => {
 };
 
 const Competitions = () => {
-  const { user, canEditCompetitions } = useAuth();
+  const { canEditCompetitions } = useAuth();
   const [competitions, setCompetitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedCompetition, setSelectedCompetition] = useState(null);
   const [collapsedCategories, setCollapsedCategories] = useState(new Set());
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [categoryAction, setCategoryAction] = useState(null); // 'edit' or 'delete'
 
   useEffect(() => {
     fetchCompetitions();
@@ -300,6 +462,64 @@ const Competitions = () => {
     });
   };
 
+  const handleEditCategory = (category) => {
+    setSelectedCategory(category);
+    setCategoryAction('edit');
+    setShowCategoryModal(true);
+  };
+
+  const handleDeleteCategory = (category) => {
+    setSelectedCategory(category);
+    setCategoryAction('delete');
+    setShowCategoryModal(true);
+  };
+
+  const handleCategoryAction = async (data) => {
+    try {
+      const url = `/api/competitions/categories/${encodeURIComponent(selectedCategory)}`;
+      
+      if (categoryAction === 'edit') {
+        const response = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ newCategoryName: data.newCategoryName })
+        });
+
+        if (response.ok) {
+          await fetchCompetitions();
+          setShowCategoryModal(false);
+          setSelectedCategory(null);
+          setCategoryAction(null);
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update category');
+        }
+      } else if (categoryAction === 'delete') {
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (response.ok) {
+          await fetchCompetitions();
+          setShowCategoryModal(false);
+          setSelectedCategory(null);
+          setCategoryAction(null);
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to delete category');
+        }
+      }
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
   // Group competitions by category
   const groupedCompetitions = competitions.reduce((acc, competition) => {
     if (!acc[competition.category]) {
@@ -309,10 +529,23 @@ const Competitions = () => {
     return acc;
   }, {});
 
-  // Sort categories
-  const categoryOrder = ['CLUB', 'REGIONAL', 'LEAGUE', 'NATIONAL', 'INTERNATIONAL'];
+  // Sort categories - prioritize common categories, then alphabetical
+  const commonCategoryOrder = ['CLUB', 'REGIONAL', 'LEAGUE', 'NATIONAL', 'INTERNATIONAL'];
   const sortedCategories = Object.keys(groupedCompetitions).sort((a, b) => {
-    return categoryOrder.indexOf(a) - categoryOrder.indexOf(b);
+    const aIndex = commonCategoryOrder.indexOf(a);
+    const bIndex = commonCategoryOrder.indexOf(b);
+    
+    // If both are common categories, use the predefined order
+    if (aIndex !== -1 && bIndex !== -1) {
+      return aIndex - bIndex;
+    }
+    
+    // If only one is a common category, prioritize it
+    if (aIndex !== -1) return -1;
+    if (bIndex !== -1) return 1;
+    
+    // If neither are common categories, sort alphabetically
+    return a.localeCompare(b);
   });
 
   if (loading) {
@@ -343,16 +576,43 @@ const Competitions = () => {
       <div className="competitions-content">
         {sortedCategories.map(category => (
           <div key={category} className="category-section">
-            <div 
-              className="category-header"
-              onClick={() => toggleCategory(category)}
-            >
-              {collapsedCategories.has(category) ? 
-                <ChevronRightIcon className="icon" /> : 
-                <ChevronDownIcon className="icon" />
-              }
-              <h2>{category.toLowerCase().replace('_', ' ')}</h2>
-              <span className="category-count">({groupedCompetitions[category].length})</span>
+            <div className="category-header">
+              <div 
+                className="category-header-main"
+                onClick={() => toggleCategory(category)}
+              >
+                {collapsedCategories.has(category) ? 
+                  <ChevronRightIcon className="icon" /> : 
+                  <ChevronDownIcon className="icon" />
+                }
+                <h2>{category.replace(/_/g, ' ')}</h2>
+                <span className="category-count">({groupedCompetitions[category].length})</span>
+              </div>
+              {canEditCompetitions && (
+                <div className="category-actions">
+                  <button 
+                    className="btn btn-xs btn-outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditCategory(category);
+                    }}
+                    title="Edit category name"
+                  >
+                    <PencilIcon className="icon" />
+                  </button>
+                  <button 
+                    className="btn btn-xs btn-outline btn-danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteCategory(category);
+                    }}
+                    title="Delete category"
+                    disabled={groupedCompetitions[category].length > 0}
+                  >
+                    <TrashIcon className="icon" />
+                  </button>
+                </div>
+              )}
             </div>
 
             {!collapsedCategories.has(category) && (
@@ -389,6 +649,19 @@ const Competitions = () => {
           onCancel={() => {
             setShowModal(false);
             setSelectedCompetition(null);
+          }}
+        />
+      )}
+
+      {showCategoryModal && (
+        <CategoryModal
+          category={selectedCategory}
+          action={categoryAction}
+          onSave={handleCategoryAction}
+          onCancel={() => {
+            setShowCategoryModal(false);
+            setSelectedCategory(null);
+            setCategoryAction(null);
           }}
         />
       )}

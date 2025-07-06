@@ -777,16 +777,12 @@ router.put('/routine', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
 // Helper function to check and complete level automatically
 async function checkAndCompleteLevel(gymnastId, levelId, userId) {
   try {
-    // Get level with skills and routines
+    // Get level with skills and all routines (including alternatives)
     const level = await prisma.level.findUnique({
       where: { id: levelId },
       include: {
         skills: true,
-        routines: {
-          where: {
-            isAlternative: false // Only check primary routines
-          }
-        }
+        routines: true // Include ALL routines (both primary and alternative)
       }
     });
 
@@ -810,7 +806,7 @@ async function checkAndCompleteLevel(gymnastId, levelId, userId) {
     let routineCompleted = true; // Default to true for levels without routines
 
     if (hasRoutines) {
-      // Check if primary routine is completed
+      // Check if ANY routine is completed (alternative routines count!)
       const completedRoutines = await prisma.routineProgress.findMany({
         where: {
           gymnastId,
@@ -861,6 +857,9 @@ async function checkAndCompleteLevel(gymnastId, levelId, userId) {
       });
 
       console.log(`✅ Level ${level.identifier} automatically completed for gymnast ${gymnastId}${hasRoutines ? ' (with routine)' : ' (side track)'}`);
+      
+      // Automatically award certificate for level completion
+      await awardCertificateForLevel(gymnastId, levelId, userId);
     }
   } catch (error) {
     console.error('Error checking level completion:', error);
@@ -885,16 +884,12 @@ async function checkAndInvalidateLevel(gymnastId, levelId, userId) {
       return;
     }
 
-    // Get level with skills and routines
+    // Get level with skills and all routines (including alternatives)
     const level = await prisma.level.findUnique({
       where: { id: levelId },
       include: {
         skills: true,
-        routines: {
-          where: {
-            isAlternative: false // Only check primary routines
-          }
-        }
+        routines: true // Include ALL routines (both primary and alternative)
       }
     });
 
@@ -918,7 +913,7 @@ async function checkAndInvalidateLevel(gymnastId, levelId, userId) {
     let routineCompleted = true; // Default to true for levels without routines
 
     if (hasRoutines) {
-      // Check if primary routine is still completed
+      // Check if ANY routine is still completed (alternative routines count!)
       const completedRoutines = await prisma.routineProgress.findMany({
         where: {
           gymnastId,
@@ -1001,5 +996,98 @@ router.get('/gymnast/:gymnastId/routines', auth, async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// Helper function to automatically award certificate for level completion
+async function awardCertificateForLevel(gymnastId, levelId, userId) {
+  try {
+    // Check if certificate already exists for this gymnast and level
+    const existingCertificate = await prisma.certificate.findUnique({
+      where: {
+        gymnastId_levelId_type: {
+          gymnastId,
+          levelId,
+          type: 'LEVEL_COMPLETION'
+        }
+      }
+    });
+
+    // If certificate doesn't exist, create it
+    if (!existingCertificate) {
+      // Get gymnast and level info with relations for email
+      const [gymnast, level, awardedBy] = await Promise.all([
+        prisma.gymnast.findUnique({
+          where: { id: gymnastId },
+          include: {
+            guardians: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true
+              }
+            }
+          }
+        }),
+        prisma.level.findUnique({
+          where: { id: levelId },
+          select: { id: true, identifier: true, name: true }
+        }),
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, firstName: true, lastName: true }
+        })
+      ]);
+
+      // Create the certificate
+      const certificate = await prisma.certificate.create({
+        data: {
+          gymnastId,
+          levelId,
+          clubId: gymnast.clubId,
+          type: 'LEVEL_COMPLETION',
+          awardedById: userId,
+          notes: 'Automatically awarded upon level completion'
+        },
+        include: {
+          awardedBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true
+            }
+          }
+        }
+      });
+
+      console.log(`🏆 Certificate automatically awarded for ${level?.identifier} completion to gymnast ${gymnastId}`);
+
+      // Send email notifications to all parents/guardians
+      if (gymnast && gymnast.guardians && gymnast.guardians.length > 0) {
+        const emailService = require('../services/emailService');
+        
+        // Send notification to each guardian who is a parent
+        for (const guardian of gymnast.guardians) {
+          if (guardian.role === 'PARENT' && guardian.email) {
+            try {
+              await emailService.sendCertificateAwardNotification(
+                guardian.email,
+                guardian.firstName,
+                gymnast,
+                certificate,
+                level
+              );
+              console.log(`📧 Certificate notification sent to parent: ${guardian.email}`);
+            } catch (emailError) {
+              console.error(`❌ Failed to send certificate notification to ${guardian.email}:`, emailError);
+            }
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error awarding certificate for level completion:', error);
+  }
+}
 
 module.exports = router; 

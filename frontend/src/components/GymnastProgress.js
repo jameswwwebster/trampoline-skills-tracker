@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import SkillProgressTracker from './SkillProgressTracker';
+import LevelProgressTracker from './LevelProgressTracker';
 import ProgressHistory from './ProgressHistory';
 import CoachNotes from './CoachNotes';
 import EditGymnastForm from './EditGymnastForm';
+import CertificateDisplay from './CertificateDisplay';
 
 const GymnastProgress = ({ gymnastId }) => {
   const [gymnast, setGymnast] = useState(null);
@@ -14,7 +17,6 @@ const GymnastProgress = ({ gymnastId }) => {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [collapsedLevels, setCollapsedLevels] = useState(new Set());
-  const [editingGymnast, setEditingGymnast] = useState(false);
   const { user } = useAuth();
 
   // Only coaches and club admins can use coaching tools
@@ -28,18 +30,18 @@ const GymnastProgress = ({ gymnastId }) => {
   }, [canCoach]);
 
   // Helper function to extract base level number from identifier
-  const getBaseLevelNumber = (identifier) => {
+  const getBaseLevelNumber = useCallback((identifier) => {
     const match = identifier.match(/^(\d+)/);
     return match ? parseInt(match[1], 10) : 0;
-  };
+  }, []);
 
   // Helper function to check if a level is a side-track
-  const isSideTrack = (identifier) => {
+  const isSideTrack = useCallback((identifier) => {
     return /^\d+[a-z]$/.test(identifier);
-  };
+  }, []);
 
   // Helper function to determine the gymnast's current working level number
-  const getCurrentLevelNumber = (gymnast, levels) => {
+  const getCurrentLevelNumber = useCallback((gymnast, levels) => {
     if (!gymnast || !levels.length) return 1;
 
     // Get all completed main track levels (ignore side tracks)
@@ -60,17 +62,17 @@ const GymnastProgress = ({ gymnastId }) => {
     
     // Return the next level in sequence
     return highestCompleted + 1;
-  };
+  }, [isSideTrack]);
 
   // Helper function to check if a side-track should be available
-  const isSideTrackAvailable = (level, currentLevelNumber) => {
+  const isSideTrackAvailable = useCallback((level, currentLevelNumber) => {
     if (!isSideTrack(level.identifier)) {
       return true; // Regular levels are always available
     }
 
     const baseLevelNumber = getBaseLevelNumber(level.identifier);
     return currentLevelNumber >= baseLevelNumber;
-  };
+  }, [isSideTrack, getBaseLevelNumber]);
 
   // Helper function to toggle level collapse
   const toggleLevelCollapse = (levelId) => {
@@ -86,7 +88,7 @@ const GymnastProgress = ({ gymnastId }) => {
   };
 
   // Helper function to determine which levels should be auto-collapsed
-  const getAutoCollapsedLevels = (levelProgressData, currentLevelNumber) => {
+  const getAutoCollapsedLevels = useCallback((levelProgressData, currentLevelNumber) => {
     const autoCollapsed = new Set();
     levelProgressData.forEach(({ level, progressPercentage }) => {
       // Never collapse the current main track level
@@ -99,7 +101,7 @@ const GymnastProgress = ({ gymnastId }) => {
       }
     });
     return autoCollapsed;
-  };
+  }, [isSideTrack]);
 
   // Helper function to sort levels by identifier
   const sortLevelsByIdentifier = (a, b) => {
@@ -211,23 +213,17 @@ const GymnastProgress = ({ gymnastId }) => {
     }
   };
 
-  const handleEditGymnastClick = () => {
-    setEditingGymnast(true);
-  };
-
   const handleEditGymnastSuccess = (updatedGymnast) => {
-    // Refresh the complete gymnast data with progress info
-    handleProgressUpdate();
-    setEditingGymnast(false);
-  };
-
-  const handleCancelEditGymnast = () => {
-    setEditingGymnast(false);
+    setGymnast(updatedGymnast);
+    setActiveTab('overview');
   };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        
         const [gymnastResponse, levelsResponse] = await Promise.all([
           axios.get(`/api/gymnasts/${gymnastId}`),
           axios.get('/api/levels')
@@ -260,28 +256,17 @@ const GymnastProgress = ({ gymnastId }) => {
 
           const autoCollapsed = getAutoCollapsedLevels(levelProgressData, currentLevelNum);
           setCollapsedLevels(autoCollapsed);
-
-          // Handle URL hash for auto-scrolling to specific level
-          const hash = window.location.hash;
-          if (hash && hash.startsWith('#level-')) {
-            const levelId = hash.substring(7); // Remove '#level-' prefix
-            setTimeout(() => {
-              scrollToLevel(levelId);
-            }, 500); // Wait for rendering to complete
-          }
         }
       } catch (error) {
-        console.error('Failed to fetch gymnast data:', error);
-        setError('Failed to load gymnast progress');
+        console.error('Failed to fetch data:', error);
+        setError('Failed to load gymnast data');
       } finally {
         setLoading(false);
       }
     };
 
-    if (gymnastId) {
-      fetchData();
-    }
-  }, [gymnastId]);
+    fetchData();
+  }, [gymnastId, getAutoCollapsedLevels, getCurrentLevelNumber, isSideTrackAvailable]);
 
   if (loading) {
     return (
@@ -350,18 +335,12 @@ const GymnastProgress = ({ gymnastId }) => {
     !isSideTrack(level.identifier) && parseInt(level.identifier) === nextMainTrackLevelNumber
   ) || null;
   
-  // Highest completed level for competition eligibility
-  const highestCompletedLevel = completedLevels.length > 0 ? completedLevels[completedLevels.length - 1] : null;
+  // Remove unused variables - highestCompletedLevel and completedSkills
   
   const workingLevel = gymnast.levelProgress
     .filter(lp => lp.status !== 'COMPLETED')
     .map(lp => lp.level)
     .sort(sortLevelsByIdentifier)[0];
-
-  // Get completed skills across all levels
-  const completedSkills = gymnast.skillProgress
-    .filter(sp => sp.status === 'COMPLETED')
-    .map(sp => sp.skill);
 
   return (
     <div className="gymnast-progress">
@@ -403,21 +382,7 @@ const GymnastProgress = ({ gymnastId }) => {
             </div>
           )}
 
-          {/* Current Competition Eligibility */}
-          {highestCompletedLevel && highestCompletedLevel.competitions && highestCompletedLevel.competitions.length > 0 && (
-            <div className="current-competition-eligibility">
-              <span className="competition-label">
-                Current competition eligibility
-              </span>
-              <div style={{ marginTop: '0.25rem' }}>
-                {highestCompletedLevel.competitions.map((competition, index) => (
-                  <span key={index} className="competition-badge">
-                    {competition.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
 
 
@@ -451,6 +416,12 @@ const GymnastProgress = ({ gymnastId }) => {
             >
               Edit Gymnast
             </button>
+            <button
+              onClick={() => setActiveTab('certificates')}
+              className={`tab-btn ${activeTab === 'certificates' ? 'active' : ''}`}
+            >
+              🏆 Certificates
+            </button>
           </div>
 
           <div className="coaching-content">
@@ -478,6 +449,15 @@ const GymnastProgress = ({ gymnastId }) => {
                   gymnast={gymnast}
                   onSuccess={handleEditGymnastSuccess}
                   onCancel={() => setActiveTab('overview')}
+                />
+              </div>
+            )}
+
+            {activeTab === 'certificates' && (
+              <div className="certificates-section">
+                <CertificateDisplay 
+                  gymnastId={gymnastId} 
+                  showActions={canCoach}
                 />
               </div>
             )}
@@ -671,6 +651,14 @@ const GymnastProgress = ({ gymnastId }) => {
           </div>
         </div>
       )}
+
+      {/* Certificates Section */}
+      <div className="card">
+        <CertificateDisplay 
+          gymnastId={gymnastId} 
+          showActions={false}
+        />
+      </div>
 
       {/* Guardians */}
       {gymnast.guardians && gymnast.guardians.length > 0 && (

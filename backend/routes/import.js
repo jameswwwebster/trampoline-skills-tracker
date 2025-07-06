@@ -1,0 +1,489 @@
+const express = require('express');
+const multer = require('multer');
+const csv = require('csv-parser');
+const fs = require('fs');
+const path = require('path');
+const { PrismaClient } = require('@prisma/client');
+const { auth, requireRole } = require('../middleware/auth');
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../uploads/csv');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `import-${uniqueSuffix}.csv`);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV files are allowed'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
+// Parse date from various formats
+function parseDate(dateString) {
+  if (!dateString || dateString.trim() === '') return null;
+  
+  try {
+    const trimmed = dateString.trim();
+    
+    // Try multiple date formats
+    const formats = [
+      // MM/DD/YYYY format (British Gymnastics default)
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})(\s|$)/,
+      // DD/MM/YYYY format
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})(\s|$)/,
+      // YYYY-MM-DD format
+      /^(\d{4})-(\d{1,2})-(\d{1,2})(\s|$)/,
+      // DD-MM-YYYY format
+      /^(\d{1,2})-(\d{1,2})-(\d{4})(\s|$)/
+    ];
+    
+    // Try MM/DD/YYYY format first (most common for British Gymnastics)
+    let match = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(\s|$)/);
+    if (match) {
+      const [, month, day, year] = match;
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (!isNaN(date.getTime()) && date.getFullYear() == year) {
+        return date;
+      }
+    }
+    
+    // Try YYYY-MM-DD format
+    match = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(\s|$)/);
+    if (match) {
+      const [, year, month, day] = match;
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (!isNaN(date.getTime()) && date.getFullYear() == year) {
+        return date;
+      }
+    }
+    
+    // Try DD/MM/YYYY format (European)
+    match = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(\s|$)/);
+    if (match) {
+      const [, day, month, year] = match;
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (!isNaN(date.getTime()) && date.getFullYear() == year) {
+        return date;
+      }
+    }
+    
+    // Try DD-MM-YYYY format
+    match = trimmed.match(/^(\d{1,2})-(\d{1,2})-(\d{4})(\s|$)/);
+    if (match) {
+      const [, day, month, year] = match;
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (!isNaN(date.getTime()) && date.getFullYear() == year) {
+        return date;
+      }
+    }
+    
+    // Try JavaScript Date parsing as fallback
+    const date = new Date(trimmed);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error parsing date:', dateString, error);
+    return null;
+  }
+}
+
+// Clean and validate phone number
+function cleanPhoneNumber(phone) {
+  if (!phone) return null;
+  
+  // Remove all non-digit characters
+  const cleaned = phone.replace(/\D/g, '');
+  
+  // Return null if too short or too long
+  if (cleaned.length < 10 || cleaned.length > 15) {
+    return null;
+  }
+  
+  return phone.trim();
+}
+
+// Clean and validate email
+function cleanEmail(email) {
+  if (!email) return null;
+  
+  const cleaned = email.trim().toLowerCase();
+  
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleaned)) {
+    return null;
+  }
+  
+  return cleaned;
+}
+
+// Determine if person is likely a gymnast based on age and roles
+function isLikelyGymnast(age, roles) {
+  // If age is under 25 and roles only contains "Member", likely a gymnast
+  if (age && age < 25 && roles && roles.toLowerCase().includes('member') && !roles.toLowerCase().includes('coach') && !roles.toLowerCase().includes('administrator')) {
+    return true;
+  }
+  
+  // If age is under 18, very likely a gymnast
+  if (age && age < 18) {
+    return true;
+  }
+  
+  return false;
+}
+
+// Preview CSV data before import
+router.post('/preview', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No CSV file uploaded' });
+    }
+
+    const results = [];
+    const errors = [];
+    let lineNumber = 0;
+
+    const stream = fs.createReadStream(req.file.path)
+      .pipe(csv({
+        mapHeaders: ({ header }) => header.trim()
+      }));
+
+    for await (const row of stream) {
+      lineNumber++;
+      
+      try {
+        const firstName = row['First Name']?.trim();
+        const lastName = row['Last Name']?.trim();
+        const email = cleanEmail(row['Email']);
+        const phone = cleanPhoneNumber(row['Phone No']);
+        const dateOfBirth = parseDate(row['Date Of Birth']);
+        const age = parseInt(row['Age']);
+        const organisation = row['Organisation']?.trim();
+        const roles = row['Roles']?.trim();
+        const memberships = row['Memberships']?.trim();
+        const mid = row['MID']?.trim();
+
+        // Validation
+        if (!firstName || !lastName) {
+          errors.push({
+            line: lineNumber,
+            error: 'Missing first name or last name',
+            data: row
+          });
+          continue;
+        }
+
+        // Date of birth is optional for gymnasts, but if provided, must be valid
+        if (row['Date Of Birth'] && row['Date Of Birth'].trim() !== '' && !dateOfBirth) {
+          errors.push({
+            line: lineNumber,
+            error: 'Invalid date of birth format',
+            data: row
+          });
+          continue;
+        }
+
+        // Check if this person is likely a gymnast
+        const isGymnast = isLikelyGymnast(age, roles);
+
+        const processedRow = {
+          line: lineNumber,
+          mid,
+          firstName,
+          lastName,
+          email,
+          phone,
+          dateOfBirth: dateOfBirth ? dateOfBirth.toISOString() : null,
+          age,
+          organisation,
+          roles,
+          memberships,
+          isGymnast,
+          action: 'CREATE' // Default action
+        };
+
+        // Check for existing gymnast/user
+        const existingUser = email ? await prisma.user.findUnique({
+          where: { email }
+        }) : null;
+
+        const existingGymnast = await prisma.gymnast.findFirst({
+          where: {
+            firstName,
+            lastName,
+            clubId: req.user.clubId
+          }
+        });
+
+        if (existingUser || existingGymnast) {
+          processedRow.action = 'SKIP';
+          processedRow.reason = existingUser ? 'Email already exists' : 'Gymnast already exists';
+        }
+
+        results.push(processedRow);
+      } catch (error) {
+        errors.push({
+          line: lineNumber,
+          error: error.message,
+          data: row
+        });
+      }
+    }
+
+    // Clean up uploaded file
+    fs.unlinkSync(req.file.path);
+
+    res.json({
+      success: true,
+      totalRows: results.length,
+      validRows: results.filter(r => r.action === 'CREATE').length,
+      skippedRows: results.filter(r => r.action === 'SKIP').length,
+      errorRows: errors.length,
+      data: results,
+      errors
+    });
+
+  } catch (error) {
+    console.error('CSV preview error:', error);
+    
+    // Clean up uploaded file if it exists
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(500).json({ error: 'Failed to preview CSV file' });
+  }
+});
+
+// Import CSV data
+router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No CSV file uploaded' });
+    }
+
+    const { importOptions } = req.body;
+    const options = importOptions ? JSON.parse(importOptions) : {};
+    
+    const results = [];
+    const errors = [];
+    const imported = [];
+    const skipped = [];
+    let lineNumber = 0;
+
+    const stream = fs.createReadStream(req.file.path)
+      .pipe(csv({
+        mapHeaders: ({ header }) => header.trim()
+      }));
+
+    for await (const row of stream) {
+      lineNumber++;
+      
+      try {
+        const firstName = row['First Name']?.trim();
+        const lastName = row['Last Name']?.trim();
+        const email = cleanEmail(row['Email']);
+        const phone = cleanPhoneNumber(row['Phone No']);
+        const dateOfBirth = parseDate(row['Date Of Birth']);
+        const age = parseInt(row['Age']);
+        const organisation = row['Organisation']?.trim();
+        const roles = row['Roles']?.trim();
+        const memberships = row['Memberships']?.trim();
+        const mid = row['MID']?.trim();
+
+        // Validation
+        if (!firstName || !lastName) {
+          errors.push({
+            line: lineNumber,
+            error: 'Missing first name or last name',
+            data: { firstName, lastName }
+          });
+          continue;
+        }
+
+        // Date of birth is optional for gymnasts, but if provided, must be valid
+        if (row['Date Of Birth'] && row['Date Of Birth'].trim() !== '' && !dateOfBirth) {
+          errors.push({
+            line: lineNumber,
+            error: 'Invalid date of birth format',
+            data: { firstName, lastName, dateOfBirth: row['Date Of Birth'] }
+          });
+          continue;
+        }
+
+        // Check if this person should be imported as a gymnast
+        const isGymnast = isLikelyGymnast(age, roles);
+        
+        // Skip if not importing non-gymnasts and this person isn't a gymnast
+        if (!options.importNonGymnasts && !isGymnast) {
+          skipped.push({
+            line: lineNumber,
+            reason: 'Not identified as gymnast',
+            data: { firstName, lastName, age, roles }
+          });
+          continue;
+        }
+
+        // Check for existing records
+        const existingUser = email ? await prisma.user.findUnique({
+          where: { email }
+        }) : null;
+
+        const existingGymnast = await prisma.gymnast.findFirst({
+          where: {
+            firstName,
+            lastName,
+            clubId: req.user.clubId
+          }
+        });
+
+        if (existingUser && !options.updateExisting) {
+          skipped.push({
+            line: lineNumber,
+            reason: 'Email already exists',
+            data: { firstName, lastName, email }
+          });
+          continue;
+        }
+
+        if (existingGymnast && !options.updateExisting) {
+          skipped.push({
+            line: lineNumber,
+            reason: 'Gymnast already exists',
+            data: { firstName, lastName }
+          });
+          continue;
+        }
+
+        // Import as gymnast
+        let gymnastData = {
+          firstName,
+          lastName,
+          clubId: req.user.clubId
+        };
+        
+        // Only add dateOfBirth if it's available
+        if (dateOfBirth) {
+          gymnastData.dateOfBirth = dateOfBirth;
+        }
+
+        let userData = null;
+        if (email) {
+          userData = {
+            email,
+            firstName,
+            lastName,
+            role: isGymnast ? 'PARENT' : 'PARENT', // Default role for imported users
+            clubId: req.user.clubId,
+            password: null // Will be set when they first log in
+          };
+        }
+
+        let createdGymnast;
+        let createdUser = null;
+
+        if (existingGymnast) {
+          // Update existing gymnast
+          createdGymnast = await prisma.gymnast.update({
+            where: { id: existingGymnast.id },
+            data: gymnastData
+          });
+        } else {
+          // Create new gymnast
+          createdGymnast = await prisma.gymnast.create({
+            data: gymnastData
+          });
+        }
+
+        if (userData) {
+          if (existingUser) {
+            // Update existing user
+            createdUser = await prisma.user.update({
+              where: { id: existingUser.id },
+              data: userData
+            });
+          } else {
+            // Create new user
+            createdUser = await prisma.user.create({
+              data: userData
+            });
+          }
+
+          // Link gymnast to user if not already linked
+          if (!createdGymnast.userId) {
+            await prisma.gymnast.update({
+              where: { id: createdGymnast.id },
+              data: { userId: createdUser.id }
+            });
+          }
+        }
+
+        imported.push({
+          line: lineNumber,
+          gymnastId: createdGymnast.id,
+          userId: createdUser?.id,
+          data: { firstName, lastName, email, dateOfBirth, age, roles }
+        });
+
+      } catch (error) {
+        console.error('Error processing row:', error);
+        errors.push({
+          line: lineNumber,
+          error: error.message,
+          data: row
+        });
+      }
+    }
+
+    // Clean up uploaded file
+    fs.unlinkSync(req.file.path);
+
+    res.json({
+      success: true,
+      summary: {
+        totalProcessed: lineNumber,
+        imported: imported.length,
+        skipped: skipped.length,
+        errors: errors.length
+      },
+      imported,
+      skipped,
+      errors
+    });
+
+  } catch (error) {
+    console.error('CSV import error:', error);
+    
+    // Clean up uploaded file if it exists
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(500).json({ error: 'Failed to import CSV file' });
+  }
+});
+
+module.exports = router; 

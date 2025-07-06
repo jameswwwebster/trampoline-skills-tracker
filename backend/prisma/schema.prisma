@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,6 +5,359 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id                            String            @id @default(cuid())
+  email                         String?           @unique
+  password                      String?
+  firstName                     String
+  lastName                      String
+  role                          UserRole
+  clubId                        String?
+  createdAt                     DateTime          @default(now())
+  updatedAt                     DateTime          @updatedAt
+  shareCode                     String?
+  passwordResetToken            String?
+  passwordResetTokenExpiresAt   DateTime?
+  mustChangePassword            Boolean           @default(false)
+  archivedAt                    DateTime?
+  archivedById                  String?
+  archivedReason                String?
+  isArchived                    Boolean           @default(false)
+  awardedCertificates           Certificate[]     @relation("AwardedCertificates")
+  physicallyAwardedCertificates Certificate[]     @relation("PhysicallyAwardedCertificates")
+  printedCertificates           Certificate[]     @relation("PrintedCertificates")
+  guardianRequests              GuardianRequest[] @relation("GuardianRequests")
+  processedRequests             GuardianRequest[] @relation("ProcessedRequests")
+  archivedGymnasts              Gymnast[]         @relation("ArchivedGymnasts")
+  gymnasts                      Gymnast[]         @relation("UserGymnasts")
+  receivedInvites               Invite[]          @relation("ReceivedInvites")
+  sentInvites                   Invite[]          @relation("SentInvites")
+  levelProgress                 LevelProgress[]
+  routineProgress               RoutineProgress[]
+  skillProgress                 SkillProgress[]
+  archivedBy                    User?             @relation("ArchivedUsers", fields: [archivedById], references: [id])
+  archivedUsers                 User[]            @relation("ArchivedUsers")
+  club                          Club?             @relation(fields: [clubId], references: [id])
+  guardedGymnasts               Gymnast[]         @relation("GuardianGymnasts")
+
+  @@map("users")
+}
+
+model Club {
+  id                    String                @id @default(cuid())
+  name                  String
+  address               String?
+  phone                 String?
+  email                 String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  codeOfTheDay          String?
+  codeOfTheDayExpiresAt DateTime?
+  accentColor           String?               @default("#e74c3c")
+  backgroundColor       String?               @default("#f8f9fa")
+  customCss             String?
+  description           String?
+  fontFamily            String?               @default("Arial, sans-serif")
+  logoUrl               String?
+  primaryColor          String?               @default("#3498db")
+  secondaryColor        String?               @default("#2c3e50")
+  textColor             String?               @default("#212529")
+  website               String?
+  certificateTemplates  CertificateTemplate[]
+  certificates          Certificate[]
+  gymnasts              Gymnast[]
+  invites               Invite[]
+  users                 User[]
+
+  @@map("clubs")
+}
+
+model Gymnast {
+  id               String            @id @default(cuid())
+  firstName        String
+  lastName         String
+  dateOfBirth      DateTime?
+  clubId           String
+  userId           String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  coachNotes       String?
+  archivedAt       DateTime?
+  archivedById     String?
+  archivedReason   String?
+  isArchived       Boolean           @default(false)
+  certificates     Certificate[]
+  guardianRequests GuardianRequest[]
+  archivedBy       User?             @relation("ArchivedGymnasts", fields: [archivedById], references: [id])
+  club             Club              @relation(fields: [clubId], references: [id])
+  user             User?             @relation("UserGymnasts", fields: [userId], references: [id])
+  levelProgress    LevelProgress[]
+  routineProgress  RoutineProgress[]
+  skillProgress    SkillProgress[]
+  guardians        User[]            @relation("GuardianGymnasts")
+
+  @@map("gymnasts")
+}
+
+model Level {
+  id              String             @id @default(cuid())
+  number          Int
+  identifier      String             @unique
+  name            String
+  description     String?
+  type            LevelType?
+  prerequisiteId  String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  certificates    Certificate[]
+  competitions    LevelCompetition[]
+  levelProgress   LevelProgress[]
+  prerequisite    Level?             @relation("LevelPrerequisites", fields: [prerequisiteId], references: [id])
+  dependentLevels Level[]            @relation("LevelPrerequisites")
+  routines        Routine[]
+  skills          Skill[]
+
+  @@map("levels")
+}
+
+model Skill {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?
+  levelId       String
+  order         Int
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  routineSkills RoutineSkill[]
+  skillProgress SkillProgress[]
+  level         Level           @relation(fields: [levelId], references: [id])
+
+  @@map("skills")
+}
+
+model Routine {
+  id              String            @id @default(cuid())
+  name            String?
+  description     String?
+  levelId         String
+  order           Int
+  isAlternative   Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @updatedAt
+  levelProgress   LevelProgress[]
+  routineProgress RoutineProgress[]
+  routineSkills   RoutineSkill[]
+  level           Level             @relation(fields: [levelId], references: [id])
+
+  @@map("routines")
+}
+
+model RoutineSkill {
+  id        String   @id @default(cuid())
+  routineId String
+  skillId   String
+  order     Int
+  createdAt DateTime @default(now())
+  routine   Routine  @relation(fields: [routineId], references: [id])
+  skill     Skill    @relation(fields: [skillId], references: [id])
+
+  @@unique([routineId, skillId])
+  @@map("routine_skills")
+}
+
+model RoutineProgress {
+  id          String         @id @default(cuid())
+  gymnastId   String
+  routineId   String
+  userId      String
+  status      ProgressStatus @default(NOT_STARTED)
+  notes       String?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  gymnast     Gymnast        @relation(fields: [gymnastId], references: [id])
+  routine     Routine        @relation(fields: [routineId], references: [id])
+  user        User           @relation(fields: [userId], references: [id])
+
+  @@unique([gymnastId, routineId])
+  @@map("routine_progress")
+}
+
+model SkillProgress {
+  id          String         @id @default(cuid())
+  gymnastId   String
+  skillId     String
+  userId      String
+  status      ProgressStatus @default(NOT_STARTED)
+  notes       String?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  gymnast     Gymnast        @relation(fields: [gymnastId], references: [id])
+  skill       Skill          @relation(fields: [skillId], references: [id])
+  user        User           @relation(fields: [userId], references: [id])
+
+  @@unique([gymnastId, skillId])
+  @@map("skill_progress")
+}
+
+model LevelProgress {
+  id          String         @id @default(cuid())
+  gymnastId   String
+  levelId     String
+  routineId   String?
+  userId      String
+  status      ProgressStatus @default(NOT_STARTED)
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  gymnast     Gymnast        @relation(fields: [gymnastId], references: [id])
+  level       Level          @relation(fields: [levelId], references: [id])
+  routine     Routine?       @relation(fields: [routineId], references: [id])
+  user        User           @relation(fields: [userId], references: [id])
+
+  @@unique([gymnastId, levelId])
+  @@map("level_progress")
+}
+
+model GuardianRequest {
+  id              String        @id @default(cuid())
+  guardianId      String
+  gymnastId       String
+  requestedBy     String
+  processedBy     String?
+  status          RequestStatus @default(PENDING)
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  guardian        User          @relation("GuardianRequests", fields: [guardianId], references: [id])
+  gymnast         Gymnast       @relation(fields: [gymnastId], references: [id])
+  requestedByUser User          @relation("ProcessedRequests", fields: [requestedBy], references: [id])
+
+  @@unique([guardianId, gymnastId])
+  @@map("guardian_requests")
+}
+
+model Invite {
+  id           String       @id @default(cuid())
+  email        String
+  clubId       String
+  invitedById  String
+  acceptedById String?
+  role         UserRole     @default(COACH)
+  token        String       @unique @default(cuid())
+  status       InviteStatus @default(PENDING)
+  expiresAt    DateTime
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  acceptedBy   User?        @relation("ReceivedInvites", fields: [acceptedById], references: [id])
+  club         Club         @relation(fields: [clubId], references: [id])
+  invitedBy    User         @relation("SentInvites", fields: [invitedById], references: [id])
+
+  @@unique([email, clubId, status])
+  @@map("invites")
+}
+
+model Competition {
+  id          String             @id @default(cuid())
+  name        String
+  code        String             @unique
+  description String?
+  order       Int
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  category    String
+  levels      LevelCompetition[]
+
+  @@map("competitions")
+}
+
+model LevelCompetition {
+  id            String      @id @default(cuid())
+  levelId       String
+  competitionId String
+  createdAt     DateTime    @default(now())
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  level         Level       @relation(fields: [levelId], references: [id], onDelete: Cascade)
+
+  @@unique([levelId, competitionId])
+  @@map("level_competitions")
+}
+
+model CertificateTemplate {
+  id           String             @id @default(cuid())
+  clubId       String
+  name         String
+  fileName     String
+  filePath     String
+  fileSize     Int
+  isDefault    Boolean            @default(false)
+  isActive     Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  fields       CertificateField[]
+  club         Club               @relation(fields: [clubId], references: [id])
+  certificates Certificate[]
+
+  @@map("certificate_templates")
+}
+
+model CertificateField {
+  id         String               @id @default(cuid())
+  templateId String
+  fieldType  CertificateFieldType
+  label      String
+  x          Float
+  y          Float
+  width      Float?
+  height     Float?
+  fontSize   Int                  @default(18)
+  fontFamily String               @default("Arial")
+  fontColor  String               @default("#000000")
+  fontWeight String               @default("normal")
+  textAlign  String               @default("center")
+  rotation   Float                @default(0)
+  isVisible  Boolean              @default(true)
+  customText String?
+  order      Int                  @default(0)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  template   CertificateTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, fieldType, order])
+  @@map("certificate_fields")
+}
+
+model Certificate {
+  id                    String               @id @default(cuid())
+  gymnastId             String
+  levelId               String
+  awardedById           String
+  type                  CertificateType      @default(LEVEL_COMPLETION)
+  status                CertificateStatus    @default(AWARDED)
+  awardedAt             DateTime             @default(now())
+  printedAt             DateTime?
+  printedById           String?
+  physicallyAwardedAt   DateTime?
+  physicallyAwardedById String?
+  notes                 String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  clubId                String
+  templateId            String?
+  awardedBy             User                 @relation("AwardedCertificates", fields: [awardedById], references: [id])
+  club                  Club                 @relation(fields: [clubId], references: [id])
+  gymnast               Gymnast              @relation(fields: [gymnastId], references: [id])
+  level                 Level                @relation(fields: [levelId], references: [id])
+  physicallyAwardedBy   User?                @relation("PhysicallyAwardedCertificates", fields: [physicallyAwardedById], references: [id])
+  printedBy             User?                @relation("PrintedCertificates", fields: [printedById], references: [id])
+  template              CertificateTemplate? @relation(fields: [templateId], references: [id])
+
+  @@unique([gymnastId, levelId, type])
+  @@map("certificates")
 }
 
 enum UserRole {
@@ -41,285 +391,24 @@ enum InviteStatus {
   EXPIRED
 }
 
-enum CompetitionCategory {
-  CLUB
-  REGIONAL
-  LEAGUE
-  NATIONAL
-  INTERNATIONAL
+enum CertificateFieldType {
+  GYMNAST_NAME
+  COACH_NAME
+  DATE
+  LEVEL_NAME
+  LEVEL_NUMBER
+  CLUB_NAME
+  CUSTOM_TEXT
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  firstName String
-  lastName  String
-  role      UserRole
-  clubId    String?
-  shareCode String? // Share code for gymnasts to access their progress (renamed from familyAccessCode)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  club               Club?               @relation(fields: [clubId], references: [id])
-  gymnasts           Gymnast[]           @relation("UserGymnasts")
-  guardedGymnasts    Gymnast[]           @relation("GuardianGymnasts")
-  skillProgress      SkillProgress[]
-  levelProgress      LevelProgress[]
-  routineProgress    RoutineProgress[]
-  guardianRequests   GuardianRequest[]   @relation("GuardianRequests")
-  processedRequests  GuardianRequest[]   @relation("ProcessedRequests")
-  sentInvites        Invite[]            @relation("SentInvites")
-  receivedInvites    Invite[]            @relation("ReceivedInvites")
-  @@map("users")
+enum CertificateStatus {
+  AWARDED
+  PRINTED
+  DELIVERED
 }
 
-model Club {
-  id        String   @id @default(cuid())
-  name      String
-  address   String?
-  phone     String?
-  email     String?
-  codeOfTheDay String? // Daily code that any gymnast in the club can use
-  codeOfTheDayExpiresAt DateTime? // When the code expires
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  users     User[]
-  gymnasts  Gymnast[]
-  invites   Invite[]
-
-  @@map("clubs")
+enum CertificateType {
+  LEVEL_COMPLETION
+  SPECIAL_ACHIEVEMENT
+  PARTICIPATION
 }
-
-model Gymnast {
-  id        String   @id @default(cuid())
-  firstName String
-  lastName  String
-  dateOfBirth DateTime?
-  clubId    String
-  userId    String?   // Optional - gymnast might not have their own account
-  coachNotes String?  // Notes from coaches about the gymnast's progress
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  club              Club                @relation(fields: [clubId], references: [id])
-  user              User?               @relation("UserGymnasts", fields: [userId], references: [id])
-  guardians         User[]              @relation("GuardianGymnasts")
-  skillProgress     SkillProgress[]
-  levelProgress     LevelProgress[]
-  routineProgress   RoutineProgress[]
-  guardianRequests  GuardianRequest[]
-
-  @@map("gymnasts")
-}
-
-model Level {
-  id          String    @id @default(cuid())
-  number      Int       // Base number (1-10 for sequential levels, 3,8,9 for side paths)
-  identifier  String    @unique // Full identifier: "1", "2", "3a", "8b", etc.
-  name        String
-  description String?
-  type        LevelType? // Made optional since some levels might not have a type
-  prerequisiteId String? // For sequential levels, points to previous level
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  // Relations
-  prerequisite    Level?            @relation("LevelPrerequisites", fields: [prerequisiteId], references: [id])
-  dependentLevels Level[]           @relation("LevelPrerequisites")
-  skills          Skill[]
-  routines        Routine[]
-  levelProgress   LevelProgress[]
-  competitions    LevelCompetition[] // Many-to-many relationship with competitions
-
-  @@map("levels")
-}
-
-model Skill {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  levelId     String
-  order       Int      // Order within the level
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  level         Level           @relation(fields: [levelId], references: [id])
-  skillProgress SkillProgress[]
-  routineSkills RoutineSkill[]
-
-  @@map("skills")
-}
-
-model Routine {
-  id          String   @id @default(cuid())
-  name        String?  // Made optional since routines might not have names
-  description String?
-  levelId     String
-  order       Int      // Order within the level (for multiple routines)
-  isAlternative Boolean @default(false) // For levels with multiple routine options
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
-
-  // Relations
-  level           Level             @relation(fields: [levelId], references: [id])
-  levelProgress   LevelProgress[]
-  routineSkills   RoutineSkill[]
-  routineProgress RoutineProgress[]
-
-  @@map("routines")
-}
-
-model RoutineSkill {
-  id        String   @id @default(cuid())
-  routineId String
-  skillId   String
-  order     Int      // Order within the routine
-  createdAt DateTime @default(now())
-
-  // Relations
-  routine Routine @relation(fields: [routineId], references: [id])
-  skill   Skill   @relation(fields: [skillId], references: [id])
-
-  @@unique([routineId, skillId])
-  @@map("routine_skills")
-}
-
-model RoutineProgress {
-  id         String         @id @default(cuid())
-  gymnastId  String
-  routineId  String
-  userId     String         // Coach or admin who marked it
-  status     ProgressStatus @default(NOT_STARTED)
-  notes      String?
-  completedAt DateTime?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
-
-  // Relations
-  gymnast Gymnast @relation(fields: [gymnastId], references: [id])
-  routine Routine @relation(fields: [routineId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
-
-  @@unique([gymnastId, routineId])
-  @@map("routine_progress")
-}
-
-model SkillProgress {
-  id         String         @id @default(cuid())
-  gymnastId  String
-  skillId    String
-  userId     String         // Coach or admin who marked it
-  status     ProgressStatus @default(NOT_STARTED)
-  notes      String?
-  completedAt DateTime?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
-
-  // Relations
-  gymnast Gymnast @relation(fields: [gymnastId], references: [id])
-  skill   Skill   @relation(fields: [skillId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
-
-  @@unique([gymnastId, skillId])
-  @@map("skill_progress")
-}
-
-model LevelProgress {
-  id         String         @id @default(cuid())
-  gymnastId  String
-  levelId    String
-  routineId  String?        // For levels with routine requirements
-  userId     String         // Coach or admin who marked it
-  status     ProgressStatus @default(NOT_STARTED)
-  completedAt DateTime?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
-
-  // Relations
-  gymnast Gymnast @relation(fields: [gymnastId], references: [id])
-  level   Level   @relation(fields: [levelId], references: [id])
-  routine Routine? @relation(fields: [routineId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
-
-  @@unique([gymnastId, levelId])
-  @@map("level_progress")
-}
-
-model GuardianRequest {
-  id         String        @id @default(cuid())
-  guardianId String
-  gymnastId  String
-  requestedBy String       // User who made the request
-  processedBy String?      // Coach who approved/rejected
-  status     RequestStatus @default(PENDING)
-  notes      String?
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-
-  // Relations
-  guardian    User    @relation("GuardianRequests", fields: [guardianId], references: [id])
-  gymnast     Gymnast @relation(fields: [gymnastId], references: [id])
-  requestedByUser User @relation("ProcessedRequests", fields: [requestedBy], references: [id])
-
-  @@unique([guardianId, gymnastId])
-  @@map("guardian_requests")
-}
-
-model Invite {
-  id         String       @id @default(cuid())
-  email      String
-  clubId     String
-  invitedById String      // Club admin who sent the invite
-  acceptedById String?    // User who accepted the invite
-  role       UserRole     @default(COACH) // Role being invited for
-  token      String       @unique @default(cuid()) // Unique token for acceptance
-  status     InviteStatus @default(PENDING)
-  expiresAt  DateTime
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-
-  // Relations
-  club        Club  @relation(fields: [clubId], references: [id])
-  invitedBy   User  @relation("SentInvites", fields: [invitedById], references: [id])
-  acceptedBy  User? @relation("ReceivedInvites", fields: [acceptedById], references: [id])
-
-  @@unique([email, clubId, status]) // Prevent duplicate pending invites
-  @@map("invites")
-}
-
-model Competition {
-  id          String             @id @default(cuid())
-  name        String             // Display name: "Club Level 1", "Regional Level 2", etc.
-  code        String             @unique // Unique code: "club-level-1", "regional-level-2", etc.
-  description String?            // Optional description of the competition
-  category    CompetitionCategory
-  order       Int                // For sorting competitions within categories
-  isActive    Boolean            @default(true) // Allow deactivating competitions without deleting
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-
-  // Relations
-  levels      LevelCompetition[] // Many-to-many relationship with levels
-
-  @@map("competitions")
-}
-
-model LevelCompetition {
-  id            String      @id @default(cuid())
-  levelId       String
-  competitionId String
-  createdAt     DateTime    @default(now())
-
-  // Relations
-  level       Level       @relation(fields: [levelId], references: [id], onDelete: Cascade)
-  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-
-  @@unique([levelId, competitionId])
-  @@map("level_competitions")
-} 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -17,7 +17,7 @@ const Levels = () => {
   const [expandedLevels, setExpandedLevels] = useState(new Set());
   const [expandedRoutines, setExpandedRoutines] = useState(new Set());
   const [editMode, setEditMode] = useState(false);
-  const { user, canEditLevels } = useAuth();
+  const { canEditLevels } = useAuth();
 
   // Close any open modals when edit mode is turned off
   const toggleEditMode = () => {
@@ -34,17 +34,42 @@ const Levels = () => {
   };
 
   useEffect(() => {
-    fetchLevels();
     if (canEditLevels) {
+      fetchLevels();
       fetchCompetitions();
     }
   }, [canEditLevels]);
+
+  const fetchAvailableSkills = useCallback(async () => {
+    try {
+      // Use the first level ID to get available skills (endpoint works with any level)
+      const response = await axios.get(`/api/levels/${levels[0].id}/available-skills`);
+      setAvailableSkills(response.data);
+    } catch (error) {
+      console.error('Failed to fetch available skills:', error);
+    }
+  }, [levels]);
 
   useEffect(() => {
     if (canEditLevels && levels.length > 0) {
       fetchAvailableSkills();
     }
-  }, [canEditLevels, levels]);
+  }, [canEditLevels, levels, fetchAvailableSkills]);
+
+  // Only club admins can access this page
+  if (!canEditLevels) {
+    return (
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Access Denied</h3>
+        </div>
+        <div>
+          <p>You don't have permission to access the levels management page.</p>
+          <p>Only club administrators can view and manage trampoline levels.</p>
+        </div>
+      </div>
+    );
+  }
 
   const fetchLevels = async () => {
     try {
@@ -71,15 +96,7 @@ const Levels = () => {
     }
   };
 
-  const fetchAvailableSkills = async () => {
-    try {
-      // Use the first level ID to get available skills (endpoint works with any level)
-      const response = await axios.get(`/api/levels/${levels[0].id}/available-skills`);
-      setAvailableSkills(response.data);
-    } catch (error) {
-      console.error('Failed to fetch available skills:', error);
-    }
-  };
+  // Remove duplicate function declaration - using useCallback version above
 
   const toggleLevelExpansion = (levelId) => {
     const newExpanded = new Set(expandedLevels);

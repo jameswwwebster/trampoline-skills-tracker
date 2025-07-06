@@ -1,0 +1,333 @@
+const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+const { auth, requireRole } = require('../middleware/auth');
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// Get dashboard metrics for coaches and admins
+router.get('/metrics', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const clubId = req.user.clubId;
+
+    // Get all gymnasts in the club
+    const gymnasts = await prisma.gymnast.findMany({
+      where: { clubId },
+      include: {
+        levelProgress: {
+          include: {
+            level: true
+          }
+        },
+        skillProgress: {
+          where: {
+            status: 'COMPLETED'
+          },
+          include: {
+            skill: {
+              include: {
+                level: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Get all levels for reference
+    const levels = await prisma.level.findMany({
+      orderBy: { number: 'asc' },
+      include: {
+        skills: true,
+        competitions: {
+          include: {
+            competition: true
+          }
+        }
+      }
+    });
+
+    // Calculate level distribution
+    const levelDistribution = {};
+    levels.forEach(level => {
+      levelDistribution[level.identifier] = {
+        levelName: level.name,
+        count: 0,
+        gymnasts: []
+      };
+    });
+
+    // Calculate gymnastics metrics
+    gymnasts.forEach(gymnast => {
+      // Find highest completed level
+      const completedLevels = gymnast.levelProgress
+        .filter(lp => lp.status === 'COMPLETED')
+        .map(lp => lp.level);
+      
+      const currentLevel = completedLevels.length > 0 
+        ? completedLevels.reduce((max, level) => level.number > max.number ? level : max)
+        : levels.find(l => l.number === 1); // Default to level 1
+
+      if (currentLevel) {
+        const identifier = currentLevel.identifier;
+        if (levelDistribution[identifier]) {
+          levelDistribution[identifier].count++;
+          levelDistribution[identifier].gymnasts.push({
+            id: gymnast.id,
+            firstName: gymnast.firstName,
+            lastName: gymnast.lastName
+          });
+        }
+      }
+    });
+
+    // Calculate competition readiness (only count gymnasts for their highest eligible competition)
+    const competitionReadiness = {};
+    
+    // First, collect all competitions
+    const allCompetitions = {};
+    levels.forEach(level => {
+      level.competitions.forEach(({ competition }) => {
+        if (!allCompetitions[competition.name]) {
+          allCompetitions[competition.name] = {
+            category: competition.category,
+            levelNumber: level.number,
+            levelId: level.id,
+            levelName: level.name
+          };
+        }
+      });
+    });
+
+    // Initialize competition readiness structure
+    Object.keys(allCompetitions).forEach(competitionName => {
+      competitionReadiness[competitionName] = {
+        category: allCompetitions[competitionName].category,
+        ready: 0,
+        readyGymnasts: []
+      };
+    });
+
+    // For each gymnast, find their highest eligible competition
+    gymnasts.forEach(gymnast => {
+      // Find all competitions this gymnast is eligible for
+      const eligibleCompetitions = [];
+      
+      gymnast.levelProgress.forEach(lp => {
+        if (lp.status === 'COMPLETED') {
+          const level = levels.find(l => l.id === lp.levelId);
+          if (level && level.competitions) {
+            level.competitions.forEach(({ competition }) => {
+              eligibleCompetitions.push({
+                name: competition.name,
+                category: competition.category,
+                levelNumber: level.number,
+                levelName: level.name
+              });
+            });
+          }
+        }
+      });
+
+      // If gymnast has eligible competitions, find all at the highest level
+      if (eligibleCompetitions.length > 0) {
+        // Find the highest level number
+        const highestLevelNumber = Math.max(...eligibleCompetitions.map(comp => comp.levelNumber));
+        
+        // Get all competitions at that highest level
+        const highestLevelCompetitions = eligibleCompetitions.filter(comp => 
+          comp.levelNumber === highestLevelNumber
+        );
+
+        // Add gymnast to all competitions at their highest eligible level
+        highestLevelCompetitions.forEach(competition => {
+          competitionReadiness[competition.name].ready++;
+          competitionReadiness[competition.name].readyGymnasts.push({
+            id: gymnast.id,
+            firstName: gymnast.firstName,
+            lastName: gymnast.lastName,
+            level: competition.levelName
+          });
+        });
+      }
+    });
+
+    // Calculate recent activity (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const recentSkillProgress = await prisma.skillProgress.findMany({
+      where: {
+        gymnast: { clubId },
+        updatedAt: { gte: thirtyDaysAgo }
+      },
+      include: {
+        gymnast: true,
+        skill: {
+          include: {
+            level: true
+          }
+        }
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10
+    });
+
+    const recentLevelProgress = await prisma.levelProgress.findMany({
+      where: {
+        gymnast: { clubId },
+        updatedAt: { gte: thirtyDaysAgo }
+      },
+      include: {
+        gymnast: true,
+        level: true
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10
+    });
+
+    // Calculate skill completion rates
+    const skillStats = {};
+    gymnasts.forEach(gymnast => {
+      gymnast.skillProgress.forEach(sp => {
+        const levelId = sp.skill.level.identifier;
+        if (!skillStats[levelId]) {
+          skillStats[levelId] = {
+            levelName: sp.skill.level.name,
+            totalSkills: 0,
+            completedSkills: 0,
+            completion: 0
+          };
+        }
+        skillStats[levelId].totalSkills++;
+        if (sp.status === 'COMPLETED') {
+          skillStats[levelId].completedSkills++;
+        }
+      });
+    });
+
+    // Calculate completion percentages
+    Object.keys(skillStats).forEach(levelId => {
+      const stats = skillStats[levelId];
+      stats.completion = stats.totalSkills > 0 
+        ? Math.round((stats.completedSkills / stats.totalSkills) * 100)
+        : 0;
+    });
+
+    // Summary statistics
+    const totalGymnasts = gymnasts.length;
+    const activeGymnasts = gymnasts.filter(g => 
+      g.skillProgress.some(sp => {
+        const lastUpdate = new Date(sp.updatedAt);
+        return lastUpdate >= thirtyDaysAgo;
+      })
+    ).length;
+
+    const totalSkillsCompleted = gymnasts.reduce((sum, gymnast) => 
+      sum + gymnast.skillProgress.filter(sp => sp.status === 'COMPLETED').length, 0
+    );
+
+    res.json({
+      summary: {
+        totalGymnasts,
+        activeGymnasts,
+        totalSkillsCompleted,
+        clubName: req.user.club?.name
+      },
+      levelDistribution,
+      competitionReadiness,
+      recentActivity: {
+        skills: recentSkillProgress,
+        levels: recentLevelProgress
+      },
+      skillStats
+    });
+
+  } catch (error) {
+    console.error('Dashboard metrics error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get gymnasts who haven't received certificates yet
+router.get('/uncertified-gymnasts', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const clubId = req.user.clubId;
+
+    // Get all gymnasts in the club with their completed levels and existing certificates
+    const gymnasts = await prisma.gymnast.findMany({
+      where: { 
+        clubId,
+        isArchived: false // Only show active gymnasts
+      },
+      include: {
+        levelProgress: {
+          where: {
+            status: 'COMPLETED'
+          },
+          include: {
+            level: true
+          }
+        },
+        certificates: {
+          select: {
+            id: true,
+            levelId: true,
+            type: true
+          }
+        }
+      }
+    });
+
+    // Filter gymnasts to find those with completed levels but no certificates for those levels
+    const uncertifiedGymnasts = gymnasts.filter(gymnast => {
+      // Get completed level IDs
+      const completedLevelIds = gymnast.levelProgress.map(lp => lp.levelId);
+      
+      // Get level IDs that already have certificates
+      const certifiedLevelIds = gymnast.certificates.map(cert => cert.levelId);
+      
+      // Find levels that are completed but don't have certificates
+      const uncertifiedLevelIds = completedLevelIds.filter(levelId => 
+        !certifiedLevelIds.includes(levelId)
+      );
+      
+      return uncertifiedLevelIds.length > 0;
+    }).map(gymnast => {
+      // Get the uncertified levels for this gymnast
+      const completedLevelIds = gymnast.levelProgress.map(lp => lp.levelId);
+      const certifiedLevelIds = gymnast.certificates.map(cert => cert.levelId);
+      const uncertifiedLevelIds = completedLevelIds.filter(levelId => 
+        !certifiedLevelIds.includes(levelId)
+      );
+      
+      const uncertifiedLevels = gymnast.levelProgress
+        .filter(lp => uncertifiedLevelIds.includes(lp.levelId))
+        .map(lp => lp.level)
+        .sort((a, b) => a.number - b.number);
+
+      return {
+        id: gymnast.id,
+        firstName: gymnast.firstName,
+        lastName: gymnast.lastName,
+        uncertifiedLevels,
+        totalUncertifiedLevels: uncertifiedLevels.length
+      };
+    });
+
+    // Sort by number of uncertified levels (descending) then by name
+    uncertifiedGymnasts.sort((a, b) => {
+      if (a.totalUncertifiedLevels !== b.totalUncertifiedLevels) {
+        return b.totalUncertifiedLevels - a.totalUncertifiedLevels;
+      }
+      return a.firstName.localeCompare(b.firstName);
+    });
+
+    res.json(uncertifiedGymnasts);
+  } catch (error) {
+    console.error('Get uncertified gymnasts error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+module.exports = router; 

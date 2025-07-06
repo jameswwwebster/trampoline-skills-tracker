@@ -11,7 +11,9 @@ const competitionCreateSchema = Joi.object({
   name: Joi.string().min(1).max(100).required(),
   code: Joi.string().min(1).max(50).required(),
   description: Joi.string().max(500).allow('', null),
-  category: Joi.string().valid('CLUB', 'REGIONAL', 'LEAGUE', 'NATIONAL', 'INTERNATIONAL').required(),
+  category: Joi.string().min(1).max(50).required().pattern(/^[A-Za-z0-9\s\-_]+$/).messages({
+    'string.pattern.base': 'Category can only contain letters, numbers, spaces, hyphens, and underscores'
+  }),
   order: Joi.number().integer().min(1).required(),
   isActive: Joi.boolean().default(true)
 });
@@ -20,7 +22,9 @@ const competitionUpdateSchema = Joi.object({
   name: Joi.string().min(1).max(100).optional(),
   code: Joi.string().min(1).max(50).optional(),
   description: Joi.string().max(500).allow('', null).optional(),
-  category: Joi.string().valid('CLUB', 'REGIONAL', 'LEAGUE', 'NATIONAL', 'INTERNATIONAL').optional(),
+  category: Joi.string().min(1).max(50).optional().pattern(/^[A-Za-z0-9\s\-_]+$/).messages({
+    'string.pattern.base': 'Category can only contain letters, numbers, spaces, hyphens, and underscores'
+  }),
   order: Joi.number().integer().min(1).optional(),
   isActive: Joi.boolean().optional()
 });
@@ -68,6 +72,144 @@ router.get('/', auth, async (req, res) => {
     res.json(transformedCompetitions);
   } catch (error) {
     console.error('Get competitions error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get all existing categories (for dropdown options)
+router.get('/categories', auth, async (req, res) => {
+  try {
+    const categories = await prisma.competition.findMany({
+      select: {
+        category: true
+      },
+      distinct: ['category'],
+      orderBy: {
+        category: 'asc'
+      }
+    });
+
+    res.json(categories.map(c => c.category));
+  } catch (error) {
+    console.error('Get categories error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update/rename a category (club admins only)
+router.put('/categories/:categoryName', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { categoryName } = req.params;
+    const { newCategoryName } = req.body;
+
+    if (!newCategoryName || newCategoryName.trim() === '') {
+      return res.status(400).json({ error: 'New category name is required' });
+    }
+
+    // Validate new category name format
+    const categoryPattern = /^[A-Za-z0-9\s\-_]+$/;
+    if (!categoryPattern.test(newCategoryName)) {
+      return res.status(400).json({ error: 'Category name can only contain letters, numbers, spaces, hyphens, and underscores' });
+    }
+
+    // Check if the old category exists
+    const existingCompetitions = await prisma.competition.findMany({
+      where: { category: categoryName }
+    });
+
+    if (existingCompetitions.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    // Check if new category name already exists (case-insensitive)
+    const conflictingCompetitions = await prisma.competition.findMany({
+      where: { 
+        category: {
+          equals: newCategoryName,
+          mode: 'insensitive'
+        }
+      }
+    });
+
+    if (conflictingCompetitions.length > 0 && newCategoryName.toLowerCase() !== categoryName.toLowerCase()) {
+      return res.status(400).json({ error: 'A category with this name already exists' });
+    }
+
+    // Update all competitions in this category
+    const result = await prisma.competition.updateMany({
+      where: { category: categoryName },
+      data: { category: newCategoryName }
+    });
+
+    res.json({ 
+      message: `Category "${categoryName}" renamed to "${newCategoryName}"`,
+      updatedCount: result.count
+    });
+  } catch (error) {
+    console.error('Update category error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete a category (club admins only)
+router.delete('/categories/:categoryName', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { categoryName } = req.params;
+
+    // Check if the category exists and count competitions
+    const competitionsInCategory = await prisma.competition.findMany({
+      where: { category: categoryName }
+    });
+
+    if (competitionsInCategory.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    // Don't allow deletion of categories that have competitions
+    if (competitionsInCategory.length > 0) {
+      return res.status(400).json({ 
+        error: `Cannot delete category "${categoryName}" because it contains ${competitionsInCategory.length} competition(s). Please move or delete all competitions in this category first.`,
+        competitionsCount: competitionsInCategory.length,
+        competitions: competitionsInCategory.map(c => ({ id: c.id, name: c.name }))
+      });
+    }
+
+    // If we reach here, the category has no competitions (this shouldn't happen given the logic above, but keeping for safety)
+    res.json({ message: 'Category deleted successfully' });
+  } catch (error) {
+    console.error('Delete category error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get competition categories and their counts
+router.get('/stats/categories', auth, async (req, res) => {
+  try {
+    const categoryStats = await prisma.competition.groupBy({
+      by: ['category'],
+      _count: {
+        id: true
+      },
+      orderBy: {
+        category: 'asc'
+      }
+    });
+
+    const totalCompetitions = await prisma.competition.count();
+    const activeCompetitions = await prisma.competition.count({
+      where: { isActive: true }
+    });
+
+    res.json({
+      totalCompetitions,
+      activeCompetitions,
+      categoryBreakdown: categoryStats.map(stat => ({
+        category: stat.category,
+        count: stat._count.id
+      }))
+    });
+  } catch (error) {
+    console.error('Get competition stats error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -292,38 +434,6 @@ router.delete('/:competitionId', auth, requireRole(['CLUB_ADMIN']), async (req, 
   }
 });
 
-// Get competition categories and their counts
-router.get('/stats/categories', auth, async (req, res) => {
-  try {
-    const categoryStats = await prisma.competition.groupBy({
-      by: ['category'],
-      _count: {
-        id: true
-      },
-      orderBy: {
-        category: 'asc'
-      }
-    });
-
-    const totalCompetitions = await prisma.competition.count();
-    const activeCompetitions = await prisma.competition.count({
-      where: { isActive: true }
-    });
-
-    res.json({
-      totalCompetitions,
-      activeCompetitions,
-      categoryBreakdown: categoryStats.map(stat => ({
-        category: stat.category,
-        count: stat._count.id
-      }))
-    });
-  } catch (error) {
-    console.error('Get competition stats error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
 // Reorder competitions within a category (club admins only)
 router.put('/reorder/:category', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   try {
@@ -334,10 +444,10 @@ router.put('/reorder/:category', auth, requireRole(['CLUB_ADMIN']), async (req, 
       return res.status(400).json({ error: 'competitionIds must be a non-empty array' });
     }
 
-    // Validate category
-    const validCategories = ['CLUB', 'REGIONAL', 'LEAGUE', 'NATIONAL', 'INTERNATIONAL'];
-    if (!validCategories.includes(category)) {
-      return res.status(400).json({ error: 'Invalid category' });
+    // Validate category format
+    const categoryPattern = /^[A-Za-z0-9\s\-_]+$/;
+    if (!categoryPattern.test(category)) {
+      return res.status(400).json({ error: 'Category can only contain letters, numbers, spaces, hyphens, and underscores' });
     }
 
     // Verify all competitions exist and belong to the category

@@ -1,0 +1,699 @@
+const express = require('express');
+const Joi = require('joi');
+const { PrismaClient } = require('@prisma/client');
+const { auth, requireRole } = require('../middleware/auth');
+const certificateService = require('../services/certificateService');
+const path = require('path');
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// Validation schemas
+const awardCertificateSchema = Joi.object({
+  gymnastId: Joi.string().required(),
+  levelId: Joi.string().required(),
+  type: Joi.string().valid('LEVEL_COMPLETION', 'SPECIAL_ACHIEVEMENT', 'PARTICIPATION').default('LEVEL_COMPLETION'),
+  templateId: Joi.string().optional(),
+  notes: Joi.string().max(500).allow('', null)
+});
+
+const updateCertificateStatusSchema = Joi.object({
+  status: Joi.string().valid('AWARDED', 'PRINTED', 'DELIVERED').required(),
+  notes: Joi.string().max(500).allow('', null)
+});
+
+// Get all certificates for a club (coaches and admins only)
+router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const { status, gymnastId, levelId, type } = req.query;
+    
+    // Build filter conditions
+    const where = {
+      gymnast: {
+        clubId: req.user.clubId
+      }
+    };
+
+    if (status) where.status = status;
+    if (gymnastId) where.gymnastId = gymnastId;
+    if (levelId) where.levelId = levelId;
+    if (type) where.type = type;
+
+    const certificates = await prisma.certificate.findMany({
+      where,
+      include: {
+        gymnast: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        level: {
+          select: {
+            id: true,
+            identifier: true,
+            name: true
+          }
+        },
+        awardedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        printedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        physicallyAwardedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      },
+      orderBy: [
+        { awardedAt: 'desc' }
+      ]
+    });
+
+    res.json(certificates);
+  } catch (error) {
+    console.error('Get certificates error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get certificates for a specific gymnast
+router.get('/gymnast/:gymnastId', auth, async (req, res) => {
+  try {
+    const { gymnastId } = req.params;
+
+    // Verify gymnast belongs to user's club or user has access
+    const gymnast = await prisma.gymnast.findFirst({
+      where: {
+        id: gymnastId,
+        OR: [
+          { clubId: req.user.clubId },
+          { guardians: { some: { id: req.user.id } } },
+          { userId: req.user.id }
+        ]
+      }
+    });
+
+    if (!gymnast) {
+      return res.status(404).json({ error: 'Gymnast not found or access denied' });
+    }
+
+    const certificates = await prisma.certificate.findMany({
+      where: { gymnastId },
+      include: {
+        level: {
+          select: {
+            id: true,
+            identifier: true,
+            name: true
+          }
+        },
+        awardedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        printedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        physicallyAwardedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      },
+      orderBy: [
+        { awardedAt: 'desc' }
+      ]
+    });
+
+    res.json(certificates);
+  } catch (error) {
+    console.error('Get gymnast certificates error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Award a certificate (coaches and admins only)
+router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const { error, value } = awardCertificateSchema.validate(req.body);
+    
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const { gymnastId, levelId, type, templateId, notes } = value;
+
+    // Verify gymnast belongs to user's club
+    const gymnast = await prisma.gymnast.findFirst({
+      where: {
+        id: gymnastId,
+        clubId: req.user.clubId
+      }
+    });
+
+    if (!gymnast) {
+      return res.status(404).json({ error: 'Gymnast not found in your club' });
+    }
+
+    // Verify level exists
+    const level = await prisma.level.findUnique({
+      where: { id: levelId }
+    });
+
+    if (!level) {
+      return res.status(404).json({ error: 'Level not found' });
+    }
+
+    // Check if certificate already exists
+    const existingCertificate = await prisma.certificate.findUnique({
+      where: {
+        gymnastId_levelId_type: {
+          gymnastId,
+          levelId,
+          type
+        }
+      }
+    });
+
+    if (existingCertificate) {
+      return res.status(400).json({ error: 'Certificate already awarded for this gymnast, level, and type' });
+    }
+
+    // Get gymnast to get club ID and guardians for email notifications
+    const gymnastForCertificate = await prisma.gymnast.findUnique({
+      where: { id: gymnastId },
+      include: {
+        guardians: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true
+          }
+        }
+      }
+    });
+
+    if (!gymnastForCertificate) {
+      return res.status(404).json({ error: 'Gymnast not found' });
+    }
+
+    const certificate = await prisma.certificate.create({
+      data: {
+        gymnastId,
+        levelId,
+        clubId: gymnastForCertificate.clubId,
+        templateId,
+        type,
+        awardedById: req.user.id,
+        notes
+      },
+      include: {
+        gymnast: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        level: {
+          select: {
+            id: true,
+            identifier: true,
+            name: true
+          }
+        },
+        awardedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      }
+    });
+
+    // Generate PNG certificate
+    try {
+      const club = await prisma.club.findUnique({
+        where: { id: gymnastForCertificate.clubId },
+        select: {
+          id: true,
+          name: true,
+          primaryColor: true,
+          secondaryColor: true,
+          accentColor: true,
+          backgroundColor: true,
+          textColor: true
+        }
+      });
+
+      // Prepare certificate data for PNG generation
+      const certificateData = {
+        id: certificate.id,
+        clubId: gymnastForCertificate.clubId,
+        gymnast: {
+          firstName: gymnastForCertificate.firstName,
+          lastName: gymnastForCertificate.lastName,
+          name: `${gymnastForCertificate.firstName} ${gymnastForCertificate.lastName}`
+        },
+        awardedBy: {
+          firstName: req.user.firstName,
+          lastName: req.user.lastName,
+          name: `${req.user.firstName} ${req.user.lastName}`
+        },
+        club: club,
+        level: {
+          identifier: level.identifier,
+          name: level.name,
+          levelNumber: level.identifier
+        },
+        awardedAt: certificate.awardedAt,
+        templateId: templateId,
+        template: null, // Will be loaded by service if needed
+        fields: [] // Will be loaded by service if custom template exists
+      };
+
+      // Get template and fields if templateId is provided
+      let templatePath = null;
+      if (templateId) {
+        const template = await prisma.certificateTemplate.findUnique({
+          where: { id: templateId },
+          include: {
+            fields: {
+              where: { isVisible: true },
+              orderBy: { order: 'asc' }
+            }
+          }
+        });
+        if (template) {
+          certificateData.template = template;
+          certificateData.fields = template.fields;
+          templatePath = template.filePath;
+        }
+      }
+
+      const pngBuffer = await certificateService.generateCertificate(certificateData, templatePath);
+      
+      // Save the certificate
+      await certificateService.saveCertificate(certificateData, pngBuffer);
+
+      console.log(`📄 PNG certificate generated for ${gymnastForCertificate.firstName} ${gymnastForCertificate.lastName} - Level ${level.identifier}`);
+    } catch (pngError) {
+      console.error('PNG generation error:', pngError);
+      // Don't fail the certificate creation if PNG generation fails
+    }
+
+    // Send email notifications to all parents/guardians
+    if (gymnastForCertificate && gymnastForCertificate.guardians && gymnastForCertificate.guardians.length > 0) {
+      const emailService = require('../services/emailService');
+      
+      // Send notification to each guardian who is a parent
+      for (const guardian of gymnastForCertificate.guardians) {
+        if (guardian.role === 'PARENT' && guardian.email) {
+          try {
+            await emailService.sendCertificateAwardNotification(
+              guardian.email,
+              guardian.firstName,
+              gymnastForCertificate,
+              certificate,
+              certificate.level
+            );
+            console.log(`📧 Certificate notification sent to parent: ${guardian.email}`);
+          } catch (emailError) {
+            console.error(`❌ Failed to send certificate notification to ${guardian.email}:`, emailError);
+          }
+        }
+      }
+    }
+
+    res.json(certificate);
+  } catch (error) {
+    console.error('Award certificate error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update certificate status (mark as printed/delivered)
+router.put('/:certificateId/status', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const { certificateId } = req.params;
+    const { error, value } = updateCertificateStatusSchema.validate(req.body);
+    
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const { status, notes } = value;
+
+    // Verify certificate belongs to user's club
+    const existingCertificate = await prisma.certificate.findFirst({
+      where: {
+        id: certificateId,
+        gymnast: {
+          clubId: req.user.clubId
+        }
+      }
+    });
+
+    if (!existingCertificate) {
+      return res.status(404).json({ error: 'Certificate not found in your club' });
+    }
+
+    // Prepare update data based on status
+    const updateData = {
+      status,
+      updatedAt: new Date()
+    };
+
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    }
+
+    if (status === 'PRINTED' && !existingCertificate.printedAt) {
+      updateData.printedAt = new Date();
+      updateData.printedById = req.user.id;
+    }
+
+    if (status === 'DELIVERED' && !existingCertificate.physicallyAwardedAt) {
+      updateData.physicallyAwardedAt = new Date();
+      updateData.physicallyAwardedById = req.user.id;
+      
+      // If marking as delivered, also mark as printed if not already
+      if (!existingCertificate.printedAt) {
+        updateData.printedAt = new Date();
+        updateData.printedById = req.user.id;
+      }
+    }
+
+    const certificate = await prisma.certificate.update({
+      where: { id: certificateId },
+      data: updateData,
+      include: {
+        gymnast: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        level: {
+          select: {
+            id: true,
+            identifier: true,
+            name: true
+          }
+        },
+        awardedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        printedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        physicallyAwardedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      }
+    });
+
+    res.json(certificate);
+  } catch (error) {
+    console.error('Update certificate status error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete a certificate (club admins only)
+router.delete('/:certificateId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { certificateId } = req.params;
+
+    // Verify certificate belongs to user's club
+    const existingCertificate = await prisma.certificate.findFirst({
+      where: {
+        id: certificateId,
+        gymnast: {
+          clubId: req.user.clubId
+        }
+      }
+    });
+
+    if (!existingCertificate) {
+      return res.status(404).json({ error: 'Certificate not found in your club' });
+    }
+
+    await prisma.certificate.delete({
+      where: { id: certificateId }
+    });
+
+    // Clean up certificate files
+    try {
+      await certificateService.deleteCertificate(certificateId);
+      console.log(`🗑️ Certificate files cleaned up for certificate ${certificateId}`);
+    } catch (cleanupError) {
+      console.error('Certificate cleanup error:', cleanupError);
+      // Don't fail the deletion if cleanup fails
+    }
+
+    res.json({ message: 'Certificate deleted successfully' });
+  } catch (error) {
+    console.error('Delete certificate error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get certificate statistics for dashboard
+router.get('/stats', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const totalCertificates = await prisma.certificate.count({
+      where: {
+        gymnast: {
+          clubId: req.user.clubId
+        }
+      }
+    });
+
+    const statusBreakdown = await prisma.certificate.groupBy({
+      by: ['status'],
+      where: {
+        gymnast: {
+          clubId: req.user.clubId
+        }
+      },
+      _count: {
+        id: true
+      }
+    });
+
+    const typeBreakdown = await prisma.certificate.groupBy({
+      by: ['type'],
+      where: {
+        gymnast: {
+          clubId: req.user.clubId
+        }
+      },
+      _count: {
+        id: true
+      }
+    });
+
+    const recentCertificates = await prisma.certificate.findMany({
+      where: {
+        gymnast: {
+          clubId: req.user.clubId
+        }
+      },
+      include: {
+        gymnast: {
+          select: {
+            firstName: true,
+            lastName: true
+          }
+        },
+        level: {
+          select: {
+            identifier: true,
+            name: true
+          }
+        }
+      },
+      orderBy: { awardedAt: 'desc' },
+      take: 5
+    });
+
+    res.json({
+      totalCertificates,
+      statusBreakdown: statusBreakdown.map(stat => ({
+        status: stat.status,
+        count: stat._count.id
+      })),
+      typeBreakdown: typeBreakdown.map(stat => ({
+        type: stat.type,
+        count: stat._count.id
+      })),
+      recentCertificates
+    });
+  } catch (error) {
+    console.error('Get certificate stats error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Download certificate
+router.get('/:certificateId/download', auth, async (req, res) => {
+  try {
+    const { certificateId } = req.params;
+    
+    // Get certificate data
+    const certificate = await prisma.certificate.findUnique({
+      where: { id: certificateId },
+      include: {
+        gymnast: true,
+        club: true,
+        awardedBy: true,
+        level: true,
+        template: {
+          include: {
+            fields: {
+              where: { isVisible: true },
+              orderBy: { order: 'asc' }
+            }
+          }
+        }
+      }
+    });
+    
+    if (!certificate) {
+      return res.status(404).json({ error: 'Certificate not found' });
+    }
+    
+    // Check if user has access
+    if (req.user.role !== 'ADMIN' && req.user.clubId !== certificate.clubId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    // Try to get existing PNG file
+    let pngBuffer = await certificateService.getCertificatePNG(certificateId);
+    
+    // Check if certificate needs regeneration due to template changes
+    const needsRegeneration = await certificateService.needsRegeneration(certificate);
+    
+    if (!pngBuffer || needsRegeneration) {
+      // Generate new certificate if file doesn't exist or template has changed
+      let templatePath = null;
+      if (certificate.template && certificate.template.filePath) {
+        templatePath = certificate.template.filePath;
+      }
+      
+      pngBuffer = await certificateService.generateCertificate(certificate, templatePath);
+      
+      // Save the certificate
+      await certificateService.saveCertificate(certificate, pngBuffer);
+      
+      if (needsRegeneration) {
+        console.log(`🔄 Certificate automatically regenerated for ${certificate.gymnast.firstName} ${certificate.gymnast.lastName} due to template changes`);
+      }
+    }
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', `attachment; filename="certificate-${certificate.gymnast.firstName}-${certificate.gymnast.lastName}-${certificate.level.name.replace(/\s+/g, '-')}.png"`);
+    
+    res.send(pngBuffer);
+    
+  } catch (error) {
+    console.error('Certificate download error:', error);
+    res.status(500).json({ error: 'Failed to download certificate' });
+  }
+});
+
+// Preview certificate
+router.get('/:certificateId/preview', auth, async (req, res) => {
+  try {
+    const { certificateId } = req.params;
+    
+    // Get certificate data
+    const certificate = await prisma.certificate.findUnique({
+      where: { id: certificateId },
+      include: {
+        gymnast: true,
+        club: true,
+        awardedBy: true,
+        level: true,
+        template: {
+          include: {
+            fields: {
+              where: { isVisible: true },
+              orderBy: { order: 'asc' }
+            }
+          }
+        }
+      }
+    });
+    
+    if (!certificate) {
+      return res.status(404).json({ error: 'Certificate not found' });
+    }
+    
+    // Check if user has access
+    if (req.user.role !== 'ADMIN' && req.user.clubId !== certificate.clubId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    // Generate certificate PNG
+    let templatePath = null;
+    if (certificate.template && certificate.template.filePath) {
+      templatePath = certificate.template.filePath;
+    }
+    
+    const pngBuffer = await certificateService.generateCertificate(certificate, templatePath);
+    
+    // Set response headers for inline display
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', 'inline');
+    
+    res.send(pngBuffer);
+    
+  } catch (error) {
+    console.error('Certificate preview error:', error);
+    res.status(500).json({ error: 'Failed to preview certificate' });
+  }
+});
+
+module.exports = router; 

@@ -57,8 +57,8 @@ async function main() {
     create: {
       email: 'admin@test.com',
       password: hashedPassword,
-      firstName: 'Admin',
-      lastName: 'User',
+      firstName: 'John',
+      lastName: 'Admin',
       role: 'CLUB_ADMIN',
       clubId: devClub.id
     }
@@ -242,22 +242,12 @@ async function main() {
 
   console.log('🏆 Creating competitions...');
 
-  // Helper function to map categories from JSON to database enum
-  const mapCategoryToEnum = (category) => {
-    switch (category?.toLowerCase()) {
-      case 'club':
-        return 'CLUB';
-      case 'regional':
-        return 'REGIONAL';
-      case 'league':
-        return 'LEAGUE';
-      case 'national':
-        return 'NATIONAL';
-      case 'international':
-        return 'INTERNATIONAL';
-      default:
-        return 'CLUB'; // Default fallback
-    }
+  // Helper function to map categories from JSON to string format
+  const mapCategoryToString = (category) => {
+    if (!category) return 'CLUB'; // Default fallback
+    
+    // Convert to uppercase for consistency with existing data
+    return category.toUpperCase();
   };
 
   // Helper function to determine order from competition name
@@ -287,7 +277,7 @@ async function main() {
   
   if (skillsData.competitions && skillsData.competitions.length > 0) {
     for (const competitionData of skillsData.competitions) {
-      const category = mapCategoryToEnum(competitionData.category);
+      const category = mapCategoryToString(competitionData.category);
       const order = competitionData.order || getCompetitionOrder(competitionData.id, competitionData.name);
       
       const competition = await prisma.competition.upsert({

@@ -230,7 +230,7 @@ export const AuthProvider = ({ children }) => {
   const clearCodeOfTheDay = async () => {
     try {
       setError(null);
-      const response = await axios.delete('/api/auth/code-of-day');
+      await axios.delete('/api/auth/code-of-day');
       return { success: true };
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Failed to clear code of the day';

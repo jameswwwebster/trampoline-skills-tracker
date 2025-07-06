@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import CreateClubForm from '../components/CreateClubForm';
 
@@ -9,6 +10,75 @@ const Dashboard = () => {
   const [codeOfDayModal, setCodeOfDayModal] = useState(false);
   const [generatedCode, setGeneratedCode] = useState(null);
   const [codeOfDayInfo, setCodeOfDayInfo] = useState(null);
+  const [metrics, setMetrics] = useState(null);
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const [uncertifiedGymnasts, setUncertifiedGymnasts] = useState([]);
+  const [loadingUncertified, setLoadingUncertified] = useState(false);
+  const [success, setSuccess] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Fetch metrics for coaches and admins
+  useEffect(() => {
+    if ((isCoach || isClubAdmin) && user?.club) {
+      fetchMetrics();
+      fetchUncertifiedGymnasts();
+    }
+  }, [isCoach, isClubAdmin, user?.club]);
+
+  const fetchMetrics = async () => {
+    try {
+      setLoadingMetrics(true);
+      const response = await axios.get('/api/dashboard/metrics');
+      setMetrics(response.data);
+    } catch (error) {
+      console.error('Failed to fetch metrics:', error);
+    } finally {
+      setLoadingMetrics(false);
+    }
+  };
+
+  const fetchUncertifiedGymnasts = async () => {
+          try {
+        setLoadingUncertified(true);
+        const response = await axios.get('/api/dashboard/uncertified-gymnasts');
+        setUncertifiedGymnasts(response.data);
+      } catch (error) {
+      console.error('Failed to fetch uncertified gymnasts:', error);
+    } finally {
+      setLoadingUncertified(false);
+    }
+  };
+
+  const handleAwardCertificate = async (gymnastId, levelId) => {
+    try {
+      setError(null);
+      setSuccess(null);
+      
+      const response = await axios.post('/api/certificates', {
+        gymnastId,
+        levelId,
+        type: 'LEVEL_COMPLETION'
+      });
+      
+      // Refresh the uncertified gymnasts list
+      await fetchUncertifiedGymnasts();
+      
+      // Show success message
+      const gymnast = uncertifiedGymnasts.find(g => g.id === gymnastId);
+      const level = gymnast?.uncertifiedLevels.find(l => l.id === levelId);
+      setSuccess(`🏆 Certificate awarded to ${gymnast?.firstName} ${gymnast?.lastName} for Level ${level?.identifier}!`);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(null), 5000);
+      
+    } catch (err) {
+      console.error('Failed to award certificate:', err);
+      setError(err.response?.data?.error || 'Failed to award certificate. Please try again.');
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => setError(null), 5000);
+    }
+  };
 
   const handleClubCreated = (club, updatedUser) => {
     // Update the user context with the new club information
@@ -54,6 +124,225 @@ const Dashboard = () => {
       <h1>Welcome, {user?.firstName}!</h1>
       
       <div className="grid">
+        {/* Metrics for Coaches and Admins */}
+        {(isCoach || isClubAdmin) && (
+          <>
+            {loadingMetrics ? (
+              <div className="card">
+                <div className="card-header">
+                  <h3 className="card-title">📊 Club Overview</h3>
+                </div>
+                <div>
+                  <div className="loading">
+                    <div className="spinner"></div>
+                    <p>Loading metrics...</p>
+                  </div>
+                </div>
+              </div>
+            ) : metrics ? (
+              <>
+                {/* Summary Stats */}
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title">📊 Club Overview</h3>
+                  </div>
+                  <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                      <div className="metric-stat">
+                        <div className="metric-number">{metrics.summary.totalGymnasts}</div>
+                        <div className="metric-label">Total Gymnasts</div>
+                      </div>
+                      <div className="metric-stat">
+                        <div className="metric-number">{metrics.summary.activeGymnasts}</div>
+                        <div className="metric-label">Active (30 days)</div>
+                      </div>
+                      <div className="metric-stat">
+                        <div className="metric-number">{metrics.summary.totalSkillsCompleted}</div>
+                        <div className="metric-label">Skills Completed</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Level Distribution */}
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title">🎯 Gymnast Level Distribution</h3>
+                    <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
+                      Click on a level to view gymnasts working at that level
+                    </p>
+                  </div>
+                  <div>
+                    {Object.entries(metrics.levelDistribution)
+                      .filter(([_, data]) => data.count > 0)
+                      .map(([identifier, data]) => (
+                        <Link 
+                          key={identifier} 
+                          to={`/gymnasts?level=${encodeURIComponent(identifier)}`}
+                          className="dashboard-metric-link"
+                          style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center', 
+                            padding: '0.75rem 0.5rem', 
+                            borderBottom: '1px solid #eee'
+                          }}
+                        >
+                          <span><strong>Level {identifier}</strong> - {data.levelName}</span>
+                          <span className="badge badge-info">{data.count} gymnast{data.count !== 1 ? 's' : ''}</span>
+                        </Link>
+                      ))}
+                    {Object.values(metrics.levelDistribution).every(data => data.count === 0) && (
+                      <p className="text-muted">No gymnast progress data available yet.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Competition Readiness */}
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title">🏆 Competition Readiness</h3>
+                    <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
+                      Click on a competition to view gymnasts ready to compete
+                    </p>
+                  </div>
+                  <div>
+                    {Object.entries(metrics.competitionReadiness).length > 0 ? (
+                      Object.entries(metrics.competitionReadiness).map(([competitionName, data]) => (
+                        <Link 
+                          key={competitionName} 
+                          to={`/gymnasts?competition=${encodeURIComponent(competitionName)}`}
+                          className="dashboard-metric-link"
+                          style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center', 
+                            padding: '0.75rem 0.5rem', 
+                            borderBottom: '1px solid #eee'
+                          }}
+                        >
+                          <div>
+                            <span><strong>{competitionName}</strong></span>
+                            <span className="badge badge-secondary" style={{ marginLeft: '0.5rem' }}>{data.category}</span>
+                          </div>
+                          <span className="badge badge-success">{data.ready} ready</span>
+                        </Link>
+                      ))
+                    ) : (
+                      <p className="text-muted">No competition data available.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Recent Activity */}
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title">⚡ Recent Activity (30 days)</h3>
+                  </div>
+                  <div>
+                    {metrics.recentActivity.skills.length > 0 || metrics.recentActivity.levels.length > 0 ? (
+                      <div>
+                        {metrics.recentActivity.levels.slice(0, 5).map((activity, index) => (
+                          <div key={`level-${index}`} style={{ padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>
+                                <strong>{activity.gymnast.firstName} {activity.gymnast.lastName}</strong> completed{' '}
+                                <span className="badge badge-primary">Level {activity.level.identifier}</span>
+                              </span>
+                              <span className="text-muted small">
+                                {new Date(activity.updatedAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                        {metrics.recentActivity.skills.slice(0, 3).map((activity, index) => (
+                          <div key={`skill-${index}`} style={{ padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>
+                                <strong>{activity.gymnast.firstName} {activity.gymnast.lastName}</strong> mastered{' '}
+                                <em>{activity.skill.name}</em>
+                              </span>
+                              <span className="text-muted small">
+                                {new Date(activity.updatedAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted">No recent activity in the last 30 days.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Uncertified Gymnasts */}
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title">🏅 Pending Certificates</h3>
+                    <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
+                      Gymnasts who have completed levels but haven't received certificates yet
+                    </p>
+                  </div>
+                  <div>
+                    {loadingUncertified ? (
+                      <div className="loading">
+                        <div className="spinner"></div>
+                        <p>Loading pending certificates...</p>
+                      </div>
+                    ) : uncertifiedGymnasts.length > 0 ? (
+                      <div>
+                        {success && (
+                          <div className="alert alert-success" style={{ marginBottom: '1rem' }}>
+                            {success}
+                          </div>
+                        )}
+                        {error && (
+                          <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+                            {error}
+                          </div>
+                        )}
+                        {uncertifiedGymnasts.slice(0, 10).map((gymnast, index) => (
+                          <div key={gymnast.id} style={{ padding: '1rem 0.5rem', borderBottom: '1px solid #eee' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                              <div>
+                                <strong>{gymnast.firstName} {gymnast.lastName}</strong>
+                                <span className="badge badge-warning" style={{ marginLeft: '0.5rem' }}>
+                                  {gymnast.totalUncertifiedLevels} level{gymnast.totalUncertifiedLevels !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                              {gymnast.uncertifiedLevels.map(level => (
+                                <button
+                                  key={level.id}
+                                  onClick={() => handleAwardCertificate(gymnast.id, level.id)}
+                                  className="btn btn-sm btn-primary"
+                                  title={`Award certificate for ${level.name}`}
+                                >
+                                  🏆 Level {level.identifier}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        {uncertifiedGymnasts.length > 10 && (
+                          <div style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
+                            <Link to="/certificates" className="btn btn-outline">
+                              View All Pending Certificates ({uncertifiedGymnasts.length - 10} more)
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-muted">🎉 All gymnasts with completed levels have received their certificates!</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </>
+        )}
+
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">Club Information</h3>
@@ -121,11 +410,17 @@ const Dashboard = () => {
                 <Link to="/gymnasts" className="btn btn-primary" style={{ marginRight: '1.5rem' }}>
                   👥 Manage Gymnasts
                 </Link>
+                <Link to="/parents" className="btn btn-outline" style={{ marginRight: '1.5rem' }}>
+                  👪 View Parents
+                </Link>
+                <Link to="/users" className="btn btn-outline" style={{ marginRight: '1.5rem' }}>
+                  👤 Manage User Roles
+                </Link>
                 <button onClick={handleGetCodeOfDay} className="btn btn-secondary">
                   📅 Code of the Day
                 </button>
                 <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
-                  Full club management and code of the day controls
+                  Full club management, user role management, and code of the day controls
                 </p>
               </div>
             )}
@@ -144,6 +439,16 @@ const Dashboard = () => {
                 {isClubAdmin && (
                   <li>
                     <Link to="/invites">Send invitations to new users</Link>
+                  </li>
+                )}
+                {isClubAdmin && (
+                  <li>
+                    <Link to="/parents">View club parents and guardians</Link>
+                  </li>
+                )}
+                {isClubAdmin && (
+                  <li>
+                    <Link to="/users">Manage user roles and permissions</Link>
                   </li>
                 )}
               </ul>

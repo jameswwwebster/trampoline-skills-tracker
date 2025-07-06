@@ -14,6 +14,12 @@ const skillRoutes = require('./routes/skills');
 const progressRoutes = require('./routes/progress');
 const inviteRoutes = require('./routes/invites');
 const competitionRoutes = require('./routes/competitions');
+const dashboardRoutes = require('./routes/dashboard');
+const certificateRoutes = require('./routes/certificates');
+const certificateTemplateRoutes = require('./routes/certificateTemplates');
+const certificateFieldRoutes = require('./routes/certificateFields');
+const importRoutes = require('./routes/import');
+const brandingRoutes = require('./routes/branding');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -39,6 +45,9 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Static file serving for uploads
+app.use('/uploads', express.static('uploads'));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -49,6 +58,12 @@ app.use('/api/skills', skillRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/invites', inviteRoutes);
 app.use('/api/competitions', competitionRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/certificates', certificateRoutes);
+app.use('/api/certificate-templates', certificateTemplateRoutes);
+app.use('/api/certificate-fields', certificateFieldRoutes);
+app.use('/api/import', importRoutes);
+app.use('/api/branding', brandingRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
