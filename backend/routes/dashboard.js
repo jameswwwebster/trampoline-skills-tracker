@@ -249,7 +249,56 @@ router.get('/metrics', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
   }
 });
 
-// Get gymnasts who haven't received certificates yet
+// Get certificates that haven't been printed yet
+router.get('/unprinted-certificates', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const clubId = req.user.clubId;
+
+    // Get all certificates with status 'AWARDED' (not yet printed)
+    const unprintedCertificates = await prisma.certificate.findMany({
+      where: {
+        status: 'AWARDED',
+        gymnast: {
+          clubId,
+          isArchived: false // Only show certificates for active gymnasts
+        }
+      },
+      include: {
+        gymnast: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        level: {
+          select: {
+            id: true,
+            identifier: true,
+            name: true
+          }
+        },
+        awardedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      },
+      orderBy: [
+        { awardedAt: 'desc' }
+      ]
+    });
+
+    res.json(unprintedCertificates);
+  } catch (error) {
+    console.error('Get unprinted certificates error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get gymnasts who haven't received certificates yet (legacy endpoint - kept for compatibility)
 router.get('/uncertified-gymnasts', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
     const clubId = req.user.clubId;

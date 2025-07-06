@@ -12,8 +12,8 @@ const Dashboard = () => {
   const [codeOfDayInfo, setCodeOfDayInfo] = useState(null);
   const [metrics, setMetrics] = useState(null);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
-  const [uncertifiedGymnasts, setUncertifiedGymnasts] = useState([]);
-  const [loadingUncertified, setLoadingUncertified] = useState(false);
+  const [unprintedCertificates, setUnprintedCertificates] = useState([]);
+  const [loadingUnprinted, setLoadingUnprinted] = useState(false);
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
 
@@ -21,7 +21,7 @@ const Dashboard = () => {
   useEffect(() => {
     if ((isCoach || isClubAdmin) && user?.club) {
       fetchMetrics();
-      fetchUncertifiedGymnasts();
+      fetchUnprintedCertificates();
     }
   }, [isCoach, isClubAdmin, user?.club]);
 
@@ -37,43 +37,40 @@ const Dashboard = () => {
     }
   };
 
-  const fetchUncertifiedGymnasts = async () => {
-          try {
-        setLoadingUncertified(true);
-        const response = await axios.get('/api/dashboard/uncertified-gymnasts');
-        setUncertifiedGymnasts(response.data);
-      } catch (error) {
-      console.error('Failed to fetch uncertified gymnasts:', error);
+    const fetchUnprintedCertificates = async () => {
+    try {
+      setLoadingUnprinted(true);
+      const response = await axios.get('/api/dashboard/unprinted-certificates');
+      setUnprintedCertificates(response.data);
+    } catch (error) {
+      console.error('Failed to fetch unprinted certificates:', error);
     } finally {
-      setLoadingUncertified(false);
+      setLoadingUnprinted(false);
     }
   };
 
-  const handleAwardCertificate = async (gymnastId, levelId) => {
+  const handlePrintCertificate = async (certificateId) => {
     try {
       setError(null);
       setSuccess(null);
       
-      const response = await axios.post('/api/certificates', {
-        gymnastId,
-        levelId,
-        type: 'LEVEL_COMPLETION'
+      const response = await axios.put(`/api/certificates/${certificateId}/status`, {
+        status: 'PRINTED'
       });
       
-      // Refresh the uncertified gymnasts list
-      await fetchUncertifiedGymnasts();
+      // Refresh the unprinted certificates list
+      await fetchUnprintedCertificates();
       
       // Show success message
-      const gymnast = uncertifiedGymnasts.find(g => g.id === gymnastId);
-      const level = gymnast?.uncertifiedLevels.find(l => l.id === levelId);
-      setSuccess(`🏆 Certificate awarded to ${gymnast?.firstName} ${gymnast?.lastName} for Level ${level?.identifier}!`);
+      const certificate = unprintedCertificates.find(c => c.id === certificateId);
+      setSuccess(`🖨️ Certificate marked as printed for ${certificate?.gymnast?.firstName} ${certificate?.gymnast?.lastName} (Level ${certificate?.level?.identifier})!`);
       
       // Clear success message after 5 seconds
       setTimeout(() => setSuccess(null), 5000);
       
     } catch (err) {
-      console.error('Failed to award certificate:', err);
-      setError(err.response?.data?.error || 'Failed to award certificate. Please try again.');
+      console.error('Failed to mark certificate as printed:', err);
+      setError(err.response?.data?.error || 'Failed to mark certificate as printed. Please try again.');
       
       // Clear error message after 5 seconds
       setTimeout(() => setError(null), 5000);
@@ -275,21 +272,21 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Uncertified Gymnasts */}
+                {/* Unprinted Certificates */}
                 <div className="card">
                   <div className="card-header">
-                    <h3 className="card-title">🏅 Pending Certificates</h3>
+                    <h3 className="card-title">🖨️ Certificates Ready to Print</h3>
                     <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
-                      Gymnasts who have completed levels but haven't received certificates yet
+                      Certificates that have been awarded but haven't been printed yet
                     </p>
                   </div>
                   <div>
-                    {loadingUncertified ? (
+                    {loadingUnprinted ? (
                       <div className="loading">
                         <div className="spinner"></div>
-                        <p>Loading pending certificates...</p>
+                        <p>Loading certificates to print...</p>
                       </div>
-                    ) : uncertifiedGymnasts.length > 0 ? (
+                    ) : unprintedCertificates.length > 0 ? (
                       <div>
                         {success && (
                           <div className="alert alert-success" style={{ marginBottom: '1rem' }}>
@@ -301,40 +298,53 @@ const Dashboard = () => {
                             {error}
                           </div>
                         )}
-                        {uncertifiedGymnasts.slice(0, 10).map((gymnast, index) => (
-                          <div key={gymnast.id} style={{ padding: '1rem 0.5rem', borderBottom: '1px solid #eee' }}>
+                        {unprintedCertificates.slice(0, 10).map((certificate, index) => (
+                          <div key={certificate.id} style={{ padding: '1rem 0.5rem', borderBottom: '1px solid #eee' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                               <div>
-                                <strong>{gymnast.firstName} {gymnast.lastName}</strong>
-                                <span className="badge badge-warning" style={{ marginLeft: '0.5rem' }}>
-                                  {gymnast.totalUncertifiedLevels} level{gymnast.totalUncertifiedLevels !== 1 ? 's' : ''}
+                                <strong>{certificate.gymnast.firstName} {certificate.gymnast.lastName}</strong>
+                                <span className="badge badge-primary" style={{ marginLeft: '0.5rem' }}>
+                                  Level {certificate.level.identifier}
+                                </span>
+                                <span className="badge badge-secondary" style={{ marginLeft: '0.5rem' }}>
+                                  {certificate.level.name}
                                 </span>
                               </div>
+                              <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                                Awarded {new Date(certificate.awardedAt).toLocaleDateString()}
+                              </div>
                             </div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                              {gymnast.uncertifiedLevels.map(level => (
-                                <button
-                                  key={level.id}
-                                  onClick={() => handleAwardCertificate(gymnast.id, level.id)}
-                                  className="btn btn-sm btn-primary"
-                                  title={`Award certificate for ${level.name}`}
-                                >
-                                  🏆 Level {level.identifier}
-                                </button>
-                              ))}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <button
+                                onClick={() => handlePrintCertificate(certificate.id)}
+                                className="btn btn-sm btn-success"
+                                title="Mark as printed"
+                              >
+                                🖨️ Mark as Printed
+                              </button>
+                              <Link
+                                to={`/certificates/${certificate.id}/preview`}
+                                className="btn btn-sm btn-outline"
+                                title="View certificate"
+                              >
+                                👁️ Preview
+                              </Link>
+                              <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                                Awarded by {certificate.awardedBy.firstName} {certificate.awardedBy.lastName}
+                              </div>
                             </div>
                           </div>
                         ))}
-                        {uncertifiedGymnasts.length > 10 && (
+                        {unprintedCertificates.length > 10 && (
                           <div style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
                             <Link to="/certificates" className="btn btn-outline">
-                              View All Pending Certificates ({uncertifiedGymnasts.length - 10} more)
+                              View All Certificates to Print ({unprintedCertificates.length - 10} more)
                             </Link>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <p className="text-muted">🎉 All gymnasts with completed levels have received their certificates!</p>
+                      <p className="text-muted">🎉 All certificates have been printed!</p>
                     )}
                   </div>
                 </div>
