@@ -9,34 +9,50 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
   const [error, setError] = useState(null);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [imageUrls, setImageUrls] = useState({});
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalCertificates: 0,
+    limit: 5,
+    hasNextPage: false,
+    hasPreviousPage: false
+  });
   const { } = useAuth();
 
-  const fetchCertificates = useCallback(async () => {
+  const fetchCertificates = useCallback(async (page = 1) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/certificates/gymnast/${gymnastId}`);
-      setCertificates(response.data);
+      const response = await axios.get(`/api/certificates/gymnast/${gymnastId}?page=${page}&limit=5`);
       
-      // Fetch preview images for each certificate
-      const imagePromises = response.data.map(async (certificate) => {
-        try {
-          const imageResponse = await axios.get(`/api/certificates/${certificate.id}/preview`, {
-            responseType: 'blob'
-          });
-          const imageUrl = URL.createObjectURL(imageResponse.data);
-          return { id: certificate.id, url: imageUrl };
-        } catch (err) {
-          console.error(`Failed to fetch preview for certificate ${certificate.id}:`, err);
-          return { id: certificate.id, url: null };
-        }
-      });
-      
-      const imageResults = await Promise.all(imagePromises);
-      const imageUrlMap = {};
-      imageResults.forEach(result => {
-        imageUrlMap[result.id] = result.url;
-      });
-      setImageUrls(imageUrlMap);
+      // Handle the new response format with pagination
+      if (response.data.certificates) {
+        setCertificates(response.data.certificates);
+        setPagination(response.data.pagination);
+        
+        // Fetch preview images for each certificate
+        const imagePromises = response.data.certificates.map(async (certificate) => {
+          try {
+            const imageResponse = await axios.get(`/api/certificates/${certificate.id}/preview`, {
+              responseType: 'blob'
+            });
+            const imageUrl = URL.createObjectURL(imageResponse.data);
+            return { id: certificate.id, url: imageUrl };
+          } catch (err) {
+            console.error(`Failed to fetch preview for certificate ${certificate.id}:`, err);
+            return { id: certificate.id, url: null };
+          }
+        });
+        
+        const imageResults = await Promise.all(imagePromises);
+        const imageUrlMap = {};
+        imageResults.forEach(result => {
+          imageUrlMap[result.id] = result.url;
+        });
+        setImageUrls(imageUrlMap);
+      } else {
+        // Fallback for old API response format
+        setCertificates(response.data);
+      }
       
     } catch (err) {
       setError(err.response?.data?.error || err.message || 'Failed to fetch certificates');
@@ -46,7 +62,7 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
   }, [gymnastId]);
 
   useEffect(() => {
-    fetchCertificates();
+    fetchCertificates(1);
     
     // Cleanup function to revoke object URLs when component unmounts
     return () => {
@@ -57,6 +73,10 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
       });
     };
   }, [fetchCertificates]);
+
+  const handlePageChange = (newPage) => {
+    fetchCertificates(newPage);
+  };
 
   const handleDownloadCertificate = async (certificateId) => {
     try {
@@ -136,10 +156,15 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
   return (
     <div className="certificate-display">
       <div className="certificate-header">
-        <h3>🏆 Certificates ({certificates.length})</h3>
+        <h3>🏆 Certificates ({pagination.totalCertificates})</h3>
+        {pagination.totalCertificates > 5 && (
+          <p className="pagination-info">
+            Showing page {pagination.currentPage} of {pagination.totalPages}
+          </p>
+        )}
       </div>
 
-      {certificates.length === 0 ? (
+      {certificates.length === 0 && pagination.totalCertificates === 0 ? (
         <div className="no-certificates">
           <div className="empty-state">
             <span className="empty-icon">🏆</span>
@@ -148,8 +173,9 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
           </div>
         </div>
       ) : (
-        <div className="certificates-grid">
-          {certificates.map(certificate => (
+        <>
+          <div className="certificates-grid">
+            {certificates.map(certificate => (
             <div key={certificate.id} className="certificate-card">
               <div className="certificate-preview">
                 {imageUrls[certificate.id] ? (
@@ -217,8 +243,34 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
                 )}
               </div>
             </div>
-          ))}
-        </div>
+                      ))}
+          </div>
+          
+          {/* Pagination Controls */}
+          {pagination.totalPages > 1 && (
+            <div className="pagination-controls">
+              <button 
+                className="btn btn-secondary btn-sm"
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
+                disabled={!pagination.hasPreviousPage}
+              >
+                ← Previous
+              </button>
+              
+              <span className="pagination-info">
+                Page {pagination.currentPage} of {pagination.totalPages}
+              </span>
+              
+              <button 
+                className="btn btn-secondary btn-sm"
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                disabled={!pagination.hasNextPage}
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Certificate Modal */}

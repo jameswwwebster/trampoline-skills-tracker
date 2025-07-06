@@ -652,13 +652,15 @@ const GymnastProgress = ({ gymnastId }) => {
         </div>
       )}
 
-      {/* Certificates Section */}
-      <div className="card">
-        <CertificateDisplay 
-          gymnastId={gymnastId} 
-          showActions={false}
-        />
-      </div>
+      {/* Certificates Section - Show for non-coaches */}
+      {!coachingMode && (
+        <div className="card">
+          <CertificateDisplay 
+            gymnastId={gymnastId} 
+            showActions={false}
+          />
+        </div>
+      )}
 
       {/* Guardians */}
       {gymnast.guardians && gymnast.guardians.length > 0 && (

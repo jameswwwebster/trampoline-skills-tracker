@@ -94,6 +94,19 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
 router.get('/gymnast/:gymnastId', auth, async (req, res) => {
   try {
     const { gymnastId } = req.params;
+    const { page = 1, limit = 5 } = req.query;
+
+    // Validate pagination parameters
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    
+    if (isNaN(pageNum) || pageNum < 1) {
+      return res.status(400).json({ error: 'Invalid page number' });
+    }
+    
+    if (isNaN(limitNum) || limitNum < 1 || limitNum > 50) {
+      return res.status(400).json({ error: 'Invalid limit (must be between 1 and 50)' });
+    }
 
     // Verify gymnast belongs to user's club or user has access
     const gymnast = await prisma.gymnast.findFirst({
@@ -110,6 +123,15 @@ router.get('/gymnast/:gymnastId', auth, async (req, res) => {
     if (!gymnast) {
       return res.status(404).json({ error: 'Gymnast not found or access denied' });
     }
+
+    // Get total count for pagination
+    const totalCertificates = await prisma.certificate.count({
+      where: { gymnastId }
+    });
+
+    // Calculate pagination
+    const totalPages = Math.ceil(totalCertificates / limitNum);
+    const skip = (pageNum - 1) * limitNum;
 
     const certificates = await prisma.certificate.findMany({
       where: { gymnastId },
@@ -145,10 +167,22 @@ router.get('/gymnast/:gymnastId', auth, async (req, res) => {
       },
       orderBy: [
         { awardedAt: 'desc' }
-      ]
+      ],
+      skip,
+      take: limitNum
     });
 
-    res.json(certificates);
+    res.json({
+      certificates,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalCertificates,
+        limit: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPreviousPage: pageNum > 1
+      }
+    });
   } catch (error) {
     console.error('Get gymnast certificates error:', error);
     res.status(500).json({ error: 'Server error' });
