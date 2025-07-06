@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
+import apiClient from '../utils/apiInterceptor';
 import { useAuth } from '../contexts/AuthContext';
 
 const Users = () => {
@@ -33,9 +34,9 @@ const Users = () => {
     const fetchData = async () => {
       try {
         const [usersResponse, gymnastsResponse, customFieldsResponse] = await Promise.all([
-          axios.get(`/api/users?includeArchived=${showArchived}`),
-          axios.get('/api/gymnasts?includeArchived=true'),
-          axios.get('/api/user-custom-fields')
+          apiClient.get(`/api/users?includeArchived=${showArchived}`),
+          apiClient.get('/api/gymnasts?includeArchived=true'),
+          apiClient.get('/api/user-custom-fields')
         ]);
         setUsers(usersResponse.data);
         setGymnasts(gymnastsResponse.data);
@@ -43,7 +44,7 @@ const Users = () => {
         
         // Fetch custom field values for all users
         const customFieldValuesPromises = usersResponse.data.map(userData => 
-          axios.get(`/api/user-custom-fields/user/${userData.id}`).catch(() => ({ data: [] }))
+          apiClient.get(`/api/user-custom-fields/user/${userData.id}`).catch(() => ({ data: [] }))
         );
         const customFieldValuesResponses = await Promise.all(customFieldValuesPromises);
         
@@ -417,13 +418,13 @@ const Users = () => {
       // Update all custom field values
       const updatePromises = customFields.map(field => {
         const value = customFieldForm[field.id] || '';
-        return axios.put(`/api/user-custom-fields/user/${userId}/${field.id}`, { value });
+        return apiClient.put(`/api/user-custom-fields/user/${userId}/${field.id}`, { value });
       });
       
       await Promise.all(updatePromises);
       
       // Refresh custom field values
-      const response = await axios.get(`/api/user-custom-fields/user/${userId}`);
+      const response = await apiClient.get(`/api/user-custom-fields/user/${userId}`);
       setUserCustomFieldValues(prev => ({
         ...prev,
         [userId]: response.data

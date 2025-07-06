@@ -1,0 +1,176 @@
+.rate-limit-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8e53 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  animation: slideDown 0.3s ease-out;
+}
+
+.rate-limit-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  gap: 1rem;
+}
+
+.rate-limit-banner-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+
+.rate-limit-banner-message {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.rate-limit-banner-message h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.rate-limit-banner-message p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.95;
+}
+
+.rate-limit-banner-warning {
+  font-size: 0.85rem !important;
+  opacity: 0.9 !important;
+  margin-top: 0.25rem !important;
+  font-style: italic;
+}
+
+.rate-limit-banner-countdown {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.countdown-circle {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  animation: rotateCountdown 1s linear infinite;
+}
+
+.countdown-number {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: white;
+}
+
+.rate-limit-banner-dismiss {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.rate-limit-banner-dismiss:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.rate-limit-banner-dismiss:active {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Animations */
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes rotateCountdown {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .rate-limit-banner-content {
+    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+  }
+  
+  .rate-limit-banner-icon {
+    font-size: 1.5rem;
+  }
+  
+  .rate-limit-banner-message h4 {
+    font-size: 1rem;
+  }
+  
+  .rate-limit-banner-message p {
+    font-size: 0.85rem;
+  }
+  
+  .countdown-circle {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .countdown-number {
+    font-size: 1rem;
+  }
+  
+  .rate-limit-banner-dismiss {
+    width: 32px;
+    height: 32px;
+    font-size: 1.25rem;
+  }
+}
+
+/* Ensure banner doesn't interfere with app layout */
+body.rate-limited {
+  padding-top: 80px;
+}
+
+@media (max-width: 768px) {
+  body.rate-limited {
+    padding-top: 70px;
+  }
+} 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import apiClient from '../utils/apiInterceptor';
 import { useAuth } from '../contexts/AuthContext';
 
 const ImportGymnasts = () => {
@@ -21,7 +22,7 @@ const ImportGymnasts = () => {
   useEffect(() => {
     const fetchCustomFields = async () => {
       try {
-        const response = await axios.get('/api/user-custom-fields');
+        const response = await apiClient.get('/api/user-custom-fields');
         setCustomFields(response.data);
       } catch (error) {
         console.error('Failed to fetch custom fields:', error);

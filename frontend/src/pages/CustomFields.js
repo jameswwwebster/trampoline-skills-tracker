@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import apiClient from '../utils/apiInterceptor';
 import './CustomFields.css';
 
 const FIELD_TYPES = [
@@ -35,18 +36,8 @@ const CustomFields = () => {
 
   const fetchCustomFields = async () => {
     try {
-      const response = await fetch('/api/user-custom-fields', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch custom fields');
-      }
-
-      const data = await response.json();
-      setFields(data);
+      const response = await apiClient.get('/api/user-custom-fields');
+      setFields(response.data);
     } catch (error) {
       console.error('Error fetching custom fields:', error);
       setError('Failed to load custom fields');
