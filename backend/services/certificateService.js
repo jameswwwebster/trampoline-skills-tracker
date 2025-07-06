@@ -8,6 +8,9 @@ class CertificateService {
     this.prisma = new PrismaClient();
     this.fontPath = path.join(__dirname, '../fonts/LilitaOne-Regular.ttf');
     this.certificatesDir = path.join(__dirname, '../generated-certificates');
+    this.cacheDir = path.join(__dirname, '../certificate-cache');
+    this.maxCacheSize = 100 * 1024 * 1024; // 100MB cache limit
+    this.maxCacheAge = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
     
     // Register custom font
     try {
@@ -15,6 +18,9 @@ class CertificateService {
     } catch (error) {
       console.log('⚠️ Failed to register Lilita One font:', error.message);
     }
+    
+    // Initialize cache directory
+    this.initializeCacheDirectory();
   }
 
   async generateCertificate(certificate, templatePath) {
@@ -404,8 +410,225 @@ class CertificateService {
         const filePath = path.join(this.certificatesDir, file);
         await fs.unlink(filePath);
       }
+      
+      // Also invalidate cache
+      await this.invalidateCache(certificateId);
     } catch (error) {
       console.error('Error deleting certificate files:', error);
+    }
+  }
+
+  // Cache management methods
+  async initializeCacheDirectory() {
+    try {
+      await this.ensureDirectoryExists(this.cacheDir);
+      // Run initial cleanup on startup
+      setImmediate(() => this.cleanupCache());
+    } catch (error) {
+      console.error('Error initializing cache directory:', error);
+    }
+  }
+
+  getCacheKey(certificate) {
+    // Create cache key based on certificate ID, template version, and certificate data
+    const templateVersion = certificate.template?.updatedAt || certificate.updatedAt || 'no-template';
+    const certificateVersion = certificate.updatedAt || certificate.createdAt;
+    
+    return `cert-${certificate.id}-${templateVersion.getTime()}-${certificateVersion.getTime()}`;
+  }
+
+  async getCachedCertificate(cacheKey) {
+    try {
+      const cacheFilePath = path.join(this.cacheDir, `${cacheKey}.png`);
+      const metadataPath = path.join(this.cacheDir, `${cacheKey}.meta.json`);
+      
+      // Check if cache file exists
+      try {
+        await fs.access(cacheFilePath);
+        await fs.access(metadataPath);
+      } catch {
+        return null; // Cache miss
+      }
+
+      // Check cache age
+      const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
+      const now = Date.now();
+      
+      if (now - metadata.createdAt > this.maxCacheAge) {
+        // Cache expired, remove it
+        await this.removeCacheFile(cacheKey);
+        return null;
+      }
+
+      // Update access time
+      metadata.lastAccessedAt = now;
+      metadata.accessCount = (metadata.accessCount || 0) + 1;
+      await fs.writeFile(metadataPath, JSON.stringify(metadata), 'utf8');
+      
+      // Return cached certificate
+      const pngBuffer = await fs.readFile(cacheFilePath);
+      console.log(`💾 Cache HIT for ${cacheKey}`);
+      return pngBuffer;
+      
+    } catch (error) {
+      console.error('Error reading from cache:', error);
+      return null;
+    }
+  }
+
+  async setCachedCertificate(cacheKey, pngBuffer) {
+    try {
+      await this.ensureDirectoryExists(this.cacheDir);
+      
+      const cacheFilePath = path.join(this.cacheDir, `${cacheKey}.png`);
+      const metadataPath = path.join(this.cacheDir, `${cacheKey}.meta.json`);
+      
+      // Save PNG buffer
+      await fs.writeFile(cacheFilePath, pngBuffer);
+      
+      // Save metadata
+      const metadata = {
+        cacheKey,
+        createdAt: Date.now(),
+        lastAccessedAt: Date.now(),
+        accessCount: 1,
+        fileSize: pngBuffer.length
+      };
+      
+      await fs.writeFile(metadataPath, JSON.stringify(metadata), 'utf8');
+      
+      console.log(`💾 Cache STORED for ${cacheKey} (${(pngBuffer.length / 1024).toFixed(1)}KB)`);
+      
+      // Clean up cache if needed
+      setImmediate(() => this.cleanupCache());
+      
+    } catch (error) {
+      console.error('Error writing to cache:', error);
+    }
+  }
+
+  async invalidateCache(certificateId) {
+    try {
+      const files = await fs.readdir(this.cacheDir);
+      const matchingFiles = files.filter(file => file.includes(`cert-${certificateId}-`));
+      
+      for (const file of matchingFiles) {
+        const filePath = path.join(this.cacheDir, file);
+        await fs.unlink(filePath);
+      }
+      
+      if (matchingFiles.length > 0) {
+        console.log(`🗑️ Invalidated ${matchingFiles.length} cache files for certificate ${certificateId}`);
+      }
+    } catch (error) {
+      console.error('Error invalidating cache:', error);
+    }
+  }
+
+  async removeCacheFile(cacheKey) {
+    try {
+      const cacheFilePath = path.join(this.cacheDir, `${cacheKey}.png`);
+      const metadataPath = path.join(this.cacheDir, `${cacheKey}.meta.json`);
+      
+      await fs.unlink(cacheFilePath).catch(() => {});
+      await fs.unlink(metadataPath).catch(() => {});
+    } catch (error) {
+      console.error('Error removing cache file:', error);
+    }
+  }
+
+  async cleanupCache() {
+    try {
+      const files = await fs.readdir(this.cacheDir);
+      const metadataFiles = files.filter(file => file.endsWith('.meta.json'));
+      
+      let totalSize = 0;
+      const cacheItems = [];
+      
+      // Collect cache metadata
+      for (const metaFile of metadataFiles) {
+        try {
+          const metadataPath = path.join(this.cacheDir, metaFile);
+          const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
+          
+          const cacheFilePath = path.join(this.cacheDir, `${metadata.cacheKey}.png`);
+          const stats = await fs.stat(cacheFilePath);
+          
+          metadata.actualFileSize = stats.size;
+          totalSize += stats.size;
+          cacheItems.push(metadata);
+        } catch (error) {
+          // Remove orphaned metadata file
+          await fs.unlink(path.join(this.cacheDir, metaFile)).catch(() => {});
+        }
+      }
+      
+      console.log(`💾 Cache status: ${cacheItems.length} items, ${(totalSize / 1024 / 1024).toFixed(1)}MB`);
+      
+      // Remove expired items
+      const now = Date.now();
+      let removedExpired = 0;
+      
+      for (const item of cacheItems) {
+        if (now - item.createdAt > this.maxCacheAge) {
+          await this.removeCacheFile(item.cacheKey);
+          totalSize -= item.actualFileSize;
+          removedExpired++;
+        }
+      }
+      
+      if (removedExpired > 0) {
+        console.log(`🗑️ Removed ${removedExpired} expired cache items`);
+      }
+      
+      // If still over size limit, remove least recently used items
+      if (totalSize > this.maxCacheSize) {
+        const validItems = cacheItems.filter(item => now - item.createdAt <= this.maxCacheAge);
+        
+        // Sort by last access time (LRU)
+        validItems.sort((a, b) => a.lastAccessedAt - b.lastAccessedAt);
+        
+        let removedLRU = 0;
+        for (const item of validItems) {
+          if (totalSize <= this.maxCacheSize) break;
+          
+          await this.removeCacheFile(item.cacheKey);
+          totalSize -= item.actualFileSize;
+          removedLRU++;
+        }
+        
+        if (removedLRU > 0) {
+          console.log(`🗑️ Removed ${removedLRU} LRU cache items to stay under size limit`);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error cleaning up cache:', error);
+    }
+  }
+
+  async getCertificateWithCache(certificate, templatePath = null) {
+    try {
+      // Generate cache key
+      const cacheKey = this.getCacheKey(certificate);
+      
+      // Try to get from cache first
+      let pngBuffer = await this.getCachedCertificate(cacheKey);
+      
+      if (!pngBuffer) {
+        // Cache miss - generate certificate
+        console.log(`💾 Cache MISS for ${cacheKey}, generating certificate...`);
+        pngBuffer = await this.generateCertificate(certificate, templatePath);
+        
+        // Store in cache
+        await this.setCachedCertificate(cacheKey, pngBuffer);
+      }
+      
+      return pngBuffer;
+    } catch (error) {
+      console.error('Error in getCertificateWithCache:', error);
+      // Fallback to direct generation if caching fails
+      return await this.generateCertificate(certificate, templatePath);
     }
   }
 }

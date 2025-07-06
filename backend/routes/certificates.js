@@ -351,7 +351,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
         }
       }
 
-      const pngBuffer = await certificateService.generateCertificate(certificateData, templatePath);
+      const pngBuffer = await certificateService.getCertificateWithCache(certificateData, templatePath);
       
       // Save the certificate
       await certificateService.saveCertificate(certificateData, pngBuffer);
@@ -516,10 +516,10 @@ router.delete('/:certificateId', auth, requireRole(['CLUB_ADMIN']), async (req, 
       where: { id: certificateId }
     });
 
-    // Clean up certificate files
+    // Clean up certificate files and cache
     try {
       await certificateService.deleteCertificate(certificateId);
-      console.log(`🗑️ Certificate files cleaned up for certificate ${certificateId}`);
+      console.log(`🗑️ Certificate files and cache cleaned up for certificate ${certificateId}`);
     } catch (cleanupError) {
       console.error('Certificate cleanup error:', cleanupError);
       // Don't fail the deletion if cleanup fails
@@ -642,28 +642,16 @@ router.get('/:certificateId/download', auth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    // Try to get existing PNG file
-    let pngBuffer = await certificateService.getCertificatePNG(certificateId);
-    
-    // Check if certificate needs regeneration due to template changes
-    const needsRegeneration = await certificateService.needsRegeneration(certificate);
-    
-    if (!pngBuffer || needsRegeneration) {
-      // Generate new certificate if file doesn't exist or template has changed
-      let templatePath = null;
-      if (certificate.template && certificate.template.filePath) {
-        templatePath = certificate.template.filePath;
-      }
-      
-      pngBuffer = await certificateService.generateCertificate(certificate, templatePath);
-      
-      // Save the certificate
-      await certificateService.saveCertificate(certificate, pngBuffer);
-      
-      if (needsRegeneration) {
-        console.log(`🔄 Certificate automatically regenerated for ${certificate.gymnast.firstName} ${certificate.gymnast.lastName} due to template changes`);
-      }
+    // Use cached certificate generation
+    let templatePath = null;
+    if (certificate.template && certificate.template.filePath) {
+      templatePath = certificate.template.filePath;
     }
+    
+    const pngBuffer = await certificateService.getCertificateWithCache(certificate, templatePath);
+    
+    // Also save to the legacy storage location for backward compatibility
+    await certificateService.saveCertificate(certificate, pngBuffer);
     
     // Set response headers
     res.setHeader('Content-Type', 'image/png');
@@ -710,13 +698,13 @@ router.get('/:certificateId/preview', auth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    // Generate certificate PNG
+    // Generate certificate PNG with caching
     let templatePath = null;
     if (certificate.template && certificate.template.filePath) {
       templatePath = certificate.template.filePath;
     }
     
-    const pngBuffer = await certificateService.generateCertificate(certificate, templatePath);
+    const pngBuffer = await certificateService.getCertificateWithCache(certificate, templatePath);
     
     // Set response headers for inline display
     res.setHeader('Content-Type', 'image/png');
@@ -727,6 +715,90 @@ router.get('/:certificateId/preview', auth, async (req, res) => {
   } catch (error) {
     console.error('Certificate preview error:', error);
     res.status(500).json({ error: 'Failed to preview certificate' });
+  }
+});
+
+// Cache management endpoint (admin only)
+router.post('/admin/cache/cleanup', auth, requireRole(['ADMIN']), async (req, res) => {
+  try {
+    await certificateService.cleanupCache();
+    res.json({ message: 'Cache cleanup completed successfully' });
+  } catch (error) {
+    console.error('Cache cleanup error:', error);
+    res.status(500).json({ error: 'Failed to cleanup cache' });
+  }
+});
+
+// Cache status endpoint (admin only)
+router.get('/admin/cache/status', auth, requireRole(['ADMIN']), async (req, res) => {
+  try {
+    const fs = require('fs').promises;
+    const path = require('path');
+    
+    const cacheDir = path.join(__dirname, '..', 'certificate-cache');
+    
+    try {
+      const files = await fs.readdir(cacheDir);
+      const metadataFiles = files.filter(file => file.endsWith('.meta.json'));
+      
+      let totalSize = 0;
+      let totalFiles = 0;
+      let oldestFile = null;
+      let newestFile = null;
+      
+      for (const metaFile of metadataFiles) {
+        try {
+          const metadataPath = path.join(cacheDir, metaFile);
+          const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
+          
+          const cacheFilePath = path.join(cacheDir, `${metadata.cacheKey}.png`);
+          const stats = await fs.stat(cacheFilePath);
+          
+          totalSize += stats.size;
+          totalFiles++;
+          
+          if (!oldestFile || metadata.createdAt < oldestFile.createdAt) {
+            oldestFile = metadata;
+          }
+          
+          if (!newestFile || metadata.createdAt > newestFile.createdAt) {
+            newestFile = metadata;
+          }
+        } catch (error) {
+          // Skip corrupted metadata files
+        }
+      }
+      
+      res.json({
+        totalFiles,
+        totalSize,
+        totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
+        oldestFile: oldestFile ? {
+          cacheKey: oldestFile.cacheKey,
+          createdAt: new Date(oldestFile.createdAt).toISOString(),
+          lastAccessedAt: new Date(oldestFile.lastAccessedAt).toISOString(),
+          accessCount: oldestFile.accessCount
+        } : null,
+        newestFile: newestFile ? {
+          cacheKey: newestFile.cacheKey,
+          createdAt: new Date(newestFile.createdAt).toISOString(),
+          lastAccessedAt: new Date(newestFile.lastAccessedAt).toISOString(),
+          accessCount: newestFile.accessCount
+        } : null
+      });
+    } catch (error) {
+      res.json({
+        totalFiles: 0,
+        totalSize: 0,
+        totalSizeMB: '0.00',
+        oldestFile: null,
+        newestFile: null,
+        error: 'Cache directory not found or empty'
+      });
+    }
+  } catch (error) {
+    console.error('Cache status error:', error);
+    res.status(500).json({ error: 'Failed to get cache status' });
   }
 });
 

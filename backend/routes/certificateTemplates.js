@@ -223,6 +223,27 @@ router.put('/:id', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
       }
     });
 
+    // Invalidate cache for certificates using this template
+    try {
+      const certificateService = require('../services/certificateService');
+      
+      // Find all certificates using this template
+      const certificates = await prisma.certificate.findMany({
+        where: { templateId: req.params.id },
+        select: { id: true }
+      });
+      
+      // Invalidate cache for each certificate
+      for (const cert of certificates) {
+        await certificateService.invalidateCache(cert.id);
+      }
+      
+      console.log(`🗑️ Invalidated cache for ${certificates.length} certificates using updated template ${req.params.id}`);
+    } catch (cacheError) {
+      console.error('Cache invalidation error:', cacheError);
+      // Don't fail the update if cache invalidation fails
+    }
+
     res.json(template);
   } catch (error) {
     console.error('Error updating certificate template:', error);
@@ -256,6 +277,27 @@ router.delete('/:id', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
         error: 'Cannot delete template that is being used by certificates. Archive it instead.',
         certificateCount
       });
+    }
+
+    // Invalidate cache for certificates using this template before deletion
+    try {
+      const certificateService = require('../services/certificateService');
+      
+      // Find all certificates using this template
+      const certificates = await prisma.certificate.findMany({
+        where: { templateId: req.params.id },
+        select: { id: true }
+      });
+      
+      // Invalidate cache for each certificate
+      for (const cert of certificates) {
+        await certificateService.invalidateCache(cert.id);
+      }
+      
+      console.log(`🗑️ Invalidated cache for ${certificates.length} certificates using deleted template ${req.params.id}`);
+    } catch (cacheError) {
+      console.error('Cache invalidation error:', cacheError);
+      // Don't fail the deletion if cache invalidation fails
     }
 
     // Delete the template (this will cascade delete fields)
@@ -298,6 +340,27 @@ router.post('/:id/archive', auth, requireRole(['CLUB_ADMIN']), async (req, res) 
         isDefault: false // Remove default status when archiving
       }
     });
+
+    // Invalidate cache for certificates using this template
+    try {
+      const certificateService = require('../services/certificateService');
+      
+      // Find all certificates using this template
+      const certificates = await prisma.certificate.findMany({
+        where: { templateId: req.params.id },
+        select: { id: true }
+      });
+      
+      // Invalidate cache for each certificate
+      for (const cert of certificates) {
+        await certificateService.invalidateCache(cert.id);
+      }
+      
+      console.log(`🗑️ Invalidated cache for ${certificates.length} certificates using archived template ${req.params.id}`);
+    } catch (cacheError) {
+      console.error('Cache invalidation error:', cacheError);
+      // Don't fail the archive if cache invalidation fails
+    }
 
     res.json(updatedTemplate);
   } catch (error) {

@@ -127,6 +127,27 @@ router.post('/template/:templateId', auth, requireRole(['CLUB_ADMIN']), async (r
       }
     });
 
+    // Invalidate cache for certificates using this template
+    try {
+      const certificateService = require('../services/certificateService');
+      
+      // Find all certificates using this template
+      const certificates = await prisma.certificate.findMany({
+        where: { templateId: req.params.templateId },
+        select: { id: true }
+      });
+      
+      // Invalidate cache for each certificate
+      for (const cert of certificates) {
+        await certificateService.invalidateCache(cert.id);
+      }
+      
+      console.log(`🗑️ Invalidated cache for ${certificates.length} certificates due to field creation`);
+    } catch (cacheError) {
+      console.error('Cache invalidation error:', cacheError);
+      // Don't fail the creation if cache invalidation fails
+    }
+
     res.json(field);
   } catch (error) {
     console.error('Error creating certificate field:', error);
@@ -195,6 +216,27 @@ router.put('/:id', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
       }
     });
 
+    // Invalidate cache for certificates using this template
+    try {
+      const certificateService = require('../services/certificateService');
+      
+      // Find all certificates using this template
+      const certificates = await prisma.certificate.findMany({
+        where: { templateId: field.templateId },
+        select: { id: true }
+      });
+      
+      // Invalidate cache for each certificate
+      for (const cert of certificates) {
+        await certificateService.invalidateCache(cert.id);
+      }
+      
+      console.log(`🗑️ Invalidated cache for ${certificates.length} certificates due to field update`);
+    } catch (cacheError) {
+      console.error('Cache invalidation error:', cacheError);
+      // Don't fail the update if cache invalidation fails
+    }
+
     res.json(updatedField);
   } catch (error) {
     console.error('Error updating certificate field:', error);
@@ -222,6 +264,27 @@ router.delete('/:id', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
     await prisma.certificateField.delete({
       where: { id: req.params.id }
     });
+
+    // Invalidate cache for certificates using this template
+    try {
+      const certificateService = require('../services/certificateService');
+      
+      // Find all certificates using this template
+      const certificates = await prisma.certificate.findMany({
+        where: { templateId: field.templateId },
+        select: { id: true }
+      });
+      
+      // Invalidate cache for each certificate
+      for (const cert of certificates) {
+        await certificateService.invalidateCache(cert.id);
+      }
+      
+      console.log(`🗑️ Invalidated cache for ${certificates.length} certificates due to field deletion`);
+    } catch (cacheError) {
+      console.error('Cache invalidation error:', cacheError);
+      // Don't fail the deletion if cache invalidation fails
+    }
 
     res.json({ message: 'Certificate field deleted successfully' });
   } catch (error) {
@@ -283,6 +346,30 @@ router.post('/bulk-update', auth, requireRole(['CLUB_ADMIN']), async (req, res) 
         { createdAt: 'asc' }
       ]
     });
+
+    // Invalidate cache for certificates using templates of these fields
+    try {
+      const certificateService = require('../services/certificateService');
+      
+      // Get unique template IDs from the updated fields
+      const templateIds = [...new Set(existingFields.map(f => f.templateId))];
+      
+      // Find all certificates using these templates
+      const certificates = await prisma.certificate.findMany({
+        where: { templateId: { in: templateIds } },
+        select: { id: true }
+      });
+      
+      // Invalidate cache for each certificate
+      for (const cert of certificates) {
+        await certificateService.invalidateCache(cert.id);
+      }
+      
+      console.log(`🗑️ Invalidated cache for ${certificates.length} certificates due to bulk field update`);
+    } catch (cacheError) {
+      console.error('Cache invalidation error:', cacheError);
+      // Don't fail the bulk update if cache invalidation fails
+    }
 
     res.json(updatedFields);
   } catch (error) {
