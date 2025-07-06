@@ -75,6 +75,13 @@ const Layout = () => {
             </Link>
           )}
           
+          {/* My Certificates for Parents and Gymnasts */}
+          {(user?.role === 'PARENT' || user?.role === 'GYMNAST') && (
+            <Link to="/my-certificates" className={isActive('/my-certificates')}>
+              🏆 My Certificates
+            </Link>
+          )}
+          
           {canManageGymnasts && (
             <div className="nav-dropdown">
               <button className="nav-dropdown-toggle">
@@ -134,11 +141,17 @@ const Layout = () => {
                 <Link to="/branding" className={isActive('/branding')}>
                   Club Branding
                 </Link>
+                <Link to="/custom-fields" className={isActive('/custom-fields')}>
+                  Custom Fields
+                </Link>
                 <Link to="/users" className={isActive('/users')}>
                   Manage Users
                 </Link>
                 <Link to="/invites" className={isActive('/invites')}>
                   Invitations
+                </Link>
+                <Link to="/parent-requests" className={isActive('/parent-requests')}>
+                  Parent Requests
                 </Link>
               </div>
             </div>
@@ -201,6 +214,13 @@ const Layout = () => {
             </Link>
           )}
           
+          {/* My Certificates for Parents and Gymnasts */}
+          {(user?.role === 'PARENT' || user?.role === 'GYMNAST') && (
+            <Link to="/my-certificates" className={isActive('/my-certificates')}>
+              🏆 My Certificates
+            </Link>
+          )}
+          
           {canManageGymnasts && (
             <>
               <div className="mobile-nav-section">
@@ -248,11 +268,17 @@ const Layout = () => {
               <Link to="/branding" className={isActive('/branding')}>
                 Club Branding
               </Link>
+              <Link to="/custom-fields" className={isActive('/custom-fields')}>
+                Custom Fields
+              </Link>
               <Link to="/users" className={isActive('/users')}>
                 Manage Users
               </Link>
               <Link to="/invites" className={isActive('/invites')}>
                 Invitations
+              </Link>
+              <Link to="/parent-requests" className={isActive('/parent-requests')}>
+                Parent Requests
               </Link>
             </div>
           )}

@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import './ParentRequests.css';
 
 const ParentRequests = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -23,10 +23,17 @@ const ParentRequests = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
-      setRequests(data);
+      // Ensure we always set an array
+      setRequests(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching requests:', error);
+      setRequests([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -86,7 +93,7 @@ const ParentRequests = () => {
   };
 
   const disconnectParent = async (gymnastId, guardianId) => {
-    if (!confirm('Are you sure you want to disconnect this parent from the gymnast?')) {
+    if (!window.confirm('Are you sure you want to disconnect this parent from the gymnast?')) {
       return;
     }
 
@@ -307,7 +314,7 @@ const ParentRequests = () => {
                           <button 
                             onClick={() => {
                               const createNew = !selectedRequest.requesterEmail || 
-                                confirm('Create a new parent account? Click OK to create new, Cancel to use existing.');
+                                window.confirm('Create a new parent account? Click OK to create new, Cancel to use existing.');
                               processRequest(selectedRequest.id, 'approve', match.id, createNew);
                             }}
                             className="btn btn-success"

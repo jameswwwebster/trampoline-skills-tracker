@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import './CertificateDisplay.css';
 
+const CERTIFICATES_PER_PAGE = 4;
+
 const CertificateDisplay = ({ gymnastId, showActions = true }) => {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +15,7 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
     currentPage: 1,
     totalPages: 1,
     totalCertificates: 0,
-    limit: 5,
+    limit: CERTIFICATES_PER_PAGE,
     hasNextPage: false,
     hasPreviousPage: false
   });
@@ -22,7 +24,7 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
   const fetchCertificates = useCallback(async (page = 1) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/certificates/gymnast/${gymnastId}?page=${page}&limit=5`);
+      const response = await axios.get(`/api/certificates/gymnast/${gymnastId}?page=${page}&limit=${CERTIFICATES_PER_PAGE}`);
       
       // Handle the new response format with pagination
       if (response.data.certificates) {
@@ -157,7 +159,7 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
     <div className="certificate-display">
       <div className="certificate-header">
         <h3>🏆 Certificates ({pagination.totalCertificates})</h3>
-        {pagination.totalCertificates > 5 && (
+        {pagination.totalCertificates > CERTIFICATES_PER_PAGE && (
           <p className="pagination-info">
             Showing page {pagination.currentPage} of {pagination.totalPages}
           </p>

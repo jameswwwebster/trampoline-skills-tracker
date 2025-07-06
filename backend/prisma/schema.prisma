@@ -37,12 +37,46 @@ model User {
   levelProgress                 LevelProgress[]
   routineProgress               RoutineProgress[]
   skillProgress                 SkillProgress[]
+  customFieldValues             UserCustomFieldValue[]
   archivedBy                    User?             @relation("ArchivedUsers", fields: [archivedById], references: [id])
   archivedUsers                 User[]            @relation("ArchivedUsers")
   club                          Club?             @relation(fields: [clubId], references: [id])
   guardedGymnasts               Gymnast[]         @relation("GuardianGymnasts")
 
   @@map("users")
+}
+
+model UserCustomField {
+  id          String                 @id @default(cuid())
+  clubId      String
+  name        String                 // Display name (e.g., "Emergency Contact")
+  key         String                 // Internal key for CSV mapping (e.g., "emergency_contact")
+  fieldType   CustomFieldType
+  isRequired  Boolean                @default(false)
+  isActive    Boolean                @default(true)
+  options     String?                // JSON array for dropdown/multi-select options
+  order       Int                    @default(0)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  club        Club                   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  values      UserCustomFieldValue[]
+
+  @@unique([clubId, key])
+  @@map("user_custom_fields")
+}
+
+model UserCustomFieldValue {
+  id        String          @id @default(cuid())
+  userId    String
+  fieldId   String
+  value     String?         // Stored as string, parsed based on field type
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  field     UserCustomField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fieldId])
+  @@map("user_custom_field_values")
 }
 
 model Club {
@@ -67,9 +101,11 @@ model Club {
   website               String?
   certificateTemplates  CertificateTemplate[]
   certificates          Certificate[]
+  guardianRequests      GuardianRequest[]
   gymnasts              Gymnast[]
   invites               Invite[]
   users                 User[]
+  userCustomFields      UserCustomField[]
 
   @@map("clubs")
 }
@@ -223,20 +259,37 @@ model LevelProgress {
 }
 
 model GuardianRequest {
-  id              String        @id @default(cuid())
-  guardianId      String
-  gymnastId       String
-  requestedBy     String
-  processedBy     String?
-  status          RequestStatus @default(PENDING)
-  notes           String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  guardian        User          @relation("GuardianRequests", fields: [guardianId], references: [id])
-  gymnast         Gymnast       @relation(fields: [gymnastId], references: [id])
-  requestedByUser User          @relation("ProcessedRequests", fields: [requestedBy], references: [id])
+  id                    String        @id @default(cuid())
+  guardianId            String?       // Optional initially - may be created during approval
+  gymnastId             String?       // Optional initially - determined during approval
+  clubId                String        // Club context for the request
+  requestedBy           String
+  processedBy           String?
+  status                RequestStatus @default(PENDING)
+  notes                 String?
+  
+  // Search criteria provided by requester
+  requestedGymnastFirstName String
+  requestedGymnastLastName  String
+  requestedGymnastDOB      DateTime?
+  
+  // Requester information (for creating parent account if needed)
+  requesterFirstName    String
+  requesterLastName     String
+  requesterEmail        String
+  requesterPhone        String?
+  
+  // Relationship details
+  relationshipToGymnast String        // e.g., "Mother", "Father", "Guardian"
+  
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  
+  guardian              User?         @relation("GuardianRequests", fields: [guardianId], references: [id])
+  gymnast               Gymnast?      @relation(fields: [gymnastId], references: [id])
+  club                  Club          @relation(fields: [clubId], references: [id])
+  requestedByUser       User          @relation("ProcessedRequests", fields: [requestedBy], references: [id])
 
-  @@unique([guardianId, gymnastId])
   @@map("guardian_requests")
 }
 
@@ -411,4 +464,16 @@ enum CertificateType {
   LEVEL_COMPLETION
   SPECIAL_ACHIEVEMENT
   PARTICIPATION
+}
+
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  DATE
+  BOOLEAN
+  EMAIL
+  PHONE
+  DROPDOWN
+  MULTI_SELECT
+  TEXTAREA
 }

@@ -181,13 +181,7 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
             dateOfBirth: true
           }
         },
-        processedBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true
-          }
-        }
+
       },
       orderBy: {
         createdAt: 'desc'

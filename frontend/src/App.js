@@ -24,6 +24,10 @@ import ImportGymnasts from './pages/ImportGymnasts';
 import AcceptInvite from './pages/AcceptInvite';
 import ClubSettings from './pages/ClubSettings';
 import Branding from './pages/Branding';
+import ParentConnectionRequest from './pages/ParentConnectionRequest';
+import ParentRequests from './pages/ParentRequests';
+import CustomFields from './pages/CustomFields';
+import MyCertificates from './pages/MyCertificates';
 import './App.css';
 
 function App() {
@@ -35,6 +39,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/child-login" element={<ChildLogin />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/parent-connection-request" element={<ParentConnectionRequest />} />
             <Route path="/invite/:token" element={<AcceptInvite />} />
             <Route path="/" element={
               <ProtectedRoute>
@@ -51,11 +56,14 @@ function App() {
               <Route path="users" element={<Users />} />
               <Route path="profile" element={<Profile />} />
               <Route path="certificates" element={<Certificates />} />
+              <Route path="my-certificates" element={<MyCertificates />} />
               <Route path="certificates/:certificateId/preview" element={<CertificatePreview />} />
               <Route path="certificate-designer" element={<CertificateDesigner />} />
               <Route path="import" element={<ImportGymnasts />} />
               <Route path="club-settings" element={<ClubSettings />} />
               <Route path="branding" element={<Branding />} />
+              <Route path="custom-fields" element={<CustomFields />} />
+              <Route path="parent-requests" element={<ParentRequests />} />
             </Route>
           </Routes>
         </div>

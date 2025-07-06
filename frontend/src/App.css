@@ -3061,16 +3061,51 @@ textarea.form-control {
 
 .competition-badge {
   display: inline-block;
-  padding: 0.125rem 0.25rem;
-  color: #6c757d;
+  padding: 0.25rem 0.75rem;
+  color: #1976d2;
   font-size: 0.75rem;
-  font-weight: 400;
+  font-weight: 500;
   white-space: nowrap;
-  border: 1px solid #6c757d;
-  border-radius: 4px;
-  padding: 0.25rem 0.5rem;
+  border: 1px solid #bbdefb;
+  border-radius: 12px;
   text-transform: uppercase;
-  background-color: #e9ecef;
+  background-color: #e3f2fd;
+  transition: all 0.3s ease;
+}
+
+.competition-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.competition-badge.club {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+  border-color: #c8e6c9;
+}
+
+.competition-badge.regional {
+  background-color: #fff3e0;
+  color: #f57c00;
+  border-color: #ffcc02;
+}
+
+.competition-badge.league {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+  border-color: #ce93d8;
+}
+
+.competition-badge.national {
+  background-color: #ffebee;
+  color: #c62828;
+  border-color: #ef9a9a;
+}
+
+.competition-badge.international {
+  background-color: #e8eaf6;
+  color: #3f51b5;
+  border-color: #c5cae9;
 }
 
 .current-competition-eligibility {

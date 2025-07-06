@@ -155,6 +155,34 @@ function isLikelyGymnast(age, roles) {
   return false;
 }
 
+// Save custom field values for a user
+async function saveCustomFieldValues(userId, customFieldValues) {
+  if (!customFieldValues || Object.keys(customFieldValues).length === 0) {
+    return;
+  }
+
+  const savePromises = Object.entries(customFieldValues).map(([fieldId, value]) =>
+    prisma.userCustomFieldValue.upsert({
+      where: {
+        userId_fieldId: {
+          userId,
+          fieldId
+        }
+      },
+      update: {
+        value: value?.toString() || null
+      },
+      create: {
+        userId,
+        fieldId,
+        value: value?.toString() || null
+      }
+    })
+  );
+
+  await Promise.all(savePromises);
+}
+
 // Preview CSV data before import
 router.post('/preview', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFile'), async (req, res) => {
   try {
@@ -165,6 +193,14 @@ router.post('/preview', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFil
     const results = [];
     const errors = [];
     let lineNumber = 0;
+
+    // Get custom fields for this club
+    const customFields = await prisma.userCustomField.findMany({
+      where: {
+        clubId: req.user.clubId,
+        isActive: true
+      }
+    });
 
     const stream = fs.createReadStream(req.file.path)
       .pipe(csv({
@@ -185,6 +221,15 @@ router.post('/preview', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFil
         const roles = row['Roles']?.trim();
         const memberships = row['Memberships']?.trim();
         const mid = row['MID']?.trim();
+
+        // Extract custom field values
+        const customFieldValues = {};
+        customFields.forEach(field => {
+          const value = row[field.name] || row[field.key];
+          if (value !== undefined && value !== null && value.toString().trim() !== '') {
+            customFieldValues[field.id] = value.toString().trim();
+          }
+        });
 
         // Validation
         if (!firstName || !lastName) {
@@ -221,6 +266,7 @@ router.post('/preview', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFil
           organisation,
           roles,
           memberships,
+          customFieldValues,
           isGymnast,
           action: 'CREATE' // Default action
         };
@@ -294,6 +340,14 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
     const skipped = [];
     let lineNumber = 0;
 
+    // Get custom fields for this club
+    const customFields = await prisma.userCustomField.findMany({
+      where: {
+        clubId: req.user.clubId,
+        isActive: true
+      }
+    });
+
     const stream = fs.createReadStream(req.file.path)
       .pipe(csv({
         mapHeaders: ({ header }) => header.trim()
@@ -313,6 +367,15 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
         const roles = row['Roles']?.trim();
         const memberships = row['Memberships']?.trim();
         const mid = row['MID']?.trim();
+
+        // Extract custom field values
+        const customFieldValues = {};
+        customFields.forEach(field => {
+          const value = row[field.name] || row[field.key];
+          if (value !== undefined && value !== null && value.toString().trim() !== '') {
+            customFieldValues[field.id] = value.toString().trim();
+          }
+        });
 
         // Validation
         if (!firstName || !lastName) {
@@ -378,47 +441,89 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
           continue;
         }
 
-        // Import as gymnast
-        let gymnastData = {
-          firstName,
-          lastName,
-          clubId: req.user.clubId
-        };
-        
-        // Only add dateOfBirth if it's available
-        if (dateOfBirth) {
-          gymnastData.dateOfBirth = dateOfBirth;
-        }
+        let createdGymnast = null;
+        let createdUser = null;
 
-        let userData = null;
-        if (email) {
-          userData = {
+        if (isGymnast) {
+          // Import as gymnast
+          let gymnastData = {
+            firstName,
+            lastName,
+            clubId: req.user.clubId
+          };
+          
+          // Only add dateOfBirth if it's available
+          if (dateOfBirth) {
+            gymnastData.dateOfBirth = dateOfBirth;
+          }
+
+          if (existingGymnast) {
+            // Update existing gymnast
+            createdGymnast = await prisma.gymnast.update({
+              where: { id: existingGymnast.id },
+              data: gymnastData
+            });
+          } else {
+            // Create new gymnast
+            createdGymnast = await prisma.gymnast.create({
+              data: gymnastData
+            });
+          }
+
+          // For gymnasts, only create a user account if they have an email and we want to give them login access
+          // Most gymnasts don't need user accounts - they're managed by coaches/parents
+          if (email && options.createGymnastAccounts) {
+            let userData = {
+              email,
+              firstName,
+              lastName,
+              role: 'GYMNAST',
+              clubId: req.user.clubId,
+              password: null
+            };
+
+            if (existingUser) {
+              // Update existing user
+              createdUser = await prisma.user.update({
+                where: { id: existingUser.id },
+                data: userData
+              });
+            } else {
+              // Create new user
+              createdUser = await prisma.user.create({
+                data: userData
+              });
+            }
+
+            // Link gymnast to user account
+            await prisma.gymnast.update({
+              where: { id: createdGymnast.id },
+              data: { userId: createdUser.id }
+            });
+
+            // Save custom field values for gymnast user
+            await saveCustomFieldValues(createdUser.id, customFieldValues);
+          }
+        } else {
+          // Import as parent/guardian (non-gymnast)
+          if (!email) {
+            errors.push({
+              line: lineNumber,
+              error: 'Email required for parent/guardian accounts',
+              data: { firstName, lastName }
+            });
+            continue;
+          }
+
+          let userData = {
             email,
             firstName,
             lastName,
-            role: isGymnast ? 'PARENT' : 'PARENT', // Default role for imported users
+            role: 'PARENT',
             clubId: req.user.clubId,
             password: null // Will be set when they first log in
           };
-        }
 
-        let createdGymnast;
-        let createdUser = null;
-
-        if (existingGymnast) {
-          // Update existing gymnast
-          createdGymnast = await prisma.gymnast.update({
-            where: { id: existingGymnast.id },
-            data: gymnastData
-          });
-        } else {
-          // Create new gymnast
-          createdGymnast = await prisma.gymnast.create({
-            data: gymnastData
-          });
-        }
-
-        if (userData) {
           if (existingUser) {
             // Update existing user
             createdUser = await prisma.user.update({
@@ -432,13 +537,8 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
             });
           }
 
-          // Link gymnast to user if not already linked
-          if (!createdGymnast.userId) {
-            await prisma.gymnast.update({
-              where: { id: createdGymnast.id },
-              data: { userId: createdUser.id }
-            });
-          }
+          // Save custom field values for parent/guardian user
+          await saveCustomFieldValues(createdUser.id, customFieldValues);
         }
 
         imported.push({

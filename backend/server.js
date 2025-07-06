@@ -20,6 +20,8 @@ const certificateTemplateRoutes = require('./routes/certificateTemplates');
 const certificateFieldRoutes = require('./routes/certificateFields');
 const importRoutes = require('./routes/import');
 const brandingRoutes = require('./routes/branding');
+const guardianRequestRoutes = require('./routes/guardianRequests');
+const userCustomFieldRoutes = require('./routes/userCustomFields');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -64,6 +66,8 @@ app.use('/api/certificate-templates', certificateTemplateRoutes);
 app.use('/api/certificate-fields', certificateFieldRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/branding', brandingRoutes);
+app.use('/api/guardian-requests', guardianRequestRoutes);
+app.use('/api/user-custom-fields', userCustomFieldRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

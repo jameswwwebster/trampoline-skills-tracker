@@ -14,7 +14,7 @@ const ImportGymnasts = () => {
     updateExisting: false
   });
 
-  const { isClubAdmin } = useAuth();
+  const { user, isClubAdmin } = useAuth();
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];

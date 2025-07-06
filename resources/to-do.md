@@ -8,7 +8,7 @@
 - [x] Add gymnast metrics
 - [x] Add bulk import for sending invitations
 - [x] Add certificate management
-- [ ] Add club management - logos etc
+- [x] Add club management - logos etc
 - [ ] Add email notifications
 - [ ] Rename 'guardian' > 'viewer'
 

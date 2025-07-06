@@ -618,7 +618,18 @@ router.get('/:certificateId/download', auth, async (req, res) => {
     const certificate = await prisma.certificate.findUnique({
       where: { id: certificateId },
       include: {
-        gymnast: true,
+        gymnast: {
+          include: {
+            guardians: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true
+              }
+            }
+          }
+        },
         club: true,
         awardedBy: true,
         level: true,
@@ -638,7 +649,17 @@ router.get('/:certificateId/download', auth, async (req, res) => {
     }
     
     // Check if user has access
-    if (req.user.role !== 'ADMIN' && req.user.clubId !== certificate.clubId) {
+    const hasAccess = (
+      req.user.role === 'ADMIN' ||
+      req.user.clubId === certificate.clubId ||
+      // Parents can access their children's certificates
+      (req.user.role === 'PARENT' && certificate.gymnast.guardians && 
+       certificate.gymnast.guardians.some(guardian => guardian.id === req.user.id)) ||
+      // Gymnasts can access their own certificates
+      (req.user.role === 'GYMNAST' && certificate.gymnast.userId === req.user.id)
+    );
+    
+    if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
@@ -674,7 +695,18 @@ router.get('/:certificateId/preview', auth, async (req, res) => {
     const certificate = await prisma.certificate.findUnique({
       where: { id: certificateId },
       include: {
-        gymnast: true,
+        gymnast: {
+          include: {
+            guardians: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true
+              }
+            }
+          }
+        },
         club: true,
         awardedBy: true,
         level: true,
@@ -694,7 +726,17 @@ router.get('/:certificateId/preview', auth, async (req, res) => {
     }
     
     // Check if user has access
-    if (req.user.role !== 'ADMIN' && req.user.clubId !== certificate.clubId) {
+    const hasAccess = (
+      req.user.role === 'ADMIN' ||
+      req.user.clubId === certificate.clubId ||
+      // Parents can access their children's certificates
+      (req.user.role === 'PARENT' && certificate.gymnast.guardians && 
+       certificate.gymnast.guardians.some(guardian => guardian.id === req.user.id)) ||
+      // Gymnasts can access their own certificates
+      (req.user.role === 'GYMNAST' && certificate.gymnast.userId === req.user.id)
+    );
+    
+    if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
     }
     

@@ -560,8 +560,12 @@ const LevelCard = ({
         {/* Competition Levels */}
         {level.competitions && level.competitions.length > 0 && (
           <div className="competition-levels">
+            <span className="competition-label">Competitions:</span>
             {level.competitions.map((competition, index) => (
-              <span key={index} className="competition-badge">
+              <span 
+                key={index} 
+                className={`competition-badge ${competition.category ? competition.category.toLowerCase() : ''}`}
+              >
                 {competition.name}
               </span>
             ))}
@@ -761,7 +765,7 @@ const EditLevelModal = ({ level, competitions, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     name: level.name || '',
     description: level.description || '',
-    competitionIds: level.competitions ? level.competitions.map(comp => comp.name) : []
+    competitionIds: level.competitions ? level.competitions.map(comp => comp.id) : []
   });
 
   const handleSubmit = (e) => {
