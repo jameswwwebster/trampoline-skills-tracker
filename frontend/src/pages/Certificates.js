@@ -449,12 +449,17 @@ const Certificates = () => {
                       <option value="">Use default template</option>
                       {templates.map(template => (
                         <option key={template.id} value={template.id}>
-                          {template.name}
+                          {template.name}{template.isDefault ? ' (Default)' : ''}
                         </option>
                       ))}
                     </select>
                     <small className="form-text text-muted">
                       Select a custom template or leave empty to use the default template.
+                      {templates.find(t => t.isDefault) && (
+                        <span className="text-primary">
+                          {' '}Default: {templates.find(t => t.isDefault).name}
+                        </span>
+                      )}
                     </small>
                   </div>
                 </div>

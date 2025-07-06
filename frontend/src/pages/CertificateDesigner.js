@@ -223,6 +223,33 @@ const CertificateDesigner = () => {
     }
   };
 
+  const handleSetAsDefault = async (templateId) => {
+    try {
+      const template = templates.find(t => t.id === templateId);
+      
+      if (template.isDefault) {
+        // If already default, confirm removal
+        if (!window.confirm('This template is currently the default. Remove it as default?')) {
+          return;
+        }
+      }
+      
+      await axios.put(`/api/certificate-templates/${templateId}`, {
+        name: template.name,
+        isDefault: !template.isDefault
+      });
+      
+      setSuccess(`Template ${template.isDefault ? 'removed as' : 'set as'} default successfully!`);
+      await loadTemplates();
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error setting template as default:', error);
+      setError('Failed to update template default status');
+    }
+  };
+
   // Debounced API update function
   const debouncedUpdateField = useCallback(
     debounce(async (fieldId, x, y) => {
@@ -508,12 +535,28 @@ const CertificateDesigner = () => {
               <div
                 key={template.id}
                 className={`template-item ${selectedTemplate?.id === template.id ? 'selected' : ''}`}
-                onClick={() => setSelectedTemplate(template)}
               >
-                <div className="template-name">{template.name}</div>
-                <div className="template-info">
-                  {template.isDefault && <span className="badge">Default</span>}
-                  <span className="file-size">{(template.fileSize / 1024).toFixed(1)}KB</span>
+                <div 
+                  className="template-main"
+                  onClick={() => setSelectedTemplate(template)}
+                >
+                  <div className="template-name">{template.name}</div>
+                  <div className="template-info">
+                    {template.isDefault && <span className="badge">Default</span>}
+                    <span className="file-size">{(template.fileSize / 1024).toFixed(1)}KB</span>
+                  </div>
+                </div>
+                <div className="template-actions">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSetAsDefault(template.id);
+                    }}
+                    className={`btn btn-sm ${template.isDefault ? 'btn-warning' : 'btn-outline-primary'}`}
+                    title={template.isDefault ? 'Remove as default' : 'Set as default'}
+                  >
+                    {template.isDefault ? '⭐' : '☆'}
+                  </button>
                 </div>
               </div>
             ))}

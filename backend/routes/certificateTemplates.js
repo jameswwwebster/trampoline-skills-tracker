@@ -68,6 +68,33 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// Get the default template for the user's club
+router.get('/default', auth, async (req, res) => {
+  try {
+    const defaultTemplate = await prisma.certificateTemplate.findFirst({
+      where: {
+        clubId: req.user.clubId,
+        isDefault: true,
+        isActive: true
+      },
+      include: {
+        fields: {
+          orderBy: { order: 'asc' }
+        }
+      }
+    });
+
+    if (!defaultTemplate) {
+      return res.status(404).json({ error: 'No default template found' });
+    }
+
+    res.json(defaultTemplate);
+  } catch (error) {
+    console.error('Error fetching default certificate template:', error);
+    res.status(500).json({ error: 'Failed to fetch default certificate template' });
+  }
+});
+
 // Get a specific certificate template with fields
 router.get('/:id', auth, async (req, res) => {
   try {

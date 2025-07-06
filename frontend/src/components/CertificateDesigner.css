@@ -59,12 +59,13 @@
 }
 
 .template-item {
-  padding: 15px;
   border: 1px solid #ddd;
   border-radius: 6px;
-  cursor: pointer;
   margin-bottom: 10px;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .template-item:hover {
@@ -75,6 +76,12 @@
 .template-item.selected {
   border-color: #007bff;
   background: #e3f2fd;
+}
+
+.template-main {
+  flex: 1;
+  padding: 15px;
+  cursor: pointer;
 }
 
 .template-name {
@@ -89,6 +96,42 @@
   align-items: center;
   font-size: 12px;
   color: #666;
+}
+
+.template-actions {
+  padding: 10px;
+  display: flex;
+  gap: 5px;
+}
+
+.template-actions .btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.template-actions .btn-warning {
+  background: #ffc107;
+  color: #212529;
+  border: 1px solid #ffc107;
+}
+
+.template-actions .btn-warning:hover {
+  background: #e0a800;
+  border-color: #d39e00;
+}
+
+.template-actions .btn-outline-primary {
+  background: transparent;
+  color: #007bff;
+  border: 1px solid #007bff;
+}
+
+.template-actions .btn-outline-primary:hover {
+  background: #007bff;
+  color: white;
 }
 
 .badge {
