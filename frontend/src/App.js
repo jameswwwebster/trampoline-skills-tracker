@@ -19,6 +19,7 @@ import Users from './pages/Users';
 import Profile from './pages/Profile';
 import Certificates from './pages/Certificates';
 import CertificateDesigner from './pages/CertificateDesigner';
+import CertificatePreview from './pages/CertificatePreview';
 import ImportGymnasts from './pages/ImportGymnasts';
 import AcceptInvite from './pages/AcceptInvite';
 import ClubSettings from './pages/ClubSettings';
@@ -50,6 +51,7 @@ function App() {
               <Route path="users" element={<Users />} />
               <Route path="profile" element={<Profile />} />
               <Route path="certificates" element={<Certificates />} />
+              <Route path="certificates/:certificateId/preview" element={<CertificatePreview />} />
               <Route path="certificate-designer" element={<CertificateDesigner />} />
               <Route path="import" element={<ImportGymnasts />} />
               <Route path="club-settings" element={<ClubSettings />} />
