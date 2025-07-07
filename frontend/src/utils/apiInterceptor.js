@@ -8,7 +8,9 @@ export const setRateLimitContext = (context) => {
 };
 
 // Create a custom axios instance with interceptors
-const apiClient = axios.create();
+const apiClient = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001'
+});
 
 // Request interceptor to add authorization header and check rate limiting
 apiClient.interceptors.request.use(

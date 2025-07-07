@@ -27,4 +27,5 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 [services.deploy.variables]
-CI = "false" 
+CI = "false"
+REACT_APP_API_URL = "https://backend-production-1f5f.up.railway.app" 

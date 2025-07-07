@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
+import { get } from '../utils/apiInterceptor';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -28,7 +28,7 @@ const Register = () => {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
-        const response = await axios.get('/api/clubs');
+        const response = await get('/api/clubs');
         // Ensure we always set an array
         setClubs(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
