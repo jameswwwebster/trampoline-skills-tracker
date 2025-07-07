@@ -260,7 +260,26 @@ router.post('/values/:userId', auth, requireRole(['CLUB_ADMIN', 'COACH']), async
 
     await Promise.all(updatePromises);
 
-    res.json({ message: 'Custom field values updated successfully' });
+    // Return updated custom field values in the same format as user endpoint
+    const updatedValues = await prisma.userCustomFieldValue.findMany({
+      where: {
+        userId
+      },
+      select: {
+        id: true,
+        fieldId: true,
+        value: true,
+        field: {
+          select: {
+            id: true,
+            name: true,
+            fieldType: true
+          }
+        }
+      }
+    });
+
+    res.json(updatedValues);
   } catch (error) {
     console.error('Error updating custom field values:', error);
     res.status(500).json({ error: 'Failed to update custom field values' });

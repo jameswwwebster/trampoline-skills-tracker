@@ -16,7 +16,7 @@ const ImportGymnasts = () => {
     updateExisting: false
   });
 
-  const { user, isClubAdmin } = useAuth();
+  const { isClubAdmin } = useAuth();
 
   // Fetch custom fields on component mount
   useEffect(() => {

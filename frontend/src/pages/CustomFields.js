@@ -16,7 +16,7 @@ const FIELD_TYPES = [
 ];
 
 const CustomFields = () => {
-  const { user } = useAuth();
+  const { user } = useAuth(); // eslint-disable-line no-unused-vars
   const [fields, setFields] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

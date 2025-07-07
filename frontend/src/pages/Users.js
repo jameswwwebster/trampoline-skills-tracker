@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import axios from 'axios';
 import apiClient from '../utils/apiInterceptor';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -28,7 +27,7 @@ const Users = () => {
   const [showArchived, setShowArchived] = useState(false);
 
   const { user, isClubAdmin } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,16 +41,12 @@ const Users = () => {
         setGymnasts(gymnastsResponse.data);
         setCustomFields(customFieldsResponse.data);
         
-        // Fetch custom field values for all users
-        const customFieldValuesPromises = usersResponse.data.map(userData => 
-          apiClient.get(`/api/user-custom-fields/user/${userData.id}`).catch(() => ({ data: [] }))
-        );
-        const customFieldValuesResponses = await Promise.all(customFieldValuesPromises);
-        
+        // Extract custom field values from the user objects (now included in the response)
         const customFieldValuesMap = {};
-        usersResponse.data.forEach((userData, index) => {
-          customFieldValuesMap[userData.id] = customFieldValuesResponses[index].data;
+        usersResponse.data.forEach(userData => {
+          customFieldValuesMap[userData.id] = userData.customFieldValues || [];
         });
+        
         setUserCustomFieldValues(customFieldValuesMap);
         
       } catch (error) {
@@ -88,7 +83,7 @@ const Users = () => {
       setError(null);
       setSuccess(null);
       
-      const response = await axios.put(`/api/users/${userId}/role`, { role });
+      const response = await apiClient.put(`/api/users/${userId}/role`, { role });
       
       // Update the users list with the updated user
       setUsers(prev => prev.map(u => 
@@ -146,13 +141,13 @@ const Users = () => {
       
       if (targetUser?.isGymnast) {
         // For gymnasts, only update firstName and lastName
-        response = await axios.put(`/api/users/gymnast/${userId}/profile`, {
+        response = await apiClient.put(`/api/users/gymnast/${userId}/profile`, {
           firstName: profileForm.firstName,
           lastName: profileForm.lastName
         });
       } else {
         // For regular users, update all fields
-        response = await axios.put(`/api/users/${userId}/profile`, profileForm);
+        response = await apiClient.put(`/api/users/${userId}/profile`, profileForm);
       }
       
       // Update the users list with the updated user
@@ -173,7 +168,7 @@ const Users = () => {
       setError(null);
       setSuccess(null);
       
-      const response = await axios.post(`/api/users/${userData.id}/reset-password`);
+      const response = await apiClient.post(`/api/users/${userData.id}/reset-password`);
       
       // Show success message with email information
       setSuccess(`Password reset email sent to ${response.data.email}. ${response.data.name} will receive instructions to reset their password.`);
@@ -218,12 +213,12 @@ const Users = () => {
       
       if (targetUser?.isGymnast) {
         // For gymnasts, use the gymnast email endpoint
-        response = await axios.put(`/api/users/gymnast/${userId}/email`, {
+        response = await apiClient.put(`/api/users/gymnast/${userId}/email`, {
           email: emailForm
         });
       } else {
         // For regular users, use the user email endpoint
-        response = await axios.put(`/api/users/${userId}/email`, {
+        response = await apiClient.put(`/api/users/${userId}/email`, {
           email: emailForm
         });
       }
@@ -288,7 +283,7 @@ const Users = () => {
       setError(null);
       setSuccess(null);
       
-      await axios.patch(`/api/users/${archivingUser.id}/archive`, {
+      await apiClient.patch(`/api/users/${archivingUser.id}/archive`, {
         reason: archiveReason
       });
       
@@ -297,7 +292,7 @@ const Users = () => {
       setArchiveReason('');
       
       // Refresh users list
-      const response = await axios.get('/api/users');
+      const response = await apiClient.get('/api/users');
       setUsers(response.data);
     } catch (error) {
       console.error('Archive user error:', error);
@@ -310,12 +305,12 @@ const Users = () => {
       setError(null);
       setSuccess(null);
       
-      await axios.patch(`/api/users/${userData.id}/restore`);
+      await apiClient.patch(`/api/users/${userData.id}/restore`);
       
       setSuccess(`${userData.firstName} ${userData.lastName} has been restored`);
       
       // Refresh users list
-      const response = await axios.get('/api/users');
+      const response = await apiClient.get('/api/users');
       setUsers(response.data);
     } catch (error) {
       console.error('Restore user error:', error);
@@ -334,7 +329,7 @@ const Users = () => {
       setError(null);
       setSuccess(null);
       
-      await axios.delete(`/api/users/${deletingUser.id}`, {
+      await apiClient.delete(`/api/users/${deletingUser.id}`, {
         data: { confirmDelete: true }
       });
       
@@ -342,7 +337,7 @@ const Users = () => {
       setDeletingUser(null);
       
       // Refresh users list
-      const response = await axios.get('/api/users');
+      const response = await apiClient.get('/api/users');
       setUsers(response.data);
     } catch (error) {
       console.error('Delete user error:', error);
@@ -415,16 +410,19 @@ const Users = () => {
       setError(null);
       setSuccess(null);
       
-      // Update all custom field values
-      const updatePromises = customFields.map(field => {
+      // Prepare values object for bulk update
+      const values = {};
+      customFields.forEach(field => {
         const value = customFieldForm[field.id] || '';
-        return apiClient.put(`/api/user-custom-fields/user/${userId}/${field.id}`, { value });
+        if (value !== '') {
+          values[field.id] = value;
+        }
       });
       
-      await Promise.all(updatePromises);
+      // Update all custom field values at once
+      const response = await apiClient.post(`/api/user-custom-fields/values/${userId}`, { values });
       
-      // Refresh custom field values
-      const response = await apiClient.get(`/api/user-custom-fields/user/${userId}`);
+      // Update custom field values with the response data
       setUserCustomFieldValues(prev => ({
         ...prev,
         [userId]: response.data

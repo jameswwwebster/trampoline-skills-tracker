@@ -45,7 +45,7 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
   try {
     const { includeArchived } = req.query;
     
-    // Get all users in the club
+    // Get all users in the club with custom field values
     const users = await prisma.user.findMany({
       where: {
         clubId: req.user.clubId,
@@ -60,7 +60,21 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
         isArchived: true,
         archivedAt: true,
         archivedReason: true,
-        createdAt: true
+        createdAt: true,
+        customFieldValues: {
+          select: {
+            id: true,
+            fieldId: true,
+            value: true,
+            field: {
+              select: {
+                id: true,
+                name: true,
+                fieldType: true
+              }
+            }
+          }
+        }
       }
     });
 
@@ -78,7 +92,21 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
         createdAt: true,
         user: {
           select: {
-            email: true
+            email: true,
+            customFieldValues: {
+              select: {
+                id: true,
+                fieldId: true,
+                value: true,
+                field: {
+                  select: {
+                    id: true,
+                    name: true,
+                    fieldType: true
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -94,11 +122,18 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
       createdAt: gymnast.createdAt,
       dateOfBirth: gymnast.dateOfBirth,
       userId: gymnast.userId, // Track if gymnast has a user account
-      isGymnast: true // Flag to identify gymnasts
+      isGymnast: true, // Flag to identify gymnasts
+      customFieldValues: gymnast.user?.customFieldValues || [] // Include custom field values
+    }));
+
+    // Add custom field values to regular users
+    const usersWithCustomFields = users.map(user => ({
+      ...user,
+      customFieldValues: user.customFieldValues || []
     }));
 
     // Combine users and gymnasts
-    const allMembers = [...users, ...gymnastsAsUsers];
+    const allMembers = [...usersWithCustomFields, ...gymnastsAsUsers];
 
     // Sort by firstName
     allMembers.sort((a, b) => a.firstName.localeCompare(b.firstName));
