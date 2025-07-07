@@ -6,15 +6,15 @@
 
 **Backend Service Required:**
 ```bash
-DATABASE_URL=postgresql://user:password@host:port/database
-JWT_SECRET=your-super-secret-jwt-key-here
-FRONTEND_URL=https://your-frontend-url.railway.app
+DATABASE_URL=postgresql://postgres:mNLuPbiBJtWboUlhCxEwfotMxcfhHJPy@postgres.railway.internal:5432/railway
+JWT_SECRET=86f84f55-89dd-40ed-a21c-3f8a0ed4e91a
+FRONTEND_URL=https://front-end-production-f3e8.up.railway.app
 NODE_ENV=production
 ```
 
 **Frontend Service Required:**
 ```bash
-REACT_APP_API_URL=https://your-backend-url.railway.app
+REACT_APP_API_URL=https://backend.railway.internal
 ```
 
 **Optional Email Configuration:**
