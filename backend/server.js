@@ -29,7 +29,7 @@ const prisma = new PrismaClient();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.REACT_APP_API_URL || 'http://localhost:3000',
   credentials: true
 }));
 
