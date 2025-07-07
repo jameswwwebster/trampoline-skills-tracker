@@ -42,14 +42,14 @@ EMAIL_FROM=noreply@trampolinetracker.com
 ### 3. **Service Configuration**
 
 **Backend Service:**
-- Build Command: `npm install && npm run build && npx prisma migrate deploy`
-- Start Command: `npm start`
+- Build Command: `npm install && npm run build`
+- Start Command: `npx prisma migrate deploy && npm start`
 - Health Check: `/api/health`
 - Port: Automatically assigned by Railway
 
 **Frontend Service:**
-- Build Command: `npm install && npm install -g serve && npm run build`
-- Start Command: `npx serve -s build -l $PORT`
+- Build Command: `npm install && npm run build`
+- Start Command: `npx serve@latest -s build -l $PORT`
 - Port: Automatically assigned by Railway
 
 ### 4. **Common Deployment Errors**
