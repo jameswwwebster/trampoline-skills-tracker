@@ -29,9 +29,12 @@ const Register = () => {
     const fetchClubs = async () => {
       try {
         const response = await axios.get('/api/clubs');
-        setClubs(response.data);
+        // Ensure we always set an array
+        setClubs(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error('Failed to fetch clubs:', error);
+        // Ensure clubs stays as an empty array if API fails
+        setClubs([]);
       }
     };
 
@@ -252,7 +255,7 @@ const Register = () => {
                 required
               >
                 <option value="">Select a club...</option>
-                {clubs.map(club => (
+                {clubs && Array.isArray(clubs) && clubs.map(club => (
                   <option key={club.id} value={club.id}>
                     {club.name}
                   </option>
