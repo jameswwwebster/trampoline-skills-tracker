@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import CertificateDisplay from '../components/CertificateDisplay';
 
 const MyCertificates = () => {
-  const [certificates, setCertificates] = useState([]);
+  // const [certificates, setCertificates] = useState([]); // Not used currently
   const [gymnasts, setGymnasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,6 +13,7 @@ const MyCertificates = () => {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchData = async () => {

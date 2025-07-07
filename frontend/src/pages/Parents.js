@@ -9,7 +9,7 @@ const Parents = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { user, isClubAdmin } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, /* setSearchParams */] = useSearchParams();
 
   useEffect(() => {
     const fetchParents = async () => {

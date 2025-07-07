@@ -57,7 +57,7 @@ const Certificates = () => {
       setSuccess(null); // Clear any previous success messages
 
       
-      const response = await axios.put(`/api/certificates/${certificateId}/status`, { status });
+      await axios.put(`/api/certificates/${certificateId}/status`, { status });
       
 
       // Refresh certificates

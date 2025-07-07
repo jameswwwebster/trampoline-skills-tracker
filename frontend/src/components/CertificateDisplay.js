@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext';
+// import { useAuth } from '../contexts/AuthContext'; // Not used currently
 import './CertificateDisplay.css';
 
 const CERTIFICATES_PER_PAGE = 4;
@@ -19,7 +19,7 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
     hasNextPage: false,
     hasPreviousPage: false
   });
-  const { } = useAuth();
+  // const { } = useAuth(); // Not needed currently
 
   const fetchCertificates = useCallback(async (page = 1) => {
     try {
@@ -74,7 +74,7 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
         }
       });
     };
-  }, [fetchCertificates]);
+  }, [fetchCertificates, imageUrls]);
 
   const handlePageChange = (newPage) => {
     fetchCertificates(newPage);

@@ -54,7 +54,7 @@ const Dashboard = () => {
       setError(null);
       setSuccess(null);
       
-      const response = await axios.put(`/api/certificates/${certificateId}/status`, {
+      await axios.put(`/api/certificates/${certificateId}/status`, {
         status: 'PRINTED'
       });
       

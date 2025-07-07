@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+// import { useAuth } from '../contexts/AuthContext'; // Not used currently
 import './ParentRequests.css';
 
 const ParentRequests = () => {
-  const { user } = useAuth();
+  // const { user } = useAuth(); // Not used currently
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);

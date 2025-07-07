@@ -5,7 +5,7 @@ import { useBranding } from '../contexts/BrandingContext';
 
 const Branding = () => {
   const { user } = useAuth();
-  const { branding: globalBranding, updateBranding } = useBranding();
+  const { updateBranding } = useBranding();
   const [branding, setBranding] = useState({
     primaryColor: '#2c3e50',
     secondaryColor: '#3498db',
@@ -25,6 +25,7 @@ const Branding = () => {
   useEffect(() => {
     fetchBranding();
     fetchPresets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchBranding = async () => {

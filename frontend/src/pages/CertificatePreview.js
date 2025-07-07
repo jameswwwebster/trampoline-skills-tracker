@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext';
+// import { useAuth } from '../contexts/AuthContext'; // Not used currently
 
 const CertificatePreview = () => {
   const { certificateId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  // const { user } = useAuth(); // Not used currently
   const [certificate, setCertificate] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
   const [loading, setLoading] = useState(true);

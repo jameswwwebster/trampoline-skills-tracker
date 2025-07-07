@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-import SkillProgressTracker from './SkillProgressTracker';
-import LevelProgressTracker from './LevelProgressTracker';
+// import SkillProgressTracker from './SkillProgressTracker'; // Not used currently
+// import LevelProgressTracker from './LevelProgressTracker'; // Not used currently
 import ProgressHistory from './ProgressHistory';
 import CoachNotes from './CoachNotes';
 import EditGymnastForm from './EditGymnastForm';
@@ -356,10 +356,10 @@ const GymnastProgress = ({ gymnastId }) => {
   }).sort((a, b) => sortLevelsByIdentifier(a.level, b.level));
 
   // Get current and working levels
-  const completedLevels = gymnast.levelProgress
-    .filter(lp => lp.status === 'COMPLETED')
-    .map(lp => lp.level)
-    .sort(sortLevelsByIdentifier);
+  // const completedLevels = gymnast.levelProgress
+  //   .filter(lp => lp.status === 'COMPLETED')
+  //   .map(lp => lp.level)
+  //   .sort(sortLevelsByIdentifier); // Not used currently
 
   // Current level should be the next main track level to work on
   const nextMainTrackLevelNumber = getCurrentLevelNumber(gymnast, levels);

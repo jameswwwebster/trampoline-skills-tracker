@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+// import { useAuth } from '../contexts/AuthContext'; // Not used currently
 import axios from 'axios';
 import '../components/CertificateDesigner.css';
 
@@ -31,7 +31,7 @@ const debounce = (func, wait) => {
 };
 
 const CertificateDesigner = () => {
-  const { user } = useAuth();
+  // const { user } = useAuth(); // Not used currently
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [fields, setFields] = useState([]);
@@ -51,11 +51,11 @@ const CertificateDesigner = () => {
   const canvasContainerRef = useRef(null);
 
   // Form states
-  const [uploadForm, setUploadForm] = useState({
-    name: '',
-    isDefault: false,
-    file: null
-  });
+  // const [uploadForm, setUploadForm] = useState({
+  //   name: '',
+  //   isDefault: false,
+  //   file: null
+  // }); // Not used currently
   
   const [fieldForm, setFieldForm] = useState({
     fieldType: '',
@@ -91,6 +91,7 @@ const CertificateDesigner = () => {
   useEffect(() => {
     loadTemplates();
     loadFieldTypes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -162,7 +163,7 @@ const CertificateDesigner = () => {
     const formData = new FormData(e.target);
     
     try {
-      const response = await axios.post('/api/certificate-templates/upload', formData, {
+      await axios.post('/api/certificate-templates/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
