@@ -274,6 +274,132 @@ router.post('/skill', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
   }
 });
 
+// Complete all skills in a level (coaches only)
+router.post('/level/:levelId/complete', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const { levelId } = req.params;
+    const { gymnastId } = req.body;
+
+    if (!gymnastId) {
+      return res.status(400).json({ error: 'Gymnast ID is required' });
+    }
+
+    // Verify gymnast belongs to coach's club
+    const gymnast = await prisma.gymnast.findUnique({
+      where: { id: gymnastId }
+    });
+
+    if (!gymnast) {
+      return res.status(404).json({ error: 'Gymnast not found' });
+    }
+
+    if (gymnast.clubId !== req.user.clubId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Verify level exists and get all skills
+    const level = await prisma.level.findUnique({
+      where: { id: levelId },
+      include: {
+        skills: true
+      }
+    });
+
+    if (!level) {
+      return res.status(404).json({ error: 'Level not found' });
+    }
+
+    if (level.skills.length === 0) {
+      return res.status(400).json({ error: 'No skills found in this level' });
+    }
+
+    // Mark all skills as completed
+    const completedSkills = [];
+    
+    for (const skill of level.skills) {
+      const existingProgress = await prisma.skillProgress.findUnique({
+        where: {
+          gymnastId_skillId: {
+            gymnastId,
+            skillId: skill.id
+          }
+        }
+      });
+
+      let progressRecord;
+
+      if (existingProgress) {
+        // Update existing progress
+        progressRecord = await prisma.skillProgress.update({
+          where: {
+            gymnastId_skillId: {
+              gymnastId,
+              skillId: skill.id
+            }
+          },
+          data: {
+            status: 'COMPLETED',
+            completedAt: new Date(),
+            userId: req.user.id
+          },
+          include: {
+            skill: {
+              include: {
+                level: true
+              }
+            },
+            user: {
+              select: {
+                firstName: true,
+                lastName: true
+              }
+            }
+          }
+        });
+      } else {
+        // Create new progress record
+        progressRecord = await prisma.skillProgress.create({
+          data: {
+            gymnastId,
+            skillId: skill.id,
+            status: 'COMPLETED',
+            completedAt: new Date(),
+            userId: req.user.id
+          },
+          include: {
+            skill: {
+              include: {
+                level: true
+              }
+            },
+            user: {
+              select: {
+                firstName: true,
+                lastName: true
+              }
+            }
+          }
+        });
+      }
+
+      completedSkills.push(progressRecord);
+    }
+
+    // Trigger automatic level completion check
+    await checkAndCompleteLevel(gymnastId, levelId, req.user.id);
+
+    res.json({
+      message: `All ${level.skills.length} skills in ${level.name} have been marked as completed`,
+      completedSkills,
+      levelName: level.name,
+      levelId: level.id
+    });
+  } catch (error) {
+    console.error('Complete level error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Mark or update level progress (coaches only)
 router.post('/level', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {

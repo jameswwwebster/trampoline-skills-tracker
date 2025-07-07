@@ -140,19 +140,36 @@ function cleanEmail(email) {
   return cleaned;
 }
 
+// Clean and normalize names for better matching
+function cleanName(name) {
+  if (!name) return null;
+  return name.trim().toLowerCase();
+}
+
 // Determine if person is likely a gymnast based on age and roles
 function isLikelyGymnast(age, roles) {
-  // If age is under 25 and roles only contains "Member", likely a gymnast
-  if (age && age < 25 && roles && roles.toLowerCase().includes('member') && !roles.toLowerCase().includes('coach') && !roles.toLowerCase().includes('administrator')) {
-    return true;
-  }
-  
   // If age is under 18, very likely a gymnast
   if (age && age < 18) {
     return true;
   }
   
-  return false;
+  // If age is under 25 and roles contains "Member" (and not coach/admin), likely a gymnast
+  if (age && age < 25 && roles && roles.toLowerCase().includes('member') && !roles.toLowerCase().includes('coach') && !roles.toLowerCase().includes('administrator')) {
+    return true;
+  }
+  
+  // If roles contains "gymnast" explicitly
+  if (roles && roles.toLowerCase().includes('gymnast')) {
+    return true;
+  }
+  
+  // If no clear indicators but age is young enough, assume gymnast
+  if (age && age < 30) {
+    return true;
+  }
+  
+  // Default to gymnast if we can't determine (better to import than skip)
+  return true;
 }
 
 // Save custom field values for a user
@@ -271,22 +288,42 @@ router.post('/preview', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFil
           action: 'CREATE' // Default action
         };
 
-        // Check for existing gymnast/user
-        const existingUser = email ? await prisma.user.findUnique({
-          where: { email }
+        // Check for existing gymnast/user with enhanced matching
+        const existingUser = email ? await prisma.user.findFirst({
+          where: { 
+            email: {
+              equals: email,
+              mode: 'insensitive'
+            },
+            clubId: req.user.clubId
+          }
         }) : null;
 
         const existingGymnast = await prisma.gymnast.findFirst({
           where: {
-            firstName,
-            lastName,
+            firstName: {
+              equals: firstName,
+              mode: 'insensitive'
+            },
+            lastName: {
+              equals: lastName,
+              mode: 'insensitive'
+            },
             clubId: req.user.clubId
+          },
+          include: {
+            user: true
           }
         });
 
+        const hasCustomFields = Object.keys(customFieldValues).length > 0;
+
         if (existingUser || existingGymnast) {
-          processedRow.action = 'SKIP';
-          processedRow.reason = existingUser ? 'Email already exists' : 'Gymnast already exists';
+          processedRow.action = 'UPDATE';
+          processedRow.reason = existingUser ? 'Email already exists - will update' : 'Gymnast already exists - will update';
+          processedRow.customFieldsCount = hasCustomFields;
+        } else {
+          processedRow.customFieldsCount = hasCustomFields;
         }
 
         results.push(processedRow);
@@ -306,8 +343,10 @@ router.post('/preview', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFil
       success: true,
       totalRows: results.length,
       validRows: results.filter(r => r.action === 'CREATE').length,
+      updateRows: results.filter(r => r.action === 'UPDATE').length,
       skippedRows: results.filter(r => r.action === 'SKIP').length,
       errorRows: errors.length,
+      customFieldsRows: results.filter(r => r.customFieldsCount > 0).length,
       data: results,
       errors
     });
@@ -410,33 +449,45 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
           continue;
         }
 
-        // Check for existing records
-        const existingUser = email ? await prisma.user.findUnique({
-          where: { email }
+        // Enhanced matching logic for existing records with case-insensitive search
+        const existingUser = email ? await prisma.user.findFirst({
+          where: { 
+            email: {
+              equals: email,
+              mode: 'insensitive'
+            },
+            clubId: req.user.clubId
+          }
         }) : null;
 
+        // Look for existing gymnast by name and club (case-insensitive)
         const existingGymnast = await prisma.gymnast.findFirst({
           where: {
-            firstName,
-            lastName,
+            firstName: {
+              equals: firstName,
+              mode: 'insensitive'
+            },
+            lastName: {
+              equals: lastName,
+              mode: 'insensitive'
+            },
             clubId: req.user.clubId
+          },
+          include: {
+            user: true
           }
         });
 
-        if (existingUser && !options.updateExisting) {
+        // For upsert operations, we need to handle various combinations
+        const shouldUpdate = options.updateExisting;
+        const hasCustomFields = Object.keys(customFieldValues).length > 0;
+        
+        // Skip only if we're not updating and record exists
+        if (!shouldUpdate && (existingUser || existingGymnast)) {
           skipped.push({
             line: lineNumber,
-            reason: 'Email already exists',
+            reason: existingUser ? 'Email already exists' : 'Gymnast already exists',
             data: { firstName, lastName, email }
-          });
-          continue;
-        }
-
-        if (existingGymnast && !options.updateExisting) {
-          skipped.push({
-            line: lineNumber,
-            reason: 'Gymnast already exists',
-            data: { firstName, lastName }
           });
           continue;
         }
@@ -445,7 +496,7 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
         let createdUser = null;
 
         if (isGymnast) {
-          // Import as gymnast
+          // Import as gymnast - handle upsert logic
           let gymnastData = {
             firstName,
             lastName,
@@ -470,11 +521,9 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
             });
           }
 
-          // For gymnasts, only create a user account if they have an email and we want to give them login access
-          // Most gymnasts don't need user accounts - they're managed by coaches/parents
-          if (email && options.createGymnastAccounts) {
+          // Handle user account for custom fields or email
+          if (hasCustomFields || email) {
             let userData = {
-              email,
               firstName,
               lastName,
               role: 'GYMNAST',
@@ -482,24 +531,38 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
               password: null
             };
 
+            // Only set email if provided
+            if (email) {
+              userData.email = email;
+            }
+
+            // Determine which user to use/create
             if (existingUser) {
-              // Update existing user
+              // Use the existing user found by email
               createdUser = await prisma.user.update({
                 where: { id: existingUser.id },
                 data: userData
               });
+            } else if (existingGymnast && existingGymnast.user) {
+              // Use the existing user linked to the gymnast
+              createdUser = await prisma.user.update({
+                where: { id: existingGymnast.user.id },
+                data: userData
+              });
             } else {
-              // Create new user
+              // Create new user (email is optional for gymnasts with custom fields)
               createdUser = await prisma.user.create({
                 data: userData
               });
             }
 
-            // Link gymnast to user account
-            await prisma.gymnast.update({
-              where: { id: createdGymnast.id },
-              data: { userId: createdUser.id }
-            });
+            // Ensure gymnast is linked to user account
+            if (createdGymnast.userId !== createdUser.id) {
+              await prisma.gymnast.update({
+                where: { id: createdGymnast.id },
+                data: { userId: createdUser.id }
+              });
+            }
 
             // Save custom field values for gymnast user
             await saveCustomFieldValues(createdUser.id, customFieldValues);
@@ -525,7 +588,7 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
           };
 
           if (existingUser) {
-            // Update existing user
+            // Update existing user with all provided data
             createdUser = await prisma.user.update({
               where: { id: existingUser.id },
               data: userData
@@ -543,8 +606,16 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
 
         imported.push({
           line: lineNumber,
-          gymnastId: createdGymnast.id,
+          gymnastId: createdGymnast?.id,
           userId: createdUser?.id,
+          action: existingGymnast || existingUser ? 'UPDATED' : 'CREATED',
+          customFieldsCount: Object.keys(customFieldValues).length,
+          existingMatches: {
+            existingUser: !!existingUser,
+            existingGymnast: !!existingGymnast,
+            existingUserId: existingUser?.id,
+            existingGymnastId: existingGymnast?.id
+          },
           data: { firstName, lastName, email, dateOfBirth, age, roles }
         });
 
@@ -566,6 +637,9 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
       summary: {
         totalProcessed: lineNumber,
         imported: imported.length,
+        created: imported.filter(r => r.action === 'CREATED').length,
+        updated: imported.filter(r => r.action === 'UPDATED').length,
+        customFieldsProcessed: imported.filter(r => r.customFieldsCount > 0).length,
         skipped: skipped.length,
         errors: errors.length
       },
@@ -583,6 +657,106 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
     }
     
     res.status(500).json({ error: 'Failed to import CSV file' });
+  }
+});
+
+// Utility route to find and clean up duplicate users/gymnasts
+router.get('/duplicates', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    // Find duplicate users (same email)
+    const duplicateUsers = await prisma.user.groupBy({
+      by: ['email'],
+      where: {
+        clubId: req.user.clubId,
+        email: { not: null }
+      },
+      _count: {
+        id: true
+      },
+      having: {
+        id: {
+          _count: {
+            gt: 1
+          }
+        }
+      }
+    });
+
+    // Find duplicate gymnasts (same name)
+    const duplicateGymnasts = await prisma.gymnast.groupBy({
+      by: ['firstName', 'lastName'],
+      where: {
+        clubId: req.user.clubId
+      },
+      _count: {
+        id: true
+      },
+      having: {
+        id: {
+          _count: {
+            gt: 1
+          }
+        }
+      }
+    });
+
+    // Get detailed information for duplicates
+    const duplicateUserDetails = [];
+    for (const dup of duplicateUsers) {
+      const users = await prisma.user.findMany({
+        where: {
+          email: dup.email,
+          clubId: req.user.clubId
+        },
+        include: {
+          gymnasts: true,
+          guardedGymnasts: true,
+          customFieldValues: true
+        }
+      });
+      duplicateUserDetails.push({
+        email: dup.email,
+        count: dup._count.id,
+        users
+      });
+    }
+
+    const duplicateGymnastDetails = [];
+    for (const dup of duplicateGymnasts) {
+      const gymnasts = await prisma.gymnast.findMany({
+        where: {
+          firstName: dup.firstName,
+          lastName: dup.lastName,
+          clubId: req.user.clubId
+        },
+        include: {
+          user: {
+            include: {
+              customFieldValues: true
+            }
+          },
+          guardians: true
+        }
+      });
+      duplicateGymnastDetails.push({
+        name: `${dup.firstName} ${dup.lastName}`,
+        count: dup._count.id,
+        gymnasts
+      });
+    }
+
+    res.json({
+      duplicateUsers: duplicateUserDetails,
+      duplicateGymnasts: duplicateGymnastDetails,
+      summary: {
+        duplicateUserCount: duplicateUsers.length,
+        duplicateGymnastCount: duplicateGymnasts.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Find duplicates error:', error);
+    res.status(500).json({ error: 'Failed to find duplicates' });
   }
 });
 

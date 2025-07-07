@@ -96,7 +96,14 @@ export const RateLimitProvider = ({ children }) => {
 
   const dismissBanner = () => {
     // Allow manual dismissal but keep the rate limiting active
+    // The banner will reappear if another request is attempted while rate limited
     setIsRateLimited(false);
+  };
+
+  // Debug function to trigger rate limiting manually (for testing)
+  const triggerRateLimitForTesting = (seconds = 10) => {
+    console.log('🧪 Debug: Triggering rate limit for testing');
+    handleRateLimitHit(seconds);
   };
 
   const value = {
@@ -107,7 +114,8 @@ export const RateLimitProvider = ({ children }) => {
     handleRateLimitHit,
     canMakeRequest,
     formatTimeRemaining,
-    dismissBanner
+    dismissBanner,
+    triggerRateLimitForTesting
   };
 
   return (

@@ -10,9 +10,15 @@ export const setRateLimitContext = (context) => {
 // Create a custom axios instance with interceptors
 const apiClient = axios.create();
 
-// Request interceptor to check rate limiting
+// Request interceptor to add authorization header and check rate limiting
 apiClient.interceptors.request.use(
   (config) => {
+    // Add authorization header from localStorage
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     // Check if we can make requests
     if (rateLimitContext && !rateLimitContext.canMakeRequest()) {
       const error = new Error('Rate limited - requests are currently blocked');
@@ -58,8 +64,12 @@ export const makeApiCall = async (requestFn) => {
     return await requestFn(apiClient);
   } catch (error) {
     if (error.isRateLimited) {
-      // Don't show additional error messages for rate limited requests
-      throw new Error(`Request blocked due to rate limiting. Please wait ${error.retryAfter || 'a moment'} before trying again.`);
+      // Ensure the banner is visible by triggering rate limiting if not already active
+      if (rateLimitContext && !rateLimitContext.isRateLimited) {
+        rateLimitContext.handleRateLimitHit(error.retryAfterSeconds || error.retryAfter);
+      }
+      // Don't show additional error messages for rate limited requests - the banner handles this
+      throw new Error(`Request blocked due to rate limiting. Please check the banner at the top of the page.`);
     }
     throw error;
   }

@@ -17,6 +17,7 @@ const GymnastProgress = ({ gymnastId }) => {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [collapsedLevels, setCollapsedLevels] = useState(new Set());
+  const [confirmCompleteLevel, setConfirmCompleteLevel] = useState(null);
   const { user } = useAuth();
 
   // Only coaches and club admins can use coaching tools
@@ -210,6 +211,37 @@ const GymnastProgress = ({ gymnastId }) => {
       handleProgressUpdate();
     } catch (error) {
       console.error('Error updating routine status:', error);
+    }
+  };
+
+  const handleCompleteLevel = (levelId) => {
+    // Find the level to get its details for confirmation
+    const level = levels.find(l => l.id === levelId);
+    if (level) {
+      setConfirmCompleteLevel(level);
+    }
+  };
+
+  const confirmAndCompleteLevel = async () => {
+    if (!confirmCompleteLevel) return;
+    
+    try {
+      const response = await axios.post(`/api/progress/level/${confirmCompleteLevel.id}/complete`, {
+        gymnastId
+      });
+      
+      // Show success message
+      console.log(response.data.message);
+      
+      // Refresh data to show updated progress
+      handleProgressUpdate();
+      
+      // Close confirmation dialog
+      setConfirmCompleteLevel(null);
+    } catch (error) {
+      console.error('Error completing level:', error);
+      // Could add error handling here
+      setConfirmCompleteLevel(null);
     }
   };
 
@@ -517,6 +549,17 @@ const GymnastProgress = ({ gymnastId }) => {
                       </div>
                       <span className="progress-percentage">{Math.round(progressPercentage)}%</span>
 
+                      {canCoach && coachingMode && !isCompleted && totalSkills > 0 && (
+                        <button
+                          onClick={() => handleCompleteLevel(level.id)}
+                          className="btn btn-xs btn-success"
+                          title="Complete all skills in this level"
+                          style={{ marginRight: '5px' }}
+                        >
+                          Complete Level
+                        </button>
+                      )}
+
                       <button
                           onClick={() => toggleLevelCollapse(level.id)}
                           className="btn btn-xs btn-outline collapse-toggle"
@@ -675,6 +718,36 @@ const GymnastProgress = ({ gymnastId }) => {
                 <span className="text-muted">{guardian.email}</span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog for Complete Level */}
+      {confirmCompleteLevel && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h4>Complete Level {confirmCompleteLevel.identifier}?</h4>
+            <p>
+              This will mark <strong>all skills</strong> in "{confirmCompleteLevel.name}" as completed. 
+              This action cannot be undone easily.
+            </p>
+            <p>
+              Are you sure you want to complete this entire level for {gymnast.firstName} {gymnast.lastName}?
+            </p>
+            <div className="modal-actions">
+              <button 
+                onClick={() => setConfirmCompleteLevel(null)}
+                className="btn btn-outline"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmAndCompleteLevel}
+                className="btn btn-success"
+              >
+                Yes, Complete Level
+              </button>
+            </div>
           </div>
         </div>
       )}

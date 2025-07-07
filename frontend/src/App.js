@@ -52,9 +52,20 @@ function AppContent() {
     
     updateBodyClass();
     
+    // In development mode, expose rate limit testing function to console
+    if (process.env.NODE_ENV === 'development') {
+      window.testRateLimit = (seconds = 10) => {
+        console.log('🧪 Testing rate limit banner...');
+        rateLimitContext.triggerRateLimitForTesting(seconds);
+      };
+    }
+    
     // Cleanup on unmount
     return () => {
       document.body.classList.remove('rate-limited');
+      if (process.env.NODE_ENV === 'development') {
+        delete window.testRateLimit;
+      }
     };
   }, [rateLimitContext]);
 

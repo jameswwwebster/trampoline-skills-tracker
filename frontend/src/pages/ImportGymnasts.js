@@ -11,9 +11,11 @@ const ImportGymnasts = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [duplicates, setDuplicates] = useState(null);
+  const [showDuplicates, setShowDuplicates] = useState(false);
   const [importOptions, setImportOptions] = useState({
-    importNonGymnasts: false,
-    updateExisting: false
+    importNonGymnasts: true,
+    updateExisting: true  // Default to true for upsert behavior
   });
 
   const { isClubAdmin } = useAuth();
@@ -71,7 +73,18 @@ const ImportGymnasts = () => {
       });
 
       setPreviewData(response.data);
-      setSuccess(`Preview loaded: ${response.data.validRows} valid rows, ${response.data.skippedRows} skipped, ${response.data.errorRows} errors`);
+      const { validRows, updateRows, skippedRows, errorRows, customFieldsRows } = response.data;
+      let message = `Preview loaded: ${validRows} new records, ${updateRows || 0} updates`;
+      if (customFieldsRows > 0) {
+        message += `, ${customFieldsRows} with custom fields`;
+      }
+      if (skippedRows > 0) {
+        message += `, ${skippedRows} skipped`;
+      }
+      if (errorRows > 0) {
+        message += `, ${errorRows} errors`;
+      }
+      setSuccess(message);
     } catch (error) {
       setError(error.response?.data?.error || 'Failed to preview CSV file');
     } finally {
@@ -101,7 +114,18 @@ const ImportGymnasts = () => {
       });
 
       setImportResult(response.data);
-      setSuccess(`Import completed: ${response.data.summary.imported} imported, ${response.data.summary.skipped} skipped, ${response.data.summary.errors} errors`);
+      const { summary } = response.data;
+      let message = `Import completed: ${summary.created || 0} created, ${summary.updated || 0} updated`;
+      if (summary.customFieldsProcessed > 0) {
+        message += `, ${summary.customFieldsProcessed} with custom fields`;
+      }
+      if (summary.skipped > 0) {
+        message += `, ${summary.skipped} skipped`;
+      }
+      if (summary.errors > 0) {
+        message += `, ${summary.errors} errors`;
+      }
+      setSuccess(message);
       
       // Clear the file input after successful import
       setFile(null);
@@ -109,6 +133,21 @@ const ImportGymnasts = () => {
       document.getElementById('csvFile').value = '';
     } catch (error) {
       setError(error.response?.data?.error || 'Failed to import CSV file');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkDuplicates = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiClient.get('/api/import/duplicates');
+      setDuplicates(response.data);
+      setShowDuplicates(true);
+    } catch (error) {
+      setError(error.response?.data?.error || 'Failed to check for duplicates');
     } finally {
       setLoading(false);
     }
@@ -131,7 +170,10 @@ const ImportGymnasts = () => {
       <div className="info-message">
         <p>Import gymnasts from British Gymnastics CSV export files</p>
         <p><strong>Expected format:</strong> MID, First Name, Last Name, Email, Phone No, Date Of Birth, Age, Organisation, Roles, Memberships</p>
+        <p><strong>Custom Fields:</strong> Include any custom field columns in your CSV. Custom fields will be automatically imported.</p>
         <p><strong>Note:</strong> Date Of Birth is optional. If provided, it should be in MM/DD/YYYY, DD/MM/YYYY, or YYYY-MM-DD format.</p>
+        <p><strong>Upsert Mode:</strong> When "Update existing records" is enabled, the system will create new records or update existing ones based on name matching.</p>
+        <p><strong>Import Mode:</strong> By default, all records are imported. Uncheck "Import all records" if you only want to import gymnasts.</p>
       </div>
 
       {error && (
@@ -184,7 +226,7 @@ const ImportGymnasts = () => {
                     importNonGymnasts: e.target.checked
                   }))}
                 />
-                Import non-gymnasts (coaches, administrators, etc.)
+                Import all records (recommended - includes coaches, administrators, etc.)
               </label>
               <label className="checkbox-label">
                 <input
@@ -195,7 +237,7 @@ const ImportGymnasts = () => {
                     updateExisting: e.target.checked
                   }))}
                 />
-                Update existing records
+                Update existing records (upsert mode - creates new or updates existing)
               </label>
             </div>
           </div>
@@ -215,6 +257,13 @@ const ImportGymnasts = () => {
             >
               {loading ? 'Importing...' : 'Import'}
             </button>
+            <button
+              onClick={checkDuplicates}
+              disabled={loading}
+              className="btn btn-warning"
+            >
+              {loading ? 'Checking...' : 'Check Duplicates'}
+            </button>
           </div>
         </div>
       </div>
@@ -232,7 +281,15 @@ const ImportGymnasts = () => {
               </div>
               <div className="stat-item">
                 <div className="stat-value">{previewData.validRows}</div>
-                <div className="stat-label">Valid Rows</div>
+                <div className="stat-label">New Records</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-value">{previewData.updateRows || 0}</div>
+                <div className="stat-label">Updates</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-value">{previewData.customFieldsRows || 0}</div>
+                <div className="stat-label">With Custom Fields</div>
               </div>
               <div className="stat-item">
                 <div className="stat-value">{previewData.skippedRows}</div>
@@ -295,7 +352,7 @@ const ImportGymnasts = () => {
                           <td>
                             <div style={{ fontSize: '0.875rem' }}>
                               {customFields.map(field => {
-                                const fieldValue = row.customFields && row.customFields[field.key];
+                                const fieldValue = row.customFieldValues && row.customFieldValues[field.id];
                                 return (
                                   <div key={field.id} style={{ marginBottom: '0.25rem' }}>
                                     <small style={{ fontWeight: 'bold' }}>{field.name}:</small>{' '}
@@ -354,8 +411,16 @@ const ImportGymnasts = () => {
                 <div className="stat-label">Total Processed</div>
               </div>
               <div className="stat-item">
-                <div className="stat-value">{importResult.summary.imported}</div>
-                <div className="stat-label">Imported</div>
+                <div className="stat-value">{importResult.summary.created || 0}</div>
+                <div className="stat-label">Created</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-value">{importResult.summary.updated || 0}</div>
+                <div className="stat-label">Updated</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-value">{importResult.summary.customFieldsProcessed || 0}</div>
+                <div className="stat-label">With Custom Fields</div>
               </div>
               <div className="stat-item">
                 <div className="stat-value">{importResult.summary.skipped}</div>
@@ -402,6 +467,91 @@ const ImportGymnasts = () => {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showDuplicates && duplicates && (
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Duplicate Records Found</h3>
+            <button 
+              onClick={() => setShowDuplicates(false)}
+              className="btn btn-small btn-secondary"
+              style={{ marginLeft: 'auto' }}
+            >
+              Close
+            </button>
+          </div>
+          <div className="card-body">
+            <div className="stats-grid">
+              <div className="stat-item">
+                <div className="stat-value">{duplicates.summary.duplicateUserCount}</div>
+                <div className="stat-label">Duplicate Users (by email)</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-value">{duplicates.summary.duplicateGymnastCount}</div>
+                <div className="stat-label">Duplicate Gymnasts (by name)</div>
+              </div>
+            </div>
+
+            {duplicates.duplicateUsers && duplicates.duplicateUsers.length > 0 && (
+              <div className="duplicates-section">
+                <h4>Duplicate Users</h4>
+                {duplicates.duplicateUsers.map((dup, index) => (
+                  <div key={index} className="duplicate-group" style={{ marginBottom: '1rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}>
+                    <h5>Email: {dup.email} ({dup.count} duplicates)</h5>
+                    <div className="duplicate-items">
+                      {dup.users.map((user, userIndex) => (
+                        <div key={userIndex} className="duplicate-item" style={{ marginBottom: '0.5rem', padding: '0.5rem', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+                          <strong>{user.firstName} {user.lastName}</strong> 
+                          <span className="text-muted"> (ID: {user.id}, Role: {user.role})</span>
+                          {user.customFieldValues.length > 0 && (
+                            <small className="text-muted d-block">Has {user.customFieldValues.length} custom field values</small>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {duplicates.duplicateGymnasts && duplicates.duplicateGymnasts.length > 0 && (
+              <div className="duplicates-section">
+                <h4>Duplicate Gymnasts</h4>
+                {duplicates.duplicateGymnasts.map((dup, index) => (
+                  <div key={index} className="duplicate-group" style={{ marginBottom: '1rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}>
+                    <h5>Name: {dup.name} ({dup.count} duplicates)</h5>
+                    <div className="duplicate-items">
+                      {dup.gymnasts.map((gymnast, gymIndex) => (
+                        <div key={gymIndex} className="duplicate-item" style={{ marginBottom: '0.5rem', padding: '0.5rem', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+                          <strong>{gymnast.firstName} {gymnast.lastName}</strong> 
+                          <span className="text-muted"> (ID: {gymnast.id})</span>
+                          {gymnast.dateOfBirth && (
+                            <span className="text-muted"> - DOB: {new Date(gymnast.dateOfBirth).toLocaleDateString()}</span>
+                          )}
+                          {gymnast.user && (
+                            <div>
+                              <small className="text-muted">Linked to user: {gymnast.user.email || 'No email'}</small>
+                              {gymnast.user.customFieldValues.length > 0 && (
+                                <small className="text-muted"> ({gymnast.user.customFieldValues.length} custom fields)</small>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {duplicates.summary.duplicateUserCount === 0 && duplicates.summary.duplicateGymnastCount === 0 && (
+              <div className="alert alert-success">
+                <strong>No duplicates found!</strong> Your database is clean.
               </div>
             )}
           </div>
