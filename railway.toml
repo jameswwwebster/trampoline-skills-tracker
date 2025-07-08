@@ -13,6 +13,9 @@ restartPolicyMaxRetries = 10
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 
+[services.deploy.variables]
+FRONTEND_URL = "https://frontend-production-1d285.up.railway.app"
+
 [[services]]
 name = "frontend"
 source = "frontend"
