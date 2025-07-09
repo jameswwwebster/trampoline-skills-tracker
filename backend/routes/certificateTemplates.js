@@ -369,7 +369,7 @@ router.post('/:id/archive', auth, requireRole(['CLUB_ADMIN']), async (req, res) 
   }
 });
 
-// Get the PDF file for a template
+// Get the template image file
 router.get('/:id/pdf', auth, async (req, res) => {
   try {
     const template = await prisma.certificateTemplate.findFirst({
@@ -390,12 +390,44 @@ router.get('/:id/pdf', auth, async (req, res) => {
       return res.status(404).json({ error: 'Template file not found' });
     }
 
-    res.setHeader('Content-Type', 'application/pdf');
+    // Determine content type based on file extension
+    const fileExtension = path.extname(template.filePath).toLowerCase();
+    let contentType = 'application/octet-stream'; // Default fallback
+    
+    switch (fileExtension) {
+      case '.png':
+        contentType = 'image/png';
+        break;
+      case '.jpg':
+      case '.jpeg':
+        contentType = 'image/jpeg';
+        break;
+      case '.pdf':
+        contentType = 'application/pdf';
+        break;
+      default:
+        // Try to determine from original filename if available
+        const originalExtension = path.extname(template.fileName).toLowerCase();
+        switch (originalExtension) {
+          case '.png':
+            contentType = 'image/png';
+            break;
+          case '.jpg':
+          case '.jpeg':
+            contentType = 'image/jpeg';
+            break;
+          case '.pdf':
+            contentType = 'application/pdf';
+            break;
+        }
+    }
+
+    res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `inline; filename="${template.fileName}"`);
     res.sendFile(path.resolve(template.filePath));
   } catch (error) {
-    console.error('Error serving template PDF:', error);
-    res.status(500).json({ error: 'Failed to serve template PDF' });
+    console.error('Error serving template file:', error);
+    res.status(500).json({ error: 'Failed to serve template file' });
   }
 });
 

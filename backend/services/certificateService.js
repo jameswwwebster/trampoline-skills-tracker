@@ -38,8 +38,8 @@ class CertificateService {
           certificate.templateId = defaultTemplate.id;
           console.log(`✅ Using default template: ${defaultTemplate.name}`);
         } else {
-          console.log('⚠️ No custom templates found for club, cannot generate certificate');
-          throw new Error('No certificate template found. Please set up a certificate template first.');
+          console.log('⚠️ No custom templates found for club, falling back to basic certificate');
+          return await this.generateBasicCertificate(certificate);
         }
       }
       
