@@ -2,6 +2,7 @@ const express = require('express');
 const Joi = require('joi');
 const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
+const { createDefaultDataForClub } = require('../services/defaultDataService');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
@@ -93,6 +94,16 @@ router.post('/', auth, async (req, res) => {
         email
       }
     });
+
+    // Create default data for the new club
+    try {
+      await createDefaultDataForClub(club.id);
+      console.log(`✅ Default data created for club: ${club.name}`);
+    } catch (defaultDataError) {
+      console.error(`❌ Failed to create default data for club ${club.id}:`, defaultDataError);
+      // We don't want to fail the club creation if default data creation fails
+      // The club admin can manually create levels/skills later
+    }
 
     // Update user to be club admin
     const updatedUser = await prisma.user.update({

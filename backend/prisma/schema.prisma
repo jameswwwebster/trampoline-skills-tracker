@@ -106,6 +106,7 @@ model Club {
   invites               Invite[]
   users                 User[]
   userCustomFields      UserCustomField[]
+  levels                Level[]
 
   @@map("clubs")
 }
@@ -145,6 +146,7 @@ model Level {
   description     String?
   type            LevelType?
   prerequisiteId  String?
+  clubId          String?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   certificates    Certificate[]
@@ -154,6 +156,7 @@ model Level {
   dependentLevels Level[]            @relation("LevelPrerequisites")
   routines        Routine[]
   skills          Skill[]
+  club            Club?              @relation(fields: [clubId], references: [id])
 
   @@map("levels")
 }
