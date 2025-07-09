@@ -166,7 +166,7 @@ const Dashboard = () => {
                   <div className="card-header">
                     <h3 className="card-title">🎯 Gymnast Level Distribution</h3>
                     <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
-                      Click on a level to view gymnasts working at that level
+                      Current working levels - Click on a level to view gymnasts working at that level
                     </p>
                   </div>
                   <div>

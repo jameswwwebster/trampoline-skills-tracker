@@ -102,6 +102,7 @@
   padding: 10px;
   display: flex;
   gap: 5px;
+  flex-wrap: wrap;
 }
 
 .template-actions .btn {
@@ -131,6 +132,28 @@
 
 .template-actions .btn-outline-primary:hover {
   background: #007bff;
+  color: white;
+}
+
+.template-actions .btn-outline-secondary {
+  background: transparent;
+  color: #6c757d;
+  border: 1px solid #6c757d;
+}
+
+.template-actions .btn-outline-secondary:hover {
+  background: #6c757d;
+  color: white;
+}
+
+.template-actions .btn-outline-danger {
+  background: transparent;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+}
+
+.template-actions .btn-outline-danger:hover {
+  background: #dc3545;
   color: white;
 }
 

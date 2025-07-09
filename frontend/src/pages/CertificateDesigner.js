@@ -251,6 +251,71 @@ const CertificateDesigner = () => {
     }
   };
 
+  const handleTemplateDelete = async (templateId) => {
+    try {
+      const template = templates.find(t => t.id === templateId);
+      
+      if (!window.confirm(`Are you sure you want to delete the template "${template.name}"? This action cannot be undone.`)) {
+        return;
+      }
+      
+      await axios.delete(`/api/certificate-templates/${templateId}`);
+      
+      setSuccess(`Template "${template.name}" deleted successfully!`);
+      
+      // If deleted template was selected, clear selection
+      if (selectedTemplate && selectedTemplate.id === templateId) {
+        setSelectedTemplate(null);
+        setFields([]);
+        setTemplateUrl(null);
+      }
+      
+      await loadTemplates();
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to delete template';
+      
+      // Show specific error for templates in use
+      if (error.response?.data?.certificateCount > 0) {
+        setError(`Cannot delete template: It is being used by ${error.response.data.certificateCount} certificate(s). Archive it instead.`);
+      } else {
+        setError(errorMessage);
+      }
+    }
+  };
+
+  const handleTemplateArchive = async (templateId) => {
+    try {
+      const template = templates.find(t => t.id === templateId);
+      
+      if (!window.confirm(`Archive the template "${template.name}"? It will be hidden from the template list but can be restored later.`)) {
+        return;
+      }
+      
+      await axios.post(`/api/certificate-templates/${templateId}/archive`);
+      
+      setSuccess(`Template "${template.name}" archived successfully!`);
+      
+      // If archived template was selected, clear selection
+      if (selectedTemplate && selectedTemplate.id === templateId) {
+        setSelectedTemplate(null);
+        setFields([]);
+        setTemplateUrl(null);
+      }
+      
+      await loadTemplates();
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error archiving template:', error);
+      setError(error.response?.data?.error || 'Failed to archive template');
+    }
+  };
+
   // Debounced API update function
   const debouncedUpdateField = useCallback(
     debounce(async (fieldId, x, y) => {
@@ -557,6 +622,26 @@ const CertificateDesigner = () => {
                     title={template.isDefault ? 'Remove as default' : 'Set as default'}
                   >
                     {template.isDefault ? '⭐' : '☆'}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTemplateArchive(template.id);
+                    }}
+                    className="btn btn-sm btn-outline-secondary"
+                    title="Archive template"
+                  >
+                    📦
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTemplateDelete(template.id);
+                    }}
+                    className="btn btn-sm btn-outline-danger"
+                    title="Delete template"
+                  >
+                    🗑️
                   </button>
                 </div>
               </div>

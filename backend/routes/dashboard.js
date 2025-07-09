@@ -57,16 +57,40 @@ router.get('/metrics', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
       };
     });
 
+    // Helper function to check if a level is a side-track
+    const isSideTrack = (identifier) => {
+      return /^\d+[a-z]$/.test(identifier);
+    };
+
+    // Helper function to determine the gymnast's current working level
+    const getCurrentLevel = (gymnast, levels) => {
+      if (!gymnast || !levels.length) return null;
+
+      // Get all completed main track levels (ignore side tracks)
+      const completedMainTrackLevels = gymnast.levelProgress
+        .filter(lp => lp.status === 'COMPLETED')
+        .map(lp => lp.level)
+        .filter(level => !isSideTrack(level.identifier)) // Only main track levels
+        .map(level => parseInt(level.identifier))
+        .sort((a, b) => a - b);
+
+      // Find the next main track level to work on
+      let nextLevelNumber = 1;
+      if (completedMainTrackLevels.length > 0) {
+        const highestCompleted = Math.max(...completedMainTrackLevels);
+        nextLevelNumber = highestCompleted + 1;
+      }
+
+      // Find the actual level object
+      return levels.find(level => 
+        !isSideTrack(level.identifier) && parseInt(level.identifier) === nextLevelNumber
+      ) || null;
+    };
+
     // Calculate gymnastics metrics
     gymnasts.forEach(gymnast => {
-      // Find highest completed level
-      const completedLevels = gymnast.levelProgress
-        .filter(lp => lp.status === 'COMPLETED')
-        .map(lp => lp.level);
-      
-      const currentLevel = completedLevels.length > 0 
-        ? completedLevels.reduce((max, level) => level.number > max.number ? level : max)
-        : levels.find(l => l.number === 1); // Default to level 1
+      // Find current working level (next level to work on)
+      const currentLevel = getCurrentLevel(gymnast, levels);
 
       if (currentLevel) {
         const identifier = currentLevel.identifier;
