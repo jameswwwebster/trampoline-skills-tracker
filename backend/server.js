@@ -22,6 +22,7 @@ const importRoutes = require('./routes/import');
 const brandingRoutes = require('./routes/branding');
 const guardianRequestRoutes = require('./routes/guardianRequests');
 const userCustomFieldRoutes = require('./routes/userCustomFields');
+const systemAdminRoutes = require('./routes/systemAdmin');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -68,6 +69,7 @@ app.use('/api/import', importRoutes);
 app.use('/api/branding', brandingRoutes);
 app.use('/api/guardian-requests', guardianRequestRoutes);
 app.use('/api/user-custom-fields', userCustomFieldRoutes);
+app.use('/api/system-admin', systemAdminRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

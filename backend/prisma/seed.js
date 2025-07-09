@@ -8,6 +8,31 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seeding...');
 
+  // Hash the development password (used for all test accounts)
+  const hashedPassword = await bcrypt.hash('password123', 10);
+
+  // Create system admin user first
+  console.log('👑 Creating system administrator...');
+  
+  const systemAdmin = await prisma.user.upsert({
+    where: { email: 'system@admin.com' },
+    update: {},
+    create: {
+      email: 'system@admin.com',
+      password: hashedPassword,
+      firstName: 'System',
+      lastName: 'Administrator',
+      role: 'SYSTEM_ADMIN'
+      // No clubId - system admin is not tied to any specific club
+    }
+  });
+
+  console.log('✅ System administrator created:');
+  console.log(`   Email: system@admin.com`);
+  console.log(`   Password: password123`);
+  console.log(`   Role: SYSTEM_ADMIN`);
+  console.log(`   🔧 Can manage all clubs and users`);
+
   // Create the development club and user
   console.log('👥 Creating development club and user...');
 
@@ -29,8 +54,6 @@ async function main() {
   }
 
   // Hash the development password
-  const hashedPassword = await bcrypt.hash('password123', 10);
-  
   const devUser = await prisma.user.upsert({
     where: { email: 'dev@test.com' },
     update: {},

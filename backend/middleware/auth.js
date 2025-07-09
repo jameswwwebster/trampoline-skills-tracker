@@ -3,6 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
+// Regular authentication middleware
 const auth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -58,8 +59,29 @@ const auth = async (req, res, next) => {
     }
 
     req.user = user;
+    
+    // For system admins, check if they're switching clubs
+    if (user.role === 'SYSTEM_ADMIN') {
+      const switchClubId = req.header('X-Switch-Club-Id');
+      if (switchClubId) {
+        const switchClub = await prisma.club.findUnique({
+          where: { id: switchClubId },
+          include: {
+            users: { take: 1 },
+            gymnasts: { take: 1 }
+          }
+        });
+        
+        if (switchClub) {
+          req.switchedClub = switchClub;
+          req.effectiveClubId = switchClub.id;
+        }
+      }
+    }
+    
     next();
   } catch (error) {
+    console.error('Auth middleware error:', error);
     res.status(401).json({ error: 'Token is not valid' });
   }
 };
@@ -79,10 +101,28 @@ const requireRole = (roles) => {
   };
 };
 
+// System admin only middleware
+const requireSystemAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required.' });
+  }
+
+  if (req.user.role !== 'SYSTEM_ADMIN') {
+    return res.status(403).json({ error: 'System administrator access required.' });
+  }
+
+  next();
+};
+
 // Check if user has access to a specific club
 const requireClubAccess = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  // System admins can access any club
+  if (req.user.role === 'SYSTEM_ADMIN') {
+    return next();
   }
 
   const clubId = req.params.clubId || req.body.clubId;
@@ -101,6 +141,22 @@ const requireGymnastAccess = async (req, res, next) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // System admins can access any gymnast
+    if (req.user.role === 'SYSTEM_ADMIN') {
+      const gymnastId = req.params.gymnastId || req.body.gymnastId;
+      if (gymnastId) {
+        const gymnast = await prisma.gymnast.findUnique({
+          where: { id: gymnastId },
+          include: {
+            guardians: true,
+            club: true
+          }
+        });
+        req.gymnast = gymnast;
+      }
+      return next();
     }
 
     const gymnastId = req.params.gymnastId || req.body.gymnastId;
@@ -144,13 +200,24 @@ const requireGymnastAccess = async (req, res, next) => {
     req.gymnast = gymnast;
     next();
   } catch (error) {
+    console.error('Gymnast access error:', error);
     res.status(500).json({ error: 'Server error' });
   }
+};
+
+// Get effective club ID (handles club switching for system admins)
+const getEffectiveClubId = (req) => {
+  if (req.user.role === 'SYSTEM_ADMIN' && req.effectiveClubId) {
+    return req.effectiveClubId;
+  }
+  return req.user.clubId;
 };
 
 module.exports = {
   auth,
   requireRole,
+  requireSystemAdmin,
   requireClubAccess,
-  requireGymnastAccess
+  requireGymnastAccess,
+  getEffectiveClubId
 }; 
