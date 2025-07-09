@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 // import { useAuth } from '../contexts/AuthContext'; // Not used currently
 import './CertificateDisplay.css';
@@ -20,6 +20,9 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
     hasPreviousPage: false
   });
   // const { } = useAuth(); // Not needed currently
+  
+  // Ref to track current image URLs for cleanup
+  const imageUrlsRef = useRef({});
 
   const fetchCertificates = useCallback(async (page = 1) => {
     try {
@@ -50,7 +53,16 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
         imageResults.forEach(result => {
           imageUrlMap[result.id] = result.url;
         });
+        
+        // Clean up old image URLs
+        Object.values(imageUrlsRef.current).forEach(url => {
+          if (url) {
+            URL.revokeObjectURL(url);
+          }
+        });
+        
         setImageUrls(imageUrlMap);
+        imageUrlsRef.current = imageUrlMap;
       } else {
         // Fallback for old API response format
         setCertificates(response.data);
@@ -65,16 +77,18 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
 
   useEffect(() => {
     fetchCertificates(1);
-    
-    // Cleanup function to revoke object URLs when component unmounts
+  }, [fetchCertificates]);
+
+  // Cleanup image URLs on unmount
+  useEffect(() => {
     return () => {
-      Object.values(imageUrls).forEach(url => {
+      Object.values(imageUrlsRef.current).forEach(url => {
         if (url) {
           URL.revokeObjectURL(url);
         }
       });
     };
-  }, [fetchCertificates, imageUrls]);
+  }, []);
 
   const handlePageChange = (newPage) => {
     fetchCertificates(newPage);

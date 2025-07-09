@@ -663,6 +663,13 @@ router.get('/:certificateId/download', auth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
     
+    // Check if template exists before generating
+    if (!certificate.template && !certificate.templateId) {
+      return res.status(404).json({ 
+        error: 'No certificate template found. Please set up a certificate template first.' 
+      });
+    }
+    
     // Use cached certificate generation
     let templatePath = null;
     if (certificate.template && certificate.template.filePath) {
@@ -738,6 +745,13 @@ router.get('/:certificateId/preview', auth, async (req, res) => {
     
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    // Check if template exists before generating
+    if (!certificate.template && !certificate.templateId) {
+      return res.status(404).json({ 
+        error: 'No certificate template found. Please set up a certificate template first.' 
+      });
     }
     
     // Generate certificate PNG with caching
