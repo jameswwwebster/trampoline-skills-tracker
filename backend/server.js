@@ -59,10 +59,10 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Rate limiting - more generous for normal application usage
+// Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // limit each IP to 1000 requests per 15 minutes
+  max: 500, // limit each IP to 500 requests per 15 minutes (reasonable for normal usage)
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   trustProxy: true // Trust Railway's proxy headers
