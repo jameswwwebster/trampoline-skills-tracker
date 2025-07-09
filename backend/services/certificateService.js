@@ -38,8 +38,8 @@ class CertificateService {
           certificate.templateId = defaultTemplate.id;
           console.log(`✅ Using default template: ${defaultTemplate.name}`);
         } else {
-          console.log('⚠️ No custom templates found, generating basic certificate');
-          return await this.generateBasicCertificate(certificate);
+          console.log('⚠️ No custom templates found for club, cannot generate certificate');
+          throw new Error('No certificate template found. Please set up a certificate template first.');
         }
       }
       
@@ -98,7 +98,13 @@ class CertificateService {
       
     } catch (error) {
       console.error('Certificate generation error:', error);
-      console.log('🔄 Falling back to basic certificate generation...');
+      
+      // Don't fall back to basic certificate if template is missing
+      if (error.message.includes('No certificate template found')) {
+        throw error; // Re-throw template errors
+      }
+      
+      console.log('🔄 Falling back to basic certificate generation due to technical error...');
       return await this.generateBasicCertificate(certificate);
     }
   }
