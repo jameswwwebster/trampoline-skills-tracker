@@ -23,9 +23,19 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
   
   // Ref to track current image URLs for cleanup
   const imageUrlsRef = useRef({});
+  
+  // Ref to prevent multiple simultaneous fetches
+  const fetchingRef = useRef(false);
 
   const fetchCertificates = useCallback(async (page = 1) => {
+    // Prevent multiple simultaneous fetches
+    if (fetchingRef.current) {
+      console.log('Fetch already in progress, skipping...');
+      return;
+    }
+    
     try {
+      fetchingRef.current = true;
       setLoading(true);
       const response = await axios.get(`/api/certificates/gymnast/${gymnastId}?page=${page}&limit=${CERTIFICATES_PER_PAGE}`);
       
@@ -43,8 +53,11 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
             const imageUrl = URL.createObjectURL(imageResponse.data);
             return { id: certificate.id, url: imageUrl };
           } catch (err) {
-            console.error(`Failed to fetch preview for certificate ${certificate.id}:`, err);
-            return { id: certificate.id, url: null };
+            // Don't log 404 errors (missing templates) to avoid spam
+            if (err.response?.status !== 404) {
+              console.error(`Failed to fetch preview for certificate ${certificate.id}:`, err);
+            }
+            return { id: certificate.id, url: null, error: err.response?.status || 'unknown' };
           }
         });
         
@@ -72,12 +85,13 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
       setError(err.response?.data?.error || err.message || 'Failed to fetch certificates');
     } finally {
       setLoading(false);
+      fetchingRef.current = false; // Reset fetch lock
     }
   }, [gymnastId]);
 
   useEffect(() => {
     fetchCertificates(1);
-  }, [fetchCertificates]);
+  }, [gymnastId]); // Only depend on gymnastId, not the function itself
 
   // Cleanup image URLs on unmount
   useEffect(() => {
