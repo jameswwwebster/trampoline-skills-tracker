@@ -1,0 +1,544 @@
+{
+    "levels": [
+      {
+        "number": 1,
+        "name": "Basic Skills",
+        "description": "Introduction to basic trampoline shapes and simple twisting jumps.",
+        "competitionLevel": null,
+        "skills": [
+          { "name": "Tuck Jump" },
+          { "name": "Pike Jump" },
+          { "name": "Straddle Jump" },
+          { "name": "½ Twist" },
+          { "name": "Full Twist" }
+        ],
+        "routines": [
+          {
+            "skills": [
+                { "name": "Pike Jump" },
+                { "name": "½ Twist" },
+                { "name": "Straddle Jump" },
+                { "name": "Tuck Jump" }
+              ]
+          }
+        ]
+      },
+      {
+        "number": 2,
+        "name": "Body Landings",
+        "description": "Introduction to basic body landings and transitions.",
+        "competitionLevel": [
+            "club-level-1"
+        ],
+        "skills": [
+          { "name": "Seat Landing" },
+          { "name": "Seat ½ Twist to Feet" },
+          { "name": "½ Twist to Seat" },
+          { "name": "Swivelhips" },
+          { "name": "Front Landing" },
+          { "name": "Back Landing" }
+        ],
+        "routines": [
+            {
+                "skills": [
+                    { "name": "Front Landing" },
+                    { "name": "To Feet" },
+                    { "name": "Straddle Jump" },
+                    { "name": "Seat Landing" },
+                    { "name": "½ Twist to Feet" },
+                    { "name": "½ Twist" },
+                    { "name": "Tuck Jump" },
+                    { "name": "Pike Jump" },
+                    { "name": "Back Landing to Feet" },
+                    { "name": "Back Landing" },
+                    { "name": "To Feet" }
+                  ]
+              }
+        ]
+      },
+      {
+        "number": 3,
+        "name": "Body Landing Combinations",
+        "description": "Combining body landings and twists into routines.",
+        "competitionLevel": [
+            "club-level-2"  
+        ],
+        "skills": [
+          { "name": "Seat to Front" },
+          { "name": "Front to Seat" },
+          { "name": "½ Twist to Front" },
+          { "name": "Back ½ Twist to Feet" },
+          { "name": "Back to Front" },
+          { "name": "Front to Back" }
+        ],
+        "routines": [
+            {
+                "skills": [
+                    { "name": "½ Twist to Front" },
+                    { "name": "To Feet" },
+                    { "name": "Straddle Jump" },
+                    { "name": "Seat Landing" },
+                    { "name": "½ Twist to Seat" },
+                    { "name": "½ Twist to Feet" },
+                    { "name": "½ Twist" },
+                    { "name": "Tuck Jump" },
+                    { "name": "Pike Jump" },
+                    { "name": "Back Landing" },
+                    { "name": "½ Twist to Feet" }
+                  ]
+              }
+        ]
+      },
+      {
+        "number": 4,
+        "name": "Forward Fundamentals",
+        "description": "Introduction to front somersaults and turnovers.",
+        "competitionLevel": [
+            "club-level-3"
+        ],
+        "skills": [
+          { "name": "Forward Roll" },
+          { "name": "Forward Turnover" },
+          { "name": "Front Somersault (T)" },
+          { "name": "Front Somersault (P)" }
+        ],
+        "routines": [
+          {
+            "skills": [
+                { "name": "Full Twist" },
+                { "name": "Straddle Jump" },
+                { "name": "Seat Landing" },
+                { "name": "½ Twist to Seat" },
+                { "name": "½ Twist" },
+                { "name": "Pike Jump" },
+                { "name": "Back Landing" },
+                { "name": "½ Twist to Feet" },
+                { "name": "Tuck Jump" },
+                { "name": "Front Somersault (T)" }
+            ]
+          }
+        ]
+      },
+      {
+        "number": 5,
+        "name": "Backward Fundamentals",
+        "description": "Introduction to backward rolls and somersaults.",
+        "competitionLevel": [
+            "regional-level-1"
+        ],
+        "skills": [
+          { "name": "Backward Roll" },
+          { "name": "Back Pullover" },
+          { "name": "Back Somersault (T)" }
+        ],
+        "routines": [
+            {
+                "skills": [
+                    { "name": "Backward Somersault (T)" },
+                    { "name": "Straddle Jump" },
+                    { "name": "Seat Landing" },
+                    { "name": "½ Twist to Seat" },
+                    { "name": "½ Twist" },
+                    { "name": "Pike Jump" },
+                    { "name": "Back Landing" },
+                    { "name": "½ Twist to Feet" },
+                    { "name": "Tuck Jump" },
+                    { "name": "Front Somersault (P)" }
+                ]
+            }
+        ]
+      },
+      {
+        "number": 6,
+        "name": "Developing More Somersaults",
+        "description": "Introduce somersault combinations and linking.",
+        "competitionLevel": [
+            "regional-level-2"
+        ],
+        "skills": [
+          { "name": "Back Somersault (S)" },
+          { "name": "Barani (T)" },
+          { "name": "Back Somersault (T) to Seat" }
+        ],
+        "routines": [
+            {
+                "skills": [
+                    { "name": "Back Somersault (S)" },
+                    { "name": "Straddle Jump" },
+                    { "name": "Back Somersault (T)" },
+                    { "name": "Barani (T)" },
+                    { "name": "½ Twist" },
+                    { "name": "Tuck Jump" },
+                    { "name": "Back Somersault (T) to Seat" },
+                    { "name": "½ Twist to Feet" },
+                    { "name": "Pike Jump" },
+                    { "name": "Front Somersault (P)" }
+                ]
+            }
+        ]
+      },
+      {
+        "number": 7,
+        "name": "More Somersault Links",
+        "description": "Linking multiple somersaults and Barani variations.",
+        "competitionLevel": [
+            "regional-level-3",
+            "league-level-3"
+        ],
+        "skills": [
+          { "name": "Back Somersault (P)" },
+          { "name": "Barani (P)" },
+          { "name": "Barani (S)" }
+        ],
+        "routines": [
+            {
+                "skills": [
+                    { "name": "Back Somersault (S)" },
+                    { "name": "Barani (S)" },
+                    { "name": "Straddle Jump" },
+                    { "name": "Back Somersault (P)" },
+                    { "name": "Barani (P)" },
+                    { "name": "Tuck Jump" },    
+                    { "name": "Barani (T)" },
+                    { "name": "Back Somersault (T)" },
+                    { "name": "Pike Jump" },
+                    { "name": "Front Somersault (P)" }
+                ]
+            }
+        ]
+      },
+      {
+        "number": 8,
+        "name": "Body Somersaults",
+        "description": "¾ somersaults and advanced back/front sequences.",
+        "competitionLevel": [
+            "regional-level-4(ages 10-12)",
+            "league-level2"
+        ],
+        "skills": [
+          { "name": "¾ Front (S)" },
+          { "name": "¾ Back (S)" },
+          { "name": "Ball-out Barani (T)" },
+          { "name": "Cody (T)" }
+        ],
+        "routines": [
+          {
+            "skills": [
+                { "name": "¾ Back (S)" },
+                { "name": "To Feet" },
+                { "name": "Straddle Jump" },
+                { "name": "Back Somersault (S)" },
+                { "name": "Barani (S)" },
+                { "name": "Back Somersault (T)" },
+                { "name": "Barani (T)" },
+                { "name": "Tuck Jump" },
+                { "name": "¾ Front (S)" },
+                { "name": "Ball-out Barani (T)" }
+            ]
+          },
+          {
+            "skills": [
+                { "name": "¾ Back (S)" },
+                { "name": "Cody (T)" },
+                { "name": "Straddle Jump" },
+                { "name": "Back Somersault (S)" },
+                { "name": "Barani (S)" },
+                { "name": "Back Somersault (T)" },
+                { "name": "Barani (T)" },
+                { "name": "Tuck Jump" },
+                { "name": "¾ Front (S)" },
+                { "name": "½ Twist to Feet" }
+            ]
+          }
+        ]
+      },
+      {
+        "number": 9,
+        "name": "Twisting Somersaults",
+        "description": "Combining twisting and somersaults.",
+        "competitionLevel": [
+            "regional-level-4(ages 13+)",
+            "league-level-2"
+        ],
+        "skills": [
+          { "name": "Full" },
+          { "name": "Rudi" }
+        ],
+        "routines": [
+          {
+            "skills": [
+                { "name": "Back Somersault (S)" },
+                { "name": "Barani (S)" },
+                { "name": "Full" },
+                { "name": "Straddle Jump" },
+                { "name": "Back Somersault (P)" },
+                { "name": "Barani (P)" },
+                { "name": "Back Somersault (T)" },
+                { "name": "Tuck Jump" },
+                { "name": "¾ Front (S)" },
+                { "name": "Ball-out Barani (T)" }
+            ]
+          },
+          {
+            "skills": [
+                { "name": "¾ Back (S)" },
+                { "name": "Cody (T)" },
+                { "name": "Straddle Jump" },
+                { "name": "Back Somersault (S)" },
+                { "name": "Barani (S)" },
+                { "name": "Back Somersault (P)" },
+                { "name": "Barani (P)" },
+                { "name": "Back Somersault (T)" },
+                { "name": "Tuck Jump" },
+                { "name": "Rudi" }
+            ]
+          }
+        ]
+      },
+      {
+        "number": 10,
+        "name": "Double Somersaults",
+        "description": "Introduction to double somersaulting elements.",
+        "competitionLevel": [
+            "league-level-2",
+            "english-silver"
+        ],
+        "skills": [
+          { "name": "Half Out (T)" },
+          { "name": "Double Back (T)" }
+        ],
+        "routines": [
+          {
+            "skills": [
+                { "name": "¾ Back (S)" },
+                { "name": "Cody (T)" },
+                { "name": "Back Somersault (S)" },
+                { "name": "Barani (S)" },
+                { "name": "Full" },
+                { "name": "Rudi" },
+                { "name": "Tuck Jump" },
+                { "name": "Back Somersault (T)" },
+                { "name": "Barani (T)" },
+                { "name": "Double Back (T)" }
+            ]
+          },
+          {
+            "skills": [
+                { "name": "Half Out (T)" },
+                { "name": "Back Somersault (S)" },
+                { "name": "Barani (S)" },
+                { "name": "Full" },
+                { "name": "Rudi" },
+                { "name": "Straddle Jump" },
+                { "name": "Barani (T)" },
+                { "name": "Back Somersault (T)" },
+                { "name": "¾ Front (S)" },
+                { "name": "Ball-out Barani (T)" }
+            ]
+          }
+        ]
+      }
+    ],
+    "sidePaths": [
+      {
+        "number": "3a",
+        "name": "Body Landing Combinations",
+        "description": "More seat/front landing transitions.",
+        "skills": [
+          { "name": "Front ½ to Feet" },
+          { "name": "½ to Front" },
+          { "name": "Seat to Front" },
+          { "name": "Front to Seat" },
+          { "name": "½ Turntable" },
+          { "name": "Cruise" },
+          { "name": "Front Full Twist to Feet" }
+        ]
+      },
+      {
+        "number": "3b",
+        "name": "Body Landing Combinations",
+        "description": "Advanced back landings and twists.",
+
+        "skills": [
+          { "name": "½ to Back" },
+          { "name": "Seat ½ to Back" },
+          { "name": "Back ½ to Seat" },
+          { "name": "5x Back Bounces" },
+          { "name": "Cradle" },
+          { "name": "Back Full Twist to Feet" }
+        ]
+      },
+      {
+        "number": "3c",
+        "name": "Body Landing Combinations",
+        "description": "Twist and roll drills.",
+
+        "skills": [
+          { "name": "Roller" },
+          { "name": "Cat Twist" },
+          { "name": "Log Roll" },
+          { "name": "Back Full Twist to Front" },
+          { "name": "Front Full Twist to Back" },
+          { "name": "Corkscrew" },
+          { "name": "Forkscrew" }
+        ]
+      },
+      {
+        "number": "8a",
+        "name": "Body Somersaults",
+        "description": "",
+
+        "skills": [
+          { "name": "Bounce Roll (T)" },
+          { "name": "Bounce Roll (P)" },
+          { "name": "Ball-out Barani (P)" },
+          { "name": "Ball-out Barani (S)" },
+          { "name": "½ Twist to ¾ Front (S)" }
+        ]
+      },
+      {
+        "number": "8b",
+        "name": "Body Somersaults",
+        "description": "",
+
+        "skills": [
+          { "name": "¾ Back (P)" },
+          { "name": "¾ Back (T)" },
+          { "name": "Cody (P)" },
+          { "name": "Cody (S)" }
+        ]
+      },
+      {
+        "number": "8c",
+        "name": "Body Somersaults",
+        "description": "",
+
+        "skills": [
+          { "name": "1¼ Back S/S (T)" },
+          { "name": "1¼ Back S/S (P)" },
+          { "name": "1¼ Back S/S (S)" }
+        ]
+      },
+      {
+        "number": "8d",
+        "name": "Body Somersaults",
+        "description": "",
+
+        "skills": [
+          { "name": "1¼ Front S/S (T)" },
+          { "name": "1¼ Front S/S (P)" },
+          { "name": "1¾ Front S/S (T)" },
+          { "name": "1¾ Front S/S (P)" }
+        ]
+      },
+      {
+        "number": "9a",
+        "name": "Twisting Somersaults",
+        "description": "",
+
+        "skills": [
+          { "name": "Full Front" },
+          { "name": "Full Twisting ¾ Front" },
+          { "name": "Barani to Back" },
+          { "name": "Barani to Front" },
+          { "name": "Full Twisting Bounce Roll" },
+          { "name": "Barani Ball-out (T)" }
+        ]
+      },
+      {
+        "number": "9b",
+        "name": "Twisting Somersaults",
+        "description": "",
+
+        "skills": [
+          { "name": "Double Full" },
+          { "name": "Full Twisting Cody" },
+          { "name": "Double Full Back" }
+        ]
+      },
+      {
+        "number": "9c",
+        "name": "Twisting Somersaults",
+        "description": "",
+
+        "skills": [
+          { "name": "Ball-out Rudi (T)" },
+          { "name": "Ball-out Rudi (P)" },
+          { "name": "Ball-out Rudi (S)" }
+        ]
+      }
+    ],
+    "competitions": [
+        {
+            "id": "club-level-1",
+            "name": "Club Level 1",
+            "category": "club"
+        },
+        {
+            "id": "club-level-2",
+            "name": "Club Level 2",
+            "category": "club"
+        },
+        {
+            "id": "club-level-3",
+            "name": "Club Level 3",
+            "category": "club"
+        },
+        {
+            "id": "regional-level-1",
+            "name": "Regional Level 1",
+            "category": "regional"
+        },
+        {
+            "id": "regional-level-2",
+            "name": "Regional Level 2",
+            "category": "regional"
+        },
+        {
+            "id": "regional-level-3",
+            "name": "Regional Level 3",
+            "category": "regional"
+        },
+        {
+            "id": "regional-level-4(ages 10-12)",
+            "name": "Regional Level 4 (Ages 10-12)",
+            "category": "regional"
+        },
+        {
+            "id": "regional-level-4(ages 13+)",
+            "name": "Regional Level 4 (Ages 13+)",
+            "category": "regional"
+        },
+        {
+            "id": "league-level-3",
+            "name": "League Level 3",
+            "category": "national"
+        },  
+        {
+            "id": "league-level-2",
+            "name": "League Level 2",
+            "category": "national"
+        },
+        {
+            "id": "league-level-1",
+            "name": "League Level 1",
+            "category": "national"
+        },
+        {
+            "id": "english-silver",
+            "name": "English Silver",
+            "category": "national"
+        },
+        {
+            "id": "english-gold",
+            "name": "English Gold",
+            "category": "national"
+        },
+        {
+            "id": "fig",
+            "name": "FIG",
+            "category": "national"
+        }
+    ]
+  }
+  

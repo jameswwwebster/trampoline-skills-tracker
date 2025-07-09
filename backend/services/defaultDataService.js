@@ -39,9 +39,42 @@ async function createDefaultDataForClub(clubId) {
   try {
     console.log(`🌱 Creating default data for club ${clubId}...`);
 
-    // Load skills data
-    const skillsDataPath = path.join(__dirname, '../../resources/skills.json');
-    const skillsData = JSON.parse(fs.readFileSync(skillsDataPath, 'utf8'));
+    // Load skills data with better path resolution
+    const possiblePaths = [
+      path.join(__dirname, '../resources/skills.json'),          // Backend-local resources
+      path.join(__dirname, '../../resources/skills.json'),       // Root resources
+      path.join(process.cwd(), 'resources/skills.json'),         // Current working directory
+      path.join(process.cwd(), '../resources/skills.json'),      // Parent directory
+      path.join(__dirname, '../../../resources/skills.json')     // Far parent directory
+    ];
+    
+    let skillsData = null;
+    let skillsDataPath = null;
+    
+    for (const testPath of possiblePaths) {
+      try {
+        console.log(`🔍 Trying to read skills data from: ${testPath}`);
+        if (fs.existsSync(testPath)) {
+          skillsData = JSON.parse(fs.readFileSync(testPath, 'utf8'));
+          skillsDataPath = testPath;
+          console.log(`✅ Successfully loaded skills data from: ${testPath}`);
+          break;
+        } else {
+          console.log(`❌ File not found at: ${testPath}`);
+        }
+      } catch (error) {
+        console.log(`❌ Error reading from ${testPath}:`, error.message);
+      }
+    }
+    
+    if (!skillsData) {
+      console.log('⚠️  Could not find skills.json file, using fallback data');
+      skillsData = { 
+        competitions: [], 
+        levels: [], 
+        sidePaths: [] 
+      };
+    }
 
     // Create competitions (these are global, not club-specific)
     console.log('🏆 Creating competitions...');
