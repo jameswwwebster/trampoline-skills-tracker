@@ -157,6 +157,67 @@
   color: white;
 }
 
+.template-actions .btn-outline-success {
+  background: transparent;
+  color: #28a745;
+  border: 1px solid #28a745;
+}
+
+.template-actions .btn-outline-success:hover {
+  background: #28a745;
+  color: white;
+}
+
+.template-actions .btn-outline-warning {
+  background: transparent;
+  color: #ffc107;
+  border: 1px solid #ffc107;
+}
+
+.template-actions .btn-outline-warning:hover {
+  background: #ffc107;
+  color: #212529;
+}
+
+/* Regenerate Section */
+.regenerate-section {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.regenerate-section h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #495057;
+  font-size: 1.1rem;
+}
+
+.regenerate-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.regenerate-actions .btn {
+  text-align: left;
+  font-size: 0.875rem;
+  padding: 8px 12px;
+}
+
+.regenerate-help {
+  color: #6c757d;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.regenerate-help strong {
+  color: #495057;
+}
+
 .badge {
   background: #28a745;
   color: white;

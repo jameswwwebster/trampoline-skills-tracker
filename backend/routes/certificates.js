@@ -775,6 +775,103 @@ router.post('/admin/cache/cleanup', auth, requireRole(['ADMIN']), async (req, re
   }
 });
 
+// Regenerate certificates endpoint (club admin only)
+router.post('/regenerate', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { templateId, forceAll } = req.body;
+    
+    // Build filter for certificates to regenerate
+    const whereClause = {
+      gymnast: {
+        clubId: req.user.clubId
+      }
+    };
+    
+    // If templateId is provided, only regenerate certificates using that template
+    if (templateId) {
+      whereClause.templateId = templateId;
+    }
+    
+    // If forceAll is false, only regenerate certificates that actually need regeneration
+    const certificates = await prisma.certificate.findMany({
+      where: whereClause,
+      include: {
+        template: {
+          include: {
+            fields: true
+          }
+        },
+        gymnast: true,
+        level: true,
+        club: true,
+        awardedBy: true
+      }
+    });
+    
+    let regeneratedCount = 0;
+    let skippedCount = 0;
+    const errors = [];
+    
+    for (const certificate of certificates) {
+      try {
+        // Check if regeneration is needed (unless forcing all)
+        if (!forceAll && certificate.template) {
+          const needsRegen = await certificateService.needsRegeneration(certificate);
+          if (!needsRegen) {
+            skippedCount++;
+            continue;
+          }
+        }
+        
+        // Invalidate cache to force regeneration
+        await certificateService.invalidateCache(certificate.id);
+        
+        // Generate new certificate
+        let templatePath = null;
+        if (certificate.template && certificate.template.filePath) {
+          templatePath = certificate.template.filePath;
+        }
+        
+        const pngBuffer = await certificateService.getCertificateWithCache(certificate, templatePath);
+        await certificateService.saveCertificate(certificate, pngBuffer);
+        
+        regeneratedCount++;
+        console.log(`✅ Regenerated certificate ${certificate.id} for ${certificate.gymnast.firstName} ${certificate.gymnast.lastName}`);
+        
+      } catch (error) {
+        console.error(`❌ Failed to regenerate certificate ${certificate.id}:`, error);
+        errors.push({
+          certificateId: certificate.id,
+          gymnastName: `${certificate.gymnast.firstName} ${certificate.gymnast.lastName}`,
+          error: error.message
+        });
+      }
+    }
+    
+    const result = {
+      totalCertificates: certificates.length,
+      regeneratedCount,
+      skippedCount,
+      errorCount: errors.length
+    };
+    
+    if (errors.length > 0) {
+      result.errors = errors;
+    }
+    
+    console.log(`🔄 Certificate regeneration completed: ${regeneratedCount} regenerated, ${skippedCount} skipped, ${errors.length} errors`);
+    
+    res.json({
+      message: `Certificate regeneration completed: ${regeneratedCount} regenerated, ${skippedCount} skipped`,
+      ...result
+    });
+    
+  } catch (error) {
+    console.error('Certificate regeneration error:', error);
+    res.status(500).json({ error: 'Failed to regenerate certificates' });
+  }
+});
+
 // Cache status endpoint (admin only)
 router.get('/admin/cache/status', auth, requireRole(['ADMIN']), async (req, res) => {
   try {

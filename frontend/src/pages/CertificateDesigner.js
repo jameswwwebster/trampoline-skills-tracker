@@ -316,6 +316,42 @@ const CertificateDesigner = () => {
     }
   };
 
+  const handleRegenerateCertificates = async (templateId = null, forceAll = false) => {
+    try {
+      const templateName = templateId ? 
+        templates.find(t => t.id === templateId)?.name : 
+        'all templates';
+      
+      const message = forceAll ? 
+        `Are you sure you want to force regenerate ALL certificates${templateId ? ` using "${templateName}"` : ''}? This will recreate all certificates regardless of whether they need updating.` :
+        `Are you sure you want to regenerate certificates${templateId ? ` using "${templateName}"` : ''}? Only certificates that need updating will be regenerated.`;
+      
+      if (!window.confirm(message)) {
+        return;
+      }
+      
+      setLoading(true);
+      setError(null);
+      
+      const response = await axios.post('/api/certificates/regenerate', {
+        templateId,
+        forceAll
+      });
+      
+      const result = response.data;
+      setSuccess(`✅ Certificate regeneration completed!\n📊 ${result.regeneratedCount} regenerated, ${result.skippedCount} skipped${result.errorCount > 0 ? `, ${result.errorCount} errors` : ''}`);
+      
+      // Clear success message after 8 seconds
+      setTimeout(() => setSuccess(''), 8000);
+      
+    } catch (error) {
+      console.error('Error regenerating certificates:', error);
+      setError(error.response?.data?.error || 'Failed to regenerate certificates');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Debounced API update function
   const debouncedUpdateField = useCallback(
     debounce(async (fieldId, x, y) => {
@@ -643,10 +679,48 @@ const CertificateDesigner = () => {
                   >
                     🗑️
                   </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRegenerateCertificates(template.id, false);
+                    }}
+                    className="btn btn-sm btn-outline-success"
+                    title="Regenerate certificates using this template"
+                  >
+                    🔄
+                  </button>
                 </div>
               </div>
             ))}
           </div>
+
+          {templates.length > 0 && (
+            <div className="regenerate-section">
+              <h3>Certificate Regeneration</h3>
+              <div className="regenerate-actions">
+                <button
+                  onClick={() => handleRegenerateCertificates(null, false)}
+                  className="btn btn-sm btn-outline-success"
+                  title="Smart regeneration - only updates certificates that need it"
+                >
+                  🔄 Smart Regenerate All
+                </button>
+                <button
+                  onClick={() => handleRegenerateCertificates(null, true)}
+                  className="btn btn-sm btn-outline-warning"
+                  title="Force regenerate all certificates"
+                >
+                  🔄 Force Regenerate All
+                </button>
+              </div>
+              <div className="regenerate-help">
+                <small>
+                  <strong>Smart:</strong> Only updates certificates that need it<br/>
+                  <strong>Force:</strong> Regenerates all certificates regardless
+                </small>
+              </div>
+            </div>
+          )}
 
           {selectedTemplate && (
             <div className="template-info-section">
