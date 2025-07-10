@@ -47,6 +47,7 @@ const CertificateDesigner = () => {
   const [success, setSuccess] = useState('');
   const [templateUrl, setTemplateUrl] = useState(null);
   const [templateDimensions, setTemplateDimensions] = useState({ width: 0, height: 0 });
+  const [templateLoading, setTemplateLoading] = useState(false);
   
   const canvasContainerRef = useRef(null);
 
@@ -146,6 +147,11 @@ const CertificateDesigner = () => {
 
   const loadTemplateImage = async (templateId) => {
     try {
+      // Set loading state and clear previous template URL and error
+      setTemplateLoading(true);
+      setTemplateUrl(null);
+      setError(null);
+      
       const response = await axios.get(`/api/certificate-templates/${templateId}/pdf`, {
         responseType: 'blob'
       });
@@ -154,7 +160,18 @@ const CertificateDesigner = () => {
       setTemplateUrl(imageUrl);
     } catch (error) {
       console.error('Error loading template image:', error);
-      setError('Failed to load template image');
+      setTemplateUrl(null);
+      
+      // Provide more specific error messages
+      if (error.response?.status === 404) {
+        setError('Template image file not found. Please re-upload the template.');
+      } else if (error.response?.status === 403) {
+        setError('Access denied to template image.');
+      } else {
+        setError(`Failed to load template image: ${error.response?.data?.error || error.message}`);
+      }
+    } finally {
+      setTemplateLoading(false);
     }
   };
 
@@ -778,9 +795,14 @@ const CertificateDesigner = () => {
                         width: img.clientWidth,
                         height: img.clientHeight
                       });
+                      // Clear any previous errors when image loads successfully
+                      setError(null);
                     }}
-                    onError={() => {
-                      setError('Failed to load template image');
+                    onError={(e) => {
+                      console.error('Template image failed to load:', e);
+                      setError('Template image failed to display. The file may be corrupted or in an unsupported format.');
+                      setTemplateUrl(null);
+                      setTemplateDimensions({ width: 0, height: 0 });
                     }}
                     style={{ maxWidth: '100%', height: 'auto' }}
                   />
@@ -888,6 +910,23 @@ const CertificateDesigner = () => {
                   </div>
                 </div>
               </div>
+            ) : selectedTemplate ? (
+              templateLoading ? (
+                <div className="template-loading">
+                  <div className="loading-spinner"></div>
+                  <p>Loading template image...</p>
+                </div>
+              ) : (
+                <div className="no-template">
+                  <p>Template selected but image failed to load</p>
+                  <button 
+                    onClick={() => loadTemplateImage(selectedTemplate.id)}
+                    className="btn btn-secondary"
+                  >
+                    Retry Loading
+                  </button>
+                </div>
+              )
             ) : (
               <div className="no-template">
                 <p>Select a template to begin designing</p>
@@ -926,9 +965,31 @@ const CertificateDesigner = () => {
                   name="template"
                   accept=".png,.jpg,.jpeg,image/png,image/jpeg"
                   required
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      // Basic validation
+                      if (file.size > 10 * 1024 * 1024) {
+                        setError('File size must be less than 10MB');
+                        e.target.value = '';
+                        return;
+                      }
+                      
+                      // Check file type
+                      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+                      if (!allowedTypes.includes(file.type)) {
+                        setError('Please select a PNG or JPEG image file');
+                        e.target.value = '';
+                        return;
+                      }
+                      
+                      // Clear any previous errors
+                      setError(null);
+                    }
+                  }}
                 />
                 <small className="help-text">
-                  Upload a PNG or JPEG image of your certificate template. For best results, use high resolution images (300 DPI or higher).
+                  Upload a PNG or JPEG image of your certificate template. For best results, use high resolution images (300 DPI or higher). Maximum file size: 10MB.
                 </small>
               </div>
               <div className="form-group">
