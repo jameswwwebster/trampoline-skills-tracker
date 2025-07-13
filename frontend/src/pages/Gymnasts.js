@@ -221,12 +221,12 @@ const Gymnasts = () => {
       return currentLevel && currentLevel.identifier === levelFilter;
     })();
     
-    // Check competition filter (match what's displayed as "Competition Level")
+    // Check competition filter (match gymnasts currently working on levels associated with this competition)
     const competitionFilter = searchParams.get('competition');
     const matchesCompetition = !competitionFilter || (() => {
-      const highestCompletedLevel = getHighestCompletedLevel(gymnast, levels);
-      return highestCompletedLevel && highestCompletedLevel.competitions && 
-             highestCompletedLevel.competitions.some(comp => comp.name === competitionFilter);
+      const currentLevel = getCurrentLevel(gymnast, levels);
+      return currentLevel && currentLevel.competitions && 
+             currentLevel.competitions.some(comp => comp.name === competitionFilter);
     })();
     
     return matchesSearch && matchesLevel && matchesCompetition;

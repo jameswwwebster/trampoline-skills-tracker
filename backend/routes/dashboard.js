@@ -105,7 +105,7 @@ router.get('/metrics', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
       }
     });
 
-    // Calculate competition readiness (only count gymnasts for their highest eligible competition)
+    // Calculate competition readiness (count gymnasts working on levels associated with competitions)
     const competitionReadiness = {};
     
     // First, collect all competitions
@@ -132,46 +132,23 @@ router.get('/metrics', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
       };
     });
 
-    // For each gymnast, find their highest eligible competition
+    // For each gymnast, check if they're working on a level associated with competitions
     gymnasts.forEach(gymnast => {
-      // Find all competitions this gymnast is eligible for
-      const eligibleCompetitions = [];
+      // Find the current working level (next level to work on)
+      const currentLevel = getCurrentLevel(gymnast, levels);
       
-      gymnast.levelProgress.forEach(lp => {
-        if (lp.status === 'COMPLETED') {
-          const level = levels.find(l => l.id === lp.levelId);
-          if (level && level.competitions) {
-            level.competitions.forEach(({ competition }) => {
-              eligibleCompetitions.push({
-                name: competition.name,
-                category: competition.category,
-                levelNumber: level.number,
-                levelName: level.name
-              });
+      if (currentLevel && currentLevel.competitions) {
+        // Add gymnast to all competitions associated with their current working level
+        currentLevel.competitions.forEach(({ competition }) => {
+          if (competitionReadiness[competition.name]) {
+            competitionReadiness[competition.name].ready++;
+            competitionReadiness[competition.name].readyGymnasts.push({
+              id: gymnast.id,
+              firstName: gymnast.firstName,
+              lastName: gymnast.lastName,
+              level: currentLevel.name
             });
           }
-        }
-      });
-
-      // If gymnast has eligible competitions, find all at the highest level
-      if (eligibleCompetitions.length > 0) {
-        // Find the highest level number
-        const highestLevelNumber = Math.max(...eligibleCompetitions.map(comp => comp.levelNumber));
-        
-        // Get all competitions at that highest level
-        const highestLevelCompetitions = eligibleCompetitions.filter(comp => 
-          comp.levelNumber === highestLevelNumber
-        );
-
-        // Add gymnast to all competitions at their highest eligible level
-        highestLevelCompetitions.forEach(competition => {
-          competitionReadiness[competition.name].ready++;
-          competitionReadiness[competition.name].readyGymnasts.push({
-            id: gymnast.id,
-            firstName: gymnast.firstName,
-            lastName: gymnast.lastName,
-            level: competition.levelName
-          });
         });
       }
     });
