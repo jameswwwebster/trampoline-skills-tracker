@@ -42,7 +42,7 @@ export class AwsInfrastructureStack extends cdk.Stack {
     // S3 Bucket for File Storage
     // ======================
     const fileStorageBucket = new s3.Bucket(this, 'TrampolineSkillsStorage', {
-      bucketName: `trampoline-skills-storage-${this.account}-${this.region}`,
+      // Let CDK generate a unique bucket name automatically
       versioned: true,
       encryption: s3.BucketEncryption.S3_MANAGED,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -68,7 +68,7 @@ export class AwsInfrastructureStack extends cdk.Stack {
 
     const database = new rds.DatabaseInstance(this, 'TrampolineSkillsDB', {
       engine: rds.DatabaseInstanceEngine.postgres({
-        version: rds.PostgresEngineVersion.VER_15_4,
+        version: rds.PostgresEngineVersion.VER_15_13,
       }),
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       credentials: rds.Credentials.fromSecret(databaseSecret),
@@ -120,7 +120,7 @@ export class AwsInfrastructureStack extends cdk.Stack {
       desiredCount: 1,
       taskImageOptions: {
         image: ecs.ContainerImage.fromRegistry('nginx:latest'), // Placeholder - will be replaced with your app
-        containerPort: 3000,
+        containerPort: 5000,
         taskRole,
         environment: {
           NODE_ENV: 'production',

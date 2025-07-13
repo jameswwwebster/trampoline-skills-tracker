@@ -28,7 +28,12 @@ echo ""
 
 # Step 1: Build and test the application
 echo -e "${YELLOW}Step 1: Building application...${NC}"
-cd ..
+
+# Get the project root directory (parent of aws-infrastructure)
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+echo "Building from directory: $(pwd)"
 if [ ! -f "Dockerfile" ]; then
     echo -e "${RED}Error: Dockerfile not found in $(pwd)${NC}"
     echo "Expected Dockerfile location: $(pwd)/Dockerfile"
@@ -56,7 +61,7 @@ docker push $ECR_URI
 
 # Step 5: Deploy infrastructure
 echo -e "${YELLOW}Step 5: Deploying infrastructure...${NC}"
-cd aws-infrastructure
+cd "$PROJECT_ROOT/aws-infrastructure"
 npm run build
 
 # Check if this is first deployment
