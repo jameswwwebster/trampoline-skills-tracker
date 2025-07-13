@@ -14,6 +14,7 @@ const Levels = () => {
   const [showAddSkillForm, setShowAddSkillForm] = useState(null);
   const [showAddRoutineForm, setShowAddRoutineForm] = useState(null);
   const [showAddSkillToRoutineForm, setShowAddSkillToRoutineForm] = useState(null);
+  const [showAddLevelForm, setShowAddLevelForm] = useState(false);
   const [expandedLevels, setExpandedLevels] = useState(new Set());
   const [expandedRoutines, setExpandedRoutines] = useState(new Set());
   const [editMode, setEditMode] = useState(false);
@@ -29,6 +30,7 @@ const Levels = () => {
       setShowAddSkillForm(null);
       setShowAddRoutineForm(null);
       setShowAddSkillToRoutineForm(null);
+      setShowAddLevelForm(false);
     }
     setEditMode(!editMode);
   };
@@ -128,6 +130,19 @@ const Levels = () => {
     } catch (error) {
       console.error('Failed to update level:', error);
       setError(error.response?.data?.error || 'Failed to update level');
+    }
+  };
+
+  const handleCreateLevel = async (levelData) => {
+    try {
+      const response = await axios.post('/api/levels', levelData);
+      setLevels([...levels, response.data]);
+      setShowAddLevelForm(false);
+      // Expand the new level automatically
+      setExpandedLevels(prev => new Set([...prev, response.data.id]));
+    } catch (error) {
+      console.error('Failed to create level:', error);
+      setError(error.response?.data?.error || 'Failed to create level');
     }
   };
 
@@ -354,6 +369,15 @@ const Levels = () => {
               {editMode ? '🔒 Exit Edit Mode' : '✏️ Edit Mode'}
             </button>
             {editMode && (
+              <button
+                onClick={() => setShowAddLevelForm(true)}
+                className="btn btn-primary"
+                style={{ marginLeft: '10px' }}
+              >
+                + Add New Level
+              </button>
+            )}
+            {editMode && (
               <div className="level-management-info">
                 <span className="text-muted">
                   Click items to edit, use + buttons to add new content
@@ -506,6 +530,15 @@ const Levels = () => {
           availableSkills={availableSkills}
           onSave={(skillId) => handleAddSkillToRoutine(showAddSkillToRoutineForm.levelId, showAddSkillToRoutineForm.routineId, skillId)}
           onCancel={() => setShowAddSkillToRoutineForm(null)}
+        />
+      )}
+
+      {/* Add Level Modal */}
+      {showAddLevelForm && editMode && (
+        <AddLevelModal
+          competitions={competitions}
+          onSave={handleCreateLevel}
+          onCancel={() => setShowAddLevelForm(false)}
         />
       )}
     </div>
@@ -1166,6 +1199,136 @@ const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, o
             </button>
             <button type="submit" className="btn btn-primary">
               Add Skill
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Add Level Modal Component
+const AddLevelModal = ({ competitions, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    identifier: '',
+    name: '',
+    description: '',
+    type: 'SEQUENTIAL',
+    competitionIds: []
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  const handleCompetitionToggle = (competitionId) => {
+    const updatedCompetitionIds = formData.competitionIds.includes(competitionId)
+      ? formData.competitionIds.filter(id => id !== competitionId)
+      : [...formData.competitionIds, competitionId];
+    
+    setFormData({ ...formData, competitionIds: updatedCompetitionIds });
+  };
+
+  // Group competitions by category
+  const groupedCompetitions = competitions.reduce((acc, competition) => {
+    if (!acc[competition.category]) {
+      acc[competition.category] = [];
+    }
+    acc[competition.category].push(competition);
+    return acc;
+  }, {});
+
+  // Sort categories
+  const categoryOrder = ['CLUB', 'REGIONAL', 'LEAGUE', 'NATIONAL', 'INTERNATIONAL'];
+  const sortedCategories = Object.keys(groupedCompetitions).sort((a, b) => {
+    return categoryOrder.indexOf(a) - categoryOrder.indexOf(b);
+  });
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal-header">
+          <h3>Add New Level</h3>
+          <button onClick={onCancel} className="close-button">×</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Level Identifier (e.g., "11", "3a", "POWER")</label>
+            <input
+              type="text"
+              value={formData.identifier}
+              onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+              required
+              placeholder="e.g., 11 or 3a or POWER"
+            />
+            <small>
+              Use numbers for sequential levels (11, 12, etc.) or letters for side paths (3a, 3b, etc.)
+            </small>
+          </div>
+          <div className="form-group">
+            <label>Level Name</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              placeholder="e.g., Advanced Landings"
+            />
+          </div>
+          <div className="form-group">
+            <label>Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows="3"
+              placeholder="Describe what this level covers..."
+            />
+          </div>
+          <div className="form-group">
+            <label>Level Type</label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              required
+            >
+              <option value="SEQUENTIAL">Sequential Level (must be completed in order)</option>
+              <option value="SIDE_PATH">Side Path (can be completed alongside main levels)</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Competition Levels</label>
+            <div className="competition-selection">
+              {sortedCategories.length === 0 ? (
+                <p className="no-competitions">No competitions available</p>
+              ) : (
+                sortedCategories.map(category => (
+                  <div key={category} className="competition-category">
+                    <h4 className="category-title">{category.toLowerCase().replace('_', ' ')}</h4>
+                    <div className="competition-checkboxes">
+                      {groupedCompetitions[category].map(competition => (
+                        <label key={competition.id} className="competition-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={formData.competitionIds.includes(competition.id)}
+                            onChange={() => handleCompetitionToggle(competition.id)}
+                          />
+                          <span className="checkbox-custom"></span>
+                          <span className="competition-name">{competition.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          <div className="modal-actions">
+            <button type="button" onClick={onCancel} className="btn btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Create Level
             </button>
           </div>
         </form>

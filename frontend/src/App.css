@@ -1540,6 +1540,28 @@ textarea.form-control {
   .status-buttons .btn {
     width: 100%;
   }
+  
+  /* Guardian Email Input Mobile Fix */
+  .guardian-email-input {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+  
+  .guardian-email-input .btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+  }
+  
+  .guardian-tags {
+    gap: 0.75rem;
+  }
+  
+  .tag {
+    padding: 0.5rem 0.75rem;
+    font-size: 14px;
+  }
 }
 
 /* Guardian Email Input */

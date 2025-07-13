@@ -728,18 +728,67 @@
   .designer-layout {
     flex-direction: column;
     height: auto;
+    gap: 15px;
   }
   
   .sidebar {
     width: 100%;
     order: 2;
     height: auto;
-    max-height: 400px;
+    max-height: none;
+    overflow-y: visible;
+    padding: 15px;
   }
   
   .canvas-container {
-    height: 400px;
+    height: 60vh;
+    min-height: 400px;
     order: 1;
+  }
+  
+  .template-list {
+    margin-bottom: 20px;
+  }
+  
+  .template-item {
+    margin-bottom: 8px;
+  }
+  
+  .template-actions {
+    padding: 6px;
+    gap: 2px;
+  }
+  
+  .template-actions .btn {
+    min-width: 24px;
+    height: 24px;
+    padding: 2px 4px;
+    font-size: 11px;
+  }
+  
+  .regenerate-section {
+    margin-top: 15px;
+    padding: 12px;
+  }
+  
+  .regenerate-actions .btn {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+  
+  .field-list {
+    margin-top: 20px;
+  }
+  
+  .field-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .field-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
   
   .form-row {
