@@ -29,6 +29,12 @@ echo ""
 # Step 1: Build and test the application
 echo -e "${YELLOW}Step 1: Building application...${NC}"
 cd ..
+if [ ! -f "Dockerfile" ]; then
+    echo -e "${RED}Error: Dockerfile not found in $(pwd)${NC}"
+    echo "Expected Dockerfile location: $(pwd)/Dockerfile"
+    ls -la | grep -i docker || echo "No Docker files found"
+    exit 1
+fi
 docker build -t $ECR_REPO_NAME:$IMAGE_TAG .
 
 # Step 2: Create ECR repository if it doesn't exist

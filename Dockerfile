@@ -17,23 +17,53 @@ RUN npm run build
 FROM node:18-alpine AS backend-builder
 WORKDIR /app/backend
 
+# Install build dependencies for native modules (canvas)
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    musl-dev \
+    giflib-dev \
+    pixman-dev \
+    pangomm-dev \
+    libjpeg-turbo-dev \
+    freetype-dev
+
 # Copy backend package files
 COPY backend/package*.json ./
-RUN npm ci --only=production
 
-# Copy backend source
+# Copy backend source (needed for Prisma schema before npm install)
 COPY backend/ ./
 
-# Generate Prisma client
+# Install dependencies (this will also run prisma generate via postinstall)
+RUN npm ci --only=production
+
+# Force regenerate Prisma client for the correct OpenSSL version
 RUN npx prisma generate
 
 # Stage 3: Production Runtime
 FROM node:18-alpine AS runtime
 
+# Set Prisma to use OpenSSL 3.x (available in Alpine 3.21+)
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+
 # Install system dependencies
 RUN apk add --no-cache \
     postgresql-client \
     curl \
+    cairo \
+    jpeg \
+    pango \
+    musl \
+    giflib \
+    pixman \
+    pangomm \
+    libjpeg-turbo \
+    freetype \
+    openssl \
     && rm -rf /var/cache/apk/*
 
 # Create app directory
@@ -62,11 +92,11 @@ USER nodejs
 WORKDIR /app/backend
 
 # Expose port
-EXPOSE 3000
+EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+  CMD curl -f http://localhost:5000/api/health || exit 1
 
 # Start the application
 CMD ["node", "server.js"] 
