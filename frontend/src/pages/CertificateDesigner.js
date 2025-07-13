@@ -639,11 +639,6 @@ const CertificateDesigner = () => {
 
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
-      {isDragging && (
-        <div className="alert alert-info">
-          Dragging field... Press <strong>Escape</strong> to cancel or release mouse/touch to drop.
-        </div>
-      )}
 
       <div className="designer-layout">
         {/* Template Selection Sidebar */}
