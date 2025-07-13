@@ -7,6 +7,14 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 // Validation schemas
+const levelCreateSchema = Joi.object({
+  identifier: Joi.string().min(1).max(20).required(),
+  name: Joi.string().min(1).max(100).required(),
+  description: Joi.string().max(500).allow('', null),
+  type: Joi.string().valid('SEQUENTIAL', 'SIDE_PATH').default('SEQUENTIAL'),
+  competitionIds: Joi.array().items(Joi.string()).optional()
+});
+
 const levelUpdateSchema = Joi.object({
   name: Joi.string().min(1).max(100).required(),
   description: Joi.string().max(500).allow('', null),
@@ -108,6 +116,146 @@ router.get('/', auth, async (req, res) => {
     res.json(transformedLevels);
   } catch (error) {
     console.error('Get levels error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Create a new level (club admins only)
+router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { error, value } = levelCreateSchema.validate(req.body);
+    
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const { identifier, name, description, type, competitionIds } = value;
+
+    // Check if a level with this identifier already exists in this club
+    const existingLevel = await prisma.level.findFirst({
+      where: { 
+        identifier,
+        clubId: req.user.clubId
+      }
+    });
+
+    if (existingLevel) {
+      return res.status(400).json({ error: `A level with identifier "${identifier}" already exists` });
+    }
+
+    // Calculate level number for ordering purposes
+    let levelNumber = 1;
+    if (type === 'SEQUENTIAL') {
+      // For sequential levels, try to parse the identifier as a number
+      const parsed = parseInt(identifier);
+      if (!isNaN(parsed)) {
+        levelNumber = parsed;
+      } else {
+        // If not a number, find the next available number
+        const highestLevel = await prisma.level.findFirst({
+          where: { 
+            clubId: req.user.clubId,
+            type: 'SEQUENTIAL'
+          },
+          orderBy: { number: 'desc' }
+        });
+        levelNumber = highestLevel ? highestLevel.number + 1 : 1;
+      }
+    } else {
+      // For side paths, extract base number (e.g., "3a" -> 3)
+      const match = identifier.match(/^(\d+)/);
+      if (match) {
+        levelNumber = parseInt(match[1]);
+      }
+    }
+
+    // Start a transaction to create level and competitions
+    const result = await prisma.$transaction(async (prisma) => {
+      // Create the level
+      const level = await prisma.level.create({
+        data: {
+          identifier,
+          name,
+          description,
+          type,
+          number: levelNumber,
+          clubId: req.user.clubId
+        }
+      });
+
+      // Handle competition associations if provided
+      if (competitionIds && competitionIds.length > 0) {
+        // Verify all competitions exist and belong to same club
+        const competitions = await prisma.competition.findMany({
+          where: { 
+            id: { in: competitionIds },
+            clubId: req.user.clubId
+          }
+        });
+
+        if (competitions.length !== competitionIds.length) {
+          throw new Error('Some competitions not found or do not belong to your club');
+        }
+
+        // Create competition associations
+        await prisma.levelCompetition.createMany({
+          data: competitionIds.map(competitionId => ({
+            levelId: level.id,
+            competitionId
+          }))
+        });
+      }
+
+      // Return the created level with all relationships
+      return await prisma.level.findUnique({
+        where: { id: level.id },
+        include: {
+          skills: {
+            orderBy: {
+              order: 'asc'
+            }
+          },
+          routines: {
+            include: {
+              routineSkills: {
+                include: {
+                  skill: true
+                },
+                orderBy: {
+                  order: 'asc'
+                }
+              }
+            },
+            orderBy: {
+              order: 'asc'
+            }
+          },
+          competitions: {
+            include: {
+              competition: true
+            }
+          }
+        }
+      });
+    });
+
+    // Transform the data to match the expected frontend structure
+    const transformedLevel = {
+      ...result,
+      routines: result.routines.map(routine => ({
+        ...routine,
+        skills: routine.routineSkills.map(rs => rs.skill)
+      })),
+      competitions: result.competitions.map(lc => lc.competition),
+      competitionLevel: result.competitions.map(lc => lc.competition.code) // For backward compatibility
+    };
+
+    res.status(201).json(transformedLevel);
+  } catch (error) {
+    console.error('Create level error:', error);
+    if (error.message === 'Some competitions not found or do not belong to your club') {
+      return res.status(400).json({ error: error.message });
+    }
     res.status(500).json({ error: 'Server error' });
   }
 });
