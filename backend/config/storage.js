@@ -2,9 +2,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 
-// AWS S3 configuration (uncomment when ready to use)
-// const AWS = require('aws-sdk');
-// const multerS3 = require('multer-s3');
+// AWS S3 configuration
+const AWS = require('aws-sdk');
+const multerS3 = require('multer-s3');
 
 // Cloudinary configuration (uncomment when ready to use)
 // const cloudinary = require('cloudinary').v2;
@@ -54,13 +54,16 @@ function createLocalStorage() {
 
 /**
  * AWS S3 storage configuration
- * Uncomment and configure when ready to use
  */
 function createS3Storage() {
-  // Uncomment when ready to implement S3
-  throw new Error('S3 storage not implemented yet. Please implement AWS S3 configuration.');
+  // Validate required environment variables
+  const requiredEnvVars = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION', 'AWS_S3_BUCKET'];
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
   
-  /*
+  if (missingVars.length > 0) {
+    throw new Error(`Missing required AWS environment variables: ${missingVars.join(', ')}`);
+  }
+
   const s3 = new AWS.S3({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -75,9 +78,17 @@ function createS3Storage() {
       const originalName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
       cb(null, `certificate-templates/${uniqueSuffix}-${originalName}`);
     },
-    contentType: multerS3.AUTO_CONTENT_TYPE
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    metadata: (req, file, cb) => {
+      cb(null, {
+        fieldName: file.fieldname,
+        originalName: file.originalname,
+        uploadedBy: req.user?.id || 'unknown',
+        clubId: req.user?.clubId || 'unknown',
+        uploadDate: new Date().toISOString()
+      });
+    }
   });
-  */
 }
 
 /**
@@ -142,8 +153,48 @@ function createFileServer() {
     },
     
     async serveS3File(req, res, filePath) {
-      // Implement S3 file serving
-      throw new Error('S3 file serving not implemented yet');
+      try {
+        const s3 = new AWS.S3({
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+          region: process.env.AWS_REGION
+        });
+
+        const params = {
+          Bucket: process.env.AWS_S3_BUCKET,
+          Key: filePath
+        };
+
+        // Check if file exists
+        try {
+          await s3.headObject(params).promise();
+        } catch (error) {
+          if (error.code === 'NotFound') {
+            throw new Error('File not found in S3');
+          }
+          throw error;
+        }
+
+        // Stream the file from S3
+        const stream = s3.getObject(params).createReadStream();
+        
+        // Set appropriate headers
+        res.setHeader('Content-Type', 'image/png'); // Default to PNG, could be improved
+        res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+        
+        stream.pipe(res);
+        
+        stream.on('error', (error) => {
+          console.error('Error streaming from S3:', error);
+          if (!res.headersSent) {
+            res.status(500).json({ error: 'Error streaming file from S3' });
+          }
+        });
+        
+      } catch (error) {
+        console.error('S3 file serving error:', error);
+        throw error;
+      }
     },
     
     async serveCloudinaryFile(req, res, filePath) {
@@ -153,7 +204,28 @@ function createFileServer() {
   };
 }
 
+/**
+ * Utility function to test S3 connection
+ */
+async function testS3Connection() {
+  try {
+    const s3 = new AWS.S3({
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      region: process.env.AWS_REGION
+    });
+
+    await s3.headBucket({ Bucket: process.env.AWS_S3_BUCKET }).promise();
+    console.log('✅ S3 connection successful');
+    return true;
+  } catch (error) {
+    console.error('❌ S3 connection failed:', error.message);
+    return false;
+  }
+}
+
 module.exports = {
   createStorageConfig,
-  createFileServer
+  createFileServer,
+  testS3Connection
 }; 

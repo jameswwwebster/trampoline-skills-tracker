@@ -4,28 +4,28 @@ const path = require('path');
 const fs = require('fs').promises;
 const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
+const { createStorageConfig, createFileServer, testS3Connection } = require('../config/storage');
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Configure multer for PDF upload
-const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '..', 'uploads', 'certificate-templates');
-    try {
-      await fs.mkdir(uploadDir, { recursive: true });
-      cb(null, uploadDir);
-    } catch (error) {
-      cb(error);
+// IMPORTANT: Railway uses ephemeral file systems!
+// Files uploaded to the local filesystem will be lost when the container restarts.
+// For production use, you should use cloud storage (AWS S3, Google Cloud Storage, etc.)
+// or a persistent volume solution.
+
+// Create storage configuration based on environment
+const storage = createStorageConfig();
+const fileServer = createFileServer();
+
+// Test S3 connection on startup if using S3
+if (process.env.STORAGE_TYPE === 's3') {
+  testS3Connection().then(success => {
+    if (!success) {
+      console.error('⚠️  S3 connection failed. Please check your AWS credentials and bucket configuration.');
     }
-  },
-  filename: (req, file, cb) => {
-    // Generate unique filename with timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const originalName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-    cb(null, uniqueSuffix + '-' + originalName);
-  }
-});
+  });
+}
 
 const upload = multer({
   storage: storage,
@@ -374,20 +374,6 @@ router.post('/:id/archive', auth, requireRole(['CLUB_ADMIN']), async (req, res) 
   }
 });
 
-// IMPORTANT: Railway uses ephemeral file systems!
-// Files uploaded to the local filesystem will be lost when the container restarts.
-// For production use, you should use cloud storage (AWS S3, Google Cloud Storage, etc.)
-// or a persistent volume solution.
-
-// TODO: Implement cloud storage integration
-// Example integrations:
-// - AWS S3: Use aws-sdk with multer-s3
-// - Google Cloud Storage: Use @google-cloud/storage
-// - Cloudinary: Use cloudinary for image storage
-// - Railway Volume: Use Railway's volume mounting (if available)
-
-// For now, we'll improve error handling and provide clear guidance
-
 // Get the template image file
 router.get('/:id/pdf', auth, async (req, res) => {
   try {
@@ -402,14 +388,18 @@ router.get('/:id/pdf', auth, async (req, res) => {
       return res.status(404).json({ error: 'Certificate template not found' });
     }
 
-    // Check if file exists
+    // Use the file server to serve the file based on storage type
     try {
-      await fs.access(template.filePath);
+      await fileServer.serveFile(req, res, template.filePath);
     } catch (fileError) {
       console.error(`Template file not found: ${template.filePath} for template ${template.id}`);
-      console.error('This is likely due to ephemeral file system in cloud hosting (Railway, Heroku, etc.)');
-      console.error('Files uploaded to local storage are lost when containers restart');
-      console.error('Consider implementing cloud storage integration for production use');
+      console.error(`Storage type: ${fileServer.storageType}`);
+      
+      if (fileServer.storageType === 'local') {
+        console.error('This is likely due to ephemeral file system in cloud hosting (Railway, Heroku, etc.)');
+        console.error('Files uploaded to local storage are lost when containers restart');
+        console.error('Consider implementing cloud storage integration for production use');
+      }
       
       // Mark template as inactive since file is missing
       await prisma.certificateTemplate.update({
@@ -417,50 +407,21 @@ router.get('/:id/pdf', auth, async (req, res) => {
         data: { isActive: false }
       });
       
+      const errorMessage = fileServer.storageType === 'local' 
+        ? 'Template file not found on server. This is likely due to a container restart in cloud hosting. The template has been marked as inactive. Please re-upload the template.'
+        : `Template file not found in ${fileServer.storageType}. The template has been marked as inactive. Please re-upload the template.`;
+      
       return res.status(404).json({ 
-        error: 'Template file not found on server. This is likely due to a container restart in cloud hosting. The template has been marked as inactive. Please re-upload the template.',
+        error: errorMessage,
         templateId: req.params.id,
         templateName: template.name,
-        reason: 'ephemeral_filesystem',
-        solution: 'Please re-upload your template. For production use, consider implementing cloud storage integration.'
+        reason: fileServer.storageType === 'local' ? 'ephemeral_filesystem' : 'file_not_found',
+        storageType: fileServer.storageType,
+        solution: fileServer.storageType === 'local' 
+          ? 'Please re-upload your template. For production use, consider implementing cloud storage integration.'
+          : 'Please re-upload your template.'
       });
     }
-
-    // Determine content type based on file extension
-    const fileExtension = path.extname(template.filePath).toLowerCase();
-    let contentType = 'application/octet-stream'; // Default fallback
-    
-    switch (fileExtension) {
-      case '.png':
-        contentType = 'image/png';
-        break;
-      case '.jpg':
-      case '.jpeg':
-        contentType = 'image/jpeg';
-        break;
-      case '.pdf':
-        contentType = 'application/pdf';
-        break;
-      default:
-        // Try to determine from original filename if available
-        const originalExtension = path.extname(template.fileName).toLowerCase();
-        switch (originalExtension) {
-          case '.png':
-            contentType = 'image/png';
-            break;
-          case '.jpg':
-          case '.jpeg':
-            contentType = 'image/jpeg';
-            break;
-          case '.pdf':
-            contentType = 'application/pdf';
-            break;
-        }
-    }
-
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', `inline; filename="${template.fileName}"`);
-    res.sendFile(path.resolve(template.filePath));
   } catch (error) {
     console.error('Error serving template file:', error);
     res.status(500).json({ error: 'Failed to serve template file' });
