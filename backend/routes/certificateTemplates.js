@@ -374,6 +374,20 @@ router.post('/:id/archive', auth, requireRole(['CLUB_ADMIN']), async (req, res) 
   }
 });
 
+// IMPORTANT: Railway uses ephemeral file systems!
+// Files uploaded to the local filesystem will be lost when the container restarts.
+// For production use, you should use cloud storage (AWS S3, Google Cloud Storage, etc.)
+// or a persistent volume solution.
+
+// TODO: Implement cloud storage integration
+// Example integrations:
+// - AWS S3: Use aws-sdk with multer-s3
+// - Google Cloud Storage: Use @google-cloud/storage
+// - Cloudinary: Use cloudinary for image storage
+// - Railway Volume: Use Railway's volume mounting (if available)
+
+// For now, we'll improve error handling and provide clear guidance
+
 // Get the template image file
 router.get('/:id/pdf', auth, async (req, res) => {
   try {
@@ -393,6 +407,9 @@ router.get('/:id/pdf', auth, async (req, res) => {
       await fs.access(template.filePath);
     } catch (fileError) {
       console.error(`Template file not found: ${template.filePath} for template ${template.id}`);
+      console.error('This is likely due to ephemeral file system in cloud hosting (Railway, Heroku, etc.)');
+      console.error('Files uploaded to local storage are lost when containers restart');
+      console.error('Consider implementing cloud storage integration for production use');
       
       // Mark template as inactive since file is missing
       await prisma.certificateTemplate.update({
@@ -401,9 +418,11 @@ router.get('/:id/pdf', auth, async (req, res) => {
       });
       
       return res.status(404).json({ 
-        error: 'Template file not found on server. The template has been marked as inactive. Please re-upload the template.',
+        error: 'Template file not found on server. This is likely due to a container restart in cloud hosting. The template has been marked as inactive. Please re-upload the template.',
         templateId: req.params.id,
-        templateName: template.name
+        templateName: template.name,
+        reason: 'ephemeral_filesystem',
+        solution: 'Please re-upload your template. For production use, consider implementing cloud storage integration.'
       });
     }
 

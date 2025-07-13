@@ -171,7 +171,19 @@ const CertificateDesigner = () => {
       // Provide more specific error messages with recovery options
       if (error.response?.status === 404) {
         const errorData = error.response?.data;
-        if (errorData?.templateName) {
+        
+        // Handle ephemeral filesystem issue specifically
+        if (errorData?.reason === 'ephemeral_filesystem') {
+          setError(
+            <div>
+              <h4>Template File Lost Due to Server Restart</h4>
+              <p>Your template file was lost because the hosting platform restarted the server. This is a known limitation of cloud hosting platforms like Railway.</p>
+              <p><strong>What happened:</strong> The server file system is temporary and gets reset during deployments or maintenance.</p>
+              <p><strong>Solution:</strong> Please re-upload your template. Your template configuration is saved, only the image file needs to be uploaded again.</p>
+              <p><strong>Future:</strong> We're working on implementing permanent cloud storage to prevent this issue.</p>
+            </div>
+          );
+        } else if (errorData?.templateName) {
           setError(`Template "${errorData.templateName}" file not found on server. The template has been marked as inactive. Please re-upload the template to continue using it.`);
         } else {
           setError('Template image file not found. Please re-upload the template.');
@@ -653,7 +665,24 @@ const CertificateDesigner = () => {
         </div>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {/* Add notification about temporary file storage */}
+      <div className="storage-notification">
+        <div className="notification-content">
+          <span className="notification-icon">ℹ️</span>
+          <span className="notification-text">
+            <strong>Note:</strong> Template files are stored temporarily and may be lost during server restarts. 
+            If you see "file not found" errors, please re-upload your templates. 
+            We're working on implementing permanent cloud storage.
+          </span>
+        </div>
+      </div>
+
+      {/* Error display */}
+      {error && (
+        <div className="error-message">
+          {typeof error === 'string' ? error : error}
+        </div>
+      )}
       {success && <div className="alert alert-success">{success}</div>}
 
       <div className="designer-layout">
