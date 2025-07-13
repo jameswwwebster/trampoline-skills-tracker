@@ -1289,7 +1289,8 @@ textarea.form-control {
   }
 
   .status-buttons {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 0.5rem;
   }
 
@@ -1532,9 +1533,10 @@ textarea.form-control {
     flex: 1;
   }
 
-  /* Keep important controls stacked */
+  /* Keep important controls horizontal even on tablet */
   .status-buttons {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
   }
 
   .status-buttons .btn {
@@ -2304,7 +2306,8 @@ textarea.form-control {
   }
   
   .status-buttons {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
   }
   
   .routines-list {
