@@ -723,6 +723,29 @@
   background: #a8a8a8;
 }
 
+/* No templates message */
+.no-templates {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #666;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.no-templates p {
+  margin: 0.5rem 0;
+}
+
+.no-templates p:first-child {
+  font-weight: 600;
+  color: #333;
+}
+
+.no-templates .btn {
+  margin-top: 1rem;
+}
+
 /* Enhanced touch targets for mobile */
 @media (max-width: 768px) {
   .designer-layout {

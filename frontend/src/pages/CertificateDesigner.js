@@ -117,6 +117,12 @@ const CertificateDesigner = () => {
         setSelectedTemplate(firstTemplate);
         await loadFields(firstTemplate.id);
         await loadTemplateImage(firstTemplate.id);
+      } else {
+        // No templates available - show helpful message
+        setError('No certificate templates found. Please upload a template to get started.');
+        setSelectedTemplate(null);
+        setFields([]);
+        setTemplateUrl(null);
       }
     } catch (error) {
       console.error('Error loading templates:', error);
@@ -162,9 +168,19 @@ const CertificateDesigner = () => {
       console.error('Error loading template image:', error);
       setTemplateUrl(null);
       
-      // Provide more specific error messages
+      // Provide more specific error messages with recovery options
       if (error.response?.status === 404) {
-        setError('Template image file not found. Please re-upload the template.');
+        const errorData = error.response?.data;
+        if (errorData?.templateName) {
+          setError(`Template "${errorData.templateName}" file not found on server. The template has been marked as inactive. Please re-upload the template to continue using it.`);
+        } else {
+          setError('Template image file not found. Please re-upload the template.');
+        }
+        
+        // Automatically reload templates to update the list
+        setTimeout(() => {
+          loadTemplates();
+        }, 1000);
       } else if (error.response?.status === 403) {
         setError('Access denied to template image.');
       } else {
@@ -645,7 +661,19 @@ const CertificateDesigner = () => {
         <div className="sidebar">
           <h3>Templates</h3>
           <div className="template-list">
-            {templates.map(template => (
+            {templates.length === 0 ? (
+              <div className="no-templates">
+                <p>No templates available</p>
+                <p>Upload a template to get started</p>
+                <button 
+                  onClick={() => setShowTemplateUpload(true)}
+                  className="btn btn-primary btn-sm"
+                >
+                  Upload Template
+                </button>
+              </div>
+            ) : (
+              templates.map(template => (
               <div
                 key={template.id}
                 className={`template-item ${selectedTemplate?.id === template.id ? 'selected' : ''}`}
@@ -703,7 +731,8 @@ const CertificateDesigner = () => {
                   </button>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
 
           {templates.length > 0 && (

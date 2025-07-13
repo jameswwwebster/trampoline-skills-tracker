@@ -61,6 +61,11 @@ router.get('/', auth, async (req, res) => {
       ]
     });
 
+    // If no templates found, provide helpful guidance
+    if (templates.length === 0) {
+      console.log(`No active templates found for club ${req.user.clubId}`);
+    }
+
     res.json(templates);
   } catch (error) {
     console.error('Error fetching certificate templates:', error);
@@ -387,7 +392,19 @@ router.get('/:id/pdf', auth, async (req, res) => {
     try {
       await fs.access(template.filePath);
     } catch (fileError) {
-      return res.status(404).json({ error: 'Template file not found' });
+      console.error(`Template file not found: ${template.filePath} for template ${template.id}`);
+      
+      // Mark template as inactive since file is missing
+      await prisma.certificateTemplate.update({
+        where: { id: req.params.id },
+        data: { isActive: false }
+      });
+      
+      return res.status(404).json({ 
+        error: 'Template file not found on server. The template has been marked as inactive. Please re-upload the template.',
+        templateId: req.params.id,
+        templateName: template.name
+      });
     }
 
     // Determine content type based on file extension
