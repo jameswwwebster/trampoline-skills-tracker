@@ -759,14 +759,16 @@ const CertificateDesigner = () => {
                     <button 
                       onClick={() => openFieldModal(field)}
                       className="btn btn-sm btn-secondary"
+                      title="Edit field"
                     >
-                      Edit
+                      ✏️
                     </button>
                     <button 
                       onClick={() => handleFieldDelete(field.id)}
                       className="btn btn-sm btn-danger"
+                      title="Delete field"
                     >
-                      Delete
+                      🗑️
                     </button>
                   </div>
                 </div>
