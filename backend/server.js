@@ -27,6 +27,9 @@ const systemAdminRoutes = require('./routes/systemAdmin');
 const app = express();
 const prisma = new PrismaClient();
 
+// Trust proxy for Railway deployment and rate limiting
+app.set('trust proxy', true);
+
 // Security middleware
 app.use(helmet());
 
