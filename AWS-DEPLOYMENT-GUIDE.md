@@ -30,7 +30,7 @@ aws configure
 Enter:
 - AWS Access Key ID
 - AWS Secret Access Key
-- Default region: `us-east-1`
+- Default region: `eu-west-2`
 - Default output format: `json`
 
 ### 4. Docker Installation
@@ -131,7 +131,7 @@ curl http://YOUR_LOAD_BALANCER_DNS/api/health
 NODE_ENV=production
 STORAGE_TYPE=s3
 AWS_S3_BUCKET=trampoline-skills-storage-ACCOUNT-REGION
-AWS_REGION=us-east-1
+AWS_REGION=eu-west-2
 DATABASE_URL=postgresql://postgres:password@rds-endpoint:5432/trampoline_skills
 ```
 

@@ -14,7 +14,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-REGION=${AWS_REGION:-us-east-1}
+REGION=${AWS_REGION:-eu-west-2}
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ECR_REPO_NAME="trampoline-skills"
 IMAGE_TAG=${IMAGE_TAG:-latest}
