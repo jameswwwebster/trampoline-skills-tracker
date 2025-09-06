@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY package*.json ./
 RUN npm install canvas@^2.11.2 --verbose
-RUN npm ci
+RUN npm ci --ignore-scripts
 COPY . .
 
 # Test canvas installation
