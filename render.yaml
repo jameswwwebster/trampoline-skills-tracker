@@ -35,6 +35,25 @@ services:
       - key: REACT_APP_API_URL
         sync: false
 
+  - type: web
+    name: pgadmin
+    runtime: docker
+    rootDir: admin/pgadmin
+    plan: starter
+    envVars:
+      - key: PGADMIN_DEFAULT_EMAIL
+        sync: false
+      - key: PGADMIN_DEFAULT_PASSWORD
+        sync: false
+      - key: PORT
+        value: 10000
+
+# Postgres database
+# To allow external connections only from your IP, you can add ipAllowList here:
+# ipAllowList:
+#   - source: YOUR.IP.ADDR.0/32
+#     description: your-ip
+
 databases:
   - name: trampoline-db
     plan: basic-1gb
