@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { get } from '../utils/apiInterceptor';
 
 const BrandingContext = createContext();
 
@@ -27,7 +27,12 @@ export const BrandingProvider = ({ children }) => {
 
   const fetchBranding = async () => {
     try {
-      const response = await axios.get('/api/branding');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        // Not logged in; keep defaults and avoid noisy 401s
+        return;
+      }
+      const response = await get('/api/branding');
       setBranding(prev => ({ ...prev, ...response.data }));
     } catch (err) {
       console.error('Failed to fetch branding:', err);
