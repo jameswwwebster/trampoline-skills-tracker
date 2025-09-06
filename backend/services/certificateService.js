@@ -262,10 +262,59 @@ class CertificateService {
   }
 
   async generateBasicCertificate(certificate) {
-    // If Canvas is not available, return a minimal 1x1 PNG buffer as a placeholder
+    // If Canvas is not available, use Sharp + SVG to render a basic certificate
+    if (!canvasAvailable && sharpAvailable) {
+      try {
+        const width = 1275;
+        const height = 1650;
+        const primaryColor = certificate.club?.primaryColor || '#2c3e50';
+        const secondaryColor = certificate.club?.secondaryColor || '#3498db';
+        const accentColor = certificate.club?.accentColor || '#d4af37';
+        const textColor = certificate.club?.textColor || '#2c3e50';
+        const gymnastName = `${certificate.gymnast.firstName} ${certificate.gymnast.lastName}`;
+        const levelText = `Level ${certificate.level.identifier}`;
+        const dateText = new Date(certificate.awardedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const clubName = certificate.club?.name || '';
+        const svg = `
+<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="inset">
+      <rect x="0" y="0" width="${width}" height="${height}" rx="0" ry="0" />
+    </clipPath>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff" />
+  <rect x="0" y="0" width="${width}" height="${height}" fill="${primaryColor}" />
+  <rect x="20" y="20" width="${width - 40}" height="${height - 40}" fill="#ffffff" />
+  <rect x="50" y="50" width="${width - 100}" height="${height - 100}" fill="none" stroke="${accentColor}" stroke-width="4" />
+
+  <text x="${width / 2}" y="${Math.round(height * 0.2)}" fill="${primaryColor}" font-size="64" font-weight="700" text-anchor="middle" dominant-baseline="middle">CERTIFICATE</text>
+  <text x="${width / 2}" y="${Math.round(height * 0.25)}" fill="${primaryColor}" font-size="48" font-weight="700" text-anchor="middle" dominant-baseline="middle">OF ACHIEVEMENT</text>
+
+  <text x="${width / 2}" y="${Math.round(height * 0.35)}" fill="${textColor}" font-size="32" text-anchor="middle" dominant-baseline="middle">This certifies that</text>
+
+  <text x="${width / 2}" y="${Math.round(height * 0.45)}" fill="${primaryColor}" font-size="52" font-weight="700" text-anchor="middle" dominant-baseline="middle">${this.escapeXml(gymnastName)}</text>
+  <line x1="${(width - 800) / 2}" y1="${Math.round(height * 0.47)}" x2="${(width + 800) / 2}" y2="${Math.round(height * 0.47)}" stroke="${accentColor}" stroke-width="3" />
+
+  <text x="${width / 2}" y="${Math.round(height * 0.55)}" fill="${textColor}" font-size="32" text-anchor="middle" dominant-baseline="middle">has successfully completed</text>
+
+  <text x="${width / 2}" y="${Math.round(height * 0.65)}" fill="${accentColor}" font-size="72" font-weight="700" text-anchor="middle" dominant-baseline="middle">${this.escapeXml(levelText)}</text>
+  <text x="${width / 2}" y="${Math.round(height * 0.72)}" fill="${textColor}" font-size="36" font-weight="700" text-anchor="middle" dominant-baseline="middle">${this.escapeXml(certificate.level.name)}</text>
+
+  <text x="${width / 2}" y="${Math.round(height * 0.85)}" fill="${textColor}" font-size="28" font-style="italic" text-anchor="middle" dominant-baseline="middle">${this.escapeXml(dateText)}</text>
+  ${clubName ? `<text x="${width / 2}" y="${Math.round(height * 0.92)}" fill="${secondaryColor}" font-size="24" font-weight="700" text-anchor="middle" dominant-baseline="middle">${this.escapeXml(clubName)}</text>` : ''}
+</svg>`;
+        const buffer = await sharp(Buffer.from(svg)).png().toBuffer();
+        console.log('✅ Basic certificate generated with Sharp+SVG');
+        return buffer;
+      } catch (error) {
+        console.error('Sharp basic certificate generation error:', error);
+        // fall through to 1x1 placeholder below
+      }
+    }
+    
+    // If neither Canvas nor Sharp are available, return a minimal 1x1 PNG buffer as a placeholder
     if (!canvasAvailable) {
-      console.log('⚠️  Canvas not available - returning 1x1 PNG placeholder');
-      // Transparent 1x1 PNG
+      console.log('⚠️  No rendering engine available - returning 1x1 PNG placeholder');
       const oneByOnePngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
       return Buffer.from(oneByOnePngBase64, 'base64');
     }
@@ -380,6 +429,15 @@ class CertificateService {
       const oneByOnePngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
       return Buffer.from(oneByOnePngBase64, 'base64');
     }
+  }
+
+  escapeXml(text) {
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
   }
 
 

@@ -3,6 +3,8 @@ FROM node:18-bullseye
 # Install system deps for node-canvas
 RUN apt-get update && apt-get install -y \
   build-essential \
+  python3 \
+  pkg-config \
   libcairo2 \
   libcairo2-dev \
   libpango-1.0-0 \
@@ -13,6 +15,8 @@ RUN apt-get update && apt-get install -y \
   libgif-dev \
   librsvg2-2 \
   librsvg2-dev \
+  fonts-dejavu-core \
+  fontconfig \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

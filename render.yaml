@@ -33,6 +33,10 @@ services:
     envVars:
       - key: REACT_APP_API_URL
         sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
 # Postgres database
 # To allow external connections only from your IP, you can add ipAllowList here:
