@@ -37,4 +37,4 @@ services:
 
 databases:
   - name: trampoline-db
-    plan: starter
+    plan: basic-1gb
