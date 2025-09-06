@@ -75,6 +75,7 @@ class CertificateService {
       // If no custom template, try to get default template for the club
       if (!templatePath || !certificate.templateId) {
         console.log('🔍 No custom template provided, looking for default template...');
+        console.log(`   Club ID: ${certificate.clubId}`);
         const defaultTemplate = await this.getTemplate(certificate.clubId);
         
         if (defaultTemplate && defaultTemplate.filePath) {
@@ -84,10 +85,15 @@ class CertificateService {
           certificate.fields = defaultTemplate.fields;
           certificate.templateId = defaultTemplate.id;
           console.log(`✅ Using default template: ${defaultTemplate.name}`);
+          console.log(`   Template file path: ${templatePath}`);
+          console.log(`   Template fields count: ${defaultTemplate.fields?.length || 0}`);
         } else {
           console.log('⚠️ No custom templates found for club, falling back to basic certificate');
+          console.log(`   Searched for club ID: ${certificate.clubId}`);
           return await this.generateBasicCertificate(certificate);
         }
+      } else {
+        console.log(`✅ Using provided template path: ${templatePath}`);
       }
       
       // Check if template is PDF and provide helpful error
