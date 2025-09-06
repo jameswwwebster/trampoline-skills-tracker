@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm install canvas@^2.11.2
+RUN npm install canvas@^2.11.2 --verbose
 RUN npm ci
 COPY . .
 

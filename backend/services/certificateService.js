@@ -271,6 +271,7 @@ class CertificateService {
   async generateBasicCertificate(certificate) {
     // If Canvas is not available, use Sharp + SVG to render a basic certificate
     if (!canvasAvailable && sharpAvailable) {
+      console.log('🎨 Using Sharp+SVG fallback for basic certificate');
       try {
         const width = 1275;
         const height = 1650;
