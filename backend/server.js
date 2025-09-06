@@ -84,13 +84,23 @@ app.use('/api/user-custom-fields', userCustomFieldRoutes);
 app.use('/api/system-admin', systemAdminRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+  let dbConnected = false;
+  try {
+    // Lightweight DB connectivity check
+    await prisma.$queryRaw`SELECT 1`;
+    dbConnected = true;
+  } catch (e) {
+    dbConnected = false;
+  }
+
   res.status(200).json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
-    storage: 'local'
+    storage: 'local',
+    dbConnected
   });
 });
 // API-only server; no frontend static file serving
