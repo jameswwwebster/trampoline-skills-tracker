@@ -5,6 +5,7 @@ const { PrismaClient } = require('@prisma/client');
 // Try to load Canvas, but make it optional
 let createCanvas, loadImage, registerFont;
 let canvasAvailable = false;
+let sharpAvailable = false;
 
 try {
   const canvas = require('canvas');
@@ -17,6 +18,17 @@ try {
   console.log('⚠️  Canvas module not available - certificate generation will be disabled');
   console.log('   Error:', error.message);
   canvasAvailable = false;
+}
+
+// Try to load Sharp as a headless fallback
+let sharp;
+try {
+  sharp = require('sharp');
+  sharpAvailable = true;
+  console.log('✅ Sharp module loaded successfully');
+} catch (error) {
+  console.log('⚠️  Sharp module not available - will use placeholder if Canvas fails');
+  sharpAvailable = false;
 }
 
 class CertificateService {
@@ -47,8 +59,8 @@ class CertificateService {
 
   async generateCertificate(certificate, templatePath) {
     // Check if Canvas is available
-    if (!canvasAvailable) {
-      console.log('⚠️  Canvas not available - falling back to basic certificate placeholder');
+    if (!canvasAvailable && !sharpAvailable) {
+      console.log('⚠️  No rendering engine available - returning basic placeholder');
       return await this.generateBasicCertificate(certificate);
     }
     
@@ -85,14 +97,26 @@ class CertificateService {
       }
       
       // Load template image
-      const templateImage = await loadImage(templatePath);
+      let templateImage, templateMeta;
+      if (canvasAvailable) {
+        templateImage = await loadImage(templatePath);
+      } else if (sharpAvailable) {
+        // Load with Sharp and get metadata
+        const img = sharp(templatePath);
+        templateMeta = await img.metadata();
+      }
       
       // Create canvas with template dimensions
-      const canvas = createCanvas(templateImage.width, templateImage.height);
-      const ctx = canvas.getContext('2d');
+      let canvas, ctx;
+      if (canvasAvailable) {
+        canvas = createCanvas(templateImage.width, templateImage.height);
+        ctx = canvas.getContext('2d');
+      }
       
       // Draw template as background
-      ctx.drawImage(templateImage, 0, 0);
+      if (canvasAvailable) {
+        ctx.drawImage(templateImage, 0, 0);
+      }
       
       // Prepare field data
       const fieldData = {
@@ -116,7 +140,19 @@ class CertificateService {
         return await this.generateBasicCertificate(certificate);
       }
       
-      await this.renderCustomFields(ctx, fields, fieldData, canvas.width, canvas.height);
+      if (canvasAvailable) {
+        await this.renderCustomFields(ctx, fields, fieldData, canvas.width, canvas.height);
+      } else if (sharpAvailable && templateMeta?.width && templateMeta?.height) {
+        // Sharp fallback: render simple text overlay using SVG compositing
+        const svg = this.renderSvgFields(fields, fieldData, templateMeta.width, templateMeta.height);
+        const base = sharp(templatePath);
+        const composed = await base
+          .composite([{ input: Buffer.from(svg), top: 0, left: 0 }])
+          .png()
+          .toBuffer();
+        console.log('✅ Certificate generated using Sharp fallback');
+        return composed;
+      }
       
       // Generate PNG buffer
       const pngBuffer = canvas.toBuffer('image/png');
@@ -135,6 +171,36 @@ class CertificateService {
       console.log('🔄 Falling back to basic certificate generation due to technical error...');
       return await this.generateBasicCertificate(certificate);
     }
+  }
+
+  renderSvgFields(fields, fieldData, width, height) {
+    const toPx = (value) => value;
+    const escape = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const items = [];
+    const defaultFont = 'Arial, sans-serif';
+    for (const field of fields || []) {
+      if (!field.isVisible) continue;
+      let text = '';
+      if (field.fieldType === 'CUSTOM_TEXT') {
+        text = field.customText || '';
+      } else {
+        text = fieldData[field.fieldType] || '';
+      }
+      if (!text) continue;
+      const centerX = field.x * width;
+      const centerY = field.y * height;
+      const referenceWidth = 1000;
+      const scaleFactor = width / referenceWidth;
+      const scaledFontSize = Math.round((field.fontSize || 24) * scaleFactor);
+      const fontFamily = field.fontFamily === 'LilitaOne' ? 'Lilita One, Arial, sans-serif' : (field.fontFamily || defaultFont);
+      const fontWeight = field.fontWeight || 'normal';
+      const fill = field.fontColor || '#000000';
+      const textAnchor = (field.textAlign || 'center') === 'center' ? 'middle' : (field.textAlign === 'right' ? 'end' : 'start');
+      const rotation = field.rotation ? ` transform="rotate(${field.rotation}, ${centerX}, ${centerY})"` : '';
+      items.push(`<text x="${toPx(centerX)}" y="${toPx(centerY)}" font-size="${scaledFontSize}" font-family="${escape(fontFamily)}" font-weight="${escape(fontWeight)}" fill="${escape(fill)}" text-anchor="${textAnchor}" dominant-baseline="middle"${rotation}>${escape(text)}</text>`);
+    }
+    const svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">${items.join('')}</svg>`;
+    return svg;
   }
 
   async renderCustomFields(ctx, fields, fieldData, canvasWidth, canvasHeight) {
