@@ -14,9 +14,11 @@ try {
   registerFont = canvas.registerFont;
   canvasAvailable = true;
   console.log('✅ Canvas module loaded successfully');
+  console.log('   Canvas version:', canvas.version);
 } catch (error) {
   console.log('⚠️  Canvas module not available - certificate generation will be disabled');
   console.log('   Error:', error.message);
+  console.log('   Stack:', error.stack);
   canvasAvailable = false;
 }
 

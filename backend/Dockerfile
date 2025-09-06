@@ -25,6 +25,9 @@ RUN npm install canvas@^2.11.2 --verbose
 RUN npm ci
 COPY . .
 
+# Test canvas installation
+RUN node -e "try { const canvas = require('canvas'); console.log('Canvas test:', canvas.version); } catch(e) { console.error('Canvas test failed:', e.message); process.exit(1); }"
+
 # Build prisma client
 RUN npx prisma generate
 
