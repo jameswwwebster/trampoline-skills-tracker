@@ -1,2 +1,0 @@
-FROM dpage/pgadmin4:latest
-ENV PGADMIN_LISTEN_PORT=10000

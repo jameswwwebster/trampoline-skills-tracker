@@ -29,6 +29,25 @@ The frontend uses environment variables that start with `REACT_APP_`.
 REACT_APP_API_URL=http://localhost:5000
 ```
 
+## 🗂️ Local database browsing
+
+- Prisma Studio (visual editor):
+  - `cd backend`
+  - `npm run db:studio`
+  - Opens at http://localhost:5555
+
+- GUI tools (TablePlus, Postico, Beekeeper): use your local DATABASE_URL values
+  - Host: `localhost`
+  - Port: `5432`
+  - Database: `trampoline_tracker`
+  - User: `postgres`
+  - Password: `password`
+
+- psql CLI:
+```bash
+psql "postgresql://postgres:password@localhost:5432/trampoline_tracker"
+```
+
 ## 🛠️ Testing Environment Variables
 
 **Backend Test:**
