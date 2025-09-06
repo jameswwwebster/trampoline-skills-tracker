@@ -18,7 +18,6 @@ A web application for tracking gymnast progress through trampoline skill levels 
 - **Backend**: Node.js, Express, Prisma ORM
 - **Database**: PostgreSQL
 - **Authentication**: JWT tokens
-- **Deployment**: Railway (recommended)
 
 ## Project Structure
 
@@ -58,8 +57,8 @@ trampoline-tracker/
 git clone <repository-url>
 cd trampoline-tracker
 
-# Install all dependencies
-npm run setup
+# Install dependencies for backend and frontend
+cd backend && npm install && cd ../frontend && npm install && cd ..
 ```
 
 ### 2. Environment Variables
@@ -102,12 +101,11 @@ npx prisma studio
 ### 4. Development
 
 ```bash
-# Start both frontend and backend
-npm run dev
+# Start backend
+cd backend && npm run dev
 
-# Or start individually:
-npm run server  # Backend only
-npm run client  # Frontend only
+# In a second terminal, start frontend
+cd frontend && npm start
 ```
 
 The application will be available at:
@@ -151,45 +149,9 @@ The application uses these main entities:
 - **LevelProgress**: Tracks level completion
 - **GuardianRequest**: Manages parent access requests
 
-## Deployment
+## Local-only Development
 
-### Railway Deployment (Recommended)
-
-1. **Create Railway Account**: Sign up at [railway.app](https://railway.app)
-
-2. **Connect Repository**: Link your GitHub repository
-
-3. **Add Database**: Add a PostgreSQL database service
-
-4. **Environment Variables**: Set the following in Railway:
-   ```
-   DATABASE_URL (automatically set by Railway)
-   JWT_SECRET=your-secret-key
-   NODE_ENV=production
-   FRONTEND_URL=https://your-app.railway.app
-   ```
-
-5. **Deploy**: Railway will automatically deploy your application
-
-### Manual Deployment Steps
-
-1. **Build Frontend**:
-   ```bash
-   npm run build
-   ```
-
-2. **Set Environment Variables**: Configure production environment variables
-
-3. **Run Database Migrations**:
-   ```bash
-   cd backend
-   npx prisma migrate deploy
-   ```
-
-4. **Start Production Server**:
-   ```bash
-   npm start
-   ```
+This repository is configured for local development only (separate React frontend and Express backend). Cloud hosting and containerization guides have been removed.
 
 ## API Endpoints
 

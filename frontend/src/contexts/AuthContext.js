@@ -18,10 +18,15 @@ export const AuthProvider = ({ children }) => {
 
   // Configure axios defaults
   useEffect(() => {
-    // Only set base URL for production - in development, the proxy handles routing
-    if (process.env.NODE_ENV === 'production') {
+    // Set base URL based on environment
+    if (process.env.NODE_ENV === 'development') {
+      // In development, use localhost backend
+      axios.defaults.baseURL = 'http://localhost:5000';
+    } else if (process.env.REACT_APP_API_URL) {
+      // In production with explicit API URL
       axios.defaults.baseURL = process.env.REACT_APP_API_URL;
     }
+    // In production without REACT_APP_API_URL, use relative URLs (same domain)
     
     const token = localStorage.getItem('token');
     if (token) {

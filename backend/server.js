@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+ 
 
 const { PrismaClient } = require('@prisma/client');
 const authRoutes = require('./routes/auth');
@@ -27,48 +28,31 @@ const systemAdminRoutes = require('./routes/systemAdmin');
 const app = express();
 const prisma = new PrismaClient();
 
-// Trust proxy for Railway deployment and rate limiting
-app.set('trust proxy', true);
+// No proxy-specific trust needed for local/basic hosting
+app.set('trust proxy', false);
 
-// Security middleware
+// Basic security headers (HTTPS-only headers removed)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
 app.use(helmet());
 
-// CORS configuration with debugging
-const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      'http://localhost:3000',
-      'https://frontend-production-1d285.up.railway.app'
-    ].filter(Boolean);
-    
-    console.log('CORS check - Origin:', origin);
-    console.log('CORS check - Allowed origins:', allowedOrigins);
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log('CORS rejected origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Switch-Club-Id']
-};
-
-app.use(cors(corsOptions));
+// Development-friendly CORS for local usage
+app.use(cors({
+  origin: ['http://localhost:3000', process.env.FRONTEND_URL].filter(Boolean),
+  credentials: true
+}));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // limit each IP to 500 requests per 15 minutes (reasonable for normal usage)
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  trustProxy: true // Trust Railway's proxy headers
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false
 });
 app.use(limiter);
 
@@ -99,26 +83,22 @@ app.use('/api/guardian-requests', guardianRequestRoutes);
 app.use('/api/user-custom-fields', userCustomFieldRoutes);
 app.use('/api/system-admin', systemAdminRoutes);
 
-// Health check endpoint for Docker/AWS
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
-    storage: process.env.STORAGE_TYPE || 'local'
+    storage: 'local'
   });
 });
+// API-only server; no frontend static file serving
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
 });
 
 const PORT = process.env.PORT || 5000;

@@ -177,7 +177,7 @@ const CertificateDesigner = () => {
           setError(
             <div>
               <h4>Template File Lost Due to Server Restart</h4>
-              <p>Your template file was lost because the hosting platform restarted the server. This is a known limitation of cloud hosting platforms like Railway.</p>
+              <p>Your template file was lost because the hosting platform restarted the server. This can happen on platforms with ephemeral filesystems.</p>
               <p><strong>What happened:</strong> The server file system is temporary and gets reset during deployments or maintenance.</p>
               <p><strong>Solution:</strong> Please re-upload your template. Your template configuration is saved, only the image file needs to be uploaded again.</p>
               <p><strong>Future:</strong> We're working on implementing permanent cloud storage to prevent this issue.</p>

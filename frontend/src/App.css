@@ -563,7 +563,6 @@ p, li, td, th {
 
 .card .btn {
   width: 100%;
-  margin-top: 1rem;
 }
 
 /* Forms */
@@ -2794,6 +2793,9 @@ textarea.form-control {
   border-radius: 4px;
   font-size: 0.875rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
 }
 
 /* Responsive Design for Routine Components */
@@ -3291,6 +3293,16 @@ textarea.form-control {
   flex-shrink: 0;
 }
 
+.skill-item .btn {
+  width: 30px;
+  height: 20px;
+}
+
+.skill-item .btn:hover {
+  background-color: #3498db;
+  color: white;
+}
+
 .routines-section {
   margin-bottom: 1.5rem;
 }
@@ -3355,20 +3367,31 @@ textarea.form-control {
   gap: 0.5rem;
 }
 
+.routine-skills-section .btn {
+  width: 100px;
+  height: 40px;
+}
+
 .routine-skill-item {
   background: white;
   border: 1px solid #dee2e6;
   border-radius: 4px;
   padding: 0.5rem;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
+  gap: 0.5rem;
 }
 
 .routine-skill-item .skill-name {
-  margin: 0;
+  margin: 0 0.5rem;
   color: #495057;
   font-weight: 400;
+}
+
+.routine-skill-item .btn {
+  width: 60px;
+  height: 40px;
 }
 
 /* Modal styles */
@@ -3498,6 +3521,11 @@ textarea.form-control {
     align-items: flex-start;
     gap: 0.5rem;
   }
+
+  .skill-item .btn {
+    width: 30px;
+    height: 20px;
+  }
   
   .skill-actions {
     align-self: flex-end;
@@ -3514,9 +3542,10 @@ textarea.form-control {
     align-items: flex-start;
     gap: 0.5rem;
   }
-  
-  .routine-actions {
-    align-self: flex-end;
+
+  .routine-title-section .btn {
+    width: 20px;
+    height: 30px;
   }
   
   .modal {

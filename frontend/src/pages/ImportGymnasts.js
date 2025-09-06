@@ -170,10 +170,9 @@ const ImportGymnasts = () => {
       <div className="info-message">
         <p>Import gymnasts from British Gymnastics CSV export files</p>
         <p><strong>Expected format:</strong> MID, First Name, Last Name, Email, Phone No, Date Of Birth, Age, Organisation, Roles, Memberships</p>
-        <p><strong>Custom Fields:</strong> Include any custom field columns in your CSV. Custom fields will be automatically imported.</p>
+        <p><strong>Custom Fields:</strong> Include any custom field columns in your CSV. Column names are matched case-insensitively to your custom field name or key.</p>
         <p><strong>Note:</strong> Date Of Birth is optional. If provided, it should be in MM/DD/YYYY, DD/MM/YYYY, or YYYY-MM-DD format.</p>
-        <p><strong>Upsert Mode:</strong> When "Update existing records" is enabled, the system will create new records or update existing ones based on name matching.</p>
-        <p><strong>Import Mode:</strong> By default, all records are imported. Uncheck "Import all records" if you only want to import gymnasts.</p>
+        <p><strong>Update mode:</strong> When enabled, import will create new records or update existing ones based on matching name/email.</p>
       </div>
 
       {error && (
@@ -226,7 +225,7 @@ const ImportGymnasts = () => {
                     importNonGymnasts: e.target.checked
                   }))}
                 />
-                Import all records (recommended - includes coaches, administrators, etc.)
+                Import all records (includes coaches, administrators, etc.)
               </label>
               <label className="checkbox-label">
                 <input
@@ -237,7 +236,7 @@ const ImportGymnasts = () => {
                     updateExisting: e.target.checked
                   }))}
                 />
-                Update existing records (upsert mode - creates new or updates existing)
+                Update existing records (create new or update existing)
               </label>
             </div>
           </div>

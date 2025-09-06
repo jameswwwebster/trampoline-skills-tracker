@@ -1,7 +1,23 @@
 const fs = require('fs').promises;
 const path = require('path');
-const { createCanvas, loadImage, registerFont } = require('canvas');
 const { PrismaClient } = require('@prisma/client');
+
+// Try to load Canvas, but make it optional
+let createCanvas, loadImage, registerFont;
+let canvasAvailable = false;
+
+try {
+  const canvas = require('canvas');
+  createCanvas = canvas.createCanvas;
+  loadImage = canvas.loadImage;
+  registerFont = canvas.registerFont;
+  canvasAvailable = true;
+  console.log('✅ Canvas module loaded successfully');
+} catch (error) {
+  console.log('⚠️  Canvas module not available - certificate generation will be disabled');
+  console.log('   Error:', error.message);
+  canvasAvailable = false;
+}
 
 class CertificateService {
   constructor() {
@@ -12,11 +28,16 @@ class CertificateService {
     this.maxCacheSize = 100 * 1024 * 1024; // 100MB cache limit
     this.maxCacheAge = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
     
-    // Register custom font
-    try {
-      registerFont(this.fontPath, { family: 'Lilita One' });
-    } catch (error) {
-      console.log('⚠️ Failed to register Lilita One font:', error.message);
+    // Register custom font (only if Canvas is available)
+    if (canvasAvailable) {
+      try {
+        registerFont(this.fontPath, { family: 'Lilita One' });
+        console.log('✅ Lilita One font registered successfully');
+      } catch (error) {
+        console.log('⚠️ Failed to register Lilita One font:', error.message);
+      }
+    } else {
+      console.log('⚠️ Skipping font registration - Canvas not available');
     }
     
     // Initialize cache directory
@@ -24,6 +45,12 @@ class CertificateService {
   }
 
   async generateCertificate(certificate, templatePath) {
+    // Check if Canvas is available
+    if (!canvasAvailable) {
+      console.log('⚠️  Canvas not available - falling back to basic certificate placeholder');
+      return await this.generateBasicCertificate(certificate);
+    }
+    
     try {
       // If no custom template, try to get default template for the club
       if (!templatePath || !certificate.templateId) {
@@ -168,6 +195,15 @@ class CertificateService {
   }
 
   async generateBasicCertificate(certificate) {
+    // Check if Canvas is available
+    if (!canvasAvailable) {
+      console.log('⚠️  Canvas not available - returning placeholder certificate data');
+      return {
+        buffer: Buffer.from('Certificate generation temporarily unavailable - Canvas module not loaded'),
+        fileName: `certificate-placeholder-${certificate.id}.txt`
+      };
+    }
+    
     try {
       // Create a standard certificate size (8.5 x 11 inches at 150 DPI)
       const width = 1275;

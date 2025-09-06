@@ -29,23 +29,6 @@ The frontend uses environment variables that start with `REACT_APP_`.
 REACT_APP_API_URL=http://localhost:5000
 ```
 
-## 🚀 Production Setup (Railway)
-
-Set these in your Railway service environment:
-
-**Backend Service:**
-```bash
-DATABASE_URL=postgresql://user:pass@host:port/database  # Provided by Railway PostgreSQL
-JWT_SECRET=your-generated-secure-secret-here
-FRONTEND_URL=https://your-frontend.railway.app
-NODE_ENV=production
-```
-
-**Frontend Service:**
-```bash
-REACT_APP_API_URL=https://your-backend.railway.app
-```
-
 ## 🛠️ Testing Environment Variables
 
 **Backend Test:**

@@ -381,7 +381,7 @@ const Gymnasts = () => {
         <div className="card-header">
           <input
             type="text"
-            placeholder="Search by gymnast name or guardian name..."
+            placeholder="Search by gymnast name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="form-control"
@@ -389,8 +389,8 @@ const Gymnasts = () => {
           />
           
           {/* Filter Controls */}
-          <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <div style={{ minWidth: '120px' }}>
+          <div style={{ marginTop: '0.25rem', display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ minWidth: '110px' }}>
               <select
                 value={searchParams.get('level') || ''}
                 onChange={(e) => {
@@ -403,7 +403,7 @@ const Gymnasts = () => {
                   setSearchParams(newParams);
                 }}
                 className="form-control"
-                style={{ fontSize: '0.875rem', padding: '0.25rem 0.5rem' }}
+                style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem' }}
               >
                 <option value="">All Levels</option>
                 {levels
@@ -417,7 +417,7 @@ const Gymnasts = () => {
               </select>
             </div>
             
-            <div style={{ minWidth: '140px' }}>
+            <div style={{ minWidth: '160px' }}>
               <select
                 value={searchParams.get('competition') || ''}
                 onChange={(e) => {
@@ -430,7 +430,7 @@ const Gymnasts = () => {
                   setSearchParams(newParams);
                 }}
                 className="form-control"
-                style={{ fontSize: '0.875rem', padding: '0.25rem 0.5rem' }}
+                style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem' }}
               >
                 <option value="">All Competitions</option>
                 {(() => {
@@ -470,12 +470,12 @@ const Gymnasts = () => {
           
           {/* Active Filters */}
           {(searchParams.get('level') || searchParams.get('competition')) && (
-            <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.875rem', color: '#666' }}>Active filters:</span>
+            <div style={{ marginTop: '0.25rem', display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8rem', color: '#666' }}>Active filters:</span>
               
               {searchParams.get('level') && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <span className="badge badge-info">Level {searchParams.get('level')}</span>
+                  <span className="badge badge-info" style={{ fontSize: '0.75rem' }}>Level {searchParams.get('level')}</span>
                   <button 
                     onClick={() => {
                       const newParams = new URLSearchParams(searchParams);
@@ -483,7 +483,7 @@ const Gymnasts = () => {
                       setSearchParams(newParams);
                     }}
                     className="btn btn-xs btn-outline"
-                    style={{ padding: '0.125rem 0.25rem', fontSize: '0.75rem' }}
+                    style={{ padding: '0.1rem 0.25rem', fontSize: '0.7rem' }}
                   >
                     ×
                   </button>
@@ -492,7 +492,7 @@ const Gymnasts = () => {
               
               {searchParams.get('competition') && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <span className="badge badge-success">{searchParams.get('competition')}</span>
+                  <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>{searchParams.get('competition')}</span>
                   <button 
                     onClick={() => {
                       const newParams = new URLSearchParams(searchParams);
@@ -500,7 +500,7 @@ const Gymnasts = () => {
                       setSearchParams(newParams);
                     }}
                     className="btn btn-xs btn-outline"
-                    style={{ padding: '0.125rem 0.25rem', fontSize: '0.75rem' }}
+                    style={{ padding: '0.1rem 0.25rem', fontSize: '0.7rem' }}
                   >
                     ×
                   </button>
@@ -510,7 +510,7 @@ const Gymnasts = () => {
               <button 
                 onClick={() => setSearchParams(new URLSearchParams())}
                 className="btn btn-xs btn-outline"
-                style={{ fontSize: '0.75rem' }}
+                style={{ fontSize: '0.7rem' }}
               >
                 Clear all filters
               </button>
@@ -555,7 +555,6 @@ const Gymnasts = () => {
                     <th>Date of Birth</th>
                     <th>Current Level</th>
                     <th>Competition Level</th>
-                    <th>Guardians</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -605,25 +604,7 @@ const Gymnasts = () => {
                           );
                         })()}
                       </td>
-                      <td>
-                        {gymnast.guardians.length > 0 ? (
-                          <div>
-                            {gymnast.guardians.map(guardian => (
-                              <div key={guardian.id}>
-                                <Link 
-                                  to={`/parents?highlight=${guardian.id}`}
-                                  className="text-link"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <small>{guardian.firstName} {guardian.lastName}</small>
-                                </Link>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-muted">No guardians</span>
-                        )}
-                      </td>
+                      
                     </tr>
                   ))}
                 </tbody>
@@ -694,28 +675,7 @@ const Gymnasts = () => {
                         </span>
                       </div>
                       
-                      <div className="mobile-card-row">
-                        <span className="mobile-card-label">Guardians:</span>
-                        <span className="mobile-card-value">
-                          {gymnast.guardians.length > 0 ? (
-                            <div>
-                              {gymnast.guardians.map(guardian => (
-                                <div key={guardian.id}>
-                                  <Link 
-                                    to={`/parents?highlight=${guardian.id}`}
-                                    className="text-link"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <small>{guardian.firstName} {guardian.lastName}</small>
-                                  </Link>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-muted">No guardians</span>
-                          )}
-                        </span>
-                      </div>
+                      
                     </div>
                   </div>
                 ))}

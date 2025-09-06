@@ -4,12 +4,12 @@ const path = require('path');
 const fs = require('fs').promises;
 const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
-const { createStorageConfig, createFileServer, testS3Connection } = require('../config/storage');
+const { createStorageConfig, createFileServer } = require('../config/storage');
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// IMPORTANT: Railway uses ephemeral file systems!
+// IMPORTANT: AWS ECS uses ephemeral file systems!
 // Files uploaded to the local filesystem will be lost when the container restarts.
 // For production use, you should use cloud storage (AWS S3, Google Cloud Storage, etc.)
 // or a persistent volume solution.
@@ -18,14 +18,7 @@ const prisma = new PrismaClient();
 const storage = createStorageConfig();
 const fileServer = createFileServer();
 
-// Test S3 connection on startup if using S3
-if (process.env.STORAGE_TYPE === 's3') {
-  testS3Connection().then(success => {
-    if (!success) {
-      console.error('⚠️  S3 connection failed. Please check your AWS credentials and bucket configuration.');
-    }
-  });
-}
+// Local-only storage; removed S3 connection checks
 
 const upload = multer({
   storage: storage,
@@ -393,33 +386,17 @@ router.get('/:id/pdf', auth, async (req, res) => {
       await fileServer.serveFile(req, res, template.filePath);
     } catch (fileError) {
       console.error(`Template file not found: ${template.filePath} for template ${template.id}`);
-      console.error(`Storage type: ${fileServer.storageType}`);
-      
-      if (fileServer.storageType === 'local') {
-        console.error('This is likely due to ephemeral file system in cloud hosting (Railway, Heroku, etc.)');
-        console.error('Files uploaded to local storage are lost when containers restart');
-        console.error('Consider implementing cloud storage integration for production use');
-      }
-      
+
       // Mark template as inactive since file is missing
       await prisma.certificateTemplate.update({
         where: { id: req.params.id },
         data: { isActive: false }
       });
-      
-      const errorMessage = fileServer.storageType === 'local' 
-        ? 'Template file not found on server. This is likely due to a container restart in cloud hosting. The template has been marked as inactive. Please re-upload the template.'
-        : `Template file not found in ${fileServer.storageType}. The template has been marked as inactive. Please re-upload the template.`;
-      
+
       return res.status(404).json({ 
-        error: errorMessage,
+        error: 'Template file not found on server. The template has been marked as inactive. Please re-upload the template.',
         templateId: req.params.id,
-        templateName: template.name,
-        reason: fileServer.storageType === 'local' ? 'ephemeral_filesystem' : 'file_not_found',
-        storageType: fileServer.storageType,
-        solution: fileServer.storageType === 'local' 
-          ? 'Please re-upload your template. For production use, consider implementing cloud storage integration.'
-          : 'Please re-upload your template.'
+        templateName: template.name
       });
     }
   } catch (error) {

@@ -77,10 +77,8 @@ const Levels = () => {
     try {
       const response = await axios.get('/api/levels');
       setLevels(response.data);
-      
-      // Expand all levels by default
-      const levelIds = response.data.map(level => level.id);
-      setExpandedLevels(new Set(levelIds));
+      // Collapsed by default
+      setExpandedLevels(new Set());
     } catch (error) {
       console.error('Failed to fetch levels:', error);
       setError('Failed to load levels');
@@ -616,47 +614,53 @@ const LevelCard = ({
           <div className="skills-section">
             <div className="section-header">
               <h5>Skills ({level.skills.length})</h5>
-              {canEdit && (
-                <button 
-                  onClick={onAddSkill}
-                  className="btn btn-sm btn-primary"
-                >
-                  + Add Skill
-                </button>
-              )}
+              {/* Add Skill moved below list for better flow */}
             </div>
             
             {level.skills.length > 0 ? (
               <div className="skills-grid">
                 {level.skills.map(skill => (
-                  <div key={skill.id} className="skill-item">
-                    <div className="skill-content">
-                      <div className="skill-name">{skill.name}</div>
-                      {skill.description && (
-                        <div className="skill-description">{skill.description}</div>
+                  <div key={skill.id}>
+                    <div className="routine-skill-item">
+                      <span className="skill-name">{skill.name}</span>
+                      {canEdit && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <button 
+                            onClick={() => onEditSkill(skill)}
+                            className="btn btn-xs btn-outline"
+                            title="Edit skill"
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            onClick={() => onDeleteSkill(level.id, skill.id)}
+                            className="btn btn-xs btn-danger"
+                            title="Delete skill"
+                            style={{ padding: '0.1rem 0.3rem', lineHeight: 1, minWidth: 'auto' }}
+                          >
+                            ✖
+                          </button>
+                        </div>
                       )}
                     </div>
-                    {canEdit && (
-                      <div className="skill-actions">
-                        <button 
-                          onClick={() => onEditSkill(skill)}
-                          className="btn btn-xs btn-outline"
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          onClick={() => onDeleteSkill(level.id, skill.id)}
-                          className="btn btn-xs btn-danger"
-                        >
-                          Delete
-                        </button>
-                      </div>
+                    {skill.description && (
+                      <div className="skill-description" style={{ marginTop: '0.25rem' }}>{skill.description}</div>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-muted">No skills defined</p>
+            )}
+            {canEdit && (
+              <div style={{ marginTop: '0.5rem' }}>
+                <button 
+                  onClick={onAddSkill}
+                  className="btn btn-sm btn-primary"
+                >
+                  + Add Skill
+                </button>
+              </div>
             )}
           </div>
 
@@ -733,15 +737,15 @@ const RoutineCard = ({
             <div className="routine-actions">
               <button 
                 onClick={onEditRoutine}
-                className="btn btn-xs btn-outline"
+                className="btn btn-outline"
               >
                 Edit
               </button>
               <button 
                 onClick={onDeleteRoutine}
-                className="btn btn-xs btn-danger"
+                className="btn btn-danger"
               >
-                Delete
+                ✖
               </button>
             </div>
           )}
@@ -776,8 +780,10 @@ const RoutineCard = ({
                       <button 
                         onClick={() => onRemoveSkillFromRoutine(levelId, routine.id, skill.id)}
                         className="btn btn-xs btn-danger"
+                        title="Remove from routine"
+                        style={{ padding: '0.1rem 0.3rem', lineHeight: 1, minWidth: 'auto' }}
                       >
-                        Remove
+                        ✖
                       </button>
                     )}
                   </div>

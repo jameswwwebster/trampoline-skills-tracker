@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import apiClient from '../utils/apiInterceptor';
 import { useAuth } from '../contexts/AuthContext';
+import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -25,6 +26,7 @@ const Users = () => {
   const [archiveReason, setArchiveReason] = useState('');
   const [deletingUser, setDeletingUser] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   const { user, isClubAdmin } = useAuth();
   const [searchParams] = useSearchParams();
@@ -845,7 +847,7 @@ const Users = () => {
                   )}
                   <td>
                     {userData.id !== user?.id && (
-                      <div style={{ display: 'flex', gap: '0.125rem', flexWrap: 'wrap' }}>
+                      <div>
                         {editingProfile === userData.id ? (
                           <>
                             <button
@@ -900,87 +902,38 @@ const Users = () => {
                         ) : editingRole === userData.id ? (
                           <span className="text-muted" style={{ fontSize: '0.75rem' }}>Editing role...</span>
                         ) : (
-                          <>
-                            {!userData.isArchived && (
-                              <>
-                                <button
-                                  onClick={() => startProfileEditing(userData)}
-                                  className="btn-link-subtle"
-                                  style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                                  title="Edit Profile"
-                                >
-                                  Edit
-                                </button>
+                          <div style={{ position: 'relative', display: 'inline-block' }}>
+                            <button
+                              onClick={() => setOpenMenuId(openMenuId === userData.id ? null : userData.id)}
+                              className="btn btn-sm btn-outline"
+                              title="More actions"
+                            >
+                              <EllipsisHorizontalIcon className="icon" />
+                            </button>
+                            {openMenuId === userData.id && (
+                              <div style={{ position: 'absolute', right: 0, marginTop: '0.25rem', zIndex: 10, background: '#fff', border: '1px solid #ddd', borderRadius: '4px', minWidth: '180px', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}>
+                                <button onClick={() => { startProfileEditing(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Edit Profile</button>
                                 {customFields.length > 0 && (
-                                  <button
-                                    onClick={() => startCustomFieldEditing(userData)}
-                                    className="btn-link-subtle"
-                                    style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                                    title="Edit Custom Fields"
-                                  >
-                                    Fields
-                                  </button>
+                                  <button onClick={() => { startCustomFieldEditing(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Edit Custom Fields</button>
                                 )}
                                 {!userData.email && (
-                                  <button
-                                    onClick={() => startEmailAdding(userData)}
-                                    className="btn-link-subtle btn-link-success"
-                                    style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                                    title="Add Email"
-                                  >
-                                    + Email
-                                  </button>
+                                  <button onClick={() => { startEmailAdding(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Add Email</button>
                                 )}
                                 {!userData.isGymnast && (
                                   <>
-                                    <button
-                                      onClick={() => startRoleEditing(userData)}
-                                      className="btn-link-subtle"
-                                      style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                                      title="Change Role"
-                                    >
-                                      Role
-                                    </button>
-                                    <button
-                                      onClick={() => handlePasswordReset(userData)}
-                                      className="btn-link-subtle btn-link-danger"
-                                      style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                                      title="Reset Password"
-                                    >
-                                      Reset
-                                    </button>
+                                    <button onClick={() => { startRoleEditing(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Change Role</button>
+                                    <button onClick={() => { handlePasswordReset(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Reset Password</button>
                                   </>
                                 )}
-                              </>
+                                {userData.isArchived ? (
+                                  <button onClick={() => { handleRestoreClick(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Restore User</button>
+                                ) : (
+                                  <button onClick={() => { handleArchiveClick(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Archive User</button>
+                                )}
+                                <button onClick={() => { handleDeleteClick(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem', color: '#b00020' }}>Delete User</button>
+                              </div>
                             )}
-                            {userData.isArchived ? (
-                              <button
-                                onClick={() => handleRestoreClick(userData)}
-                                className="btn-link-subtle btn-link-success"
-                                style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                                title="Restore User"
-                              >
-                                Restore
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleArchiveClick(userData)}
-                                className="btn-link-subtle btn-link-danger"
-                                style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                                title="Archive User"
-                              >
-                                Archive
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDeleteClick(userData)}
-                              className="btn-link-subtle btn-link-danger"
-                              style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                              title="Delete User"
-                            >
-                              Delete
-                            </button>
-                          </>
+                          </div>
                         )}
                       </div>
                     )}
@@ -1088,78 +1041,37 @@ const Users = () => {
                         </button>
                       </div>
                     ) : userData.id !== user?.id ? (
-                      <div style={{ display: 'flex', gap: '0.125rem', flexWrap: 'wrap' }}>
-                        {!userData.isArchived && (
-                          <>
-                            <button
-                              onClick={() => startProfileEditing(userData)}
-                              className="btn-link-subtle"
-                              style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                            >
-                              Edit
-                            </button>
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <button
+                          onClick={() => setOpenMenuId(openMenuId === userData.id ? null : userData.id)}
+                          className="btn btn-sm btn-outline"
+                          title="More actions"
+                        >
+                          <EllipsisHorizontalIcon className="icon" />
+                        </button>
+                        {openMenuId === userData.id && (
+                          <div style={{ position: 'absolute', right: 0, marginTop: '0.25rem', zIndex: 10, background: '#fff', border: '1px solid #ddd', borderRadius: '4px', minWidth: '180px', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}>
+                            <button onClick={() => { startProfileEditing(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Edit Profile</button>
                             {customFields.length > 0 && (
-                              <button
-                                onClick={() => startCustomFieldEditing(userData)}
-                                className="btn-link-subtle"
-                                style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                              >
-                                Fields
-                              </button>
+                              <button onClick={() => { startCustomFieldEditing(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Edit Custom Fields</button>
                             )}
                             {!userData.email && (
-                              <button
-                                onClick={() => startEmailAdding(userData)}
-                                className="btn-link-subtle btn-link-success"
-                                style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                              >
-                                + Email
-                              </button>
+                              <button onClick={() => { startEmailAdding(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Add Email</button>
                             )}
                             {!userData.isGymnast && (
                               <>
-                                <button
-                                  onClick={() => startRoleEditing(userData)}
-                                  className="btn-link-subtle"
-                                  style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                                >
-                                  Role
-                                </button>
-                                <button
-                                  onClick={() => handlePasswordReset(userData)}
-                                  className="btn-link-subtle btn-link-danger"
-                                  style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                                >
-                                  Reset
-                                </button>
+                                <button onClick={() => { startRoleEditing(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Change Role</button>
+                                <button onClick={() => { handlePasswordReset(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Reset Password</button>
                               </>
                             )}
-                          </>
+                            {userData.isArchived ? (
+                              <button onClick={() => { handleRestoreClick(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Restore User</button>
+                            ) : (
+                              <button onClick={() => { handleArchiveClick(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem' }}>Archive User</button>
+                            )}
+                            <button onClick={() => { handleDeleteClick(userData); setOpenMenuId(null); }} className="btn-link-subtle" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem', color: '#b00020' }}>Delete User</button>
+                          </div>
                         )}
-                        {userData.isArchived ? (
-                          <button
-                            onClick={() => handleRestoreClick(userData)}
-                            className="btn-link-subtle btn-link-success"
-                            style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                          >
-                            Restore
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleArchiveClick(userData)}
-                            className="btn-link-subtle btn-link-danger"
-                            style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                          >
-                            Archive
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDeleteClick(userData)}
-                          className="btn-link-subtle btn-link-danger"
-                          style={{ fontSize: '0.75rem', padding: '0.125rem 0.25rem' }}
-                        >
-                          Delete
-                        </button>
                       </div>
                     ) : null}
                   </div>

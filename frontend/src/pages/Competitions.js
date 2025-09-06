@@ -8,8 +8,7 @@ const CompetitionModal = ({ competition, onSave, onCancel }) => {
     code: competition?.code || '',
     description: competition?.description || '',
     category: competition?.category || '',
-    order: competition?.order || 1,
-    isActive: competition?.isActive ?? true
+    order: competition?.order || 1
   });
 
   const [errors, setErrors] = useState({});
@@ -186,18 +185,7 @@ const CompetitionModal = ({ competition, onSave, onCancel }) => {
             {errors.order && <span className="error">{errors.order}</span>}
           </div>
 
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                name="isActive"
-                checked={formData.isActive}
-                onChange={handleChange}
-              />
-              <span className="checkbox-custom"></span>
-              Active
-            </label>
-          </div>
+          {/* Active toggle removed for simplicity */}
 
           {errors.submit && <div className="error">{errors.submit}</div>}
         </form>
@@ -317,6 +305,10 @@ const CategoryModal = ({ category, action, onSave, onCancel }) => {
 };
 
 const CompetitionCard = ({ competition, onEdit, onDelete }) => {
+  const deleteDisabled = competition.levelsCount > 0;
+  const deleteTitle = deleteDisabled
+    ? `Cannot delete: associated with ${competition.levelsCount} level${competition.levelsCount === 1 ? '' : 's'}`
+    : 'Delete competition';
   return (
     <div className="competition-card">
       <div className="competition-header">
@@ -334,14 +326,16 @@ const CompetitionCard = ({ competition, onEdit, onDelete }) => {
             </button>
           )}
           {onDelete && (
-            <button 
-              className="btn btn-xs btn-danger" 
-              onClick={() => onDelete(competition)}
-              disabled={competition.levelsCount > 0}
-            >
-              <TrashIcon className="icon" />
-              Delete
-            </button>
+            <span title={deleteTitle}>
+              <button 
+                className="btn btn-xs btn-danger" 
+                onClick={() => onDelete(competition)}
+                disabled={deleteDisabled}
+              >
+                <TrashIcon className="icon" />
+                Delete
+              </button>
+            </span>
           )}
         </div>
       </div>
@@ -360,6 +354,7 @@ const Competitions = () => {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categoryAction, setCategoryAction] = useState(null); // 'edit' or 'delete'
+  const [initializedCollapse, setInitializedCollapse] = useState(false);
 
   useEffect(() => {
     fetchCompetitions();
@@ -377,6 +372,12 @@ const Competitions = () => {
       if (response.ok) {
         const data = await response.json();
         setCompetitions(data);
+        // Collapse all categories by default on first load
+        if (!initializedCollapse) {
+          const cats = new Set(data.map(c => c.category));
+          setCollapsedCategories(cats);
+          setInitializedCollapse(true);
+        }
       } else {
         setError('Failed to fetch competitions');
       }
@@ -586,12 +587,11 @@ const Competitions = () => {
                   <ChevronDownIcon className="icon" />
                 }
                 <h2>{category.replace(/_/g, ' ')}</h2>
-                <span className="category-count">({groupedCompetitions[category].length})</span>
               </div>
               {canEditCompetitions && (
                 <div className="category-actions">
                   <button 
-                    className="btn btn-xs btn-outline"
+                    className="btn btn-xs btn-secondary"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEditCategory(category);
@@ -600,17 +600,18 @@ const Competitions = () => {
                   >
                     <PencilIcon className="icon" />
                   </button>
-                  <button 
-                    className="btn btn-xs btn-outline btn-danger"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteCategory(category);
-                    }}
-                    title="Delete category"
-                    disabled={groupedCompetitions[category].length > 0}
-                  >
-                    <TrashIcon className="icon" />
-                  </button>
+                  <span title={groupedCompetitions[category].length > 0 ? 'Cannot delete categories that contain competitions' : 'Delete category'}>
+                    <button 
+                      className="btn btn-xs btn-outline btn-danger"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCategory(category);
+                      }}
+                      disabled={groupedCompetitions[category].length > 0}
+                    >
+                      <TrashIcon className="icon" />
+                    </button>
+                  </span>
                 </div>
               )}
             </div>

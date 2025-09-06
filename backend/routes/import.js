@@ -221,7 +221,8 @@ router.post('/preview', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFil
 
     const stream = fs.createReadStream(req.file.path)
       .pipe(csv({
-        mapHeaders: ({ header }) => header.trim()
+        mapHeaders: ({ header }) => header.trim(),
+        mapValues: ({ header, value }) => typeof value === 'string' ? value.trim() : value
       }));
 
     for await (const row of stream) {
@@ -242,7 +243,11 @@ router.post('/preview', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFil
         // Extract custom field values
         const customFieldValues = {};
         customFields.forEach(field => {
-          const value = row[field.name] || row[field.key];
+          // Case-insensitive matching for custom field headers
+          const keys = Object.keys(row);
+          const nameKey = keys.find(k => k.toLowerCase() === String(field.name).toLowerCase());
+          const keyKey = keys.find(k => k.toLowerCase() === String(field.key).toLowerCase());
+          const value = (nameKey && row[nameKey]) || (keyKey && row[keyKey]);
           if (value !== undefined && value !== null && value.toString().trim() !== '') {
             customFieldValues[field.id] = value.toString().trim();
           }
@@ -389,7 +394,8 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
 
     const stream = fs.createReadStream(req.file.path)
       .pipe(csv({
-        mapHeaders: ({ header }) => header.trim()
+        mapHeaders: ({ header }) => header.trim(),
+        mapValues: ({ header, value }) => typeof value === 'string' ? value.trim() : value
       }));
 
     for await (const row of stream) {
@@ -410,7 +416,11 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
         // Extract custom field values
         const customFieldValues = {};
         customFields.forEach(field => {
-          const value = row[field.name] || row[field.key];
+          // Case-insensitive matching for custom field headers
+          const keys = Object.keys(row);
+          const nameKey = keys.find(k => k.toLowerCase() === String(field.name).toLowerCase());
+          const keyKey = keys.find(k => k.toLowerCase() === String(field.key).toLowerCase());
+          const value = (nameKey && row[nameKey]) || (keyKey && row[keyKey]);
           if (value !== undefined && value !== null && value.toString().trim() !== '') {
             customFieldValues[field.id] = value.toString().trim();
           }

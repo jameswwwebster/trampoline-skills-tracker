@@ -390,8 +390,14 @@ async function main() {
   for (const levelData of skillsData.levels) {
     console.log(`  Creating Level ${levelData.number}: ${levelData.name}`);
     
-    const level = await prisma.level.create({
-      data: {
+    const level = await prisma.level.upsert({
+      where: { identifier: levelData.number.toString() },
+      update: {
+        name: levelData.name,
+        description: levelData.description,
+        type: 'SEQUENTIAL' // Update type for sequential levels
+      },
+      create: {
         number: levelData.number,
         identifier: levelData.number.toString(),
         name: levelData.name,
