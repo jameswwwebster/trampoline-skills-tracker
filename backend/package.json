@@ -30,8 +30,6 @@
     "nodemailer": "^7.0.4",
     "pdf-parse": "^1.1.1",
     "sharp": "^0.33.5"
-    ,
-    "canvas": "^2.11.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",
