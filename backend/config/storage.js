@@ -2,6 +2,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 
+// Base storage root (supports Render Disk mounted at /data)
+const STORAGE_ROOT = process.env.STORAGE_ROOT || path.join(__dirname, '..');
+
 /**
  * Storage configuration factory
  * Switches between local and cloud storage based on environment
@@ -17,7 +20,7 @@ function createStorageConfig() {
 function createLocalStorage() {
   return multer.diskStorage({
     destination: async (req, file, cb) => {
-      const uploadDir = path.join(__dirname, '..', 'uploads', 'certificate-templates');
+      const uploadDir = path.join(STORAGE_ROOT, 'uploads', 'certificate-templates');
       try {
         await fs.mkdir(uploadDir, { recursive: true });
         cb(null, uploadDir);

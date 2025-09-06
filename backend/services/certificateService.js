@@ -23,8 +23,9 @@ class CertificateService {
   constructor() {
     this.prisma = new PrismaClient();
     this.fontPath = path.join(__dirname, '../fonts/LilitaOne-Regular.ttf');
-    this.certificatesDir = path.join(__dirname, '../generated-certificates');
-    this.cacheDir = path.join(__dirname, '../certificate-cache');
+    const storageRoot = process.env.STORAGE_ROOT || path.join(__dirname, '..');
+    this.certificatesDir = path.join(storageRoot, 'generated-certificates');
+    this.cacheDir = path.join(storageRoot, 'certificate-cache');
     this.maxCacheSize = 100 * 1024 * 1024; // 100MB cache limit
     this.maxCacheAge = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
     

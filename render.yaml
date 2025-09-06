@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: trampoline-backend
+    env: node
+    plan: starter
+    buildCommand: npm ci --prefix backend && (cd backend && npx prisma generate)
+    startCommand: npm start --prefix backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: STORAGE_ROOT
+        value: /data
+      - key: DATABASE_URL
+        fromDatabase: trampoline-db
+        name: DATABASE_URL
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+    disks:
+      - name: data
+        mountPath: /data
+        sizeGB: 10
+    healthCheckPath: /api/health
+
+  - type: static
+    name: trampoline-frontend
+    buildCommand: npm ci --prefix frontend && npm run build --prefix frontend
+    staticPublishPath: frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        fromService:
+          type: web
+          name: trampoline-backend
+          property: url
+
+databases:
+  - name: trampoline-db
+    plan: starter
