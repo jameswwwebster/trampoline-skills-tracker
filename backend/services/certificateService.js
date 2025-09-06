@@ -58,6 +58,11 @@ class CertificateService {
   }
 
   async generateCertificate(certificate, templatePath) {
+    console.log(`🔍 Certificate generation for ${certificate.id}:`);
+    console.log(`   Canvas available: ${canvasAvailable}`);
+    console.log(`   Sharp available: ${sharpAvailable}`);
+    console.log(`   Template path: ${templatePath}`);
+    
     // Check if Canvas is available
     if (!canvasAvailable && !sharpAvailable) {
       console.log('⚠️  No rendering engine available - returning basic placeholder');
@@ -91,8 +96,10 @@ class CertificateService {
       // Check if template file exists
       try {
         await fs.access(templatePath);
+        console.log(`✅ Template file found: ${templatePath}`);
       } catch (fileError) {
         console.log(`⚠️ Template file not found: ${templatePath}, falling back to basic certificate`);
+        console.log(`   Error: ${fileError.message}`);
         return await this.generateBasicCertificate(certificate);
       }
       
