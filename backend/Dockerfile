@@ -30,6 +30,9 @@ COPY . .
 # Rebuild canvas native module to ensure it's properly compiled
 RUN npm rebuild canvas --verbose
 
+# Verify canvas installation
+RUN node -e "try { const canvas = require('canvas'); console.log('Canvas version:', canvas.version); } catch(e) { console.error('Canvas verification failed:', e.message); process.exit(1); }"
+
 # Build prisma client
 RUN npx prisma generate
 
