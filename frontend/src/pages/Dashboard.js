@@ -311,6 +311,25 @@ const Dashboard = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Code of the Day */}
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title">📅 Code of the Day</h3>
+                    <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
+                      Generate a daily access code for gymnasts to view their progress
+                    </p>
+                  </div>
+                  <div className="card-body">
+                    <button
+                      onClick={handleGetCodeOfDay}
+                      className="btn btn-primary"
+                      style={{ width: '100%' }}
+                    >
+                      📅 Generate Code of the Day
+                    </button>
+                  </div>
+                </div>
               </>
             ) : null}
           </>
