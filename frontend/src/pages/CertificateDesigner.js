@@ -647,7 +647,7 @@ const CertificateDesigner = () => {
   return (
     <div className={`certificate-designer ${isDragging ? 'dragging' : ''}`}>
       <div className="designer-header">
-        <h1>Certificate Designer</h1>
+        <h1>Certificate Setup</h1>
         <div className="header-actions">
           <button 
             onClick={() => setShowTemplateUpload(true)}
@@ -665,17 +665,6 @@ const CertificateDesigner = () => {
         </div>
       </div>
 
-      {/* Add notification about temporary file storage */}
-      <div className="storage-notification">
-        <div className="notification-content">
-          <span className="notification-icon">ℹ️</span>
-          <span className="notification-text">
-            <strong>Note:</strong> Template files are stored temporarily and may be lost during server restarts. 
-            If you see "file not found" errors, please re-upload your templates. 
-            We're working on implementing permanent cloud storage.
-          </span>
-        </div>
-      </div>
 
       {/* Error display */}
       {error && (

@@ -3,11 +3,36 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useBranding } from '../contexts/BrandingContext';
 
+// Mobile nested menu component
+const MobileNestedMenu = ({ title, children, isOpen, onToggle }) => {
+  return (
+    <div className="mobile-nav-nested">
+      <button 
+        className="mobile-nav-nested-toggle"
+        onClick={onToggle}
+      >
+        <span>{title}</span>
+        <span className={`mobile-nav-nested-arrow ${isOpen ? 'open' : ''}`}>▼</span>
+      </button>
+      {isOpen && (
+        <div className="mobile-nav-nested-content">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Layout = () => {
   const { user, logout, canManageGymnasts, isClubAdmin, canReadCompetitions, needsProgressNavigation, isChild, isParent, canEditLevels } = useAuth();
   const { branding } = useBranding();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [openNestedMenus, setOpenNestedMenus] = useState({
+    certificates: false,
+    configuration: false,
+    administration: false
+  });
 
   // Dynamic navigation text based on user type
   const getProgressNavText = () => {
@@ -30,6 +55,13 @@ const Layout = () => {
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
+  };
+
+  const toggleNestedMenu = (menuName) => {
+    setOpenNestedMenus(prev => ({
+      ...prev,
+      [menuName]: !prev[menuName]
+    }));
   };
 
   // Close mobile menu when route changes
@@ -100,7 +132,7 @@ const Layout = () => {
                 </Link>
                 {isClubAdmin && (
                   <Link to="/certificate-designer" className={isActive('/certificate-designer')}>
-                    Certificate Designer
+                    Certificate Setup
                   </Link>
                 )}
               </div>
@@ -229,22 +261,28 @@ const Layout = () => {
           )}
           
           {canManageGymnasts && (
-            <div className="mobile-nav-section">
-              <div className="mobile-nav-section-title">Certificates</div>
+            <MobileNestedMenu 
+              title="Certificates" 
+              isOpen={openNestedMenus.certificates}
+              onToggle={() => toggleNestedMenu('certificates')}
+            >
               <Link to="/certificates" className={isActive('/certificates')}>
                 Certificate Management
               </Link>
               {isClubAdmin && (
                 <Link to="/certificate-designer" className={isActive('/certificate-designer')}>
-                  Certificate Designer
+                  Certificate Setup
                 </Link>
               )}
-            </div>
+            </MobileNestedMenu>
           )}
           
           {canEditLevels && (
-            <div className="mobile-nav-section">
-              <div className="mobile-nav-section-title">Configuration</div>
+            <MobileNestedMenu 
+              title="Configuration" 
+              isOpen={openNestedMenus.configuration}
+              onToggle={() => toggleNestedMenu('configuration')}
+            >
               <Link to="/levels" className={isActive('/levels')}>
                 Levels & Skills
               </Link>
@@ -253,34 +291,37 @@ const Layout = () => {
                   Competition Categories
                 </Link>
               )}
-            </div>
+            </MobileNestedMenu>
           )}
 
           {isClubAdmin && (
-              <div className="mobile-nav-section">
-                <div className="mobile-nav-section-title">Administration</div>
-                <Link to="/club-settings" className={isActive('/club-settings')}>
-                  Club Settings
-                </Link>
-                <Link to="/branding" className={isActive('/branding')}>
-                  Club Branding
-                </Link>
-                <Link to="/custom-fields" className={isActive('/custom-fields')}>
-                  Custom Fields
-                </Link>
-                <Link to="/users" className={isActive('/users')}>
-                  Manage Users
-                </Link>
-                <Link to="/invites" className={isActive('/invites')}>
-                  Invitations
-                </Link>
-                <Link to="/parent-requests" className={isActive('/parent-requests')}>
-                  Parent Requests
-                </Link>
-                <Link to="/import" className={isActive('/import')}>
-                  Import Gymnasts
-                </Link>
-              </div>
+            <MobileNestedMenu 
+              title="Administration" 
+              isOpen={openNestedMenus.administration}
+              onToggle={() => toggleNestedMenu('administration')}
+            >
+              <Link to="/club-settings" className={isActive('/club-settings')}>
+                Club Settings
+              </Link>
+              <Link to="/branding" className={isActive('/branding')}>
+                Club Branding
+              </Link>
+              <Link to="/custom-fields" className={isActive('/custom-fields')}>
+                Custom Fields
+              </Link>
+              <Link to="/users" className={isActive('/users')}>
+                Manage Users
+              </Link>
+              <Link to="/invites" className={isActive('/invites')}>
+                Invitations
+              </Link>
+              <Link to="/parent-requests" className={isActive('/parent-requests')}>
+                Parent Requests
+              </Link>
+              <Link to="/import" className={isActive('/import')}>
+                Import Gymnasts
+              </Link>
+            </MobileNestedMenu>
           )}
         </div>
 

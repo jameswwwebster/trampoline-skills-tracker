@@ -66,7 +66,9 @@ const Certificates = () => {
       // Show success message
       const certificate = certificates.find(c => c.id === certificateId);
       const gymnastName = certificate ? `${certificate.gymnast?.firstName} ${certificate.gymnast?.lastName}` : 'gymnast';
-      const statusText = status === 'PRINTED' ? 'marked as printed' : 'marked as delivered';
+      const statusText = status === 'PRINTED' ? 'marked as printed' : 
+                        status === 'DELIVERED' ? 'marked as delivered' : 
+                        status === 'AWARDED' ? 'reverted to awarded' : 'updated';
       setSuccess(`✅ Certificate ${statusText} for ${gymnastName}!`);
       
       // Clear success message after 4 seconds
@@ -74,6 +76,34 @@ const Certificates = () => {
     } catch (err) {
 
       setError(err.response?.data?.error || err.message || 'Failed to update certificate status');
+    }
+  };
+
+  const handleRevertCertificate = async (certificateId) => {
+    if (window.confirm('Are you sure you want to revert this certificate to the awarded state? This will undo any printed/delivered status.')) {
+      await handleStatusUpdate(certificateId, 'AWARDED');
+    }
+  };
+
+  const handleDeleteCertificate = async (certificateId) => {
+    const certificate = certificates.find(c => c.id === certificateId);
+    const gymnastName = certificate ? `${certificate.gymnast?.firstName} ${certificate.gymnast?.lastName}` : 'gymnast';
+    
+    if (window.confirm(`Are you sure you want to delete this certificate for ${gymnastName}? This action cannot be undone.`)) {
+      try {
+        setError(null);
+        setSuccess(null);
+        
+        await axios.delete(`/api/certificates/${certificateId}`);
+        
+        // Refresh certificates
+        await fetchData();
+        
+        setSuccess(`✅ Certificate deleted for ${gymnastName}!`);
+        setTimeout(() => setSuccess(null), 4000);
+      } catch (err) {
+        setError(err.response?.data?.error || err.message || 'Failed to delete certificate');
+      }
     }
   };
 
@@ -326,12 +356,7 @@ const Certificates = () => {
                             <strong>{certificate.gymnast.firstName} {certificate.gymnast.lastName}</strong>
                           </td>
                           <td>
-                            <span className="badge badge-primary">
-                              {certificate.level.identifier}
-                            </span>
-                            <small className="text-muted d-block">
-                              {certificate.level.name}
-                            </small>
+                            {certificate.level.identifier}: {certificate.level.name}
                           </td>
                           <td>{getStatusBadge(certificate.status)}</td>
                           <td>
@@ -378,6 +403,22 @@ const Certificates = () => {
                                   ✅ Deliver
                                 </button>
                               )}
+                              {(certificate.status === 'PRINTED' || certificate.status === 'DELIVERED') && (
+                                <button
+                                  className="btn btn-warning"
+                                  onClick={() => handleRevertCertificate(certificate.id)}
+                                  title="Revert to Awarded"
+                                >
+                                  ↩️ Revert
+                                </button>
+                              )}
+                              <button
+                                className="btn btn-danger"
+                                onClick={() => handleDeleteCertificate(certificate.id)}
+                                title="Delete Certificate"
+                              >
+                                🗑️ Delete
+                              </button>
                             </div>
                           </td>
                         </tr>

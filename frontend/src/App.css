@@ -531,6 +531,57 @@ p, li, td, th {
   font-weight: 500;
 }
 
+/* Mobile nested menu styles */
+.mobile-nav-nested {
+  margin-bottom: 0.5rem;
+}
+
+.mobile-nav-nested-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  color: white;
+  padding: 1rem;
+  text-align: left;
+  font-size: 1.1rem;
+  font-family: var(--font-family);
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.mobile-nav-nested-toggle:hover {
+  background-color: rgba(255,255,255,0.1);
+}
+
+.mobile-nav-nested-arrow {
+  transition: transform 0.2s ease;
+  font-size: 0.8rem;
+}
+
+.mobile-nav-nested-arrow.open {
+  transform: rotate(180deg);
+}
+
+.mobile-nav-nested-content {
+  padding-left: 1rem;
+  margin-top: 0.25rem;
+}
+
+.mobile-nav-nested-content .nav-link {
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-family: var(--font-family);
+  font-weight: 500;
+  display: block;
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
+}
+
 /* Main content */
 .main-content {
   flex: 1;
