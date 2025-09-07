@@ -1370,9 +1370,6 @@ textarea.form-control {
     background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
   }
 
-  .skill-tracker-card.in-session .mobile-card-header {
-    background: rgba(0, 123, 255, 0.1);
-  }
 
   /* Prominent Session Filter */
   .session-filter-prominent {
