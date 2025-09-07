@@ -17,6 +17,8 @@ RUN apt-get update && apt-get install -y \
   librsvg2-dev \
   fonts-dejavu-core \
   fontconfig \
+  libpixman-1-dev \
+  libpixman-1-0 \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

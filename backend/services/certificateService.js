@@ -213,7 +213,14 @@ class CertificateService {
       const referenceWidth = 1000;
       const scaleFactor = width / referenceWidth;
       const scaledFontSize = Math.round((field.fontSize || 24) * scaleFactor);
-      const fontFamily = field.fontFamily === 'LilitaOne' ? 'Lilita One, Arial, sans-serif' : (field.fontFamily || defaultFont);
+      let fontFamily = field.fontFamily || defaultFont;
+      
+      // Map custom fonts to web-safe alternatives for SVG
+      if (field.fontFamily === 'LilitaOne' || field.fontFamily === 'Lilita One') {
+        fontFamily = 'Arial, sans-serif'; // Fallback since SVG can't load custom fonts
+      } else if (field.fontFamily && !['Arial', 'Helvetica', 'Times', 'Courier', 'serif', 'sans-serif', 'monospace'].includes(field.fontFamily)) {
+        fontFamily = 'Arial, sans-serif'; // Fallback for any custom fonts
+      }
       const fontWeight = field.fontWeight || 'normal';
       const fill = field.fontColor || '#000000';
       const textAnchor = (field.textAlign || 'center') === 'center' ? 'middle' : (field.textAlign === 'right' ? 'end' : 'start');
