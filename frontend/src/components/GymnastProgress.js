@@ -497,120 +497,352 @@ const GymnastProgress = ({ gymnastId }) => {
             )}
           </div>
 
-          {/* Desktop Coaching Tabs */}
-          <div className="desktop-coaching-tabs">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('progress-history')}
-              className={`tab-btn ${activeTab === 'progress-history' ? 'active' : ''}`}
-            >
-              Progress History
-            </button>
-            <button
-              onClick={() => setActiveTab('coach-notes')}
-              className={`tab-btn ${activeTab === 'coach-notes' ? 'active' : ''}`}
-            >
-              Coach Notes
-            </button>
-            <button
-              onClick={() => setActiveTab('edit-gymnast')}
-              className={`tab-btn ${activeTab === 'edit-gymnast' ? 'active' : ''}`}
-            >
-              Edit Gymnast
-            </button>
-            <button
-              onClick={() => setActiveTab('certificates')}
-              className={`tab-btn ${activeTab === 'certificates' ? 'active' : ''}`}
-            >
-              🏆 Certificates
-            </button>
-          </div>
 
-          <div className="coaching-content">
-            {activeTab === 'progress-history' && (
-              <div className="progress-history-section">
-                <h4>Progress History</h4>
-                <ProgressHistory gymnastId={gymnastId} />
-              </div>
-            )}
-
-            {activeTab === 'coach-notes' && (
-              <div className="coach-notes-section">
-                <CoachNotes 
-                  gymnast={gymnast} 
-                  onNotesUpdate={(updatedGymnast) => {
-                    setGymnast(updatedGymnast);
-                  }}
-                />
-              </div>
-            )}
-
-            {activeTab === 'edit-gymnast' && (
-              <div className="edit-gymnast-section">
-                <EditGymnastForm
-                  gymnast={gymnast}
-                  onSuccess={handleEditGymnastSuccess}
-                  onCancel={() => setActiveTab('overview')}
-                />
-              </div>
-            )}
-
-            {activeTab === 'certificates' && (
-              <div className="certificates-section">
-                <CertificateDisplay 
-                  gymnastId={gymnastId} 
-                  showActions={canCoach}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Desktop Progress Summary */}
-      <div className="progress-summary desktop-progress-summary">
-        <div className="progress-header">
-          <h3>{gymnast.firstName} {gymnast.lastName}'s Progress</h3>
-          {canCoach && (
-            <div className="coaching-controls">
+      {/* Desktop Layout */}
+      <div className="desktop-layout">
+        {/* Desktop Coaching Interface */}
+        {coachingMode && canCoach && (
+          <div className="coaching-interface">
+            {/* Desktop Coaching Tabs */}
+            <div className="desktop-coaching-tabs">
               <button
-                onClick={() => setCoachingMode(!coachingMode)}
-                className={`btn ${coachingMode ? 'btn-success' : 'btn-outline'}`}
+                onClick={() => setActiveTab('overview')}
+                className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
               >
-                {coachingMode ? 'Exit Coaching Mode' : 'Enter Coaching Mode'}
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab('progress-history')}
+                className={`tab-btn ${activeTab === 'progress-history' ? 'active' : ''}`}
+              >
+                Progress History
+              </button>
+              <button
+                onClick={() => setActiveTab('coach-notes')}
+                className={`tab-btn ${activeTab === 'coach-notes' ? 'active' : ''}`}
+              >
+                Coach Notes
+              </button>
+              <button
+                onClick={() => setActiveTab('edit-gymnast')}
+                className={`tab-btn ${activeTab === 'edit-gymnast' ? 'active' : ''}`}
+              >
+                Edit Gymnast
+              </button>
+              <button
+                onClick={() => setActiveTab('certificates')}
+                className={`tab-btn ${activeTab === 'certificates' ? 'active' : ''}`}
+              >
+                🏆 Certificates
               </button>
             </div>
-          )}
-        </div>
-        
-        {/* Current Level Status */}
-        <div className="current-level">
-          {currentLevel ? (
-            <div 
-              onClick={() => scrollToLevel(currentLevel.id)}
-              style={{ cursor: 'pointer' }}
-              title="Click to scroll to this level"
-            >
-              <span className="coaching-label">Current Level:</span>
-              <span className="level-badge clickable">{currentLevel.name}</span>
+
+            <div className="coaching-content">
+              {activeTab === 'progress-history' && (
+                <div className="progress-history-section">
+                  <h4>Progress History</h4>
+                  <ProgressHistory gymnastId={gymnastId} />
+                </div>
+              )}
+
+              {activeTab === 'coach-notes' && (
+                <div className="coach-notes-section">
+                  <CoachNotes 
+                    gymnast={gymnast} 
+                    onNotesUpdate={(updatedGymnast) => {
+                      setGymnast(updatedGymnast);
+                    }}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'edit-gymnast' && (
+                <div className="edit-gymnast-section">
+                  <EditGymnastForm
+                    gymnast={gymnast}
+                    onSuccess={handleEditGymnastSuccess}
+                    onCancel={() => setActiveTab('overview')}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'certificates' && (
+                <div className="certificates-section">
+                  <CertificateDisplay 
+                    gymnastId={gymnastId} 
+                    showActions={canCoach}
+                  />
+                </div>
+              )}
             </div>
-          ) : (
-            <span className="badge badge-secondary">Not started</span>
-          )}
+          </div>
+        )}
+
+        {/* Desktop Progress Summary */}
+        <div className="progress-summary desktop-progress-summary">
+          <div className="progress-header">
+            <h3>{gymnast.firstName} {gymnast.lastName}'s Progress</h3>
+            {canCoach && (
+              <div className="coaching-controls">
+                <button
+                  onClick={() => setCoachingMode(!coachingMode)}
+                  className={`btn ${coachingMode ? 'btn-success' : 'btn-outline'}`}
+                >
+                  {coachingMode ? 'Exit Coaching Mode' : 'Enter Coaching Mode'}
+                </button>
+              </div>
+            )}
+          </div>
           
-          {workingLevel && (
-            <div style={{ marginTop: '0.5rem' }}>
-              <span className="badge badge-warning">
-                Working on Level {workingLevel.identifier}: {workingLevel.name}
-              </span>
-            </div>
-          )}
+          {/* Current Level Status */}
+          <div className="current-level">
+            {currentLevel ? (
+              <div 
+                onClick={() => scrollToLevel(currentLevel.id)}
+                style={{ cursor: 'pointer' }}
+                title="Click to scroll to this level"
+              >
+                <span className="coaching-label">Current Level:</span>
+                <span className="level-badge clickable">{currentLevel.name}</span>
+              </div>
+            ) : (
+              <span className="badge badge-secondary">Not started</span>
+            )}
+            
+            {workingLevel && (
+              <div style={{ marginTop: '0.5rem' }}>
+                <span className="badge badge-warning">
+                  Working on Level {workingLevel.identifier}: {workingLevel.name}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Desktop Level Progress Overview */}
+        {(!coachingMode || activeTab === 'overview') && (
+          <div className="card desktop-level-progress">
+            <div className="card-header">
+              <h4 className="card-title">Level Progress</h4>
+              <div className="collapse-info">
+                <small className="text-muted">
+                  💡 Levels with 0% or 100% progress are collapsed by default. Click ▼/▲ to expand/collapse.
+                </small>
+              </div>
+            </div>
+            <div className="level-progress-list">
+              {levelProgress.map(({ level, completedSkills, totalSkills, completedCount, isCompleted, progressPercentage }) => {
+                // Get routine progress for this level
+                const levelRoutines = level.routines || [];
+                const routineProgress = gymnast.routineProgress?.filter(rp => 
+                  levelRoutines.some(lr => lr.id === rp.routine.id)
+                ) || [];
+
+                const isCollapsed = collapsedLevels.has(level.id);
+                const levelClass = `level-progress-item ${isCompleted ? 'completed' : ''} ${isSideTrack(level.identifier) ? 'side-track-level' : ''}`;
+
+                return (
+                  <div key={level.id} id={`level-${level.id}`} className={levelClass}>
+                    <div className="level-header">
+                      <div className="level-info">
+                        <div className="level-title-row">
+                          <h5>
+                            {level.identifier} - {level.name}
+                            {isSideTrack(level.identifier) && (
+                              <span className="side-track-badge">Side-track</span>
+                            )}
+                          </h5>
+                        </div>
+                        <div className="level-stats">
+                          <span className="progress-text">
+                            {completedCount} of {totalSkills} skills completed
+                          </span>
+                          {isCompleted && (
+                            <span className="badge badge-success">Level Completed</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="progress-bar-container">
+                        <div className="progress-bar">
+                          <div 
+                            className="progress-fill" 
+                            style={{ width: `${progressPercentage}%` }}
+                          />
+                        </div>
+                        <span className="progress-percentage">{Math.round(progressPercentage)}%</span>
+
+                        {canCoach && coachingMode && !isCompleted && totalSkills > 0 && (
+                          <button
+                            onClick={() => handleCompleteLevel(level.id)}
+                            className="btn btn-xs btn-success"
+                            title="Complete all skills in this level"
+                            style={{ marginRight: '5px' }}
+                          >
+                            Complete Level
+                          </button>
+                        )}
+
+                        <button
+                            onClick={() => toggleLevelCollapse(level.id)}
+                            className="btn btn-xs btn-outline collapse-toggle"
+                            title={isCollapsed ? 'Expand level' : 'Collapse level'}
+                          >
+                            {isCollapsed ? '▼' : '▲'}
+                          </button>
+                      </div>
+                    </div>
+                    
+                    {!isCollapsed && (
+                      <div className="level-content">
+                        {level.competitions && level.competitions.length > 0 && (
+                          <div className="competition-levels">
+                            {level.competitions.map((competition, index) => (
+                              <span key={index} className="competition-badge">
+                                {competition.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {level.skills && level.skills.length > 0 && (
+                          <div className="level-skills">
+                            <h6>Skills:</h6>
+                            <div className="skills-grid">
+                              {level.skills.map(skill => {
+                                const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
+                                const currentStatus = skillProgress?.status || 'NOT_STARTED';
+                                
+                                return (
+                                  <div key={skill.id} className={`skill-card skill-${currentStatus.toLowerCase()}`}>
+                                    <div className="skill-name">{skill.name}</div>
+                                    {canCoach && coachingMode && (
+                                      <div className="skill-controls">
+                                        <button
+                                          onClick={() => handleSkillStatusChange(skill.id, 'NOT_STARTED')}
+                                          className={`btn btn-xs ${currentStatus === 'NOT_STARTED' ? 'btn-secondary' : 'btn-outline'}`}
+                                          title="Not Started"
+                                        >
+                                          ○
+                                        </button>
+                                        <button
+                                          onClick={() => handleSkillStatusChange(skill.id, 'IN_PROGRESS')}
+                                          className={`btn btn-xs ${currentStatus === 'IN_PROGRESS' ? 'btn-warning' : 'btn-outline'}`}
+                                          title="In Progress"
+                                        >
+                                          ◐
+                                        </button>
+                                        <button
+                                          onClick={() => handleSkillStatusChange(skill.id, 'COMPLETED')}
+                                          className={`btn btn-xs ${currentStatus === 'COMPLETED' ? 'btn-success' : 'btn-outline'}`}
+                                          title="Completed"
+                                        >
+                                          ✓
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Routine Section */}
+                        {levelRoutines.length > 0 && (
+                          <div className="level-routines">
+                            <h6>Routine:</h6>
+                            {levelRoutines.map(routine => {
+                              const routineProgressData = routineProgress.find(rp => rp.routine.id === routine.id);
+                              const routineStatus = routineProgressData?.status || 'NOT_STARTED';
+                              const routineSkills = routine.routineSkills || [];
+                              
+                              return (
+                                <div key={routine.id} className={`routine-card routine-${routineStatus.toLowerCase()}`}>
+                                  <div className="routine-header">
+                                    <div className="routine-info">
+                                      <div className="routine-name">
+                                        {routine.name || `Level ${level.identifier} Routine`}
+                                      </div>
+                                      <div className="routine-status">
+                                        {routineStatus === 'COMPLETED' && (
+                                          <span className="badge badge-success">Routine Completed</span>
+                                        )}
+                                        {routineStatus === 'NOT_STARTED' && (
+                                          <span className="badge badge-secondary">Not Started</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {canCoach && coachingMode && (
+                                      <div className="routine-controls">
+                                        <button
+                                          onClick={() => handleRoutineStatusChange(routine.id, 'NOT_STARTED')}
+                                          className={`btn btn-sm ${routineStatus === 'NOT_STARTED' ? 'btn-secondary' : 'btn-outline'}`}
+                                          title="Not Started"
+                                        >
+                                          Not Started
+                                        </button>
+                                        <button
+                                          onClick={() => handleRoutineStatusChange(routine.id, 'COMPLETED')}
+                                          className={`btn btn-sm ${routineStatus === 'COMPLETED' ? 'btn-success' : 'btn-outline'}`}
+                                          title="Completed"
+                                        >
+                                          Completed
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {routineSkills.length > 0 && (
+                                    <div className="routine-skills">
+                                      <h6>Required Skills:</h6>
+                                      <div className="routine-skills-list">
+                                        {routineSkills.map(routineSkill => (
+                                          <div key={routineSkill.id} className="routine-skill-item">
+                                            <span className="routine-skill-name">{routineSkill.skill.name}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Certificates Section - Show for non-coaches */}
+        {!coachingMode && (
+          <div className="card">
+            <CertificateDisplay 
+              gymnastId={gymnastId} 
+              showActions={false}
+            />
+          </div>
+        )}
+
+        {/* Guardians */}
+        {gymnast.guardians && gymnast.guardians.length > 0 && (
+          <div className="card">
+            <div className="card-header">
+              <h4 className="card-title">Guardians</h4>
+            </div>
+            <div className="guardian-list">
+              {gymnast.guardians.map(guardian => (
+                <div key={guardian.id} className="guardian-item">
+                  <strong>{guardian.firstName} {guardian.lastName}</strong>
+                  <span className="text-muted">{guardian.email}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile Layout */}
