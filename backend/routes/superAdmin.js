@@ -30,8 +30,7 @@ router.get('/clubs', async (req, res) => {
           select: {
             users: true,
             gymnasts: true,
-            levels: true,
-            competitions: true
+            levels: true
           }
         },
         users: {
@@ -99,15 +98,15 @@ router.get('/clubs/:clubId', async (req, res) => {
             }
           }
         },
-        competitions: {
-          include: {
-            _count: {
-              select: {
-                categories: true
-              }
-            }
-          }
-        }
+        // competitions: {
+        //   include: {
+        //     _count: {
+        //       select: {
+        //         categories: true
+        //       }
+        //     }
+        //   }
+        // }
       }
     });
 
@@ -371,7 +370,6 @@ router.get('/stats', async (req, res) => {
       activeGymnasts,
       totalLevels,
       totalSkills,
-      totalCompetitions,
       recentActivity
     ] = await Promise.all([
       prisma.club.count(),
@@ -380,7 +378,7 @@ router.get('/stats', async (req, res) => {
       prisma.gymnast.count({ where: { archived: false } }),
       prisma.level.count(),
       prisma.skill.count(),
-      prisma.competition.count(),
+      // prisma.competition.count(), // Temporarily disabled
       prisma.user.findMany({
         where: {
           lastLoginAt: {
@@ -406,7 +404,7 @@ router.get('/stats', async (req, res) => {
       activeGymnasts,
       totalLevels,
       totalSkills,
-      totalCompetitions,
+      // totalCompetitions, // Temporarily disabled
       recentActivity
     });
   } catch (error) {
