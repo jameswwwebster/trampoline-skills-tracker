@@ -83,26 +83,24 @@ const Layout = () => {
           )}
           
           {canManageGymnasts && (
+            <Link to="/gymnasts" className={isActive('/gymnasts')}>
+              Skill Tracking
+            </Link>
+          )}
+          
+          {canManageGymnasts && (
             <div className="nav-dropdown">
               <button className="nav-dropdown-toggle">
-                Gymnasts
+                Certificates
                 <span className="nav-dropdown-arrow">▼</span>
               </button>
               <div className="nav-dropdown-menu">
-                <Link to="/gymnasts" className={isActive('/gymnasts')}>
-                  Manage Gymnasts
-                </Link>
                 <Link to="/certificates" className={isActive('/certificates')}>
-                  Certificates
+                  Certificate Management
                 </Link>
                 {isClubAdmin && (
                   <Link to="/certificate-designer" className={isActive('/certificate-designer')}>
                     Certificate Designer
-                  </Link>
-                )}
-                {isClubAdmin && (
-                  <Link to="/import" className={isActive('/import')}>
-                    Import Gymnasts
                   </Link>
                 )}
               </div>
@@ -152,6 +150,9 @@ const Layout = () => {
                 </Link>
                 <Link to="/parent-requests" className={isActive('/parent-requests')}>
                   Parent Requests
+                </Link>
+                <Link to="/import" className={isActive('/import')}>
+                  Import Gymnasts
                 </Link>
               </div>
             </div>
@@ -222,27 +223,23 @@ const Layout = () => {
           )}
           
           {canManageGymnasts && (
-            <>
-              <div className="mobile-nav-section">
-                <div className="mobile-nav-section-title">Gymnasts</div>
-                <Link to="/gymnasts" className={isActive('/gymnasts')}>
-                  Manage Gymnasts
+            <Link to="/gymnasts" className={isActive('/gymnasts')}>
+              Skill Tracking
+            </Link>
+          )}
+          
+          {canManageGymnasts && (
+            <div className="mobile-nav-section">
+              <div className="mobile-nav-section-title">Certificates</div>
+              <Link to="/certificates" className={isActive('/certificates')}>
+                Certificate Management
+              </Link>
+              {isClubAdmin && (
+                <Link to="/certificate-designer" className={isActive('/certificate-designer')}>
+                  Certificate Designer
                 </Link>
-                <Link to="/certificates" className={isActive('/certificates')}>
-                  Certificates
-                </Link>
-                {isClubAdmin && (
-                  <Link to="/certificate-designer" className={isActive('/certificate-designer')}>
-                    Certificate Designer
-                  </Link>
-                )}
-                {isClubAdmin && (
-                  <Link to="/import" className={isActive('/import')}>
-                    Import Gymnasts
-                  </Link>
-                )}
-              </div>
-            </>
+              )}
+            </div>
           )}
           
           {canEditLevels && (
@@ -260,27 +257,30 @@ const Layout = () => {
           )}
 
           {isClubAdmin && (
-            <div className="mobile-nav-section">
-              <div className="mobile-nav-section-title">Administration</div>
-              <Link to="/club-settings" className={isActive('/club-settings')}>
-                Club Settings
-              </Link>
-              <Link to="/branding" className={isActive('/branding')}>
-                Club Branding
-              </Link>
-              <Link to="/custom-fields" className={isActive('/custom-fields')}>
-                Custom Fields
-              </Link>
-              <Link to="/users" className={isActive('/users')}>
-                Manage Users
-              </Link>
-              <Link to="/invites" className={isActive('/invites')}>
-                Invitations
-              </Link>
-              <Link to="/parent-requests" className={isActive('/parent-requests')}>
-                Parent Requests
-              </Link>
-            </div>
+              <div className="mobile-nav-section">
+                <div className="mobile-nav-section-title">Administration</div>
+                <Link to="/club-settings" className={isActive('/club-settings')}>
+                  Club Settings
+                </Link>
+                <Link to="/branding" className={isActive('/branding')}>
+                  Club Branding
+                </Link>
+                <Link to="/custom-fields" className={isActive('/custom-fields')}>
+                  Custom Fields
+                </Link>
+                <Link to="/users" className={isActive('/users')}>
+                  Manage Users
+                </Link>
+                <Link to="/invites" className={isActive('/invites')}>
+                  Invitations
+                </Link>
+                <Link to="/parent-requests" className={isActive('/parent-requests')}>
+                  Parent Requests
+                </Link>
+                <Link to="/import" className={isActive('/import')}>
+                  Import Gymnasts
+                </Link>
+              </div>
           )}
         </div>
 
