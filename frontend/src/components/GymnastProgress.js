@@ -583,15 +583,33 @@ const GymnastProgress = ({ gymnastId }) => {
             {/* Quick Stats */}
             <div className="quick-stats-mobile">
               <div className="stat-item">
-                <span className="stat-number">{levelProgress.filter(lp => lp.isCompleted).length}</span>
+                <span className="stat-number">{levels.filter(level => {
+                  const isCompleted = gymnast.levelProgress
+                    .some(lp => lp.level.id === level.id && lp.status === 'COMPLETED');
+                  return isCompleted;
+                }).length}</span>
                 <span className="stat-label">Completed</span>
               </div>
               <div className="stat-item">
-                <span className="stat-number">{levelProgress.filter(lp => !lp.isCompleted && lp.progressPercentage > 0).length}</span>
+                <span className="stat-number">{levels.filter(level => {
+                  const completedSkills = gymnast.skillProgress
+                    .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id);
+                  const totalSkills = level.skills ? level.skills.length : 0;
+                  const progressPercentage = totalSkills > 0 ? (completedSkills.length / totalSkills) * 100 : 0;
+                  const isCompleted = gymnast.levelProgress
+                    .some(lp => lp.level.id === level.id && lp.status === 'COMPLETED');
+                  return !isCompleted && progressPercentage > 0;
+                }).length}</span>
                 <span className="stat-label">In Progress</span>
               </div>
               <div className="stat-item">
-                <span className="stat-number">{levelProgress.filter(lp => lp.progressPercentage === 0).length}</span>
+                <span className="stat-number">{levels.filter(level => {
+                  const completedSkills = gymnast.skillProgress
+                    .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id);
+                  const totalSkills = level.skills ? level.skills.length : 0;
+                  const progressPercentage = totalSkills > 0 ? (completedSkills.length / totalSkills) * 100 : 0;
+                  return progressPercentage === 0;
+                }).length}</span>
                 <span className="stat-label">Not Started</span>
               </div>
             </div>
@@ -599,7 +617,21 @@ const GymnastProgress = ({ gymnastId }) => {
 
           {/* Mobile Level Cards */}
           <div className="mobile-levels-container">
-            {levelProgress.map(({ level, completedSkills, totalSkills, completedCount, isCompleted, progressPercentage }) => {
+            {levels
+              .sort((a, b) => sortLevelsByIdentifier(a, b))
+              .map(level => {
+              // Calculate progress for each level (including side tracks)
+              const completedSkills = gymnast.skillProgress
+                .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id)
+                .map(sp => sp.skill);
+
+              const totalSkills = level.skills ? level.skills.length : 0;
+              const completedCount = completedSkills.length;
+              const progressPercentage = totalSkills > 0 ? (completedCount / totalSkills) * 100 : 0;
+              
+              // Check if level is completed
+              const isCompleted = gymnast.levelProgress
+                .some(lp => lp.level.id === level.id && lp.status === 'COMPLETED');
               const isCollapsed = collapsedLevels.has(level.id);
               const isCurrentLevel = !isSideTrack(level.identifier) && parseInt(level.identifier) === getCurrentLevelNumber(gymnast, levels);
               

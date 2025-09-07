@@ -1634,14 +1634,9 @@ textarea.form-control {
     opacity: 0.9;
   }
 
-  /* Quick Stats */
+  /* Quick Stats - Hidden on mobile */
   .quick-stats-mobile {
-    display: flex;
-    justify-content: space-around;
-    background: rgba(255,255,255,0.1);
-    padding: 1rem;
-    border-radius: 12px;
-    backdrop-filter: blur(10px);
+    display: none;
   }
 
   .stat-item {
