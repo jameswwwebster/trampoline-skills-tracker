@@ -53,9 +53,13 @@ app.use((req, res, next) => {
 
 app.use(helmet());
 
-// Development-friendly CORS for local usage
+// CORS configuration for local and Render deployment
 app.use(cors({
-  origin: ['http://localhost:3000', process.env.FRONTEND_URL].filter(Boolean),
+  origin: [
+    'http://localhost:3000',
+    'https://trampoline-frontend.onrender.com',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
   credentials: true
 }));
 
