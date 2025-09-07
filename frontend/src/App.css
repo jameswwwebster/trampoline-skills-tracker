@@ -385,7 +385,7 @@ p, li, td, th {
 }
 
 .mobile-nav-title {
-  color: #adb5bd;
+  color: white;
   margin: 0;
   font-weight: 500;
   font-family: var(--font-family);
@@ -508,13 +508,24 @@ p, li, td, th {
   font-weight: 500;
 }
 
+.mobile-nav-user .btn-outline {
+  background-color: transparent;
+  border: 2px solid white;
+  color: white;
+}
+
+.mobile-nav-user .btn-outline:hover {
+  background-color: white;
+  color: #2c3e50;
+}
+
 .mobile-nav-section {
   margin-bottom: 1.5rem;
   font-family: var(--font-family);
 }
 
 .mobile-nav-section-title {
-  color: #adb5bd;
+  color: white;
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
