@@ -855,6 +855,76 @@ const GymnastProgress = ({ gymnastId }) => {
                         </div>
                       )}
 
+                      {/* Routine Section for Mobile */}
+                      {(() => {
+                        const levelRoutines = level.routines || [];
+                        const routineProgress = gymnast.routineProgress?.filter(rp => 
+                          levelRoutines.some(lr => lr.id === rp.routine.id)
+                        ) || [];
+
+                        return levelRoutines.length > 0 && (
+                          <div className="mobile-routine-section">
+                            <div className="routine-header">
+                              <h4>Routine ({levelRoutines.length})</h4>
+                            </div>
+                            
+                            <div className="mobile-routine-list">
+                              {levelRoutines.map(routine => {
+                                const routineProgressData = routineProgress.find(rp => rp.routine.id === routine.id);
+                                const routineStatus = routineProgressData?.status || 'NOT_STARTED';
+                                const routineSkills = routine.routineSkills || [];
+                                
+                                return (
+                                  <div key={routine.id} className={`mobile-routine-item ${routineStatus.toLowerCase()}`}>
+                                    <div className="routine-main-info">
+                                      <div className="routine-name-mobile">
+                                        {routine.name || `Level ${level.identifier} Routine`}
+                                      </div>
+                                      <div className="routine-status-mobile">
+                                        <span className={`routine-status-badge ${routineStatus.toLowerCase()}`}>
+                                          {routineStatus === 'COMPLETED' && '✓ Complete'}
+                                          {routineStatus === 'NOT_STARTED' && '○ Not Started'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    
+                                    {canCoach && coachingMode && (
+                                      <div className="routine-actions-mobile">
+                                        <button
+                                          onClick={() => handleRoutineStatusChange(routine.id, 'NOT_STARTED')}
+                                          className={`routine-status-btn not-started ${routineStatus === 'NOT_STARTED' ? 'active' : ''}`}
+                                        >
+                                          ○
+                                        </button>
+                                        <button
+                                          onClick={() => handleRoutineStatusChange(routine.id, 'COMPLETED')}
+                                          className={`routine-status-btn completed ${routineStatus === 'COMPLETED' ? 'active' : ''}`}
+                                        >
+                                          ✓
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    {routineSkills.length > 0 && (
+                                      <div className="routine-skills-mobile">
+                                        <div className="routine-skills-label">Required Skills:</div>
+                                        <div className="routine-skills-badges">
+                                          {routineSkills.map(rs => (
+                                            <span key={rs.id} className="routine-skill-badge">
+                                              {rs.skill.name}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                     </div>
                   )}
                 </div>
