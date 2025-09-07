@@ -38,7 +38,7 @@ router.get('/clubs', async (req, res) => {
   try {
     console.log('Fetching clubs...');
     
-    // Include basic counts that the frontend expects
+    // Include basic counts and users that the frontend expects
     const clubs = await prisma.club.findMany({
       select: {
         id: true,
@@ -52,6 +52,15 @@ router.get('/clubs', async (req, res) => {
             users: true,
             gymnasts: true,
             levels: true
+          }
+        },
+        users: {
+          where: { role: 'ADMIN' },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true
           }
         }
       },

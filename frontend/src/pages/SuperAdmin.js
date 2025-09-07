@@ -239,7 +239,7 @@ const SuperAdmin = () => {
           </div>
 
           <div className="clubs-grid">
-            {clubs
+            {clubs && clubs.length > 0 ? clubs
               .filter(club => 
                 club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 club.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -279,15 +279,21 @@ const SuperAdmin = () => {
 
                   <div className="club-admins">
                     <h4>Club Admins:</h4>
-                    {club.users.map(admin => (
+                    {club.users && club.users.length > 0 ? club.users.map(admin => (
                       <div key={admin.id} className="admin-item">
                         <span>{admin.firstName} {admin.lastName}</span>
                         <span className="text-muted">({admin.email})</span>
                       </div>
-                    ))}
+                    )) : (
+                      <p className="text-muted">No admins found</p>
+                    )}
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center">
+                  <p>No clubs found</p>
+                </div>
+              )}
           </div>
         </div>
       )}
@@ -529,3 +535,4 @@ const SuperAdmin = () => {
 };
 
 export default SuperAdmin;
+
