@@ -27,7 +27,8 @@ RUN npm install canvas@^2.11.2 --verbose
 RUN npm ci --ignore-scripts
 COPY . .
 
-# Canvas will be tested at runtime
+# Rebuild canvas native module to ensure it's properly compiled
+RUN npm rebuild canvas --verbose
 
 # Build prisma client
 RUN npx prisma generate
