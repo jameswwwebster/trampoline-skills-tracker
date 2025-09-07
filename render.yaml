@@ -4,6 +4,7 @@ services:
     runtime: docker
     rootDir: backend
     plan: starter
+    buildCommand: npm ci && npx prisma migrate deploy && npx prisma generate
     envVars:
       - key: NODE_ENV
         value: production
