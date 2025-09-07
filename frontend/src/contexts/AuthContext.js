@@ -258,6 +258,7 @@ export const AuthProvider = ({ children }) => {
   const isParent = user?.role === 'PARENT';
   const isChild = user?.role === 'CHILD';
   const isCoach = user?.role === 'COACH';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   const value = {
     user,
@@ -270,6 +271,7 @@ export const AuthProvider = ({ children }) => {
     isParent,
     isChild,
     isCoach,
+    isSuperAdmin,
     generateShareCode,
     generateCodeOfTheDay,
     getCodeOfTheDay,

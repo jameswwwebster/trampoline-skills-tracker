@@ -32,6 +32,7 @@ import ParentRequests from './pages/ParentRequests';
 import CustomFields from './pages/CustomFields';
 import MyCertificates from './pages/MyCertificates';
 import Health from './pages/Health';
+import SuperAdmin from './pages/SuperAdmin';
 import './App.css';
 
 // Inner component to access rate limit context
@@ -103,6 +104,7 @@ function AppContent() {
           <Route path="custom-fields" element={<CustomFields />} />
           <Route path="parent-requests" element={<ParentRequests />} />
           <Route path="health" element={<Health />} />
+          <Route path="super-admin" element={<SuperAdmin />} />
         </Route>
       </Routes>
     </div>

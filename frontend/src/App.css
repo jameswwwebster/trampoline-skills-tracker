@@ -2407,6 +2407,267 @@ textarea.form-control {
     }
   }
 
+  /* Super Admin Portal Styles */
+  .admin-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .tab-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: none;
+    color: #6c757d;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .tab-btn:hover {
+    color: #007bff;
+    background-color: #f8f9fa;
+  }
+
+  .tab-btn.active {
+    color: #007bff;
+    border-bottom-color: #007bff;
+    background-color: #f8f9fa;
+  }
+
+  .admin-overview {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+
+  .stat-card h3 {
+    font-size: 2rem;
+    margin: 0 0 0.5rem 0;
+    color: #007bff;
+  }
+
+  .stat-card p {
+    margin: 0;
+    color: #6c757d;
+    font-weight: 500;
+  }
+
+  .recent-activity {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .activity-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+  }
+
+  .activity-user {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .clubs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .club-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .club-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .club-header h3 {
+    margin: 0;
+    color: #333;
+  }
+
+  .club-stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-number {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #007bff;
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .club-info p {
+    margin: 0.25rem 0;
+    font-size: 0.875rem;
+  }
+
+  .club-admins {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+  }
+
+  .club-admins h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+  }
+
+  .admin-item {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 0.25rem 0;
+    font-size: 0.875rem;
+  }
+
+  .search-controls {
+    margin-bottom: 1.5rem;
+  }
+
+  .search-controls input {
+    max-width: 400px;
+  }
+
+  .users-table,
+  .gymnasts-table {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+
+  .users-table .table,
+  .gymnasts-table .table {
+    margin: 0;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+  }
+
+  .club-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .detail-section {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 6px;
+  }
+
+  .detail-section h4 {
+    margin: 0 0 1rem 0;
+    color: #333;
+  }
+
+  .detail-section p {
+    margin: 0.5rem 0;
+    font-size: 0.875rem;
+  }
+
+  .users-list,
+  .gymnasts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .user-item,
+  .gymnast-item {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 4px;
+    font-size: 0.875rem;
+  }
+
+  @media (max-width: 768px) {
+    .admin-tabs {
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .clubs-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .club-stats {
+      justify-content: space-around;
+    }
+
+    .users-table,
+    .gymnasts-table {
+      overflow-x: auto;
+    }
+
+    .club-details-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   /* Typography */
   h1 {
     font-size: 1.75rem;

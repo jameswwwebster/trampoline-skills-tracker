@@ -430,6 +430,7 @@ enum UserRole {
   PARENT
   GYMNAST
   SYSTEM_ADMIN
+  SUPER_ADMIN
 }
 
 enum LevelType {

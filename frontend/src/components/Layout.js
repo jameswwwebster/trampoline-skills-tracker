@@ -24,7 +24,7 @@ const MobileNestedMenu = ({ title, children, isOpen, onToggle }) => {
 };
 
 const Layout = () => {
-  const { user, logout, canManageGymnasts, isClubAdmin, canReadCompetitions, needsProgressNavigation, isChild, isParent, canEditLevels } = useAuth();
+  const { user, logout, canManageGymnasts, isClubAdmin, canReadCompetitions, needsProgressNavigation, isChild, isParent, canEditLevels, isSuperAdmin } = useAuth();
   const { branding } = useBranding();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -189,6 +189,13 @@ const Layout = () => {
               </div>
             </div>
           )}
+
+          {/* Super Admin Portal */}
+          {isSuperAdmin && (
+            <Link to="/super-admin" className={isActive('/super-admin')}>
+              🔧 Super Admin
+            </Link>
+          )}
         </div>
 
         <div className="navbar-nav">
@@ -322,6 +329,13 @@ const Layout = () => {
                 Import Gymnasts
               </Link>
             </MobileNestedMenu>
+          )}
+
+          {/* Super Admin Portal - Mobile */}
+          {isSuperAdmin && (
+            <Link to="/super-admin" className={isActive('/super-admin')}>
+              🔧 Super Admin
+            </Link>
           )}
         </div>
 

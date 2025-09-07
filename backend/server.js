@@ -94,6 +94,7 @@ app.use('/api/branding', brandingRoutes);
 app.use('/api/guardian-requests', guardianRequestRoutes);
 app.use('/api/user-custom-fields', userCustomFieldRoutes);
 app.use('/api/system-admin', systemAdminRoutes);
+app.use('/api/super-admin', require('./routes/superAdmin'));
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
