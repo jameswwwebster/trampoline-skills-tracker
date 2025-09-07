@@ -31,6 +31,27 @@ const GymnastProgress = ({ gymnastId }) => {
     }
   }, [canCoach]);
 
+  // Auto-scroll to current level on mobile
+  useEffect(() => {
+    if (gymnast && levels.length > 0) {
+      const currentLevelNumber = getCurrentLevelNumber(gymnast, levels);
+      const currentLevel = levels.find(l => !isSideTrack(l.identifier) && parseInt(l.identifier) === currentLevelNumber);
+      
+      if (currentLevel) {
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          const currentLevelElement = document.getElementById(`level-${currentLevel.id}`);
+          if (currentLevelElement) {
+            currentLevelElement.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center' 
+            });
+          }
+        }, 500);
+      }
+    }
+  }, [gymnast, levels, getCurrentLevelNumber, isSideTrack]);
+
   // Helper function to extract base level number from identifier
   const getBaseLevelNumber = useCallback((identifier) => {
     const match = identifier.match(/^(\d+)/);
@@ -562,22 +583,20 @@ const GymnastProgress = ({ gymnastId }) => {
         <>
           {/* Mobile Header with Quick Actions */}
           <div className="mobile-progress-header">
-            <div className="gymnast-info-mobile">
-              <h2 className="gymnast-name-mobile">{gymnast.firstName} {gymnast.lastName}</h2>
-              <div className="current-level-mobile">
-                {(() => {
-                  const currentLevel = getCurrentLevelNumber(gymnast, levels);
-                  const workingLevel = levels.find(l => !isSideTrack(l.identifier) && parseInt(l.identifier) === currentLevel);
-                  return workingLevel ? (
-                    <div className="level-badge-mobile">
-                      <span className="level-number-mobile">Level {workingLevel.identifier}</span>
-                      <span className="level-name-mobile">{workingLevel.name}</span>
-                    </div>
-                  ) : (
-                    <span className="level-badge-mobile not-started">Not Started</span>
-                  );
-                })()}
-              </div>
+            <h2 className="gymnast-name-mobile">{gymnast.firstName} {gymnast.lastName}</h2>
+            <div className="current-level-mobile">
+              {(() => {
+                const currentLevel = getCurrentLevelNumber(gymnast, levels);
+                const workingLevel = levels.find(l => !isSideTrack(l.identifier) && parseInt(l.identifier) === currentLevel);
+                return workingLevel ? (
+                  <div className="level-badge-mobile">
+                    <span className="level-number-mobile">Level {workingLevel.identifier}</span>
+                    <span className="level-name-mobile">{workingLevel.name}</span>
+                  </div>
+                ) : (
+                  <span className="level-badge-mobile not-started">Not Started</span>
+                );
+              })()}
             </div>
             
             {/* Quick Stats */}
