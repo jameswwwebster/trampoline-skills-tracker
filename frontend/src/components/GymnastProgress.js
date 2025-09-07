@@ -1143,6 +1143,7 @@ const GymnastProgress = ({ gymnastId }) => {
           />
         </div>
       )}
+      </div>
 
       {/* Guardians */}
       {gymnast.guardians && gymnast.guardians.length > 0 && (
