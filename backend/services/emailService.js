@@ -172,6 +172,73 @@ class EmailService {
     }
   }
 
+  async sendInviteEmail(email, role, clubName, invitedByName, inviteToken) {
+    const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/accept-invite?token=${inviteToken}`;
+    
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'noreply@trampolinetracker.com',
+      to: email,
+      subject: `You're invited to join ${clubName} - Trampoline Tracker`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #2c3e50; text-align: center;">You're Invited to Join ${clubName}</h2>
+          
+          <p>Hello!</p>
+          
+          <p><strong>${invitedByName}</strong> has invited you to join <strong>${clubName}</strong> as a <strong>${role}</strong> on Trampoline Tracker.</p>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+            <h3 style="color: #495057; margin-top: 0;">What is Trampoline Tracker?</h3>
+            <p style="margin-bottom: 0;">A comprehensive system for managing trampoline gymnasts, tracking their progress through levels and skills, and generating certificates for achievements.</p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${inviteUrl}" 
+               style="background-color: #007bff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+              Accept Invitation
+            </a>
+          </div>
+          
+          <p style="color: #6c757d; font-size: 14px;">
+            If the button doesn't work, you can copy and paste this link into your browser:<br>
+            <a href="${inviteUrl}" style="color: #007bff;">${inviteUrl}</a>
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #dee2e6; margin: 30px 0;">
+          
+          <p style="color: #6c757d; font-size: 12px; text-align: center;">
+            This invitation will expire in 7 days. If you don't want to join, you can simply ignore this email.
+          </p>
+        </div>
+      `
+    };
+
+    try {
+      if (this.isConfigured && this.transporter) {
+        const info = await this.transporter.sendMail(mailOptions);
+        console.log(`✅ Invite email sent to ${email}:`, info.messageId);
+        return { success: true, messageId: info.messageId };
+      } else {
+        // Development mode - log the email instead of sending
+        console.log('📧 Invite email (DEV MODE):');
+        console.log('To:', email);
+        console.log('Subject:', mailOptions.subject);
+        console.log('Club:', clubName);
+        console.log('Role:', role);
+        console.log('Invited by:', invitedByName);
+        console.log('Invite URL:', inviteUrl);
+        return { 
+          success: true, 
+          dev: true, 
+          message: 'Email logged in development mode'
+        };
+      }
+    } catch (error) {
+      console.error('❌ Failed to send invite email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   async sendCertificateAwardNotification(parentEmail, parentName, gymnast, certificate, level) {
     const certificateTypeText = certificate.type === 'LEVEL_COMPLETION' ? 'Level Completion' :
                                certificate.type === 'SPECIAL_ACHIEVEMENT' ? 'Special Achievement' :

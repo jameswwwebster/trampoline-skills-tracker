@@ -2,6 +2,7 @@ const express = require('express');
 const Joi = require('joi');
 const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
+const emailService = require('../services/emailService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -75,9 +76,26 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
       }
     });
 
+    // Send invite email
+    const invitedByName = `${invite.invitedBy.firstName} ${invite.invitedBy.lastName}`;
+    const emailResult = await emailService.sendInviteEmail(
+      email,
+      role,
+      invite.club.name,
+      invitedByName,
+      invite.token
+    );
+
+    if (!emailResult.success) {
+      console.error('Failed to send invite email:', emailResult.error);
+      // Don't fail the request, but log the error
+    }
+
     res.status(201).json({
       message: 'Invite sent successfully',
-      invite
+      invite,
+      emailSent: emailResult.success,
+      emailDev: emailResult.dev || false
     });
   } catch (error) {
     console.error('Create invite error:', error);

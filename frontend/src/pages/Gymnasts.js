@@ -20,7 +20,7 @@ const Gymnasts = () => {
   const [success, setSuccess] = useState(null);
   const [showQuickNav, setShowQuickNav] = useState(false);
   const [sessionGymnasts, setSessionGymnasts] = useState(new Set());
-  const [showSessionMode, setShowSessionMode] = useState(false);
+  const [showSessionOnly, setShowSessionOnly] = useState(false);
   const { canManageGymnasts, isClubAdmin } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -42,32 +42,17 @@ const Gymnasts = () => {
     localStorage.setItem('coachingSession', JSON.stringify(Array.from(newSession)));
   };
 
-  const clearSession = () => {
-    setSessionGymnasts(new Set());
-    localStorage.removeItem('coachingSession');
-  };
-
-  const selectAllVisible = () => {
-    const visibleGymnastIds = filteredGymnasts.map(g => g.id);
-    const newSession = new Set([...sessionGymnasts, ...visibleGymnastIds]);
-    setSessionGymnasts(newSession);
-    localStorage.setItem('coachingSession', JSON.stringify(Array.from(newSession)));
-  };
-
-  const toggleSessionMode = () => {
-    setShowSessionMode(!showSessionMode);
-    if (!showSessionMode) {
-      // Load session from localStorage when entering session mode
-      const savedSession = localStorage.getItem('coachingSession');
-      if (savedSession) {
-        try {
-          setSessionGymnasts(new Set(JSON.parse(savedSession)));
-        } catch (e) {
-          console.error('Failed to load session:', e);
-        }
+  // Load session from localStorage on component mount
+  useEffect(() => {
+    const savedSession = localStorage.getItem('coachingSession');
+    if (savedSession) {
+      try {
+        setSessionGymnasts(new Set(JSON.parse(savedSession)));
+      } catch (e) {
+        console.error('Failed to load session:', e);
       }
     }
-  };
+  }, []);
 
   // Helper function to determine the gymnast's current working level number
   const getCurrentLevel = (gymnast, levels) => {
@@ -271,9 +256,8 @@ const Gymnasts = () => {
              currentLevel.competitions.some(comp => comp.name === competitionFilter);
     })();
     
-    // Check session filter (if in session mode and session-only view is enabled)
-    const sessionOnly = searchParams.get('sessionOnly') === 'true';
-    const matchesSession = !sessionOnly || sessionGymnasts.has(gymnast.id);
+    // Check session filter
+    const matchesSession = !showSessionOnly || sessionGymnasts.has(gymnast.id);
     
     return matchesSearch && matchesLevel && matchesCompetition && matchesSession;
   });
@@ -329,7 +313,7 @@ const Gymnasts = () => {
               <span className="stat-number">{archivedGymnasts.length}</span>
               <span className="stat-label">Archived</span>
             </div>
-            {showSessionMode && (
+            {sessionGymnasts.size > 0 && (
               <div className="stat-item session-stat">
                 <span className="stat-number">{sessionGymnasts.size}</span>
                 <span className="stat-label">In Session</span>
@@ -337,66 +321,15 @@ const Gymnasts = () => {
             )}
           </div>
         </div>
-        <div className="mobile-header-actions">
+        {canManageGymnasts && (
           <button 
-            className={`mobile-session-btn ${showSessionMode ? 'active' : ''}`}
-            onClick={toggleSessionMode}
-            title={showSessionMode ? 'Exit Session Mode' : 'Enter Session Mode'}
+            className="mobile-add-btn"
+            onClick={() => setShowAddForm(!showAddForm)}
           >
-            {showSessionMode ? '✓' : '📋'}
+            {showAddForm ? '✕' : '+'}
           </button>
-          {canManageGymnasts && (
-            <button 
-              className="mobile-add-btn"
-              onClick={() => setShowAddForm(!showAddForm)}
-            >
-              {showAddForm ? '✕' : '+'}
-            </button>
-          )}
-        </div>
+        )}
       </div>
-
-      {/* Session Mode Controls */}
-      {showSessionMode && (
-        <div className="mobile-session-controls">
-          <div className="session-info">
-            <span className="session-label">Coaching Session</span>
-            <span className="session-count">{sessionGymnasts.size} gymnasts selected</span>
-          </div>
-          <div className="session-actions">
-            <button 
-              className="session-action-btn"
-              onClick={selectAllVisible}
-              disabled={filteredGymnasts.length === 0}
-            >
-              Select All Visible
-            </button>
-            <button 
-              className="session-action-btn clear"
-              onClick={clearSession}
-              disabled={sessionGymnasts.size === 0}
-            >
-              Clear Session
-            </button>
-            {sessionGymnasts.size > 0 && (
-              <button 
-                className={`session-action-btn ${searchParams.get('sessionOnly') === 'true' ? 'active' : ''}`}
-                onClick={() => {
-                  const newParams = new URLSearchParams(searchParams);
-                  if (searchParams.get('sessionOnly') === 'true') {
-                    newParams.delete('sessionOnly');
-                  } else {
-                    newParams.set('sessionOnly', 'true');
-                  }
-                  setSearchParams(newParams);
-                }}
-              >
-                {searchParams.get('sessionOnly') === 'true' ? 'Show All' : 'Session Only'}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
       {!canManageGymnasts && (
         <div className="info-message">
@@ -519,6 +452,20 @@ const Gymnasts = () => {
             className="form-control mobile-search-input"
             style={{ margin: 0 }}
           />
+          
+          {/* Session Filter */}
+          {sessionGymnasts.size > 0 && (
+            <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showSessionOnly}
+                  onChange={(e) => setShowSessionOnly(e.target.checked)}
+                />
+                <span>Show session gymnasts only ({sessionGymnasts.size})</span>
+              </label>
+            </div>
+          )}
           
           {/* Filter Controls */}
           <div className="mobile-filter-controls">
@@ -766,18 +713,16 @@ const Gymnasts = () => {
                             : 'Age unknown'
                           }
                         </div>
-                        {showSessionMode && (
-                          <button 
-                            className={`session-select-btn ${isInSession ? 'selected' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleGymnastInSession(gymnast.id);
-                            }}
-                            title={isInSession ? 'Remove from session' : 'Add to session'}
-                          >
-                            {isInSession ? '✓' : '+'}
-                          </button>
-                        )}
+                        <button 
+                          className={`session-toggle-btn ${isInSession ? 'in-session' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleGymnastInSession(gymnast.id);
+                          }}
+                          title={isInSession ? 'Remove from session' : 'Add to session'}
+                        >
+                          {isInSession ? '✓' : '📋'}
+                        </button>
                       </div>
                     
                     <div className="mobile-card-body">

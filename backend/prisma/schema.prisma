@@ -105,6 +105,7 @@ model Club {
   secondaryColor        String?               @default("#2c3e50")
   textColor             String?               @default("#212529")
   website               String?
+  emailEnabled          Boolean               @default(false)
   certificateTemplates  CertificateTemplate[]
   certificates          Certificate[]
   guardianRequests      GuardianRequest[]
