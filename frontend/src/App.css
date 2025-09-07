@@ -1282,6 +1282,299 @@ textarea.form-control {
     display: inline-block;
   }
 
+  /* Mobile search and filter optimizations */
+  .mobile-search-input {
+    font-size: 1.1rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+  }
+
+  .mobile-filter-controls {
+    margin-top: 1rem;
+  }
+
+  .mobile-filter-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .mobile-filter-group {
+    flex: 1;
+  }
+
+  .mobile-filter-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+  }
+
+  .mobile-filter-select {
+    font-size: 1rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+    width: 100%;
+  }
+
+  .mobile-archive-toggle {
+    margin-top: 0.5rem;
+  }
+
+  .mobile-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #2c3e50;
+    cursor: pointer;
+  }
+
+  .mobile-checkbox {
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: var(--primary-color);
+  }
+
+  .mobile-checkbox-text {
+    user-select: none;
+  }
+
+  /* Skill tracker card optimizations */
+  .skill-tracker-card {
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border-radius: 12px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.2s ease;
+  }
+
+  .skill-tracker-card:active {
+    transform: scale(0.98);
+    border-color: var(--primary-color);
+  }
+
+  .skill-tracker-card .mobile-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .skill-tracker-card .mobile-card-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2c3e50;
+  }
+
+  .mobile-card-age {
+    font-size: 0.9rem;
+    color: #6c757d;
+    background: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+  }
+
+  .mobile-card-main-info {
+    margin-bottom: 0.75rem;
+  }
+
+  .mobile-card-level {
+    margin-bottom: 0.5rem;
+  }
+
+  .level-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .level-number {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-color);
+  }
+
+  .level-name {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+  }
+
+  .mobile-card-competition {
+    margin-top: 0.5rem;
+  }
+
+  .competition-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .competition-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .competition-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .competition-badge {
+    background: var(--success-color);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .mobile-card-actions {
+    display: flex;
+    justify-content: center;
+    padding-top: 0.5rem;
+    border-top: 1px solid #f0f0f0;
+  }
+
+  .mobile-quick-action {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .mobile-quick-action:active {
+    transform: scale(0.98);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+
+  /* Mobile quick navigation */
+  .mobile-quick-nav {
+    margin-top: 1rem;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 1rem;
+  }
+
+  .mobile-quick-nav-toggle {
+    width: 100%;
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-quick-nav-toggle:hover {
+    background: #e9ecef;
+    border-color: var(--primary-color);
+  }
+
+  .quick-nav-arrow {
+    transition: transform 0.2s ease;
+    font-size: 0.8rem;
+  }
+
+  .quick-nav-arrow.open {
+    transform: rotate(180deg);
+  }
+
+  .mobile-quick-nav-list {
+    margin-top: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+  }
+
+  .mobile-quick-nav-item {
+    width: 100%;
+    padding: 0.75rem;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    background: white;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
+  }
+
+  .mobile-quick-nav-item:last-child {
+    border-bottom: none;
+  }
+
+  .mobile-quick-nav-item:hover {
+    background: #f8f9fa;
+  }
+
+  .mobile-quick-nav-item:active {
+    background: #e9ecef;
+  }
+
+  .quick-nav-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1rem;
+  }
+
+  .quick-nav-level {
+    font-size: 0.875rem;
+    color: #6c757d;
+    background: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  /* Mobile loading optimizations */
+  .mobile-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    padding: 2rem;
+  }
+
+  .mobile-loading .spinner {
+    width: 3rem;
+    height: 3rem;
+    border-width: 4px;
+  }
+
+  .loading-text {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    color: #6c757d;
+    font-weight: 500;
+  }
+
   /* Typography */
   h1 {
     font-size: 1.75rem;

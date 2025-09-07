@@ -18,6 +18,7 @@ const Gymnasts = () => {
   const [archiveReason, setArchiveReason] = useState('');
   const [deletingGymnast, setDeletingGymnast] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [showQuickNav, setShowQuickNav] = useState(false);
   const { canManageGymnasts, isClubAdmin } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -238,8 +239,9 @@ const Gymnasts = () => {
 
   if (loading) {
     return (
-      <div className="loading">
+      <div className="loading mobile-loading">
         <div className="spinner"></div>
+        <p className="loading-text">Loading gymnasts...</p>
       </div>
     );
   }
@@ -384,85 +386,87 @@ const Gymnasts = () => {
             placeholder="Search by gymnast name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="form-control"
+            className="form-control mobile-search-input"
             style={{ margin: 0 }}
           />
           
           {/* Filter Controls */}
-          <div style={{ marginTop: '0.25rem', display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ minWidth: '110px' }}>
-              <select
-                value={searchParams.get('level') || ''}
-                onChange={(e) => {
-                  const newParams = new URLSearchParams(searchParams);
-                  if (e.target.value) {
-                    newParams.set('level', e.target.value);
-                  } else {
-                    newParams.delete('level');
-                  }
-                  setSearchParams(newParams);
-                }}
-                className="form-control"
-                style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem' }}
-              >
-                <option value="">All Levels</option>
-                {levels
-                  .filter(level => !isSideTrack(level.identifier))
-                  .sort((a, b) => parseInt(a.identifier) - parseInt(b.identifier))
-                  .map(level => (
-                    <option key={level.id} value={level.identifier}>
-                      Level {level.identifier}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            
-            <div style={{ minWidth: '160px' }}>
-              <select
-                value={searchParams.get('competition') || ''}
-                onChange={(e) => {
-                  const newParams = new URLSearchParams(searchParams);
-                  if (e.target.value) {
-                    newParams.set('competition', e.target.value);
-                  } else {
-                    newParams.delete('competition');
-                  }
-                  setSearchParams(newParams);
-                }}
-                className="form-control"
-                style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem' }}
-              >
-                <option value="">All Competitions</option>
-                {(() => {
-                  // Get all unique competitions from levels
-                  const allCompetitions = levels
-                    .filter(level => level.competitions && level.competitions.length > 0)
-                    .flatMap(level => level.competitions)
-                    .map(comp => comp.name);
-                  
-                  // Remove duplicates and sort
-                  const uniqueCompetitions = [...new Set(allCompetitions)].sort();
-                  
-                  return uniqueCompetitions.map(competitionName => (
-                    <option key={competitionName} value={competitionName}>
-                      {competitionName}
-                    </option>
-                  ));
-                })()}
-              </select>
+          <div className="mobile-filter-controls">
+            <div className="mobile-filter-row">
+              <div className="mobile-filter-group">
+                <label className="mobile-filter-label">Level</label>
+                <select
+                  value={searchParams.get('level') || ''}
+                  onChange={(e) => {
+                    const newParams = new URLSearchParams(searchParams);
+                    if (e.target.value) {
+                      newParams.set('level', e.target.value);
+                    } else {
+                      newParams.delete('level');
+                    }
+                    setSearchParams(newParams);
+                  }}
+                  className="form-control mobile-filter-select"
+                >
+                  <option value="">All Levels</option>
+                  {levels
+                    .filter(level => !isSideTrack(level.identifier))
+                    .sort((a, b) => parseInt(a.identifier) - parseInt(b.identifier))
+                    .map(level => (
+                      <option key={level.id} value={level.identifier}>
+                        Level {level.identifier}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              
+              <div className="mobile-filter-group">
+                <label className="mobile-filter-label">Competition</label>
+                <select
+                  value={searchParams.get('competition') || ''}
+                  onChange={(e) => {
+                    const newParams = new URLSearchParams(searchParams);
+                    if (e.target.value) {
+                      newParams.set('competition', e.target.value);
+                    } else {
+                      newParams.delete('competition');
+                    }
+                    setSearchParams(newParams);
+                  }}
+                  className="form-control mobile-filter-select"
+                >
+                  <option value="">All Competitions</option>
+                  {(() => {
+                    // Get all unique competitions from levels
+                    const allCompetitions = levels
+                      .filter(level => level.competitions && level.competitions.length > 0)
+                      .flatMap(level => level.competitions)
+                      .map(comp => comp.name);
+                    
+                    // Remove duplicates and sort
+                    const uniqueCompetitions = [...new Set(allCompetitions)].sort();
+                    
+                    return uniqueCompetitions.map(competitionName => (
+                      <option key={competitionName} value={competitionName}>
+                        {competitionName}
+                      </option>
+                    ));
+                  })()}
+                </select>
+              </div>
             </div>
 
             {/* Archive Toggle */}
             {isClubAdmin && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.875rem', margin: 0 }}>
+              <div className="mobile-archive-toggle">
+                <label className="mobile-checkbox-label">
                   <input
                     type="checkbox"
                     checked={showArchived}
                     onChange={(e) => setShowArchived(e.target.checked)}
-                    style={{ marginRight: '0.25rem' }}
+                    className="mobile-checkbox"
                   />
-                  Show Archived
+                  <span className="mobile-checkbox-text">Show Archived</span>
                 </label>
               </div>
             )}
@@ -615,7 +619,7 @@ const Gymnasts = () => {
                 {activeGymnasts.map(gymnast => (
                   <div 
                     key={gymnast.id}
-                    className="mobile-table-card"
+                    className="mobile-table-card skill-tracker-card"
                     onClick={() => handleRowClick(gymnast)}
                     style={{ cursor: 'pointer' }}
                     title="Tap to view progress"
@@ -624,62 +628,104 @@ const Gymnasts = () => {
                       <div className="mobile-card-title">
                         {gymnast.firstName} {gymnast.lastName}
                       </div>
+                      <div className="mobile-card-age">
+                        {gymnast.dateOfBirth 
+                          ? `${new Date().getFullYear() - new Date(gymnast.dateOfBirth).getFullYear()}y`
+                          : 'Age unknown'
+                        }
+                      </div>
                     </div>
                     
                     <div className="mobile-card-body">
-                      <div className="mobile-card-row">
-                        <span className="mobile-card-label">Date of Birth:</span>
-                        <span className="mobile-card-value">
-                          {gymnast.dateOfBirth 
-                            ? new Date(gymnast.dateOfBirth).toLocaleDateString()
-                            : 'Not specified'
-                          }
-                        </span>
-                      </div>
-                      
-                      <div className="mobile-card-row">
-                        <span className="mobile-card-label">Current Level:</span>
-                        <span className="mobile-card-value">
+                      <div className="mobile-card-main-info">
+                        <div className="mobile-card-level">
                           {(() => {
                             const currentLevel = getCurrentLevel(gymnast, levels);
                             return currentLevel ? (
-                              <span className="level-badge">
-                                Level {currentLevel.identifier}: {currentLevel.name}
-                              </span>
+                              <div className="level-info">
+                                <span className="level-number">Level {currentLevel.identifier}</span>
+                                <span className="level-name">{currentLevel.name}</span>
+                              </div>
                             ) : (
-                              <span className="badge badge-secondary">
-                                Not started
-                              </span>
+                              <div className="level-info">
+                                <span className="level-number">Not started</span>
+                              </div>
                             );
                           })()}
-                        </span>
-                      </div>
-                      
-                      <div className="mobile-card-row">
-                        <span className="mobile-card-label">Competition Level:</span>
-                        <span className="mobile-card-value">
+                        </div>
+                        
+                        <div className="mobile-card-competition">
                           {(() => {
                             const highestCompletedLevel = getHighestCompletedLevel(gymnast, levels);
                             return highestCompletedLevel && highestCompletedLevel.competitions && highestCompletedLevel.competitions.length > 0 ? (
-                              <div className="competition-levels">
-                                {highestCompletedLevel.competitions.map((competition, index) => (
-                                  <span key={index} className="competition-badge">
-                                    {competition.name}
-                                  </span>
-                                ))}
+                              <div className="competition-info">
+                                <span className="competition-label">Competition:</span>
+                                <div className="competition-badges">
+                                  {highestCompletedLevel.competitions.map((competition, index) => (
+                                    <span key={index} className="competition-badge">
+                                      {competition.name}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
-                            ) : (
-                              <span className="text-muted">No competitions</span>
-                            );
+                            ) : null;
                           })()}
-                        </span>
+                        </div>
                       </div>
                       
-                      
+                      <div className="mobile-card-actions">
+                        <button 
+                          className="btn btn-primary btn-sm mobile-quick-action"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRowClick(gymnast);
+                          }}
+                        >
+                          📊 Track Progress
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
+              
+              {/* Quick Navigation for Mobile */}
+              {activeGymnasts.length > 1 && (
+                <div className="mobile-quick-nav">
+                  <button 
+                    className="mobile-quick-nav-toggle"
+                    onClick={() => setShowQuickNav(!showQuickNav)}
+                  >
+                    <span>Quick Jump</span>
+                    <span className={`quick-nav-arrow ${showQuickNav ? 'open' : ''}`}>▼</span>
+                  </button>
+                  
+                  {showQuickNav && (
+                    <div className="mobile-quick-nav-list">
+                      {activeGymnasts.map((gymnast, index) => (
+                        <button
+                          key={gymnast.id}
+                          className="mobile-quick-nav-item"
+                          onClick={() => {
+                            handleRowClick(gymnast);
+                            setShowQuickNav(false);
+                          }}
+                        >
+                          <span className="quick-nav-name">
+                            {gymnast.firstName} {gymnast.lastName}
+                          </span>
+                          <span className="quick-nav-level">
+                            {(() => {
+                              const currentLevel = getCurrentLevel(gymnast, levels);
+                              return currentLevel ? `Level ${currentLevel.identifier}` : 'Not started';
+                            })()}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
