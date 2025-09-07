@@ -1575,6 +1575,230 @@ textarea.form-control {
     font-weight: 500;
   }
 
+  /* Compact skills layout for mobile */
+  .skills-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .skill-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    transition: all 0.2s ease;
+  }
+
+  .skill-item:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .skill-item.skill-completed {
+    background: #f8fff8;
+    border-color: var(--success-color);
+  }
+
+  .skill-item.skill-in_progress {
+    background: #fffbf0;
+    border-color: var(--warning-color);
+  }
+
+  .skill-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .skill-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1rem;
+  }
+
+  .skill-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .status-indicator {
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+
+  .status-indicator.status-not_started {
+    color: #6c757d;
+  }
+
+  .status-indicator.status-in_progress {
+    color: var(--warning-color);
+  }
+
+  .status-indicator.status-completed {
+    color: var(--success-color);
+  }
+
+  .status-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+  }
+
+  .skill-controls {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .mobile-skill-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-skill-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Quick actions for mobile */
+  .quick-actions {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+  }
+
+  .quick-actions h6 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 600;
+  }
+
+  .quick-action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .quick-action-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .quick-action-btn:active {
+    transform: scale(0.98);
+  }
+
+  /* Mobile level progress optimizations */
+  .mobile-level-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+  }
+
+  .mobile-level-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .level-progress-mobile {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .progress-percentage-mobile {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary-color);
+  }
+
+  .badge-sm {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .level-stats-mobile {
+    margin-top: 0.25rem;
+  }
+
+  .progress-text-mobile {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+  }
+
+  .level-actions-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .progress-bar-mobile {
+    width: 100%;
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-fill-mobile {
+    height: 100%;
+    background: var(--primary-color);
+    transition: width 0.3s ease;
+  }
+
+  .action-buttons-mobile {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  .mobile-complete-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .mobile-collapse-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+  }
+
   /* Typography */
   h1 {
     font-size: 1.75rem;
