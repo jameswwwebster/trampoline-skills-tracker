@@ -497,9 +497,230 @@ const GymnastProgress = ({ gymnastId }) => {
         </div>
       )}
 
-      {/* Level Progress Overview */}
+      {/* Mobile-First Progress Interface */}
       {(!coachingMode || activeTab === 'overview') && (
-        <div className="card">
+        <>
+          {/* Mobile Header with Quick Actions */}
+          <div className="mobile-progress-header">
+            <div className="gymnast-info-mobile">
+              <h2 className="gymnast-name-mobile">{gymnast.firstName} {gymnast.lastName}</h2>
+              <div className="current-level-mobile">
+                {(() => {
+                  const currentLevel = getCurrentLevelNumber(gymnast, levels);
+                  const workingLevel = levels.find(l => !isSideTrack(l.identifier) && parseInt(l.identifier) === currentLevel);
+                  return workingLevel ? (
+                    <div className="level-badge-mobile">
+                      <span className="level-number-mobile">Level {workingLevel.identifier}</span>
+                      <span className="level-name-mobile">{workingLevel.name}</span>
+                    </div>
+                  ) : (
+                    <span className="level-badge-mobile not-started">Not Started</span>
+                  );
+                })()}
+              </div>
+            </div>
+            
+            {/* Quick Stats */}
+            <div className="quick-stats-mobile">
+              <div className="stat-item">
+                <span className="stat-number">{levelProgress.filter(lp => lp.isCompleted).length}</span>
+                <span className="stat-label">Completed</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">{levelProgress.filter(lp => !lp.isCompleted && lp.progressPercentage > 0).length}</span>
+                <span className="stat-label">In Progress</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">{levelProgress.filter(lp => lp.progressPercentage === 0).length}</span>
+                <span className="stat-label">Not Started</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Level Cards */}
+          <div className="mobile-levels-container">
+            {levelProgress.map(({ level, completedSkills, totalSkills, completedCount, isCompleted, progressPercentage }) => {
+              const isCollapsed = collapsedLevels.has(level.id);
+              const isCurrentLevel = !isSideTrack(level.identifier) && parseInt(level.identifier) === getCurrentLevelNumber(gymnast, levels);
+              
+              return (
+                <div key={level.id} className={`mobile-level-card ${isCompleted ? 'completed' : ''} ${isCurrentLevel ? 'current' : ''} ${isSideTrack(level.identifier) ? 'side-track' : ''}`}>
+                  {/* Level Header */}
+                  <div className="mobile-level-header" onClick={() => toggleLevelCollapse(level.id)}>
+                    <div className="level-title-section">
+                      <div className="level-title">
+                        <span className="level-identifier">{level.identifier}</span>
+                        <span className="level-name">{level.name}</span>
+                        {isSideTrack(level.identifier) && <span className="side-track-indicator">Side</span>}
+                      </div>
+                      <div className="level-status">
+                        {isCompleted ? (
+                          <span className="status-badge completed">✓ Complete</span>
+                        ) : isCurrentLevel ? (
+                          <span className="status-badge current">Current</span>
+                        ) : (
+                          <span className="status-badge pending">{Math.round(progressPercentage)}%</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="level-progress-section">
+                      <div className="progress-bar-container">
+                        <div className="progress-bar">
+                          <div 
+                            className="progress-fill" 
+                            style={{ width: `${progressPercentage}%` }}
+                          />
+                        </div>
+                        <span className="progress-text">{completedCount}/{totalSkills}</span>
+                      </div>
+                      <div className="expand-indicator">
+                        {isCollapsed ? '▼' : '▲'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Level Content */}
+                  {!isCollapsed && (
+                    <div className="mobile-level-content">
+                      {/* Competition Info */}
+                      {level.competitions && level.competitions.length > 0 && (
+                        <div className="competition-info-mobile">
+                          <span className="competition-label">Competition:</span>
+                          <div className="competition-badges-mobile">
+                            {level.competitions.map((competition, index) => (
+                              <span key={index} className="competition-badge-mobile">
+                                {competition.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Quick Actions */}
+                      {canCoach && coachingMode && level.skills && level.skills.length > 0 && (
+                        <div className="mobile-quick-actions">
+                          <div className="quick-actions-row">
+                            <button
+                              onClick={() => {
+                                level.skills.forEach(skill => {
+                                  const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
+                                  const currentStatus = skillProgress?.status || 'NOT_STARTED';
+                                  if (currentStatus !== 'COMPLETED') {
+                                    handleSkillStatusChange(skill.id, 'COMPLETED');
+                                  }
+                                });
+                              }}
+                              className="quick-action-btn complete-all"
+                            >
+                              ✓ Complete All
+                            </button>
+                            <button
+                              onClick={() => {
+                                level.skills.forEach(skill => {
+                                  const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
+                                  const currentStatus = skillProgress?.status || 'NOT_STARTED';
+                                  if (currentStatus !== 'IN_PROGRESS') {
+                                    handleSkillStatusChange(skill.id, 'IN_PROGRESS');
+                                  }
+                                });
+                              }}
+                              className="quick-action-btn progress-all"
+                            >
+                              ◐ In Progress
+                            </button>
+                            <button
+                              onClick={() => {
+                                level.skills.forEach(skill => {
+                                  const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
+                                  const currentStatus = skillProgress?.status || 'NOT_STARTED';
+                                  if (currentStatus !== 'NOT_STARTED') {
+                                    handleSkillStatusChange(skill.id, 'NOT_STARTED');
+                                  }
+                                });
+                              }}
+                              className="quick-action-btn reset-all"
+                            >
+                              ○ Reset
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Skills List */}
+                      {level.skills && level.skills.length > 0 && (
+                        <div className="mobile-skills-section">
+                          <div className="skills-header">
+                            <h4>Skills ({completedCount}/{totalSkills})</h4>
+                            {canCoach && coachingMode && !isCompleted && totalSkills > 0 && (
+                              <button
+                                onClick={() => handleCompleteLevel(level.id)}
+                                className="btn btn-success btn-sm complete-level-btn"
+                              >
+                                Complete Level
+                              </button>
+                            )}
+                          </div>
+                          
+                          <div className="mobile-skills-list">
+                            {level.skills.map(skill => {
+                              const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
+                              const currentStatus = skillProgress?.status || 'NOT_STARTED';
+                              
+                              return (
+                                <div key={skill.id} className={`mobile-skill-item ${currentStatus.toLowerCase()}`}>
+                                  <div className="skill-main-info">
+                                    <div className="skill-name-mobile">{skill.name}</div>
+                                    <div className="skill-status-mobile">
+                                      <span className={`status-icon ${currentStatus.toLowerCase()}`}>
+                                        {currentStatus === 'NOT_STARTED' && '○'}
+                                        {currentStatus === 'IN_PROGRESS' && '◐'}
+                                        {currentStatus === 'COMPLETED' && '✓'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  {canCoach && coachingMode && (
+                                    <div className="skill-actions-mobile">
+                                      <button
+                                        onClick={() => handleSkillStatusChange(skill.id, 'NOT_STARTED')}
+                                        className={`status-btn not-started ${currentStatus === 'NOT_STARTED' ? 'active' : ''}`}
+                                      >
+                                        ○
+                                      </button>
+                                      <button
+                                        onClick={() => handleSkillStatusChange(skill.id, 'IN_PROGRESS')}
+                                        className={`status-btn in-progress ${currentStatus === 'IN_PROGRESS' ? 'active' : ''}`}
+                                      >
+                                        ◐
+                                      </button>
+                                      <button
+                                        onClick={() => handleSkillStatusChange(skill.id, 'COMPLETED')}
+                                        className={`status-btn completed ${currentStatus === 'COMPLETED' ? 'active' : ''}`}
+                                      >
+                                        ✓
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Desktop Level Progress Overview - Keep existing design */}
+      {(!coachingMode || activeTab === 'overview') && (
+        <div className="card desktop-level-progress">
           <div className="card-header">
             <h4 className="card-title">Level Progress</h4>
             <div className="collapse-info">
@@ -521,53 +742,52 @@ const GymnastProgress = ({ gymnastId }) => {
 
               return (
                 <div key={level.id} id={`level-${level.id}`} className={levelClass}>
-                  <div className="level-header mobile-level-header">
+                  <div className="level-header">
                     <div className="level-info">
                       <div className="level-title-row">
-                        <h5 className="mobile-level-title">
+                        <h5>
                           {level.identifier} - {level.name}
                           {isSideTrack(level.identifier) && (
                             <span className="side-track-badge">Side-track</span>
                           )}
                         </h5>
-                        <div className="level-progress-mobile">
-                          <span className="progress-percentage-mobile">{Math.round(progressPercentage)}%</span>
-                          {isCompleted && (
-                            <span className="badge badge-success badge-sm">✓</span>
-                          )}
-                        </div>
                       </div>
-                      <div className="level-stats-mobile">
-                        <span className="progress-text-mobile">
-                          {completedCount}/{totalSkills} skills
+                      <div className="level-stats">
+                        <span className="progress-text">
+                          {completedCount} of {totalSkills} skills completed
                         </span>
+                        {isCompleted && (
+                          <span className="badge badge-success">Level Completed</span>
+                        )}
                       </div>
                     </div>
-                    <div className="level-actions-mobile">
-                      <div className="progress-bar-mobile">
+                    <div className="progress-bar-container">
+                      <div className="progress-bar">
                         <div 
-                          className="progress-fill-mobile" 
+                          className="progress-fill" 
                           style={{ width: `${progressPercentage}%` }}
                         />
                       </div>
-                      <div className="action-buttons-mobile">
-                        {canCoach && coachingMode && !isCompleted && totalSkills > 0 && (
-                          <button
-                            onClick={() => handleCompleteLevel(level.id)}
-                            className="btn btn-xs btn-success mobile-complete-btn"
-                            title="Complete all skills in this level"
-                          >
-                            Complete
-                          </button>
-                        )}
+                      <span className="progress-percentage">{Math.round(progressPercentage)}%</span>
+
+                      {canCoach && coachingMode && !isCompleted && totalSkills > 0 && (
                         <button
+                          onClick={() => handleCompleteLevel(level.id)}
+                          className="btn btn-xs btn-success"
+                          title="Complete all skills in this level"
+                          style={{ marginRight: '5px' }}
+                        >
+                          Complete Level
+                        </button>
+                      )}
+
+                      <button
                           onClick={() => toggleLevelCollapse(level.id)}
-                          className="btn btn-xs btn-outline mobile-collapse-btn"
+                          className="btn btn-xs btn-outline collapse-toggle"
                           title={isCollapsed ? 'Expand level' : 'Collapse level'}
                         >
                           {isCollapsed ? '▼' : '▲'}
                         </button>
-                      </div>
                     </div>
                   </div>
                   
@@ -582,104 +802,36 @@ const GymnastProgress = ({ gymnastId }) => {
                           ))}
                         </div>
                       )}
-
-                      {/* Quick Actions for Mobile */}
-                      {canCoach && coachingMode && level.skills && level.skills.length > 0 && (
-                        <div className="quick-actions">
-                          <h6>Quick Actions:</h6>
-                          <div className="quick-action-buttons">
-                            <button
-                              onClick={() => {
-                                level.skills.forEach(skill => {
-                                  const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
-                                  const currentStatus = skillProgress?.status || 'NOT_STARTED';
-                                  if (currentStatus !== 'COMPLETED') {
-                                    handleSkillStatusChange(skill.id, 'COMPLETED');
-                                  }
-                                });
-                              }}
-                              className="btn btn-success btn-sm quick-action-btn"
-                              title="Mark all skills as completed"
-                            >
-                              ✓ Mark All Complete
-                            </button>
-                            <button
-                              onClick={() => {
-                                level.skills.forEach(skill => {
-                                  const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
-                                  const currentStatus = skillProgress?.status || 'NOT_STARTED';
-                                  if (currentStatus !== 'IN_PROGRESS') {
-                                    handleSkillStatusChange(skill.id, 'IN_PROGRESS');
-                                  }
-                                });
-                              }}
-                              className="btn btn-warning btn-sm quick-action-btn"
-                              title="Mark all skills as in progress"
-                            >
-                              ◐ Mark All In Progress
-                            </button>
-                            <button
-                              onClick={() => {
-                                level.skills.forEach(skill => {
-                                  const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
-                                  const currentStatus = skillProgress?.status || 'NOT_STARTED';
-                                  if (currentStatus !== 'NOT_STARTED') {
-                                    handleSkillStatusChange(skill.id, 'NOT_STARTED');
-                                  }
-                                });
-                              }}
-                              className="btn btn-secondary btn-sm quick-action-btn"
-                              title="Reset all skills to not started"
-                            >
-                              ○ Reset All
-                            </button>
-                          </div>
-                        </div>
-                      )}
                       {level.skills && level.skills.length > 0 && (
                         <div className="level-skills">
                           <h6>Skills:</h6>
-                          <div className="skills-list">
+                          <div className="skills-grid">
                             {level.skills.map(skill => {
                               const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
                               const currentStatus = skillProgress?.status || 'NOT_STARTED';
                               
                               return (
-                                <div key={skill.id} className={`skill-item skill-${currentStatus.toLowerCase()}`}>
-                                  <div className="skill-info">
-                                    <div className="skill-name">{skill.name}</div>
-                                    <div className="skill-status">
-                                      <span className={`status-indicator status-${currentStatus.toLowerCase()}`}>
-                                        {currentStatus === 'NOT_STARTED' && '○'}
-                                        {currentStatus === 'IN_PROGRESS' && '◐'}
-                                        {currentStatus === 'COMPLETED' && '✓'}
-                                      </span>
-                                      <span className="status-text">
-                                        {currentStatus === 'NOT_STARTED' && 'Not Started'}
-                                        {currentStatus === 'IN_PROGRESS' && 'In Progress'}
-                                        {currentStatus === 'COMPLETED' && 'Completed'}
-                                      </span>
-                                    </div>
-                                  </div>
+                                <div key={skill.id} className={`skill-card skill-${currentStatus.toLowerCase()}`}>
+                                  <div className="skill-name">{skill.name}</div>
                                   {canCoach && coachingMode && (
                                     <div className="skill-controls">
                                       <button
                                         onClick={() => handleSkillStatusChange(skill.id, 'NOT_STARTED')}
-                                        className={`btn btn-sm mobile-skill-btn ${currentStatus === 'NOT_STARTED' ? 'btn-secondary' : 'btn-outline'}`}
+                                        className={`btn btn-xs ${currentStatus === 'NOT_STARTED' ? 'btn-secondary' : 'btn-outline'}`}
                                         title="Not Started"
                                       >
                                         ○
                                       </button>
                                       <button
                                         onClick={() => handleSkillStatusChange(skill.id, 'IN_PROGRESS')}
-                                        className={`btn btn-sm mobile-skill-btn ${currentStatus === 'IN_PROGRESS' ? 'btn-warning' : 'btn-outline'}`}
+                                        className={`btn btn-xs ${currentStatus === 'IN_PROGRESS' ? 'btn-warning' : 'btn-outline'}`}
                                         title="In Progress"
                                       >
                                         ◐
                                       </button>
                                       <button
                                         onClick={() => handleSkillStatusChange(skill.id, 'COMPLETED')}
-                                        className={`btn btn-sm mobile-skill-btn ${currentStatus === 'COMPLETED' ? 'btn-success' : 'btn-outline'}`}
+                                        className={`btn btn-xs ${currentStatus === 'COMPLETED' ? 'btn-success' : 'btn-outline'}`}
                                         title="Completed"
                                       >
                                         ✓
