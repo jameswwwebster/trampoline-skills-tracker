@@ -20,6 +20,7 @@ const Gymnasts = () => {
   const [success, setSuccess] = useState(null);
   const [showQuickNav, setShowQuickNav] = useState(false);
   const [sessionGymnasts, setSessionGymnasts] = useState(new Set());
+  const [sessionTimestamps, setSessionTimestamps] = useState(new Map()); // Track when gymnasts were added to session
   const [showSessionOnly, setShowSessionOnly] = useState(false);
   const [sortBy, setSortBy] = useState('name'); // 'name', 'level', 'recent', 'age'
   const { canManageGymnasts, isClubAdmin } = useAuth();
@@ -34,13 +35,24 @@ const Gymnasts = () => {
   // Session management functions
   const toggleGymnastInSession = (gymnastId) => {
     const newSession = new Set(sessionGymnasts);
+    const newTimestamps = new Map(sessionTimestamps);
+    
     if (newSession.has(gymnastId)) {
+      // Removing from session
       newSession.delete(gymnastId);
+      newTimestamps.delete(gymnastId);
     } else {
+      // Adding to session
       newSession.add(gymnastId);
+      newTimestamps.set(gymnastId, new Date().toISOString());
     }
+    
     setSessionGymnasts(newSession);
+    setSessionTimestamps(newTimestamps);
+    
+    // Save to localStorage
     localStorage.setItem('coachingSession', JSON.stringify(Array.from(newSession)));
+    localStorage.setItem('sessionTimestamps', JSON.stringify(Array.from(newTimestamps.entries())));
   };
 
   // Load session and preferences from localStorage on component mount
@@ -51,6 +63,15 @@ const Gymnasts = () => {
         setSessionGymnasts(new Set(JSON.parse(savedSession)));
       } catch (e) {
         console.error('Failed to load session:', e);
+      }
+    }
+
+    const savedTimestamps = localStorage.getItem('sessionTimestamps');
+    if (savedTimestamps) {
+      try {
+        setSessionTimestamps(new Map(JSON.parse(savedTimestamps)));
+      } catch (e) {
+        console.error('Failed to load session timestamps:', e);
       }
     }
 
@@ -317,8 +338,20 @@ const Gymnasts = () => {
           return levelA.identifier.localeCompare(levelB.identifier);
         
         case 'recent':
-          // Sort by most recent activity (assuming we track this in the future)
-          // For now, sort by last updated or created date
+          // Sort by most recent session activity
+          const timestampA = sessionTimestamps.get(a.id);
+          const timestampB = sessionTimestamps.get(b.id);
+          
+          // If both have session timestamps, sort by most recent session activity
+          if (timestampA && timestampB) {
+            return new Date(timestampB) - new Date(timestampA);
+          }
+          
+          // If only one has a session timestamp, prioritize it
+          if (timestampA && !timestampB) return -1;
+          if (!timestampA && timestampB) return 1;
+          
+          // If neither has session timestamps, fall back to last updated/created date
           const dateA = new Date(a.updatedAt || a.createdAt);
           const dateB = new Date(b.updatedAt || b.createdAt);
           return dateB - dateA; // Most recent first
@@ -694,6 +727,10 @@ const Gymnasts = () => {
                         setSearchTerm('');
                         setShowSessionOnly(false);
                         setSearchParams(new URLSearchParams());
+                        setSessionGymnasts(new Set());
+                        setSessionTimestamps(new Map());
+                        localStorage.removeItem('coachingSession');
+                        localStorage.removeItem('sessionTimestamps');
                       }}
                     >
                       Clear All Filters
@@ -1092,6 +1129,10 @@ const Gymnasts = () => {
                         setSearchTerm('');
                         setShowSessionOnly(false);
                         setSearchParams(new URLSearchParams());
+                        setSessionGymnasts(new Set());
+                        setSessionTimestamps(new Map());
+                        localStorage.removeItem('coachingSession');
+                        localStorage.removeItem('sessionTimestamps');
                       }}
                     >
                       Clear All Filters
