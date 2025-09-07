@@ -613,8 +613,10 @@ const GymnastProgress = ({ gymnastId }) => {
         </div>
       </div>
 
-      {/* Mobile-First Progress Interface */}
-      {(!coachingMode || activeTab === 'overview') && (
+      {/* Mobile Layout */}
+      <div className="mobile-layout">
+        {/* Mobile-First Progress Interface */}
+        {(!coachingMode || activeTab === 'overview') && (
         <>
           {/* Mobile Header with Quick Actions */}
           <div className="mobile-progress-header">

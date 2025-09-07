@@ -1417,6 +1417,15 @@ textarea.form-control {
     display: none;
   }
 
+  /* Layout containers */
+  .desktop-layout {
+    display: none;
+  }
+  
+  .mobile-layout {
+    display: block;
+  }
+
   .mobile-filter-select {
     font-size: 1rem;
     padding: 0.75rem;
@@ -2368,6 +2377,32 @@ textarea.form-control {
     }
     
     .mobile-gymnast-header {
+      display: none;
+    }
+
+    /* Hide mobile layout and show desktop layout */
+    .mobile-layout {
+      display: none;
+    }
+    
+    .desktop-layout {
+      display: block;
+    }
+  }
+
+  /* Mobile styles - hide desktop elements on smaller screens */
+  @media (max-width: 767px) {
+    .desktop-layout {
+      display: none;
+    }
+    
+    .mobile-layout {
+      display: block;
+    }
+    
+    .desktop-level-progress,
+    .desktop-coaching-tabs,
+    .desktop-progress-summary {
       display: none;
     }
   }

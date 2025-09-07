@@ -378,7 +378,7 @@ const Gymnasts = () => {
           <h1 className="mobile-page-title">Skill Tracking</h1>
           {canManageGymnasts && (
             <button 
-              className="btn btn-outline btn-sm"
+              className="btn btn-primary btn-sm"
               onClick={() => setShowAddForm(!showAddForm)}
             >
               {showAddForm ? '✕' : '+'}
@@ -684,7 +684,23 @@ const Gymnasts = () => {
                 <p>Click "Add New Gymnast" to get started.</p>
               </>
             ) : (
-              <p>No active gymnasts match your search criteria.</p>
+              <>
+                <p>No active gymnasts match your search criteria.</p>
+                {(searchTerm || searchParams.get('level') || searchParams.get('competition') || showSessionOnly) && (
+                  <div style={{ marginTop: '1rem' }}>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setShowSessionOnly(false);
+                        setSearchParams(new URLSearchParams());
+                      }}
+                    >
+                      Clear All Filters
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1068,6 +1084,20 @@ const Gymnasts = () => {
               </div>
               <div>
                 <p>No gymnasts match your search criteria.</p>
+                {(searchTerm || searchParams.get('level') || searchParams.get('competition') || showSessionOnly) && (
+                  <div style={{ marginTop: '1rem' }}>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setShowSessionOnly(false);
+                        setSearchParams(new URLSearchParams());
+                      }}
+                    >
+                      Clear All Filters
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
