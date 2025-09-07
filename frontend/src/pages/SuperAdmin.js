@@ -113,6 +113,49 @@ const SuperAdmin = () => {
     }
   };
 
+  const handleClubEdit = async (clubId) => {
+    // TODO: Implement club editing functionality
+    alert('Club editing functionality will be implemented');
+  };
+
+  const handleClubConnectAs = async (clubId) => {
+    // TODO: Implement connect-as functionality
+    alert('Connect-as functionality will be implemented');
+  };
+
+  const handleClubDelete = async (clubId) => {
+    if (window.confirm('Are you sure you want to delete this club? This action cannot be undone.')) {
+      try {
+        await axios.delete(`/api/super-admin/clubs/${clubId}`);
+        fetchClubs();
+        setError(null);
+        alert('Club deleted successfully');
+      } catch (error) {
+        console.error('Failed to delete club:', error);
+        setError('Failed to delete club');
+      }
+    }
+  };
+
+  const handleUserEdit = async (userId) => {
+    // TODO: Implement user editing functionality
+    alert('User editing functionality will be implemented');
+  };
+
+  const handleUserDelete = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      try {
+        await axios.delete(`/api/super-admin/users/${userId}`);
+        fetchUsers(userPage, userSearchTerm);
+        setError(null);
+        alert('User deleted successfully');
+      } catch (error) {
+        console.error('Failed to delete user:', error);
+        setError('Failed to delete user');
+      }
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'users') {
       fetchUsers(userPage, userSearchTerm);
@@ -167,12 +210,6 @@ const SuperAdmin = () => {
           onClick={() => setActiveTab('users')}
         >
           👥 Users
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'gymnasts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('gymnasts')}
-        >
-          🤸 Gymnasts
         </button>
       </div>
 
@@ -238,62 +275,66 @@ const SuperAdmin = () => {
             />
           </div>
 
-          <div className="clubs-grid">
-            {clubs && clubs.length > 0 ? clubs
-              .filter(club => 
-                club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                club.email?.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-              .map(club => (
-                <div key={club.id} className="club-card">
-                  <div className="club-header">
-                    <h3>{club.name}</h3>
-                    <button
-                      className="btn btn-outline btn-sm"
-                      onClick={() => handleClubSelect(club.id)}
-                    >
-                      View Details
-                    </button>
-                  </div>
-                  
-                  <div className="club-stats">
-                    <div className="stat">
-                      <span className="stat-number">{club._count.users}</span>
-                      <span className="stat-label">Users</span>
-                    </div>
-                    <div className="stat">
-                      <span className="stat-number">{club._count.gymnasts}</span>
-                      <span className="stat-label">Gymnasts</span>
-                    </div>
-                    <div className="stat">
-                      <span className="stat-number">{club._count.levels}</span>
-                      <span className="stat-label">Levels</span>
-                    </div>
-                  </div>
-
-                  <div className="club-info">
-                    {club.email && <p><strong>Email:</strong> {club.email}</p>}
-                    {club.phone && <p><strong>Phone:</strong> {club.phone}</p>}
-                    <p><strong>Created:</strong> {new Date(club.createdAt).toLocaleDateString()}</p>
-                  </div>
-
-                  <div className="club-admins">
-                    <h4>Club Admins:</h4>
-                    {club.users && club.users.length > 0 ? club.users.map(admin => (
-                      <div key={admin.id} className="admin-item">
-                        <span>{admin.firstName} {admin.lastName}</span>
-                        <span className="text-muted">({admin.email})</span>
-                      </div>
-                    )) : (
-                      <p className="text-muted">No admins found</p>
-                    )}
-                  </div>
-                </div>
-              )) : (
-                <div className="text-center">
-                  <p>No clubs found</p>
-                </div>
-              )}
+          <div className="table-responsive">
+            <table className="table table-striped">
+              <thead>
+                <tr>
+                  <th>Club Name</th>
+                  <th>Email</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clubs && clubs.length > 0 ? clubs
+                  .filter(club => 
+                    club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    club.email?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map(club => (
+                    <tr key={club.id}>
+                      <td>
+                        <strong>{club.name}</strong>
+                        <br />
+                        <small className="text-muted">
+                          {club._count.users} users, {club._count.gymnasts} gymnasts, {club._count.levels} levels
+                        </small>
+                      </td>
+                      <td>{club.email || <span className="text-muted">No email</span>}</td>
+                      <td>
+                        <div className="btn-group" role="group">
+                          <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => handleClubEdit(club.id)}
+                            title="Edit Club"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => handleClubConnectAs(club.id)}
+                            title="Connect as Club Admin"
+                          >
+                            🔗 Connect As
+                          </button>
+                          <button
+                            className="btn btn-outline btn-sm btn-danger"
+                            onClick={() => handleClubDelete(club.id)}
+                            title="Delete Club"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan="3" className="text-center">
+                        <p>No clubs found</p>
+                      </td>
+                    </tr>
+                  )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -350,13 +391,29 @@ const SuperAdmin = () => {
                     <td>{user._count?.gymnasts || 0}</td>
                     <td>{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}</td>
                     <td>
-                      <button
-                        className="btn btn-outline btn-sm"
-                        onClick={() => handleResetPassword(user.id)}
-                        title="Reset Password"
-                      >
-                        🔑
-                      </button>
+                      <div className="btn-group" role="group">
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={() => handleUserEdit(user.id)}
+                          title="Edit User"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={() => handleResetPassword(user.id)}
+                          title="Reset Password"
+                        >
+                          🔑
+                        </button>
+                        <button
+                          className="btn btn-outline btn-sm btn-danger"
+                          onClick={() => handleUserDelete(user.id)}
+                          title="Delete User"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -387,8 +444,8 @@ const SuperAdmin = () => {
         </div>
       )}
 
-      {/* Gymnasts Tab */}
-      {activeTab === 'gymnasts' && (
+      {/* Gymnasts Tab - Removed */}
+      {false && (
         <div className="admin-gymnasts">
           <div className="search-controls">
             <input

@@ -304,6 +304,26 @@ router.patch('/users/:userId', async (req, res) => {
   }
 });
 
+// Delete user
+router.delete('/users/:userId', async (req, res) => {
+  try {
+    // First, delete all related data
+    await prisma.gymnast.deleteMany({
+      where: { userId: req.params.userId }
+    });
+    
+    // Delete the user
+    await prisma.user.delete({
+      where: { id: req.params.userId }
+    });
+
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
 // Update gymnast status
 router.patch('/gymnasts/:gymnastId', async (req, res) => {
   try {
@@ -380,6 +400,34 @@ router.patch('/clubs/:clubId', async (req, res) => {
   } catch (error) {
     console.error('Update club error:', error);
     res.status(500).json({ error: 'Failed to update club' });
+  }
+});
+
+// Delete club
+router.delete('/clubs/:clubId', async (req, res) => {
+  try {
+    // First, delete all related data
+    await prisma.user.deleteMany({
+      where: { clubId: req.params.clubId }
+    });
+    
+    await prisma.gymnast.deleteMany({
+      where: { clubId: req.params.clubId }
+    });
+    
+    await prisma.level.deleteMany({
+      where: { clubId: req.params.clubId }
+    });
+    
+    // Finally, delete the club
+    await prisma.club.delete({
+      where: { id: req.params.clubId }
+    });
+
+    res.json({ message: 'Club deleted successfully' });
+  } catch (error) {
+    console.error('Delete club error:', error);
+    res.status(500).json({ error: 'Failed to delete club' });
   }
 });
 
