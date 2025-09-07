@@ -358,6 +358,175 @@ class EmailService {
       return { success: false, error: error.message };
     }
   }
+
+  async sendGuardianInvitationEmail(guardianEmail, guardianFirstName, guardianLastName, gymnastName, clubName, relationship, requestId) {
+    const acceptUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/parent-connection-request?requestId=${requestId}`;
+    
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'noreply@trampolinetracker.com',
+      to: guardianEmail,
+      subject: `Guardian Invitation from ${gymnastName} - ${clubName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #2c3e50; text-align: center;">Guardian Invitation</h2>
+          
+          <p>Hello ${guardianFirstName} ${guardianLastName},</p>
+          
+          <p><strong>${gymnastName}</strong> has invited you to be their guardian on the Trampoline Tracker platform at <strong>${clubName}</strong>.</p>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #2c3e50; margin-top: 0;">Invitation Details:</h3>
+            <ul style="list-style: none; padding: 0;">
+              <li style="margin: 10px 0;"><strong>👤 Gymnast:</strong> ${gymnastName}</li>
+              <li style="margin: 10px 0;"><strong>🏢 Club:</strong> ${clubName}</li>
+              <li style="margin: 10px 0;"><strong>👨‍👩‍👧‍👦 Relationship:</strong> ${relationship}</li>
+            </ul>
+          </div>
+          
+          <p>As a guardian, you'll be able to:</p>
+          <ul>
+            <li>View ${gymnastName}'s progress and achievements</li>
+            <li>Receive notifications about certificates and milestones</li>
+            <li>Stay connected with their trampoline journey</li>
+          </ul>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${acceptUrl}" style="background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+              Accept Invitation
+            </a>
+          </div>
+          
+          <p style="font-size: 14px; color: #7f8c8d;">
+            If you're not ${gymnastName}'s guardian or if you believe this invitation was sent in error, you can safely ignore this email.
+          </p>
+          
+          <p style="font-size: 14px; color: #7f8c8d; text-align: center; margin-top: 30px;">
+            This invitation was sent from the Trampoline Tracker system.
+          </p>
+        </div>
+      `,
+      text: `
+        Guardian Invitation
+
+        Hello ${guardianFirstName} ${guardianLastName},
+
+        ${gymnastName} has invited you to be their guardian on the Trampoline Tracker platform at ${clubName}.
+
+        Invitation Details:
+        - Gymnast: ${gymnastName}
+        - Club: ${clubName}
+        - Relationship: ${relationship}
+
+        As a guardian, you'll be able to:
+        - View ${gymnastName}'s progress and achievements
+        - Receive notifications about certificates and milestones
+        - Stay connected with their trampoline journey
+
+        Accept this invitation: ${acceptUrl}
+
+        If you're not ${gymnastName}'s guardian or if you believe this invitation was sent in error, you can safely ignore this email.
+
+        This invitation was sent from the Trampoline Tracker system.
+      `
+    };
+
+    try {
+      if (this.isConfigured && this.transporter) {
+        const info = await this.transporter.sendMail(mailOptions);
+        console.log(`✅ Guardian invitation email sent to ${guardianEmail}:`, info.messageId);
+        return { success: true, messageId: info.messageId };
+      } else {
+        // Development mode - log the email instead of sending
+        console.log('📧 Guardian invitation email (DEV MODE):');
+        console.log('To:', guardianEmail);
+        console.log('Subject:', mailOptions.subject);
+        console.log('Gymnast:', gymnastName);
+        console.log('Club:', clubName);
+        console.log('Relationship:', relationship);
+        console.log('Accept URL:', acceptUrl);
+        return { success: true, messageId: 'dev-mode' };
+      }
+    } catch (error) {
+      console.error('❌ Failed to send guardian invitation email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async sendGuardianConnectionNotification(guardianEmail, guardianName, gymnastName, clubName, relationship) {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'noreply@trampolinetracker.com',
+      to: guardianEmail,
+      subject: `Guardian Connection Confirmed - ${gymnastName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #2c3e50; text-align: center;">Guardian Connection Confirmed</h2>
+          
+          <p>Hello ${guardianName},</p>
+          
+          <p>You have been successfully connected as a guardian for <strong>${gymnastName}</strong> at <strong>${clubName}</strong>.</p>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #2c3e50; margin-top: 0;">Connection Details:</h3>
+            <ul style="list-style: none; padding: 0;">
+              <li style="margin: 10px 0;"><strong>👤 Gymnast:</strong> ${gymnastName}</li>
+              <li style="margin: 10px 0;"><strong>🏢 Club:</strong> ${clubName}</li>
+              <li style="margin: 10px 0;"><strong>👨‍👩‍👧‍👦 Relationship:</strong> ${relationship}</li>
+            </ul>
+          </div>
+          
+          <p>You can now:</p>
+          <ul>
+            <li>View ${gymnastName}'s progress and achievements</li>
+            <li>Receive notifications about certificates and milestones</li>
+            <li>Stay connected with their trampoline journey</li>
+          </ul>
+          
+          <p style="font-size: 14px; color: #7f8c8d; text-align: center; margin-top: 30px;">
+            Welcome to the Trampoline Tracker family!
+          </p>
+        </div>
+      `,
+      text: `
+        Guardian Connection Confirmed
+
+        Hello ${guardianName},
+
+        You have been successfully connected as a guardian for ${gymnastName} at ${clubName}.
+
+        Connection Details:
+        - Gymnast: ${gymnastName}
+        - Club: ${clubName}
+        - Relationship: ${relationship}
+
+        You can now:
+        - View ${gymnastName}'s progress and achievements
+        - Receive notifications about certificates and milestones
+        - Stay connected with their trampoline journey
+
+        Welcome to the Trampoline Tracker family!
+      `
+    };
+
+    try {
+      if (this.isConfigured && this.transporter) {
+        const info = await this.transporter.sendMail(mailOptions);
+        console.log(`✅ Guardian connection notification sent to ${guardianEmail}:`, info.messageId);
+        return { success: true, messageId: info.messageId };
+      } else {
+        // Development mode - log the email instead of sending
+        console.log('📧 Guardian connection notification (DEV MODE):');
+        console.log('To:', guardianEmail);
+        console.log('Subject:', mailOptions.subject);
+        console.log('Gymnast:', gymnastName);
+        console.log('Club:', clubName);
+        console.log('Relationship:', relationship);
+        return { success: true, messageId: 'dev-mode' };
+      }
+    } catch (error) {
+      console.error('❌ Failed to send guardian connection notification:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 module.exports = new EmailService(); 

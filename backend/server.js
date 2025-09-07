@@ -22,6 +22,7 @@ const certificateFieldRoutes = require('./routes/certificateFields');
 const importRoutes = require('./routes/import');
 const brandingRoutes = require('./routes/branding');
 const guardianRequestRoutes = require('./routes/guardianRequests');
+const guardianInviteRoutes = require('./routes/guardianInvites');
 const userCustomFieldRoutes = require('./routes/userCustomFields');
 const systemAdminRoutes = require('./routes/systemAdmin');
 
@@ -111,6 +112,7 @@ app.use('/api/certificate-fields', certificateFieldRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/branding', brandingRoutes);
 app.use('/api/guardian-requests', guardianRequestRoutes);
+app.use('/api/guardian-invites', guardianInviteRoutes);
 app.use('/api/user-custom-fields', userCustomFieldRoutes);
 app.use('/api/system-admin', systemAdminRoutes);
 app.use('/api/super-admin', require('./routes/superAdmin'));

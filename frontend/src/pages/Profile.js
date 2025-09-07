@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import GuardianInvite from '../components/GuardianInvite';
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
@@ -153,6 +154,12 @@ const Profile = () => {
             >
               Change Password
             </button>
+            <button
+              className={`profile-tab ${activeTab === 'guardian' ? 'active' : ''}`}
+              onClick={() => setActiveTab('guardian')}
+            >
+              Guardian Invitation
+            </button>
           </div>
         </div>
 
@@ -274,6 +281,11 @@ const Profile = () => {
                 {loading ? 'Changing...' : 'Change Password'}
               </button>
             </form>
+          )}
+
+          {/* Guardian Tab */}
+          {activeTab === 'guardian' && (
+            <GuardianInvite />
           )}
         </div>
       </div>

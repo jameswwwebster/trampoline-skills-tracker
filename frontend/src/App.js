@@ -10,6 +10,8 @@ import RateLimitBanner from './components/RateLimitBanner';
 import Login from './pages/Login';
 import ChildLogin from './pages/ChildLogin';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Gymnasts from './pages/Gymnasts';
 import Levels from './pages/Levels';
@@ -78,6 +80,8 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/child-login" element={<ChildLogin />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/parent-connection-request" element={<ParentConnectionRequest />} />
         <Route path="/invite/:token" element={<AcceptInvite />} />
         <Route path="/" element={

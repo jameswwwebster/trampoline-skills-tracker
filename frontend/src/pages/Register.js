@@ -10,6 +10,7 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    dateOfBirth: '',
     role: 'COACH',
     clubId: ''
   });
@@ -108,6 +109,7 @@ const Register = () => {
       lastName: formData.lastName,
       email: formData.email,
       password: formData.password,
+      dateOfBirth: formData.dateOfBirth || null,
       role: formData.role,
       clubId: formData.role === 'CLUB_ADMIN' ? undefined : formData.clubId
     };
@@ -184,6 +186,24 @@ const Register = () => {
             />
             {validationErrors.email && (
               <div className="text-danger">{validationErrors.email}</div>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="dateOfBirth" className="form-label">
+              Date of Birth
+              <span className="help-text">Optional - helps us provide age-appropriate features</span>
+            </label>
+            <input
+              type="date"
+              id="dateOfBirth"
+              name="dateOfBirth"
+              value={formData.dateOfBirth}
+              onChange={handleChange}
+              className="form-control"
+            />
+            {validationErrors.dateOfBirth && (
+              <div className="text-danger">{validationErrors.dateOfBirth}</div>
             )}
           </div>
 
