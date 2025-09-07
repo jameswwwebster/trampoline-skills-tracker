@@ -19,6 +19,8 @@ const Gymnasts = () => {
   const [deletingGymnast, setDeletingGymnast] = useState(null);
   const [success, setSuccess] = useState(null);
   const [showQuickNav, setShowQuickNav] = useState(false);
+  const [sessionGymnasts, setSessionGymnasts] = useState(new Set());
+  const [showSessionMode, setShowSessionMode] = useState(false);
   const { canManageGymnasts, isClubAdmin } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,6 +28,45 @@ const Gymnasts = () => {
   // Helper function to check if a level is a side-track
   const isSideTrack = (identifier) => {
     return /^\d+[a-z]$/.test(identifier);
+  };
+
+  // Session management functions
+  const toggleGymnastInSession = (gymnastId) => {
+    const newSession = new Set(sessionGymnasts);
+    if (newSession.has(gymnastId)) {
+      newSession.delete(gymnastId);
+    } else {
+      newSession.add(gymnastId);
+    }
+    setSessionGymnasts(newSession);
+    localStorage.setItem('coachingSession', JSON.stringify(Array.from(newSession)));
+  };
+
+  const clearSession = () => {
+    setSessionGymnasts(new Set());
+    localStorage.removeItem('coachingSession');
+  };
+
+  const selectAllVisible = () => {
+    const visibleGymnastIds = filteredGymnasts.map(g => g.id);
+    const newSession = new Set([...sessionGymnasts, ...visibleGymnastIds]);
+    setSessionGymnasts(newSession);
+    localStorage.setItem('coachingSession', JSON.stringify(Array.from(newSession)));
+  };
+
+  const toggleSessionMode = () => {
+    setShowSessionMode(!showSessionMode);
+    if (!showSessionMode) {
+      // Load session from localStorage when entering session mode
+      const savedSession = localStorage.getItem('coachingSession');
+      if (savedSession) {
+        try {
+          setSessionGymnasts(new Set(JSON.parse(savedSession)));
+        } catch (e) {
+          console.error('Failed to load session:', e);
+        }
+      }
+    }
   };
 
   // Helper function to determine the gymnast's current working level number
@@ -206,7 +247,7 @@ const Gymnasts = () => {
     }
   };
 
-  // Filter gymnasts based on search term and URL parameters
+  // Filter gymnasts based on search term, URL parameters, and session mode
   const filteredGymnasts = gymnasts.filter(gymnast => {
     const search = searchTerm.toLowerCase();
     const fullName = `${gymnast.firstName} ${gymnast.lastName}`.toLowerCase();
@@ -230,7 +271,11 @@ const Gymnasts = () => {
              currentLevel.competitions.some(comp => comp.name === competitionFilter);
     })();
     
-    return matchesSearch && matchesLevel && matchesCompetition;
+    // Check session filter (if in session mode and session-only view is enabled)
+    const sessionOnly = searchParams.get('sessionOnly') === 'true';
+    const matchesSession = !sessionOnly || sessionGymnasts.has(gymnast.id);
+    
+    return matchesSearch && matchesLevel && matchesCompetition && matchesSession;
   });
 
   // Separate active and archived gymnasts
@@ -256,17 +301,102 @@ const Gymnasts = () => {
 
   return (
     <div>
-      <div className="flex-between">
-        <h1>Gymnasts</h1>
-        {canManageGymnasts && (
-          <button 
-            className="btn btn-primary"
-            onClick={() => setShowAddForm(!showAddForm)}
-          >
-            {showAddForm ? 'Cancel' : 'Add New Gymnast'}
-          </button>
-        )}
+      {/* Desktop Header */}
+      <div className="desktop-header">
+        <div className="flex-between">
+          <h1>Gymnasts</h1>
+          {canManageGymnasts && (
+            <button 
+              className="btn btn-primary"
+              onClick={() => setShowAddForm(!showAddForm)}
+            >
+              {showAddForm ? 'Cancel' : 'Add New Gymnast'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Mobile Header */}
+      <div className="mobile-gymnast-header">
+        <div className="mobile-header-content">
+          <h1 className="mobile-page-title">Skill Tracking</h1>
+          <div className="mobile-stats">
+            <div className="stat-item">
+              <span className="stat-number">{activeGymnasts.length}</span>
+              <span className="stat-label">Active</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-number">{archivedGymnasts.length}</span>
+              <span className="stat-label">Archived</span>
+            </div>
+            {showSessionMode && (
+              <div className="stat-item session-stat">
+                <span className="stat-number">{sessionGymnasts.size}</span>
+                <span className="stat-label">In Session</span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="mobile-header-actions">
+          <button 
+            className={`mobile-session-btn ${showSessionMode ? 'active' : ''}`}
+            onClick={toggleSessionMode}
+            title={showSessionMode ? 'Exit Session Mode' : 'Enter Session Mode'}
+          >
+            {showSessionMode ? '✓' : '📋'}
+          </button>
+          {canManageGymnasts && (
+            <button 
+              className="mobile-add-btn"
+              onClick={() => setShowAddForm(!showAddForm)}
+            >
+              {showAddForm ? '✕' : '+'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Session Mode Controls */}
+      {showSessionMode && (
+        <div className="mobile-session-controls">
+          <div className="session-info">
+            <span className="session-label">Coaching Session</span>
+            <span className="session-count">{sessionGymnasts.size} gymnasts selected</span>
+          </div>
+          <div className="session-actions">
+            <button 
+              className="session-action-btn"
+              onClick={selectAllVisible}
+              disabled={filteredGymnasts.length === 0}
+            >
+              Select All Visible
+            </button>
+            <button 
+              className="session-action-btn clear"
+              onClick={clearSession}
+              disabled={sessionGymnasts.size === 0}
+            >
+              Clear Session
+            </button>
+            {sessionGymnasts.size > 0 && (
+              <button 
+                className={`session-action-btn ${searchParams.get('sessionOnly') === 'true' ? 'active' : ''}`}
+                onClick={() => {
+                  const newParams = new URLSearchParams(searchParams);
+                  if (searchParams.get('sessionOnly') === 'true') {
+                    newParams.delete('sessionOnly');
+                  } else {
+                    newParams.set('sessionOnly', 'true');
+                  }
+                  setSearchParams(newParams);
+                }}
+              >
+                {searchParams.get('sessionOnly') === 'true' ? 'Show All' : 'Session Only'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {!canManageGymnasts && (
         <div className="info-message">
@@ -616,25 +746,39 @@ const Gymnasts = () => {
 
               {/* Mobile Cards */}
               <div className="mobile-table-cards">
-                {activeGymnasts.map(gymnast => (
-                  <div 
-                    key={gymnast.id}
-                    className="mobile-table-card skill-tracker-card"
-                    onClick={() => handleRowClick(gymnast)}
-                    style={{ cursor: 'pointer' }}
-                    title="Tap to view progress"
-                  >
-                    <div className="mobile-card-header">
-                      <div className="mobile-card-title">
-                        {gymnast.firstName} {gymnast.lastName}
+                {activeGymnasts.map(gymnast => {
+                  const isInSession = sessionGymnasts.has(gymnast.id);
+                  return (
+                    <div 
+                      key={gymnast.id}
+                      className={`mobile-table-card skill-tracker-card ${isInSession ? 'in-session' : ''}`}
+                      onClick={() => handleRowClick(gymnast)}
+                      style={{ cursor: 'pointer' }}
+                      title="Tap to view progress"
+                    >
+                      <div className="mobile-card-header">
+                        <div className="mobile-card-title">
+                          {gymnast.firstName} {gymnast.lastName}
+                        </div>
+                        <div className="mobile-card-age">
+                          {gymnast.dateOfBirth 
+                            ? `${new Date().getFullYear() - new Date(gymnast.dateOfBirth).getFullYear()}y`
+                            : 'Age unknown'
+                          }
+                        </div>
+                        {showSessionMode && (
+                          <button 
+                            className={`session-select-btn ${isInSession ? 'selected' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleGymnastInSession(gymnast.id);
+                            }}
+                            title={isInSession ? 'Remove from session' : 'Add to session'}
+                          >
+                            {isInSession ? '✓' : '+'}
+                          </button>
+                        )}
                       </div>
-                      <div className="mobile-card-age">
-                        {gymnast.dateOfBirth 
-                          ? `${new Date().getFullYear() - new Date(gymnast.dateOfBirth).getFullYear()}y`
-                          : 'Age unknown'
-                        }
-                      </div>
-                    </div>
                     
                     <div className="mobile-card-body">
                       <div className="mobile-card-main-info">
@@ -686,7 +830,8 @@ const Gymnasts = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
               
               {/* Quick Navigation for Mobile */}
