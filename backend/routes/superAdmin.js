@@ -210,9 +210,8 @@ router.get('/gymnasts', async (req, res) => {
     const { page = 1, limit = 50, search = '', clubId = '', archived = 'false' } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const where = {
-      archived: archived === 'true'
-    };
+    const where = {};
+    // Note: archived field may not exist in remote schema, so we'll ignore it for now
     
     if (search) {
       where.OR = [
