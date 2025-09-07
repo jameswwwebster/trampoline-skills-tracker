@@ -28,6 +28,18 @@ const systemAdminRoutes = require('./routes/systemAdmin');
 const app = express();
 const prisma = new PrismaClient();
 
+// Test Canvas availability at startup
+console.log('🔍 Testing Canvas availability...');
+try {
+  const canvas = require('canvas');
+  console.log('✅ Canvas loaded successfully at startup');
+  console.log('   Canvas version:', canvas.version);
+} catch (error) {
+  console.log('❌ Canvas failed to load at startup');
+  console.log('   Error:', error.message);
+  console.log('   Stack:', error.stack);
+}
+
 // No proxy-specific trust needed for local/basic hosting
 app.set('trust proxy', false);
 
