@@ -304,15 +304,15 @@ const Gymnasts = () => {
       <div className="mobile-gymnast-header">
         <div className="mobile-header-content">
           <h1 className="mobile-page-title">Skill Tracking</h1>
+          {canManageGymnasts && (
+            <button 
+              className="btn btn-primary"
+              onClick={() => setShowAddForm(!showAddForm)}
+            >
+              {showAddForm ? 'Cancel' : 'Add Gymnast'}
+            </button>
+          )}
         </div>
-        {canManageGymnasts && (
-          <button 
-            className="mobile-add-btn"
-            onClick={() => setShowAddForm(!showAddForm)}
-          >
-            {showAddForm ? '✕' : '+'}
-          </button>
-        )}
       </div>
 
       {!canManageGymnasts && (
