@@ -115,6 +115,63 @@ app.get('/api/health', async (req, res) => {
     dbConnected
   });
 });
+
+// Canvas test endpoint
+app.get('/api/canvas-test', (req, res) => {
+  try {
+    const canvas = require('canvas');
+    const { createCanvas, loadImage, registerFont } = canvas;
+    
+    // Test basic canvas creation
+    const testCanvas = createCanvas(400, 200);
+    const ctx = testCanvas.getContext('2d');
+    
+    // Test basic drawing
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(0, 0, 400, 200);
+    
+    ctx.fillStyle = '#333';
+    ctx.font = '20px Arial';
+    ctx.fillText('Canvas Test', 20, 40);
+    
+    // Test custom font loading
+    let fontTest = 'Custom font: Not available';
+    try {
+      const fontPath = require('path').join(__dirname, 'fonts', 'LilitaOne-Regular.ttf');
+      registerFont(fontPath, { family: 'Lilita One' });
+      ctx.font = '20px "Lilita One"';
+      ctx.fillText('Custom Font Test', 20, 80);
+      fontTest = 'Custom font: Available';
+    } catch (fontError) {
+      ctx.font = '16px Arial';
+      ctx.fillStyle = '#666';
+      ctx.fillText('Custom font: Not available', 20, 80);
+    }
+    
+    // Test shapes
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillRect(20, 100, 50, 50);
+    
+    ctx.fillStyle = '#3498db';
+    ctx.beginPath();
+    ctx.arc(120, 125, 25, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Convert to PNG
+    const buffer = testCanvas.toBuffer('image/png');
+    
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', 'inline; filename="canvas-test.png"');
+    res.send(buffer);
+    
+  } catch (error) {
+    res.status(500).json({
+      error: 'Canvas test failed',
+      message: error.message,
+      stack: error.stack
+    });
+  }
+});
 // API-only server; no frontend static file serving
 
 // Error handling middleware
