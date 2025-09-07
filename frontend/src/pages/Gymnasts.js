@@ -21,6 +21,7 @@ const Gymnasts = () => {
   const [showQuickNav, setShowQuickNav] = useState(false);
   const [sessionGymnasts, setSessionGymnasts] = useState(new Set());
   const [showSessionOnly, setShowSessionOnly] = useState(false);
+  const [sortBy, setSortBy] = useState('name'); // 'name', 'level', 'recent', 'age'
   const { canManageGymnasts, isClubAdmin } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -262,9 +263,42 @@ const Gymnasts = () => {
     return matchesSearch && matchesLevel && matchesCompetition && matchesSession;
   });
 
-  // Separate active and archived gymnasts
-  const activeGymnasts = filteredGymnasts.filter(g => !g.isArchived);
-  const archivedGymnasts = filteredGymnasts.filter(g => g.isArchived);
+  // Sort gymnasts based on selected sort option
+  const sortGymnasts = (gymnasts) => {
+    return [...gymnasts].sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+        
+        case 'level':
+          const levelA = getCurrentLevel(a, levels);
+          const levelB = getCurrentLevel(b, levels);
+          if (!levelA && !levelB) return 0;
+          if (!levelA) return 1;
+          if (!levelB) return -1;
+          return levelA.identifier.localeCompare(levelB.identifier);
+        
+        case 'recent':
+          // Sort by most recent activity (assuming we track this in the future)
+          // For now, sort by last updated or created date
+          const dateA = new Date(a.updatedAt || a.createdAt);
+          const dateB = new Date(b.updatedAt || b.createdAt);
+          return dateB - dateA; // Most recent first
+        
+        case 'age':
+          const ageA = a.dateOfBirth ? new Date().getFullYear() - new Date(a.dateOfBirth).getFullYear() : 0;
+          const ageB = b.dateOfBirth ? new Date().getFullYear() - new Date(b.dateOfBirth).getFullYear() : 0;
+          return ageA - ageB; // Youngest first
+        
+        default:
+          return 0;
+      }
+    });
+  };
+
+  // Separate active and archived gymnasts, then sort them
+  const activeGymnasts = sortGymnasts(filteredGymnasts.filter(g => !g.isArchived));
+  const archivedGymnasts = sortGymnasts(filteredGymnasts.filter(g => g.isArchived));
 
   if (loading) {
     return (
@@ -455,6 +489,20 @@ const Gymnasts = () => {
           {/* Filter Controls */}
           <div className="mobile-filter-controls">
             <div className="mobile-filter-row">
+              <div className="mobile-filter-group">
+                <label className="mobile-filter-label">Sort by</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="form-control mobile-filter-select"
+                >
+                  <option value="name">Name (A-Z)</option>
+                  <option value="recent">Most Recent</option>
+                  <option value="level">Level</option>
+                  <option value="age">Age (Youngest First)</option>
+                </select>
+              </div>
+              
               <div className="mobile-filter-group">
                 <label className="mobile-filter-label">Level</label>
                 <select
