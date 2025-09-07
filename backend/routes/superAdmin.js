@@ -38,7 +38,7 @@ router.get('/clubs', async (req, res) => {
   try {
     console.log('Fetching clubs...');
     
-    // Start with a simple query to test
+    // Include basic counts that the frontend expects
     const clubs = await prisma.club.findMany({
       select: {
         id: true,
@@ -46,7 +46,14 @@ router.get('/clubs', async (req, res) => {
         email: true,
         phone: true,
         address: true,
-        createdAt: true
+        createdAt: true,
+        _count: {
+          select: {
+            users: true,
+            gymnasts: true,
+            levels: true
+          }
+        }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -195,6 +202,7 @@ router.get('/users', async (req, res) => {
 // Get all gymnasts across all clubs
 router.get('/gymnasts', async (req, res) => {
   try {
+    console.log('Fetching gymnasts...');
     const { page = 1, limit = 50, search = '', clubId = '', archived = 'false' } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -246,6 +254,7 @@ router.get('/gymnasts', async (req, res) => {
       prisma.gymnast.count({ where })
     ]);
 
+    console.log(`Found ${gymnasts.length} gymnasts`);
     res.json({
       gymnasts,
       pagination: {
@@ -257,7 +266,11 @@ router.get('/gymnasts', async (req, res) => {
     });
   } catch (error) {
     console.error('Get gymnasts error:', error);
-    res.status(500).json({ error: 'Failed to fetch gymnasts' });
+    res.status(500).json({ 
+      error: 'Failed to fetch gymnasts',
+      details: error.message,
+      stack: error.stack
+    });
   }
 });
 
