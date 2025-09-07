@@ -21,6 +21,18 @@ const requireSuperAdmin = (req, res, next) => {
 router.use(auth);
 router.use(requireSuperAdmin);
 
+// Test endpoint to verify super admin access
+router.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Super Admin access working!', 
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role
+    }
+  });
+});
+
 // Get all clubs with basic stats
 router.get('/clubs', async (req, res) => {
   try {
@@ -39,8 +51,8 @@ router.get('/clubs', async (req, res) => {
             id: true,
             firstName: true,
             lastName: true,
-            email: true,
-            lastLoginAt: true
+            email: true
+            // lastLoginAt: true // Temporarily disabled - may not exist in remote schema
           }
         }
       },
@@ -379,22 +391,24 @@ router.get('/stats', async (req, res) => {
       prisma.level.count(),
       prisma.skill.count(),
       // prisma.competition.count(), // Temporarily disabled
-      prisma.user.findMany({
-        where: {
-          lastLoginAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
-          }
-        },
-        include: {
-          club: {
-            select: {
-              name: true
-            }
-          }
-        },
-        orderBy: { lastLoginAt: 'desc' },
-        take: 10
-      })
+      // Recent activity temporarily disabled - lastLoginAt field may not exist
+      // prisma.user.findMany({
+      //   where: {
+      //     lastLoginAt: {
+      //       gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+      //     }
+      //   },
+      //   include: {
+      //     club: {
+      //       select: {
+      //         name: true
+      //       }
+      //     }
+      //   },
+      //   orderBy: { lastLoginAt: 'desc' },
+      //   take: 10
+      // })
+      [] // Empty array for now
     ]);
 
     res.json({
