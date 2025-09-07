@@ -113,6 +113,29 @@ const SuperAdmin = () => {
     }
   };
 
+  const handleSetPassword = async (userId, userEmail) => {
+    const newPassword = prompt(`Set new password for ${userEmail}:\n\nPassword must be at least 6 characters long.`);
+    
+    if (!newPassword) return; // User cancelled
+    
+    if (newPassword.length < 6) {
+      alert('Password must be at least 6 characters long.');
+      return;
+    }
+    
+    if (window.confirm(`Are you sure you want to set a new password for ${userEmail}?`)) {
+      try {
+        await axios.post(`/api/super-admin/users/${userId}/set-password`, {
+          password: newPassword
+        });
+        alert('Password updated successfully!');
+      } catch (error) {
+        console.error('Failed to set password:', error);
+        setError('Failed to set password');
+      }
+    }
+  };
+
   const handleClubEdit = async (clubId) => {
     // TODO: Implement club editing functionality
     alert('Club editing functionality will be implemented');
@@ -402,9 +425,16 @@ const SuperAdmin = () => {
                         <button
                           className="btn btn-outline btn-sm"
                           onClick={() => handleResetPassword(user.id)}
-                          title="Reset Password"
+                          title="Reset Password (Generate Temporary)"
                         >
                           🔑
+                        </button>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={() => handleSetPassword(user.id, user.email)}
+                          title="Set Password (Manual)"
+                        >
+                          🔐
                         </button>
                         <button
                           className="btn btn-outline btn-sm btn-danger"

@@ -464,11 +464,18 @@ router.get('/stats', async (req, res) => {
 // Reset user password (generate temporary password)
 router.post('/users/:userId/reset-password', async (req, res) => {
   try {
+    const bcrypt = require('bcryptjs');
     const crypto = require('crypto');
     const temporaryPassword = crypto.randomBytes(8).toString('hex');
     
-    // In a real implementation, you'd hash this password and send it via email
-    // For now, we'll just return it (in production, this should be sent securely)
+    // Hash the temporary password
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+    
+    // Update the user's password in the database
+    await prisma.user.update({
+      where: { id: req.params.userId },
+      data: { password: hashedPassword }
+    });
     
     res.json({
       message: 'Password reset successful',
@@ -478,6 +485,33 @@ router.post('/users/:userId/reset-password', async (req, res) => {
   } catch (error) {
     console.error('Reset password error:', error);
     res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// Set user password manually
+router.post('/users/:userId/set-password', async (req, res) => {
+  try {
+    const { password } = req.body;
+    
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+    
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Update the user's password in the database
+    await prisma.user.update({
+      where: { id: req.params.userId },
+      data: { password: hashedPassword }
+    });
+    
+    res.json({
+      message: 'Password updated successfully'
+    });
+  } catch (error) {
+    console.error('Set password error:', error);
+    res.status(500).json({ error: 'Failed to set password' });
   }
 });
 
