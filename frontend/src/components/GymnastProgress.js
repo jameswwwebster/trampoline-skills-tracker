@@ -1168,6 +1168,7 @@ const GymnastProgress = ({ gymnastId }) => {
           </div>
         </>
       )}
+      </div>
 
       {/* Complete Level Confirmation Modal */}
       {confirmCompleteLevel && (
