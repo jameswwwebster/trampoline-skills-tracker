@@ -36,33 +36,30 @@ router.get('/test', (req, res) => {
 // Get all clubs with basic stats
 router.get('/clubs', async (req, res) => {
   try {
+    console.log('Fetching clubs...');
+    
+    // Start with a simple query to test
     const clubs = await prisma.club.findMany({
-      include: {
-        _count: {
-          select: {
-            users: true,
-            gymnasts: true,
-            levels: true
-          }
-        },
-        users: {
-          where: { role: 'ADMIN' },
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true
-            // lastLoginAt: true // Temporarily disabled - may not exist in remote schema
-          }
-        }
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        address: true,
+        createdAt: true
       },
       orderBy: { createdAt: 'desc' }
     });
 
+    console.log(`Found ${clubs.length} clubs`);
     res.json(clubs);
   } catch (error) {
     console.error('Get clubs error:', error);
-    res.status(500).json({ error: 'Failed to fetch clubs' });
+    res.status(500).json({ 
+      error: 'Failed to fetch clubs',
+      details: error.message,
+      stack: error.stack
+    });
   }
 });
 
@@ -375,55 +372,41 @@ router.patch('/clubs/:clubId', async (req, res) => {
 // Get system statistics
 router.get('/stats', async (req, res) => {
   try {
+    console.log('Fetching stats...');
+    
+    // Start with basic counts only
     const [
       totalClubs,
       totalUsers,
       totalGymnasts,
-      activeGymnasts,
       totalLevels,
-      totalSkills,
-      recentActivity
+      totalSkills
     ] = await Promise.all([
       prisma.club.count(),
       prisma.user.count(),
       prisma.gymnast.count(),
-      prisma.gymnast.count({ where: { archived: false } }),
       prisma.level.count(),
-      prisma.skill.count(),
-      // prisma.competition.count(), // Temporarily disabled
-      // Recent activity temporarily disabled - lastLoginAt field may not exist
-      // prisma.user.findMany({
-      //   where: {
-      //     lastLoginAt: {
-      //       gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
-      //     }
-      //   },
-      //   include: {
-      //     club: {
-      //       select: {
-      //         name: true
-      //       }
-      //     }
-      //   },
-      //   orderBy: { lastLoginAt: 'desc' },
-      //   take: 10
-      // })
-      [] // Empty array for now
+      prisma.skill.count()
     ]);
+
+    console.log('Stats fetched successfully');
 
     res.json({
       totalClubs,
       totalUsers,
       totalGymnasts,
-      activeGymnasts,
+      activeGymnasts: totalGymnasts, // Assume all are active for now
       totalLevels,
       totalSkills,
-      // totalCompetitions, // Temporarily disabled
-      recentActivity
+      recentActivity: [] // Empty for now
     });
   } catch (error) {
     console.error('Get stats error:', error);
-    res.status(500).json({ error: 'Failed to fetch statistics' });
+    res.status(500).json({ 
+      error: 'Failed to fetch statistics',
+      details: error.message,
+      stack: error.stack
+    });
   }
 });
 
