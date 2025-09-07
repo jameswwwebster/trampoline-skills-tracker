@@ -1,29 +1,24 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
+const { auth } = require('../middleware/auth');
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // Middleware to check if user is super admin
-const requireSuperAdmin = async (req, res, next) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: { club: true }
-    });
-
-    if (!user || user.role !== 'SUPER_ADMIN') {
-      return res.status(403).json({ error: 'Super admin access required' });
-    }
-
-    req.superAdmin = user;
-    next();
-  } catch (error) {
-    console.error('Super admin auth error:', error);
-    res.status(500).json({ error: 'Authentication error' });
+const requireSuperAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
   }
+
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super admin access required' });
+  }
+
+  next();
 };
 
-// Apply super admin middleware to all routes
+// Apply authentication and super admin middleware to all routes
+router.use(auth);
 router.use(requireSuperAdmin);
 
 // Get all clubs with basic stats
