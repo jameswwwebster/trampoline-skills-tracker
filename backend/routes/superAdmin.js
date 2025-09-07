@@ -211,7 +211,10 @@ router.get('/gymnasts', async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const where = {};
-    // Note: archived field may not exist in remote schema, so we'll ignore it for now
+    // Use isArchived field if archived parameter is provided
+    if (archived !== undefined) {
+      where.isArchived = archived === 'true';
+    }
     
     if (search) {
       where.OR = [
@@ -247,7 +250,7 @@ router.get('/gymnasts', async (req, res) => {
       ...gymnast,
       dateOfBirth: null,
       emergencyContact: null,
-      archived: false,
+      isArchived: false,
       club: { id: gymnast.clubId, name: 'Unknown Club' },
       levelProgress: [],
       skillProgress: []
@@ -308,9 +311,9 @@ router.patch('/gymnasts/:gymnastId', async (req, res) => {
     
     const updateData = {};
     if (archived !== undefined) {
-      updateData.archived = archived;
+      updateData.isArchived = archived;
       if (archived && archiveReason) {
-        updateData.archiveReason = archiveReason;
+        updateData.archivedReason = archiveReason;
       }
     }
 
