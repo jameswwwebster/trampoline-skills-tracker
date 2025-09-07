@@ -54,14 +54,29 @@ app.use((req, res, next) => {
 app.use(helmet());
 
 // CORS configuration for local and Render deployment
-app.use(cors({
+const corsOptions = {
   origin: [
     'http://localhost:3000',
     'https://trampoline-frontend.onrender.com',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true
-}));
+};
+
+console.log('🌐 CORS Configuration:');
+console.log('   Allowed origins:', corsOptions.origin);
+console.log('   FRONTEND_URL env var:', process.env.FRONTEND_URL);
+
+app.use(cors(corsOptions));
+
+// CORS test endpoint
+app.get('/api/cors-test', (req, res) => {
+  res.json({ 
+    message: 'CORS is working!', 
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Rate limiting
 const limiter = rateLimit({
