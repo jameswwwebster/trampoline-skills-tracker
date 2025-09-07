@@ -433,48 +433,7 @@ const GymnastProgress = ({ gymnastId }) => {
 
   return (
     <div className="gymnast-progress">
-      {/* Desktop Progress Summary */}
-      <div className="progress-summary desktop-progress-summary">
-        <div className="progress-header">
-          <h3>{gymnast.firstName} {gymnast.lastName}'s Progress</h3>
-          {canCoach && (
-            <div className="coaching-controls">
-              <button
-                onClick={() => setCoachingMode(!coachingMode)}
-                className={`btn ${coachingMode ? 'btn-success' : 'btn-outline'}`}
-              >
-                {coachingMode ? 'Exit Coaching Mode' : 'Enter Coaching Mode'}
-              </button>
-            </div>
-          )}
-        </div>
-        
-        {/* Current Level Status */}
-        <div className="current-level">
-          {currentLevel ? (
-            <div 
-              onClick={() => scrollToLevel(currentLevel.id)}
-              style={{ cursor: 'pointer' }}
-              title="Click to scroll to this level"
-            >
-              <span className="coaching-label">Current Level:</span>
-              <span className="level-badge clickable">{currentLevel.name}</span>
-            </div>
-          ) : (
-            <span className="badge badge-secondary">Not started</span>
-          )}
-          
-          {workingLevel && (
-            <div style={{ marginTop: '0.5rem' }}>
-              <span className="badge badge-warning">
-                Working on Level {workingLevel.identifier}: {workingLevel.name}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Coaching Interface */}
+      {/* Mobile Coaching Interface - Moved to top */}
       {coachingMode && canCoach && (
         <div className="coaching-interface">
           {/* Mobile Coaching Menu */}
@@ -613,6 +572,47 @@ const GymnastProgress = ({ gymnastId }) => {
         </div>
       )}
 
+      {/* Desktop Progress Summary */}
+      <div className="progress-summary desktop-progress-summary">
+        <div className="progress-header">
+          <h3>{gymnast.firstName} {gymnast.lastName}'s Progress</h3>
+          {canCoach && (
+            <div className="coaching-controls">
+              <button
+                onClick={() => setCoachingMode(!coachingMode)}
+                className={`btn ${coachingMode ? 'btn-success' : 'btn-outline'}`}
+              >
+                {coachingMode ? 'Exit Coaching Mode' : 'Enter Coaching Mode'}
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {/* Current Level Status */}
+        <div className="current-level">
+          {currentLevel ? (
+            <div 
+              onClick={() => scrollToLevel(currentLevel.id)}
+              style={{ cursor: 'pointer' }}
+              title="Click to scroll to this level"
+            >
+              <span className="coaching-label">Current Level:</span>
+              <span className="level-badge clickable">{currentLevel.name}</span>
+            </div>
+          ) : (
+            <span className="badge badge-secondary">Not started</span>
+          )}
+          
+          {workingLevel && (
+            <div style={{ marginTop: '0.5rem' }}>
+              <span className="badge badge-warning">
+                Working on Level {workingLevel.identifier}: {workingLevel.name}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Mobile-First Progress Interface */}
       {(!coachingMode || activeTab === 'overview') && (
         <>
@@ -690,7 +690,7 @@ const GymnastProgress = ({ gymnastId }) => {
               const isCurrentLevel = !isSideTrack(level.identifier) && parseInt(level.identifier) === getCurrentLevelNumber(gymnast, levels);
               
               return (
-                <div key={level.id} className={`mobile-level-card ${isCompleted ? 'completed' : ''} ${isCurrentLevel ? 'current' : ''} ${isSideTrack(level.identifier) ? 'side-track' : ''}`}>
+                <div key={level.id} id={`level-${level.id}`} className={`mobile-level-card ${isCompleted ? 'completed' : ''} ${isCurrentLevel ? 'current' : ''} ${isSideTrack(level.identifier) ? 'side-track' : ''}`}>
                   {/* Level Header */}
                   <div className="mobile-level-header" onClick={() => toggleLevelCollapse(level.id)}>
                     <div className="level-title-section">

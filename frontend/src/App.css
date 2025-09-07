@@ -1590,6 +1590,9 @@ textarea.form-control {
     border-radius: 12px;
     margin-bottom: 1rem;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
 
   .gymnast-name-mobile {
