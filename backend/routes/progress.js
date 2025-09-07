@@ -1152,6 +1152,13 @@ async function awardCertificateForLevel(gymnastId, levelId, userId) {
                 email: true,
                 role: true
               }
+            },
+            club: {
+              select: {
+                id: true,
+                name: true,
+                emailEnabled: true
+              }
             }
           }
         }),
@@ -1188,8 +1195,8 @@ async function awardCertificateForLevel(gymnastId, levelId, userId) {
 
       console.log(`🏆 Certificate automatically awarded for ${level?.identifier} completion to gymnast ${gymnastId}`);
 
-      // Send email notifications to all parents/guardians
-      if (gymnast && gymnast.guardians && gymnast.guardians.length > 0) {
+      // Send email notifications to all parents/guardians only if club has email enabled
+      if (gymnast && gymnast.guardians && gymnast.guardians.length > 0 && gymnast.club.emailEnabled) {
         const emailService = require('../services/emailService');
         
         // Send notification to each guardian who is a parent
@@ -1209,6 +1216,8 @@ async function awardCertificateForLevel(gymnastId, levelId, userId) {
             }
           }
         }
+      } else if (gymnast && gymnast.guardians && gymnast.guardians.length > 0 && !gymnast.club.emailEnabled) {
+        console.log('📧 Certificate notification emails skipped - club has email disabled');
       }
     }
   } catch (error) {

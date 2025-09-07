@@ -248,6 +248,13 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
             email: true,
             role: true
           }
+        },
+        club: {
+          select: {
+            id: true,
+            name: true,
+            emailEnabled: true
+          }
         }
       }
     });
@@ -362,8 +369,8 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       // Don't fail the certificate creation if PNG generation fails
     }
 
-    // Send email notifications to all parents/guardians
-    if (gymnastForCertificate && gymnastForCertificate.guardians && gymnastForCertificate.guardians.length > 0) {
+    // Send email notifications to all parents/guardians only if club has email enabled
+    if (gymnastForCertificate && gymnastForCertificate.guardians && gymnastForCertificate.guardians.length > 0 && gymnastForCertificate.club.emailEnabled) {
       const emailService = require('../services/emailService');
       
       // Send notification to each guardian who is a parent
@@ -383,6 +390,8 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
           }
         }
       }
+    } else if (gymnastForCertificate && gymnastForCertificate.guardians && gymnastForCertificate.guardians.length > 0 && !gymnastForCertificate.club.emailEnabled) {
+      console.log('📧 Certificate notification emails skipped - club has email disabled');
     }
 
     res.json(certificate);

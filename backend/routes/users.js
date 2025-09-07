@@ -619,9 +619,18 @@ router.post('/:userId/reset-password', auth, requireRole(['CLUB_ADMIN']), async 
       return res.status(400).json({ error: 'Use the regular password endpoint to change your own password' });
     }
 
-    // Get the target user
+    // Get the target user with club information
     const targetUser = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      include: {
+        club: {
+          select: {
+            id: true,
+            name: true,
+            emailEnabled: true
+          }
+        }
+      }
     });
 
     if (!targetUser) {
@@ -647,19 +656,25 @@ router.post('/:userId/reset-password', auth, requireRole(['CLUB_ADMIN']), async 
       }
     });
 
-    // Send password reset email
-    const emailService = require('../services/emailService');
-    const emailResult = await emailService.sendPasswordResetEmail(
-      targetUser.email,
-      resetToken,
-      `${targetUser.firstName} ${targetUser.lastName}`
-    );
+    // Send password reset email only if club has email enabled
+    let emailResult = { success: true, skipped: true };
+    if (targetUser.club.emailEnabled) {
+      const emailService = require('../services/emailService');
+      emailResult = await emailService.sendPasswordResetEmail(
+        targetUser.email,
+        resetToken,
+        `${targetUser.firstName} ${targetUser.lastName}`
+      );
+    } else {
+      console.log('📧 Password reset email skipped - club has email disabled');
+    }
 
     if (emailResult.success) {
       res.json({
-        message: 'Password reset email sent successfully',
+        message: emailResult.skipped ? 'Password reset token generated (email disabled)' : 'Password reset email sent successfully',
         email: targetUser.email,
         name: `${targetUser.firstName} ${targetUser.lastName}`,
+        emailSent: !emailResult.skipped,
         ...(emailResult.dev && { 
           devInfo: {
             resetUrl: emailResult.resetUrl,

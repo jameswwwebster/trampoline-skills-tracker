@@ -76,19 +76,24 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
       }
     });
 
-    // Send invite email
-    const invitedByName = `${invite.invitedBy.firstName} ${invite.invitedBy.lastName}`;
-    const emailResult = await emailService.sendInviteEmail(
-      email,
-      role,
-      invite.club.name,
-      invitedByName,
-      invite.token
-    );
+    // Send invite email only if club has email enabled
+    let emailResult = { success: true, skipped: true };
+    if (invite.club.emailEnabled) {
+      const invitedByName = `${invite.invitedBy.firstName} ${invite.invitedBy.lastName}`;
+      emailResult = await emailService.sendInviteEmail(
+        email,
+        role,
+        invite.club.name,
+        invitedByName,
+        invite.token
+      );
 
-    if (!emailResult.success) {
-      console.error('Failed to send invite email:', emailResult.error);
-      // Don't fail the request, but log the error
+      if (!emailResult.success) {
+        console.error('Failed to send invite email:', emailResult.error);
+        // Don't fail the request, but log the error
+      }
+    } else {
+      console.log('📧 Invite email skipped - club has email disabled');
     }
 
     res.status(201).json({
