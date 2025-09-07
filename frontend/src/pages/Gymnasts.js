@@ -304,22 +304,6 @@ const Gymnasts = () => {
       <div className="mobile-gymnast-header">
         <div className="mobile-header-content">
           <h1 className="mobile-page-title">Skill Tracking</h1>
-          <div className="mobile-stats">
-            <div className="stat-item">
-              <span className="stat-number">{activeGymnasts.length}</span>
-              <span className="stat-label">Active</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-number">{archivedGymnasts.length}</span>
-              <span className="stat-label">Archived</span>
-            </div>
-            {sessionGymnasts.size > 0 && (
-              <div className="stat-item session-stat">
-                <span className="stat-number">{sessionGymnasts.size}</span>
-                <span className="stat-label">In Session</span>
-              </div>
-            )}
-          </div>
         </div>
         {canManageGymnasts && (
           <button 
@@ -453,17 +437,18 @@ const Gymnasts = () => {
             style={{ margin: 0 }}
           />
           
-          {/* Session Filter */}
+          {/* Session Filter - Prominent */}
           {sessionGymnasts.size > 0 && (
-            <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={showSessionOnly}
-                  onChange={(e) => setShowSessionOnly(e.target.checked)}
-                />
-                <span>Show session gymnasts only ({sessionGymnasts.size})</span>
-              </label>
+            <div className="session-filter-prominent">
+              <button
+                className={`session-filter-btn ${showSessionOnly ? 'active' : ''}`}
+                onClick={() => setShowSessionOnly(!showSessionOnly)}
+              >
+                <span className="session-filter-icon">📋</span>
+                <span className="session-filter-text">
+                  {showSessionOnly ? 'Show All Gymnasts' : `Show Session Only (${sessionGymnasts.size})`}
+                </span>
+              </button>
             </div>
           )}
           
