@@ -34,6 +34,41 @@ const GymnastProgress = ({ gymnastId }) => {
   // Auto-scroll to current level on mobile
   useEffect(() => {
     if (gymnast && levels.length > 0) {
+      // Helper function to extract base level number from identifier
+      const getBaseLevelNumber = (identifier) => {
+        const match = identifier.match(/^(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+      };
+
+      // Helper function to check if a level is a side-track
+      const isSideTrack = (identifier) => {
+        return /^\d+[a-z]$/.test(identifier);
+      };
+
+      // Helper function to determine the gymnast's current working level number
+      const getCurrentLevelNumber = (gymnast, levels) => {
+        if (!gymnast || !levels.length) return 1;
+
+        // Get all completed main track levels (ignore side tracks)
+        const completedMainTrackLevels = gymnast.levelProgress
+          .filter(lp => lp.status === 'COMPLETED')
+          .map(lp => lp.level)
+          .filter(level => !isSideTrack(level.identifier)) // Only main track levels
+          .map(level => parseInt(level.identifier))
+          .sort((a, b) => a - b);
+
+        // Find the next main track level to work on
+        if (completedMainTrackLevels.length === 0) {
+          return 1; // Start with level 1
+        }
+
+        // Find the highest completed main track level
+        const highestCompleted = Math.max(...completedMainTrackLevels);
+        
+        // Return the next level in sequence
+        return highestCompleted + 1;
+      };
+
       const currentLevelNumber = getCurrentLevelNumber(gymnast, levels);
       const currentLevel = levels.find(l => !isSideTrack(l.identifier) && parseInt(l.identifier) === currentLevelNumber);
       
@@ -50,7 +85,7 @@ const GymnastProgress = ({ gymnastId }) => {
         }, 500);
       }
     }
-  }, [gymnast, levels, getCurrentLevelNumber, isSideTrack]);
+  }, [gymnast, levels]);
 
   // Helper function to extract base level number from identifier
   const getBaseLevelNumber = useCallback((identifier) => {
