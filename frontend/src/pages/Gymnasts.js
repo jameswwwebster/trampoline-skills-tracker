@@ -43,7 +43,7 @@ const Gymnasts = () => {
     localStorage.setItem('coachingSession', JSON.stringify(Array.from(newSession)));
   };
 
-  // Load session from localStorage on component mount
+  // Load session and preferences from localStorage on component mount
   useEffect(() => {
     const savedSession = localStorage.getItem('coachingSession');
     if (savedSession) {
@@ -53,7 +53,45 @@ const Gymnasts = () => {
         console.error('Failed to load session:', e);
       }
     }
+
+    // Load saved preferences
+    const savedSortBy = localStorage.getItem('gymnastSortBy');
+    if (savedSortBy) {
+      setSortBy(savedSortBy);
+    }
+
+    const savedShowArchived = localStorage.getItem('gymnastShowArchived');
+    if (savedShowArchived) {
+      setShowArchived(savedShowArchived === 'true');
+    }
+
+    const savedShowSessionOnly = localStorage.getItem('gymnastShowSessionOnly');
+    if (savedShowSessionOnly) {
+      setShowSessionOnly(savedShowSessionOnly === 'true');
+    }
+
+    const savedSearchTerm = localStorage.getItem('gymnastSearchTerm');
+    if (savedSearchTerm) {
+      setSearchTerm(savedSearchTerm);
+    }
   }, []);
+
+  // Save preferences to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('gymnastSortBy', sortBy);
+  }, [sortBy]);
+
+  useEffect(() => {
+    localStorage.setItem('gymnastShowArchived', showArchived.toString());
+  }, [showArchived]);
+
+  useEffect(() => {
+    localStorage.setItem('gymnastShowSessionOnly', showSessionOnly.toString());
+  }, [showSessionOnly]);
+
+  useEffect(() => {
+    localStorage.setItem('gymnastSearchTerm', searchTerm);
+  }, [searchTerm]);
 
   // Helper function to determine the gymnast's current working level number
   const getCurrentLevel = (gymnast, levels) => {
@@ -340,10 +378,10 @@ const Gymnasts = () => {
           <h1 className="mobile-page-title">Skill Tracking</h1>
           {canManageGymnasts && (
             <button 
-              className="btn btn-primary"
+              className="btn btn-outline btn-sm"
               onClick={() => setShowAddForm(!showAddForm)}
             >
-              {showAddForm ? 'Cancel' : 'Add Gymnast'}
+              {showAddForm ? '✕' : '+'}
             </button>
           )}
         </div>
