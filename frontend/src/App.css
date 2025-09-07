@@ -2388,11 +2388,6 @@ textarea.form-control {
     .desktop-layout {
       display: block;
     }
-
-    /* Hide mobile coaching menu on desktop */
-    .mobile-coaching-menu {
-      display: none;
-    }
   }
 
   /* Mobile styles - hide desktop elements on smaller screens */
