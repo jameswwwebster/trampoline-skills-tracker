@@ -57,6 +57,12 @@ class CertificateService {
     
     // Initialize cache directory
     this.initializeCacheDirectory();
+    
+    // Log final status
+    console.log(`🎨 Certificate Service initialized:`);
+    console.log(`   Canvas available: ${canvasAvailable}`);
+    console.log(`   Sharp available: ${sharpAvailable}`);
+    console.log(`   Storage root: ${this.certificatesDir}`);
   }
 
   async generateCertificate(certificate, templatePath) {
@@ -487,6 +493,7 @@ class CertificateService {
       
       if (templateId) {
         // Get specific template
+        console.log(`🔍 Looking for specific template ${templateId} for club ${clubId}`);
         template = await this.prisma.certificateTemplate.findFirst({
           where: {
             id: templateId,
@@ -502,6 +509,7 @@ class CertificateService {
         });
       } else {
         // Get default template for club
+        console.log(`🔍 Looking for default template for club ${clubId}`);
         template = await this.prisma.certificateTemplate.findFirst({
           where: {
             clubId: clubId,
@@ -515,6 +523,31 @@ class CertificateService {
             }
           }
         });
+        
+        // If no default template, get any active template for the club
+        if (!template) {
+          console.log(`🔍 No default template found, looking for any active template for club ${clubId}`);
+          template = await this.prisma.certificateTemplate.findFirst({
+            where: {
+              clubId: clubId,
+              isActive: true
+            },
+            include: {
+              fields: {
+                where: { isVisible: true },
+                orderBy: { order: 'asc' }
+              }
+            }
+          });
+        }
+      }
+
+      if (template) {
+        console.log(`✅ Found template: ${template.name} (ID: ${template.id})`);
+        console.log(`   File path: ${template.filePath}`);
+        console.log(`   Fields: ${template.fields?.length || 0}`);
+      } else {
+        console.log(`❌ No template found for club ${clubId}`);
       }
 
       return template;
