@@ -263,6 +263,7 @@ const ClubSettings = () => {
             )}
           </div>
 
+
           <div className="flex-end">
             <button
               type="submit"

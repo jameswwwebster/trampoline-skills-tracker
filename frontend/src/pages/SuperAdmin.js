@@ -179,6 +179,20 @@ const SuperAdmin = () => {
     }
   };
 
+  const handleGlobalEmailToggle = async (e) => {
+    const enabled = e.target.checked;
+    try {
+      await axios.post('/api/super-admin/settings/email', {
+        globalEmailEnabled: enabled
+      });
+      // Refresh stats to get updated email setting
+      await fetchStats();
+    } catch (error) {
+      console.error('Failed to update email settings:', error);
+      setError('Failed to update email settings');
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'users') {
       fetchUsers(userPage, userSearchTerm);
@@ -233,6 +247,12 @@ const SuperAdmin = () => {
           onClick={() => setActiveTab('users')}
         >
           👥 Users
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('settings')}
+        >
+          ⚙️ Settings
         </button>
       </div>
 
@@ -470,6 +490,47 @@ const SuperAdmin = () => {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Settings Tab */}
+      {activeTab === 'settings' && (
+        <div className="admin-settings">
+          <div className="card">
+            <div className="card-header">
+              <h3>📧 Email Configuration</h3>
+              <p className="text-muted">Configure email settings for all clubs</p>
+            </div>
+            <div className="card-body">
+              <div className="form-group">
+                <label className="form-label">
+                  <input
+                    type="checkbox"
+                    id="globalEmailEnabled"
+                    checked={stats?.globalEmailEnabled || false}
+                    onChange={handleGlobalEmailToggle}
+                    style={{ marginRight: '0.5rem' }}
+                  />
+                  Enable Email Notifications Globally
+                </label>
+                <div className="text-muted small">
+                  When enabled, all clubs can send emails for password resets, invitations, and certificate notifications. 
+                  When disabled, emails will be logged to the console for testing purposes.
+                </div>
+              </div>
+              
+              <div className="alert alert-info">
+                <strong>📋 Email Features:</strong>
+                <ul style={{ marginTop: '0.5rem', marginBottom: 0 }}>
+                  <li>Password reset emails</li>
+                  <li>User invitation emails</li>
+                  <li>Guardian invitation emails</li>
+                  <li>Certificate award notifications</li>
+                  <li>Welcome emails for new users</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       )}

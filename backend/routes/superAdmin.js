@@ -439,6 +439,12 @@ router.get('/stats', async (req, res) => {
     // Start with the most basic counts that definitely exist
     const totalClubs = await prisma.club.count();
     const totalUsers = await prisma.user.count();
+    
+    // Check if any clubs have email enabled (for global setting)
+    const clubsWithEmailEnabled = await prisma.club.count({
+      where: { emailEnabled: true }
+    });
+    const globalEmailEnabled = clubsWithEmailEnabled > 0;
 
     console.log('Basic stats fetched successfully');
 
@@ -449,7 +455,8 @@ router.get('/stats', async (req, res) => {
       activeGymnasts: 0, // Mock for now
       totalLevels: 0, // Mock for now
       totalSkills: 0, // Mock for now
-      recentActivity: [] // Empty for now
+      recentActivity: [], // Empty for now
+      globalEmailEnabled
     });
   } catch (error) {
     console.error('Get stats error:', error);
@@ -512,6 +519,26 @@ router.post('/users/:userId/set-password', async (req, res) => {
   } catch (error) {
     console.error('Set password error:', error);
     res.status(500).json({ error: 'Failed to set password' });
+  }
+});
+
+// Update global email settings
+router.post('/settings/email', async (req, res) => {
+  try {
+    const { globalEmailEnabled } = req.body;
+    
+    // Update all clubs' emailEnabled setting
+    await prisma.club.updateMany({
+      data: { emailEnabled: globalEmailEnabled }
+    });
+    
+    res.json({
+      message: 'Email settings updated successfully',
+      globalEmailEnabled
+    });
+  } catch (error) {
+    console.error('Update email settings error:', error);
+    res.status(500).json({ error: 'Failed to update email settings' });
   }
 });
 
