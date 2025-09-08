@@ -440,11 +440,15 @@ router.get('/stats', async (req, res) => {
     const totalClubs = await prisma.club.count();
     const totalUsers = await prisma.user.count();
     
-    // Check if any clubs have email enabled (for global setting)
+    // Check if all clubs have email enabled (for global setting)
+    const totalClubsCount = await prisma.club.count();
     const clubsWithEmailEnabled = await prisma.club.count({
       where: { emailEnabled: true }
     });
-    const globalEmailEnabled = clubsWithEmailEnabled > 0;
+    // Global email is enabled if all clubs have it enabled (or if there are no clubs)
+    const globalEmailEnabled = totalClubsCount === 0 || clubsWithEmailEnabled === totalClubsCount;
+    
+    console.log('Email status:', { totalClubsCount, clubsWithEmailEnabled, globalEmailEnabled });
 
     console.log('Basic stats fetched successfully');
 
@@ -527,14 +531,19 @@ router.post('/settings/email', async (req, res) => {
   try {
     const { globalEmailEnabled } = req.body;
     
+    console.log('Updating global email settings:', { globalEmailEnabled });
+    
     // Update all clubs' emailEnabled setting
-    await prisma.club.updateMany({
+    const result = await prisma.club.updateMany({
       data: { emailEnabled: globalEmailEnabled }
     });
     
+    console.log('Updated clubs:', result);
+    
     res.json({
       message: 'Email settings updated successfully',
-      globalEmailEnabled
+      globalEmailEnabled,
+      updatedClubs: result.count
     });
   } catch (error) {
     console.error('Update email settings error:', error);
