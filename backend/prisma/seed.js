@@ -510,10 +510,19 @@ async function main() {
           const routineSkillData = routineData.skills[skillIndex];
           
           // Find the skill across ALL levels (not just the current level)
-          const skill = allSkills.get(routineSkillData.name);
+          let skill = allSkills.get(routineSkillData.name);
           if (!skill) {
-            console.log(`⚠️  Skill "${routineSkillData.name}" referenced in routine but not found in any level's skills list - skipping`);
-            continue;
+            console.log(`ℹ️  Creating missing skill "${routineSkillData.name}" referenced in routine`);
+            // Create the missing skill for the current level
+            skill = await prisma.skill.create({
+              data: {
+                name: routineSkillData.name,
+                description: null,
+                levelId: level.id,
+                order: 999 // Place at end of skills list
+              }
+            });
+            allSkills.set(routineSkillData.name, skill);
           }
 
           // Create routine-skill junction (check for duplicates)
