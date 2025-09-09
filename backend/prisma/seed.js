@@ -512,7 +512,7 @@ async function main() {
           // Find the skill across ALL levels (not just the current level)
           const skill = allSkills.get(routineSkillData.name);
           if (!skill) {
-            console.log(`ℹ️  Skill "${routineSkillData.name}" is considered basic/automatic - not tracked separately`);
+            console.log(`⚠️  Skill "${routineSkillData.name}" referenced in routine but not found in any level's skills list - skipping`);
             continue;
           }
 

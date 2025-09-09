@@ -36,7 +36,13 @@
           { "name": "½ Twist to Seat" },
           { "name": "Swivelhips" },
           { "name": "Front Landing" },
-          { "name": "Back Landing" }
+          { "name": "Back Landing" },
+          { "name": "To Feet" },
+          { "name": "Back Landing to Feet" },
+          { "name": "Straddle Jump" },
+          { "name": "Tuck Jump" },
+          { "name": "Pike Jump" },
+          { "name": "½ Twist" }
         ],
         "routines": [
             {
@@ -69,7 +75,12 @@
           { "name": "½ Twist to Front" },
           { "name": "Back ½ Twist to Feet" },
           { "name": "Back to Front" },
-          { "name": "Front to Back" }
+          { "name": "Front to Back" },
+          { "name": "To Feet" },
+          { "name": "Straddle Jump" },
+          { "name": "Seat Landing" },
+          { "name": "½ Twist to Seat" },
+          { "name": "½ Twist to Feet" }
         ],
         "routines": [
             {
@@ -109,7 +120,7 @@
                 { "name": "Straddle Jump" },
                 { "name": "Seat Landing" },
                 { "name": "½ Twist to Seat" },
-                { "name": "½ Twist" },
+                { "name": "½ Twist to Feet" },
                 { "name": "Pike Jump" },
                 { "name": "Back Landing" },
                 { "name": "½ Twist to Feet" },
@@ -138,7 +149,7 @@
                     { "name": "Straddle Jump" },
                     { "name": "Seat Landing" },
                     { "name": "½ Twist to Seat" },
-                    { "name": "½ Twist" },
+                    { "name": "½ Twist to Feet" },
                     { "name": "Pike Jump" },
                     { "name": "Back Landing" },
                     { "name": "½ Twist to Feet" },
@@ -219,7 +230,8 @@
           { "name": "¾ Front (S)" },
           { "name": "¾ Back (S)" },
           { "name": "Ball-out Barani (T)" },
-          { "name": "Cody (T)" }
+          { "name": "Cody (T)" },
+          { "name": "To Feet" }
         ],
         "routines": [
           {
