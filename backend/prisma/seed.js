@@ -22,7 +22,7 @@ async function main() {
       password: hashedPassword,
       firstName: 'System',
       lastName: 'Administrator',
-      role: 'SYSTEM_ADMIN'
+      role: 'SUPER_ADMIN'
       // No clubId - system admin is not tied to any specific club
     }
   });
@@ -30,7 +30,7 @@ async function main() {
   console.log('✅ System administrator created:');
   console.log(`   Email: system@admin.com`);
   console.log(`   Password: password123`);
-  console.log(`   Role: SYSTEM_ADMIN`);
+  console.log(`   Role: SUPER_ADMIN`);
   console.log(`   🔧 Can manage all clubs and users`);
 
   // Create the development club and user
