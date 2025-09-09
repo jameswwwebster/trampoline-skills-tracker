@@ -48,17 +48,21 @@ const routineUpdateSchema = Joi.object({
 });
 
 const routineSkillSchema = Joi.object({
-  skillId: Joi.string().when('customSkillName', {
-    is: Joi.exist(),
-    then: Joi.optional(),
-    otherwise: Joi.required()
-  }),
-  customSkillName: Joi.string().min(1).max(100).when('skillId', {
-    is: Joi.exist(),
-    then: Joi.optional(),
-    otherwise: Joi.required()
-  }),
+  skillId: Joi.string().optional(),
+  customSkillName: Joi.string().min(1).max(100).optional(),
   order: Joi.number().integer().min(1).optional()
+}).custom((value, helpers) => {
+  // Custom validation to ensure either skillId or customSkillName is provided, but not both
+  if (!value.skillId && !value.customSkillName) {
+    return helpers.error('custom.missingBoth');
+  }
+  if (value.skillId && value.customSkillName) {
+    return helpers.error('custom.bothProvided');
+  }
+  return value;
+}).messages({
+  'custom.missingBoth': 'Either skillId or customSkillName must be provided',
+  'custom.bothProvided': 'Cannot provide both skillId and customSkillName'
 });
 
 // Get all levels
