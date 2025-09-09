@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('CLUB_ADMIN', 'COACH', 'PARENT', 'GYMNAST');
+CREATE TYPE "UserRole" AS ENUM ('CLUB_ADMIN', 'COACH', 'PARENT', 'GYMNAST', 'SYSTEM_ADMIN', 'SUPER_ADMIN');
 
 -- CreateEnum
 CREATE TYPE "LevelType" AS ENUM ('SEQUENTIAL', 'SIDE_PATH');
@@ -21,6 +21,9 @@ CREATE TYPE "CertificateStatus" AS ENUM ('AWARDED', 'PRINTED', 'DELIVERED');
 
 -- CreateEnum
 CREATE TYPE "CertificateType" AS ENUM ('LEVEL_COMPLETION', 'SPECIAL_ACHIEVEMENT', 'PARTICIPATION');
+
+-- CreateEnum
+CREATE TYPE "CustomFieldType" AS ENUM ('TEXT', 'NUMBER', 'DATE', 'BOOLEAN', 'EMAIL', 'PHONE', 'DROPDOWN', 'MULTI_SELECT', 'TEXTAREA');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -46,6 +49,35 @@ CREATE TABLE "users" (
 );
 
 -- CreateTable
+CREATE TABLE "user_custom_fields" (
+    "id" TEXT NOT NULL,
+    "clubId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "fieldType" "CustomFieldType" NOT NULL,
+    "isRequired" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "options" TEXT,
+    "order" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_custom_fields_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_custom_field_values" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "fieldId" TEXT NOT NULL,
+    "value" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_custom_field_values_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "clubs" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -54,6 +86,10 @@ CREATE TABLE "clubs" (
     "email" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "archivedAt" TIMESTAMP(3),
+    "archivedById" TEXT,
+    "archivedReason" TEXT,
+    "isArchived" BOOLEAN NOT NULL DEFAULT false,
     "codeOfTheDay" TEXT,
     "codeOfTheDayExpiresAt" TIMESTAMP(3),
     "accentColor" TEXT DEFAULT '#e74c3c',
@@ -66,6 +102,7 @@ CREATE TABLE "clubs" (
     "secondaryColor" TEXT DEFAULT '#2c3e50',
     "textColor" TEXT DEFAULT '#212529',
     "website" TEXT,
+    "emailEnabled" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "clubs_pkey" PRIMARY KEY ("id")
 );
@@ -98,6 +135,7 @@ CREATE TABLE "levels" (
     "description" TEXT,
     "type" "LevelType",
     "prerequisiteId" TEXT,
+    "clubId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -190,12 +228,21 @@ CREATE TABLE "level_progress" (
 -- CreateTable
 CREATE TABLE "guardian_requests" (
     "id" TEXT NOT NULL,
-    "guardianId" TEXT NOT NULL,
-    "gymnastId" TEXT NOT NULL,
+    "guardianId" TEXT,
+    "gymnastId" TEXT,
+    "clubId" TEXT NOT NULL,
     "requestedBy" TEXT NOT NULL,
     "processedBy" TEXT,
     "status" "RequestStatus" NOT NULL DEFAULT 'PENDING',
     "notes" TEXT,
+    "requestedGymnastFirstName" TEXT NOT NULL,
+    "requestedGymnastLastName" TEXT NOT NULL,
+    "requestedGymnastDOB" TIMESTAMP(3),
+    "requesterFirstName" TEXT NOT NULL,
+    "requesterLastName" TEXT NOT NULL,
+    "requesterEmail" TEXT NOT NULL,
+    "requesterPhone" TEXT,
+    "relationshipToGymnast" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -317,6 +364,12 @@ CREATE TABLE "_GuardianGymnasts" (
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "user_custom_fields_clubId_key_key" ON "user_custom_fields"("clubId", "key");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_custom_field_values_userId_fieldId_key" ON "user_custom_field_values"("userId", "fieldId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "levels_identifier_key" ON "levels"("identifier");
 
 -- CreateIndex
@@ -330,9 +383,6 @@ CREATE UNIQUE INDEX "skill_progress_gymnastId_skillId_key" ON "skill_progress"("
 
 -- CreateIndex
 CREATE UNIQUE INDEX "level_progress_gymnastId_levelId_key" ON "level_progress"("gymnastId", "levelId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "guardian_requests_guardianId_gymnastId_key" ON "guardian_requests"("guardianId", "gymnastId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "invites_token_key" ON "invites"("token");
@@ -365,6 +415,18 @@ ALTER TABLE "users" ADD CONSTRAINT "users_archivedById_fkey" FOREIGN KEY ("archi
 ALTER TABLE "users" ADD CONSTRAINT "users_clubId_fkey" FOREIGN KEY ("clubId") REFERENCES "clubs"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "user_custom_fields" ADD CONSTRAINT "user_custom_fields_clubId_fkey" FOREIGN KEY ("clubId") REFERENCES "clubs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_custom_field_values" ADD CONSTRAINT "user_custom_field_values_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_custom_field_values" ADD CONSTRAINT "user_custom_field_values_fieldId_fkey" FOREIGN KEY ("fieldId") REFERENCES "user_custom_fields"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "clubs" ADD CONSTRAINT "clubs_archivedById_fkey" FOREIGN KEY ("archivedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "gymnasts" ADD CONSTRAINT "gymnasts_archivedById_fkey" FOREIGN KEY ("archivedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -375,6 +437,9 @@ ALTER TABLE "gymnasts" ADD CONSTRAINT "gymnasts_userId_fkey" FOREIGN KEY ("userI
 
 -- AddForeignKey
 ALTER TABLE "levels" ADD CONSTRAINT "levels_prerequisiteId_fkey" FOREIGN KEY ("prerequisiteId") REFERENCES "levels"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "levels" ADD CONSTRAINT "levels_clubId_fkey" FOREIGN KEY ("clubId") REFERENCES "clubs"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "skills" ADD CONSTRAINT "skills_levelId_fkey" FOREIGN KEY ("levelId") REFERENCES "levels"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -419,10 +484,13 @@ ALTER TABLE "level_progress" ADD CONSTRAINT "level_progress_routineId_fkey" FORE
 ALTER TABLE "level_progress" ADD CONSTRAINT "level_progress_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "guardian_requests" ADD CONSTRAINT "guardian_requests_guardianId_fkey" FOREIGN KEY ("guardianId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "guardian_requests" ADD CONSTRAINT "guardian_requests_guardianId_fkey" FOREIGN KEY ("guardianId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "guardian_requests" ADD CONSTRAINT "guardian_requests_gymnastId_fkey" FOREIGN KEY ("gymnastId") REFERENCES "gymnasts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "guardian_requests" ADD CONSTRAINT "guardian_requests_gymnastId_fkey" FOREIGN KEY ("gymnastId") REFERENCES "gymnasts"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "guardian_requests" ADD CONSTRAINT "guardian_requests_clubId_fkey" FOREIGN KEY ("clubId") REFERENCES "clubs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "guardian_requests" ADD CONSTRAINT "guardian_requests_requestedBy_fkey" FOREIGN KEY ("requestedBy") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
