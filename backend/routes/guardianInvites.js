@@ -7,17 +7,9 @@ const emailService = require('../services/emailService');
 const prisma = new PrismaClient();
 
 // Utility function to check if user is under 18
+// Guardian invites are disabled since dateOfBirth field was removed
 const isUnder18 = (dateOfBirth) => {
-  if (!dateOfBirth) return false;
-  const today = new Date();
-  const birthDate = new Date(dateOfBirth);
-  const age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    return age - 1 < 18;
-  }
-  return age < 18;
+  return false; // Always return false since we don't track age anymore
 };
 
 // Get current user's age status and guardian invitation options
@@ -41,7 +33,7 @@ router.get('/status', auth, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const under18 = isUnder18(user.dateOfBirth);
+    const under18 = isUnder18(null);
     const hasGuardians = user.guardians && user.guardians.length > 0;
 
     res.json({
@@ -85,7 +77,7 @@ router.post('/invite', auth, async (req, res) => {
     }
 
     // Check if user is under 18
-    if (!isUnder18(user.dateOfBirth)) {
+    if (!isUnder18(null)) {
       return res.status(400).json({ error: 'Guardian invitations are only available for users under 18' });
     }
 
@@ -151,7 +143,7 @@ router.post('/invite', auth, async (req, res) => {
         requestedBy: user.id,
         requestedGymnastFirstName: user.firstName,
         requestedGymnastLastName: user.lastName,
-        requestedGymnastDOB: user.dateOfBirth,
+        requestedGymnastDOB: null,
         requesterFirstName: user.firstName,
         requesterLastName: user.lastName,
         requesterEmail: user.email,

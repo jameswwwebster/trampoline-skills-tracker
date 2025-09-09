@@ -87,7 +87,6 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
         id: true,
         firstName: true,
         lastName: true,
-        dateOfBirth: true,
         userId: true,
         createdAt: true,
         user: {
@@ -120,7 +119,6 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
       lastName: gymnast.lastName,
       role: 'GYMNAST',
       createdAt: gymnast.createdAt,
-      dateOfBirth: gymnast.dateOfBirth,
       userId: gymnast.userId, // Track if gymnast has a user account
       isGymnast: true, // Flag to identify gymnasts
       customFieldValues: gymnast.user?.customFieldValues || [] // Include custom field values
@@ -575,7 +573,6 @@ router.put('/gymnast/:gymnastId/profile', auth, requireRole(['CLUB_ADMIN']), asy
         id: true,
         firstName: true,
         lastName: true,
-        dateOfBirth: true,
         userId: true,
         createdAt: true,
         user: {
@@ -594,7 +591,6 @@ router.put('/gymnast/:gymnastId/profile', auth, requireRole(['CLUB_ADMIN']), asy
       lastName: updatedGymnast.lastName,
       role: 'GYMNAST',
       createdAt: updatedGymnast.createdAt,
-      dateOfBirth: updatedGymnast.dateOfBirth,
       userId: updatedGymnast.userId,
       isGymnast: true
     };

@@ -248,7 +248,6 @@ router.get('/gymnasts', async (req, res) => {
     // Add mock data for fields the frontend expects
     const gymnastsWithMockData = gymnasts.map(gymnast => ({
       ...gymnast,
-      dateOfBirth: null,
       emergencyContact: null,
       isArchived: false,
       club: { id: gymnast.clubId, name: 'Unknown Club' },

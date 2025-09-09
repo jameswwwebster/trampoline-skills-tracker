@@ -31,7 +31,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { email, password, firstName, lastName, dateOfBirth, role, clubId } = req.body;
+    const { email, password, firstName, lastName, role, clubId } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -64,7 +64,6 @@ router.post('/register', async (req, res) => {
         password: hashedPassword,
         firstName,
         lastName,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
         role,
         clubId
       },
@@ -265,7 +264,6 @@ router.post('/child-login', async (req, res) => {
         gymnasts: gymnasts.map(g => ({
           id: g.id,
           fullName: `${g.firstName} ${g.lastName}`,
-          dateOfBirth: g.dateOfBirth,
           club: g.club.name
         })),
         message: 'Multiple gymnasts found with that name. Please select one.'
