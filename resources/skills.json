@@ -36,13 +36,7 @@
           { "name": "½ Twist to Seat" },
           { "name": "Swivelhips" },
           { "name": "Front Landing" },
-          { "name": "Back Landing" },
-          { "name": "To Feet" },
-          { "name": "Back Landing to Feet" },
-          { "name": "Straddle Jump" },
-          { "name": "Tuck Jump" },
-          { "name": "Pike Jump" },
-          { "name": "½ Twist" }
+          { "name": "Back Landing" }
         ],
         "routines": [
             {
@@ -75,12 +69,7 @@
           { "name": "½ Twist to Front" },
           { "name": "Back ½ Twist to Feet" },
           { "name": "Back to Front" },
-          { "name": "Front to Back" },
-          { "name": "To Feet" },
-          { "name": "Straddle Jump" },
-          { "name": "Seat Landing" },
-          { "name": "½ Twist to Seat" },
-          { "name": "½ Twist to Feet" }
+          { "name": "Front to Back" }
         ],
         "routines": [
             {
@@ -230,8 +219,7 @@
           { "name": "¾ Front (S)" },
           { "name": "¾ Back (S)" },
           { "name": "Ball-out Barani (T)" },
-          { "name": "Cody (T)" },
-          { "name": "To Feet" }
+          { "name": "Cody (T)" }
         ],
         "routines": [
           {
