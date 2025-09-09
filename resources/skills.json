@@ -49,7 +49,6 @@
                     { "name": "½ Twist" },
                     { "name": "Tuck Jump" },
                     { "name": "Pike Jump" },
-                    { "name": "Back Landing to Feet" },
                     { "name": "Back Landing" },
                     { "name": "To Feet" }
                   ]
@@ -134,7 +133,7 @@
         "routines": [
             {
                 "skills": [
-                    { "name": "Backward Somersault (T)" },
+                    { "name": "Back Somersault (T)" },
                     { "name": "Straddle Jump" },
                     { "name": "Seat Landing" },
                     { "name": "½ Twist to Seat" },
