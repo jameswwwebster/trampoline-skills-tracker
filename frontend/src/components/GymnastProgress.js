@@ -732,7 +732,9 @@ const GymnastProgress = ({ gymnastId }) => {
                                       <div className="routine-skills-list">
                                         {routineSkills.map(routineSkill => (
                                           <div key={routineSkill.id} className="routine-skill-item">
-                                            <span className="routine-skill-name">{routineSkill.skill.name}</span>
+                                            <span className="routine-skill-name">
+                                              {routineSkill.skill ? routineSkill.skill.name : routineSkill.customSkillName}
+                                            </span>
                                           </div>
                                         ))}
                                       </div>
@@ -1146,7 +1148,7 @@ const GymnastProgress = ({ gymnastId }) => {
                                         <div className="routine-skills-badges">
                                           {routineSkills.map(rs => (
                                             <span key={rs.id} className="routine-skill-badge">
-                                              {rs.skill.name}
+                                              {rs.skill ? rs.skill.name : rs.customSkillName}
                                             </span>
                                           ))}
                                         </div>

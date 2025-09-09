@@ -80,6 +80,7 @@ const SkillProgressTracker = ({ gymnastId, levelId, onProgressUpdate }) => {
       case 'COMPLETED': return 'success';
       case 'IN_PROGRESS': return 'warning';
       case 'NOT_STARTED': return 'secondary';
+      case 'NOT_TRACKED': return 'light';
       default: return 'secondary';
     }
   };
@@ -230,14 +231,16 @@ const SkillProgressTracker = ({ gymnastId, levelId, onProgressUpdate }) => {
                     <h6>Required Skills:</h6>
                     <div className="routine-skills-grid">
                       {routine.routineSkills.map(routineSkill => {
-                        const progress = progressData[routineSkill.skill.id];
-                        const status = progress?.status || 'NOT_STARTED';
+                        // Custom skills don't have progress tracking
+                        const isCustomSkill = !routineSkill.skill;
+                        const progress = isCustomSkill ? null : progressData[routineSkill.skill.id];
+                        const status = isCustomSkill ? 'NOT_TRACKED' : (progress?.status || 'NOT_STARTED');
                         
                         return (
                           <div key={routineSkill.id} className={`routine-skill ${status.toLowerCase()}`}>
-                            <span className="skill-name">{routineSkill.skill.name}</span>
+                            <span className="skill-name">{routineSkill.skill ? routineSkill.skill.name : routineSkill.customSkillName}</span>
                             <span className={`status badge-${getStatusColor(status)}`}>
-                              {status === 'COMPLETED' ? '✓' : status === 'IN_PROGRESS' ? '◐' : '○'}
+                              {status === 'COMPLETED' ? '✓' : status === 'IN_PROGRESS' ? '◐' : status === 'NOT_TRACKED' ? '—' : '○'}
                             </span>
                           </div>
                         );

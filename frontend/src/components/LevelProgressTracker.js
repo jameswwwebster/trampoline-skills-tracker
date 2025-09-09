@@ -254,7 +254,7 @@ const LevelProgressTracker = ({ gymnastId, levelId, onLevelProgressUpdate }) => 
                             .sort((a, b) => a.order - b.order)
                             .map(routineSkill => (
                               <li key={routineSkill.id} className="skill-item">
-                                {routineSkill.skill.name}
+                                {routineSkill.skill ? routineSkill.skill.name : routineSkill.customSkillName}
                               </li>
                             ))
                           }
