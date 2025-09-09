@@ -170,7 +170,7 @@ const Dashboard = () => {
                   <div className="card-header">
                     <h3 className="card-title">🏆 Competition Readiness</h3>
                     <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
-                      Gymnasts currently working on levels associated with competitions - Click to view
+                      Gymnasts who have completed levels associated with competitions - Click to view
                     </p>
                   </div>
                   <div>

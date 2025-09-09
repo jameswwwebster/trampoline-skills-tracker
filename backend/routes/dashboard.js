@@ -132,25 +132,29 @@ router.get('/metrics', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
       };
     });
 
-    // For each gymnast, check if they're working on a level associated with competitions
+    // For each gymnast, check if they've completed a level associated with competitions
     gymnasts.forEach(gymnast => {
-      // Find the current working level (next level to work on)
-      const currentLevel = getCurrentLevel(gymnast, levels);
+      // Get all completed levels for this gymnast
+      const completedLevels = gymnast.levelProgress
+        .filter(lp => lp.status === 'COMPLETED')
+        .map(lp => lp.level);
       
-      if (currentLevel && currentLevel.competitions) {
-        // Add gymnast to all competitions associated with their current working level
-        currentLevel.competitions.forEach(({ competition }) => {
-          if (competitionReadiness[competition.name]) {
-            competitionReadiness[competition.name].ready++;
-            competitionReadiness[competition.name].readyGymnasts.push({
-              id: gymnast.id,
-              firstName: gymnast.firstName,
-              lastName: gymnast.lastName,
-              level: currentLevel.name
-            });
-          }
-        });
-      }
+      // Check each completed level for competition associations
+      completedLevels.forEach(completedLevel => {
+        if (completedLevel.competitions && completedLevel.competitions.length > 0) {
+          completedLevel.competitions.forEach(({ competition }) => {
+            if (competitionReadiness[competition.name]) {
+              competitionReadiness[competition.name].ready++;
+              competitionReadiness[competition.name].readyGymnasts.push({
+                id: gymnast.id,
+                firstName: gymnast.firstName,
+                lastName: gymnast.lastName,
+                level: completedLevel.name
+              });
+            }
+          });
+        }
+      });
     });
 
     // Calculate recent activity (last 30 days)
