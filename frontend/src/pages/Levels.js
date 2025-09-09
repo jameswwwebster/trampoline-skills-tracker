@@ -268,10 +268,11 @@ const Levels = () => {
     }
   };
 
-  const handleAddSkillToRoutine = async (levelId, routineId, skillId) => {
+  const handleAddSkillToRoutine = async (levelId, routineId, skillId, customSkillName = null) => {
     try {
       const response = await axios.post(`/api/levels/${levelId}/routines/${routineId}/skills`, {
-        skillId
+        skillId,
+        customSkillName
       });
       
       setLevels(levels.map(level => {
@@ -775,7 +776,13 @@ const RoutineCard = ({
               <div className="routine-skills-list">
                 {routine.skills.map(skill => (
                   <div key={skill.id} className="routine-skill-item">
-                    <span className="skill-name">{skill.name}</span>
+                    <span className="skill-name" style={{ 
+                      fontStyle: skill.isCustom ? 'italic' : 'normal',
+                      color: skill.isCustom ? '#666' : 'inherit'
+                    }}>
+                      {skill.name}
+                      {skill.isCustom && <span className="badge badge-info" style={{ marginLeft: '0.5rem', fontSize: '0.7rem' }}>Custom</span>}
+                    </span>
                     {canEdit && (
                       <button 
                         onClick={() => onRemoveSkillFromRoutine(levelId, routine.id, skill.id)}
@@ -1167,12 +1174,16 @@ const AddRoutineModal = ({ levelId, onSave, onCancel }) => {
 
 // Add Skill to Routine Modal Component
 const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, onCancel }) => {
+  const [skillType, setSkillType] = useState('existing'); // 'existing' or 'custom'
   const [selectedSkillId, setSelectedSkillId] = useState('');
+  const [customSkillName, setCustomSkillName] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (selectedSkillId) {
+    if (skillType === 'existing' && selectedSkillId) {
       onSave(selectedSkillId);
+    } else if (skillType === 'custom' && customSkillName.trim()) {
+      onSave(null, customSkillName.trim());
     }
   };
 
@@ -1185,20 +1196,63 @@ const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, o
         </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Select Skill</label>
-            <select
-              value={selectedSkillId}
-              onChange={(e) => setSelectedSkillId(e.target.value)}
-              required
-            >
-              <option value="">Choose a skill...</option>
-              {availableSkills.map(skill => (
-                <option key={skill.id} value={skill.id}>
-                  {skill.name} (Level {skill.level.identifier})
-                </option>
-              ))}
-            </select>
+            <label>Skill Type</label>
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="radio"
+                  name="skillType"
+                  value="existing"
+                  checked={skillType === 'existing'}
+                  onChange={(e) => setSkillType(e.target.value)}
+                />
+                Existing Skill
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="radio"
+                  name="skillType"
+                  value="custom"
+                  checked={skillType === 'custom'}
+                  onChange={(e) => setSkillType(e.target.value)}
+                />
+                Custom Skill
+              </label>
+            </div>
           </div>
+
+          {skillType === 'existing' ? (
+            <div className="form-group">
+              <label>Select Skill</label>
+              <select
+                value={selectedSkillId}
+                onChange={(e) => setSelectedSkillId(e.target.value)}
+                required
+              >
+                <option value="">Choose a skill...</option>
+                {availableSkills.map(skill => (
+                  <option key={skill.id} value={skill.id}>
+                    {skill.name} (Level {skill.level.identifier})
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="form-group">
+              <label>Custom Skill Name</label>
+              <input
+                type="text"
+                value={customSkillName}
+                onChange={(e) => setCustomSkillName(e.target.value)}
+                placeholder="e.g., To Feet, Back Landing to Feet"
+                required
+              />
+              <small className="text-muted">
+                Use this for automatic/implicit skills that don't need to be tracked separately
+              </small>
+            </div>
+          )}
+
           <div className="modal-actions">
             <button type="button" onClick={onCancel} className="btn btn-secondary">
               Cancel

@@ -48,7 +48,16 @@ const routineUpdateSchema = Joi.object({
 });
 
 const routineSkillSchema = Joi.object({
-  skillId: Joi.string().required(),
+  skillId: Joi.string().when('customSkillName', {
+    is: Joi.exist(),
+    then: Joi.optional(),
+    otherwise: Joi.required()
+  }),
+  customSkillName: Joi.string().min(1).max(100).when('skillId', {
+    is: Joi.exist(),
+    then: Joi.optional(),
+    otherwise: Joi.required()
+  }),
   order: Joi.number().integer().min(1).optional()
 });
 
@@ -673,7 +682,7 @@ router.post('/:levelId/routines/:routineId/skills', auth, requireRole(['CLUB_ADM
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { skillId, order } = value;
+    const { skillId, customSkillName, order } = value;
 
     // Verify routine belongs to the level
     const existingRoutine = await prisma.routine.findUnique({
@@ -684,27 +693,41 @@ router.post('/:levelId/routines/:routineId/skills', auth, requireRole(['CLUB_ADM
       return res.status(404).json({ error: 'Routine not found in this level' });
     }
 
-    // Verify skill exists (can be from any level)
-    const skill = await prisma.skill.findUnique({
-      where: { id: skillId }
-    });
+    let skill;
+    
+    if (customSkillName) {
+      // Handle custom skill - create a temporary skill object for the response
+      skill = {
+        id: `custom_${Date.now()}`, // Temporary ID for custom skills
+        name: customSkillName,
+        description: null,
+        levelId: levelId,
+        order: 999,
+        isCustom: true // Flag to indicate this is a custom skill
+      };
+    } else {
+      // Handle existing skill
+      skill = await prisma.skill.findUnique({
+        where: { id: skillId }
+      });
 
-    if (!skill) {
-      return res.status(404).json({ error: 'Skill not found' });
-    }
-
-    // Check if skill is already in this routine
-    const existingRoutineSkill = await prisma.routineSkill.findUnique({
-      where: {
-        routineId_skillId: {
-          routineId,
-          skillId
-        }
+      if (!skill) {
+        return res.status(404).json({ error: 'Skill not found' });
       }
-    });
 
-    if (existingRoutineSkill) {
-      return res.status(400).json({ error: 'Skill is already in this routine' });
+      // Check if skill is already in this routine
+      const existingRoutineSkill = await prisma.routineSkill.findUnique({
+        where: {
+          routineId_skillId: {
+            routineId,
+            skillId
+          }
+        }
+      });
+
+      if (existingRoutineSkill) {
+        return res.status(400).json({ error: 'Skill is already in this routine' });
+      }
     }
 
     // If no order specified, add to the end
@@ -717,18 +740,34 @@ router.post('/:levelId/routines/:routineId/skills', auth, requireRole(['CLUB_ADM
       skillOrder = lastRoutineSkill ? lastRoutineSkill.order + 1 : 1;
     }
 
-    const routineSkill = await prisma.routineSkill.create({
-      data: {
-        routineId,
-        skillId,
-        order: skillOrder
-      },
-      include: {
-        skill: true
-      }
-    });
+    if (customSkillName) {
+      // For custom skills, we don't create a database record
+      // Just return the skill object for the frontend
+      res.json({
+        skill: skill,
+        routineSkill: {
+          id: `custom_rs_${Date.now()}`,
+          routineId,
+          skillId: skill.id,
+          order: skillOrder,
+          skill: skill
+        }
+      });
+    } else {
+      // For existing skills, create the routine-skill connection
+      const routineSkill = await prisma.routineSkill.create({
+        data: {
+          routineId,
+          skillId,
+          order: skillOrder
+        },
+        include: {
+          skill: true
+        }
+      });
 
-    res.json(routineSkill);
+      res.json(routineSkill);
+    }
   } catch (error) {
     console.error('Add skill to routine error:', error);
     res.status(500).json({ error: 'Server error' });
