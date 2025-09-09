@@ -429,7 +429,6 @@ enum UserRole {
   COACH
   PARENT
   GYMNAST
-  SYSTEM_ADMIN
   SUPER_ADMIN
 }
 

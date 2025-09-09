@@ -40,7 +40,7 @@ async function main() {
     
     console.log('\n🎯 Recommended users to promote to Super Admin:');
     const recommendedUsers = users.filter(user => 
-      user.role === 'CLUB_ADMIN' || user.role === 'SYSTEM_ADMIN'
+      user.role === 'CLUB_ADMIN'
     );
     
     if (recommendedUsers.length > 0) {

@@ -60,8 +60,8 @@ const auth = async (req, res, next) => {
 
     req.user = user;
     
-    // For system admins, check if they're switching clubs
-    if (user.role === 'SYSTEM_ADMIN') {
+    // For super admins, check if they're switching clubs
+    if (user.role === 'SUPER_ADMIN') {
       const switchClubId = req.header('X-Switch-Club-Id');
       if (switchClubId) {
         const switchClub = await prisma.club.findUnique({
@@ -107,8 +107,8 @@ const requireSystemAdmin = (req, res, next) => {
     return res.status(401).json({ error: 'Authentication required.' });
   }
 
-  if (req.user.role !== 'SYSTEM_ADMIN') {
-    return res.status(403).json({ error: 'System administrator access required.' });
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super administrator access required.' });
   }
 
   next();
@@ -120,8 +120,8 @@ const requireClubAccess = (req, res, next) => {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  // System admins can access any club
-  if (req.user.role === 'SYSTEM_ADMIN') {
+  // Super admins can access any club
+  if (req.user.role === 'SUPER_ADMIN') {
     return next();
   }
 
@@ -143,8 +143,8 @@ const requireGymnastAccess = async (req, res, next) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // System admins can access any gymnast
-    if (req.user.role === 'SYSTEM_ADMIN') {
+    // Super admins can access any gymnast
+    if (req.user.role === 'SUPER_ADMIN') {
       const gymnastId = req.params.gymnastId || req.body.gymnastId;
       if (gymnastId) {
         const gymnast = await prisma.gymnast.findUnique({
@@ -205,9 +205,9 @@ const requireGymnastAccess = async (req, res, next) => {
   }
 };
 
-// Get effective club ID (handles club switching for system admins)
+// Get effective club ID (handles club switching for super admins)
 const getEffectiveClubId = (req) => {
-  if (req.user.role === 'SYSTEM_ADMIN' && req.effectiveClubId) {
+  if (req.user.role === 'SUPER_ADMIN' && req.effectiveClubId) {
     return req.effectiveClubId;
   }
   return req.user.clubId;

@@ -426,7 +426,6 @@ const SuperAdmin = () => {
                         <option value="COACH">Coach</option>
                         <option value="PARENT">Parent</option>
                         <option value="GYMNAST">Gymnast</option>
-                        <option value="SYSTEM_ADMIN">System Admin</option>
                         <option value="SUPER_ADMIN">Super Admin</option>
                       </select>
                     </td>
