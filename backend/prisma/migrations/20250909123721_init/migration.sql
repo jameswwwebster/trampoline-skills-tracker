@@ -173,7 +173,8 @@ CREATE TABLE "routines" (
 CREATE TABLE "routine_skills" (
     "id" TEXT NOT NULL,
     "routineId" TEXT NOT NULL,
-    "skillId" TEXT NOT NULL,
+    "skillId" TEXT,
+    "customSkillName" TEXT,
     "order" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -451,7 +452,7 @@ ALTER TABLE "routines" ADD CONSTRAINT "routines_levelId_fkey" FOREIGN KEY ("leve
 ALTER TABLE "routine_skills" ADD CONSTRAINT "routine_skills_routineId_fkey" FOREIGN KEY ("routineId") REFERENCES "routines"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "routine_skills" ADD CONSTRAINT "routine_skills_skillId_fkey" FOREIGN KEY ("skillId") REFERENCES "skills"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "routine_skills" ADD CONSTRAINT "routine_skills_skillId_fkey" FOREIGN KEY ("skillId") REFERENCES "skills"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "routine_progress" ADD CONSTRAINT "routine_progress_gymnastId_fkey" FOREIGN KEY ("gymnastId") REFERENCES "gymnasts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -511,24 +511,34 @@ async function main() {
           
           // Find the skill across ALL levels (not just the current level)
           const skill = allSkills.get(routineSkillData.name);
-          if (!skill) {
-            console.log(`ℹ️  Skill "${routineSkillData.name}" is considered automatic/implicit - not tracked separately`);
-            continue; // Skip automatic/implicit skills
-          }
-
-          // Create routine-skill junction (check for duplicates)
-          const existingConnection = await prisma.routineSkill.findFirst({
-            where: {
-              routineId: routine.id,
-              skillId: skill.id
-            }
-          });
           
-          if (!existingConnection) {
+          if (skill) {
+            // Create routine-skill junction for existing skills (check for duplicates)
+            const existingConnection = await prisma.routineSkill.findFirst({
+              where: {
+                routineId: routine.id,
+                skillId: skill.id
+              }
+            });
+            
+            if (!existingConnection) {
+              await prisma.routineSkill.create({
+                data: {
+                  routineId: routine.id,
+                  skillId: skill.id,
+                  customSkillName: null,
+                  order: skillIndex + 1
+                }
+              });
+            }
+          } else {
+            // Create custom skill entry for implicit/automatic skills
+            console.log(`ℹ️  Creating custom skill "${routineSkillData.name}" for routine`);
             await prisma.routineSkill.create({
               data: {
                 routineId: routine.id,
-                skillId: skill.id,
+                skillId: null,
+                customSkillName: routineSkillData.name,
                 order: skillIndex + 1
               }
             });

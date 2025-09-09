@@ -120,7 +120,22 @@ router.get('/', auth, async (req, res) => {
       ...level,
       routines: level.routines.map(routine => ({
         ...routine,
-        skills: routine.routineSkills.map(rs => rs.skill)
+        skills: routine.routineSkills.map(rs => {
+          if (rs.customSkillName) {
+            // Return custom skill object
+            return {
+              id: rs.id,
+              name: rs.customSkillName,
+              description: null,
+              levelId: level.id,
+              order: rs.order,
+              isCustom: true
+            };
+          } else {
+            // Return regular skill object
+            return rs.skill;
+          }
+        })
       })),
       competitions: level.competitions.map(lc => lc.competition),
       competitionLevel: level.competitions.map(lc => lc.competition.code) // For backward compatibility
@@ -257,7 +272,22 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
       ...result,
       routines: result.routines.map(routine => ({
         ...routine,
-        skills: routine.routineSkills.map(rs => rs.skill)
+        skills: routine.routineSkills.map(rs => {
+          if (rs.customSkillName) {
+            // Return custom skill object
+            return {
+              id: rs.id,
+              name: rs.customSkillName,
+              description: null,
+              levelId: result.id,
+              order: rs.order,
+              isCustom: true
+            };
+          } else {
+            // Return regular skill object
+            return rs.skill;
+          }
+        })
       })),
       competitions: result.competitions.map(lc => lc.competition),
       competitionLevel: result.competitions.map(lc => lc.competition.code) // For backward compatibility
@@ -362,7 +392,22 @@ router.put('/:levelId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
       ...result,
       routines: result.routines.map(routine => ({
         ...routine,
-        skills: routine.routineSkills.map(rs => rs.skill)
+        skills: routine.routineSkills.map(rs => {
+          if (rs.customSkillName) {
+            // Return custom skill object
+            return {
+              id: rs.id,
+              name: rs.customSkillName,
+              description: null,
+              levelId: result.id,
+              order: rs.order,
+              isCustom: true
+            };
+          } else {
+            // Return regular skill object
+            return rs.skill;
+          }
+        })
       })),
       competitions: result.competitions.map(lc => lc.competition),
       competitionLevel: result.competitions.map(lc => lc.competition.code) // For backward compatibility
@@ -563,7 +608,22 @@ router.post('/:levelId/routines', auth, requireRole(['CLUB_ADMIN']), async (req,
     // Transform the data to match the expected frontend structure
     const transformedRoutine = {
       ...routine,
-      skills: routine.routineSkills.map(rs => rs.skill)
+      skills: routine.routineSkills.map(rs => {
+        if (rs.customSkillName) {
+          // Return custom skill object
+          return {
+            id: rs.id,
+            name: rs.customSkillName,
+            description: null,
+            levelId: routine.levelId,
+            order: rs.order,
+            isCustom: true
+          };
+        } else {
+          // Return regular skill object
+          return rs.skill;
+        }
+      })
     };
 
     res.json(transformedRoutine);
@@ -610,7 +670,22 @@ router.put('/:levelId/routines/:routineId', auth, requireRole(['CLUB_ADMIN']), a
     // Transform the data to match the expected frontend structure
     const transformedRoutine = {
       ...routine,
-      skills: routine.routineSkills.map(rs => rs.skill)
+      skills: routine.routineSkills.map(rs => {
+        if (rs.customSkillName) {
+          // Return custom skill object
+          return {
+            id: rs.id,
+            name: rs.customSkillName,
+            description: null,
+            levelId: routine.levelId,
+            order: rs.order,
+            isCustom: true
+          };
+        } else {
+          // Return regular skill object
+          return rs.skill;
+        }
+      })
     };
 
     res.json(transformedRoutine);
@@ -745,18 +820,21 @@ router.post('/:levelId/routines/:routineId/skills', auth, requireRole(['CLUB_ADM
     }
 
     if (customSkillName) {
-      // For custom skills, we don't create a database record
-      // Just return the skill object for the frontend
-      res.json({
-        skill: skill,
-        routineSkill: {
-          id: `custom_rs_${Date.now()}`,
+      // For custom skills, create a RoutineSkill record with customSkillName
+      const routineSkill = await prisma.routineSkill.create({
+        data: {
           routineId,
-          skillId: skill.id,
-          order: skillOrder,
-          skill: skill
+          skillId: null, // No skillId for custom skills
+          customSkillName: customSkillName,
+          order: skillOrder
         }
       });
+
+      res.json({
+        skill: skill,
+        routineSkill: routineSkill
+      });
+      return;
     } else {
       // For existing skills, create the routine-skill connection
       const routineSkill = await prisma.routineSkill.create({

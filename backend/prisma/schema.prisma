@@ -202,13 +202,14 @@ model Routine {
 }
 
 model RoutineSkill {
-  id        String   @id @default(cuid())
-  routineId String
-  skillId   String
-  order     Int
-  createdAt DateTime @default(now())
-  routine   Routine  @relation(fields: [routineId], references: [id])
-  skill     Skill    @relation(fields: [skillId], references: [id])
+  id              String   @id @default(cuid())
+  routineId       String
+  skillId         String?
+  customSkillName String?
+  order           Int
+  createdAt       DateTime @default(now())
+  routine         Routine  @relation(fields: [routineId], references: [id])
+  skill           Skill?   @relation(fields: [skillId], references: [id])
 
   @@unique([routineId, skillId])
   @@map("routine_skills")
