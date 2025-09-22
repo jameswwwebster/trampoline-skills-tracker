@@ -308,12 +308,17 @@ const Gymnasts = () => {
       return currentLevel && currentLevel.identifier === levelFilter;
     })();
     
-    // Check competition filter (match gymnasts currently working on levels associated with this competition)
+    // Check competition filter (match gymnasts who have completed levels associated with this competition)
     const competitionFilter = searchParams.get('competition');
     const matchesCompetition = !competitionFilter || (() => {
-      const currentLevel = getCurrentLevel(gymnast, levels);
-      return currentLevel && currentLevel.competitions && 
-             currentLevel.competitions.some(comp => comp.name === competitionFilter);
+      // Check if gymnast has completed any level associated with this competition
+      const completedLevels = gymnast.levelProgress
+        .filter(lp => lp.status === 'COMPLETED')
+        .map(lp => lp.level);
+      
+      return completedLevels.some(level => 
+        level.competitions && level.competitions.some(comp => comp.name === competitionFilter)
+      );
     })();
     
     // Check session filter
