@@ -81,6 +81,90 @@ const Cheatsheets = () => {
           </Link>
         ))}
       </div>
+
+      <div className="appendix-section">
+        <h2>Source Documents</h2>
+        <p className="appendix-description">
+          These cheatsheets are based on the official British Gymnastics technical requirements and FIG regulations. 
+          For complete details, please refer to the source documents below.
+        </p>
+        
+        <div className="source-documents">
+          <div className="source-category">
+            <h3>Trampoline</h3>
+            <ul>
+              <li>
+                <a href="https://s3.amazonaws.com/a.storyblok.com/f/83342/x/82bc22bb5c/tra-technical-requirements-2026-national-pathway.pdf" 
+                   target="_blank" 
+                   rel="noopener noreferrer">
+                  Trampoline National Pathway
+                </a>
+              </li>
+              <li>
+                <a href="https://s3.amazonaws.com/a.storyblok.com/f/83342/x/d8cd574e43/tra-technical-requirements-2026-regional-pathway.pdf" 
+                   target="_blank" 
+                   rel="noopener noreferrer">
+                  Trampoline Regional & Club Pathway
+                </a>
+              </li>
+              <li>
+                <a href="https://s3.amazonaws.com/a.storyblok.com/f/83342/x/aeeac655ba/tra-technical-requirements-2026-disabilities-pathway.pdf" 
+                   target="_blank" 
+                   rel="noopener noreferrer">
+                  Trampoline Disability Pathway
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="source-category">
+            <h3>DMT (Double Mini Trampoline)</h3>
+            <ul>
+              <li>
+                <a href="https://s3.amazonaws.com/a.storyblok.com/f/83342/x/dd0673925c/dmt-technical-requirements-2026-national-pathway.pdf" 
+                   target="_blank" 
+                   rel="noopener noreferrer">
+                  DMT National Pathway
+                </a>
+              </li>
+              <li>
+                <a href="https://s3.amazonaws.com/a.storyblok.com/f/83342/x/4a5fd1d7b9/dmt-technical-requirements-2026-regional-pathway.pdf" 
+                   target="_blank" 
+                   rel="noopener noreferrer">
+                  DMT Regional & Club Pathway
+                </a>
+              </li>
+              <li>
+                <a href="https://s3.amazonaws.com/a.storyblok.com/f/83342/x/2b27402501/dmt-technical-requirements-2026-disabilities-pathway.pdf" 
+                   target="_blank" 
+                   rel="noopener noreferrer">
+                  DMT Disability Pathway
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="source-category">
+            <h3>FIG Regulations</h3>
+            <ul>
+              <li>
+                <a href="https://www.gymnastics.sport/publicdir/rules/files/en_1.1%20-%20WAG%20COP%202025-2028.pdf" 
+                   target="_blank" 
+                   rel="noopener noreferrer">
+                  FIG Code of Points 2025-2028
+                </a>
+              </li>
+              <li>
+                <a href="https://www.gymnastics.sport/publicdir/rules/files/en_1.1%20-%20Technical%20Regulations%202026.pdf" 
+                   target="_blank" 
+                   rel="noopener noreferrer">
+                  FIG Technical Regulations 2026
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

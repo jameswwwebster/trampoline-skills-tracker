@@ -77,6 +77,68 @@
   color: #0052a3;
 }
 
+.appendix-section {
+  margin-top: 4rem;
+  padding-top: 3rem;
+  border-top: 2px solid #e0e0e0;
+}
+
+.appendix-section h2 {
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.appendix-description {
+  color: #666;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.source-documents {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.source-category h3 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: #444;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.5rem;
+}
+
+.source-category ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.source-category li {
+  margin-bottom: 0.75rem;
+}
+
+.source-category a {
+  color: #0066cc;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.source-category a:hover {
+  color: #0052a3;
+  text-decoration: underline;
+}
+
+.source-category a::before {
+  content: "📄";
+  margin-right: 0.5rem;
+  font-size: 1rem;
+}
+
 @media (max-width: 768px) {
   .cheatsheets-container {
     padding: 1rem;
@@ -93,6 +155,16 @@
   .cheatsheets-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  .appendix-section {
+    margin-top: 3rem;
+    padding-top: 2rem;
+  }
+
+  .source-documents {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 }
 
