@@ -102,10 +102,17 @@ const fs = require('fs');
 let cheatsheetsPath = path.join(__dirname, 'resources/requirement-cheatsheets');
 const rootCheatsheetsPath = path.join(__dirname, '../resources/requirement-cheatsheets');
 
-// Prefer root resources path if it exists and has pages, otherwise use backend resources (for Docker)
-if (fs.existsSync(rootCheatsheetsPath) && fs.existsSync(path.join(rootCheatsheetsPath, 'pages'))) {
+// Check which location has actual page files
+const backendPagesPath = path.join(cheatsheetsPath, 'pages');
+const rootPagesPath = path.join(rootCheatsheetsPath, 'pages');
+
+const backendHasPages = fs.existsSync(backendPagesPath) && fs.readdirSync(backendPagesPath).length > 0;
+const rootHasPages = fs.existsSync(rootPagesPath) && fs.readdirSync(rootPagesPath).length > 0;
+
+// Prefer root resources if it has pages, otherwise use backend resources
+if (rootHasPages) {
   cheatsheetsPath = rootCheatsheetsPath;
-} else if (!fs.existsSync(cheatsheetsPath)) {
+} else if (!backendHasPages && fs.existsSync(rootCheatsheetsPath)) {
   cheatsheetsPath = rootCheatsheetsPath;
 }
 app.use('/cheatsheets', express.static(cheatsheetsPath, {
