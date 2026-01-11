@@ -104,8 +104,8 @@ if (!require('fs').existsSync(cheatsheetsPath)) {
 }
 app.use('/cheatsheets', express.static(cheatsheetsPath, {
   setHeaders: (res, filePath) => {
-    // Set CORS headers for PDF files
-    if (filePath.endsWith('.pdf')) {
+    // Set CORS headers for PDF and image files
+    if (filePath.endsWith('.pdf') || filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || filePath.endsWith('.png')) {
       res.setHeader('Access-Control-Allow-Origin', corsOptions.origin[0] || '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET');
     }
