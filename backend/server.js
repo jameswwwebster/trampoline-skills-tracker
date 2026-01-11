@@ -99,14 +99,18 @@ app.use('/uploads', express.static('uploads'));
 // Static file serving for cheatsheets (public access)
 // Use backend/resources path directly
 const cheatsheetsPath = path.join(__dirname, 'resources/requirement-cheatsheets');
-app.use('/cheatsheets', express.static(cheatsheetsPath, {
-  setHeaders: (res, filePath, stat) => {
-    // Set CORS headers for all files in cheatsheets directory
-    res.setHeader('Access-Control-Allow-Origin', corsOptions.origin[0] || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
-}));
+// Static file serving for cheatsheets with proper CORS
+app.use('/cheatsheets', (req, res, next) => {
+  // Check if the origin is in the allowed list
+  const origin = req.headers.origin;
+  const allowedOrigin = corsOptions.origin.find(allowed => allowed === origin) || corsOptions.origin[0] || '*';
+  
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  next();
+}, express.static(cheatsheetsPath));
 
 // Test endpoint to verify cheatsheet files are accessible
 app.get('/api/cheatsheets/test', (req, res) => {
