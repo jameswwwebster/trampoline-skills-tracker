@@ -97,7 +97,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 
 // Static file serving for cheatsheets (public access)
-const cheatsheetsPath = path.join(__dirname, '../resources/requirement-cheatsheets');
+// Try both locations: relative to backend (for Docker) and relative to project root (for local dev)
+let cheatsheetsPath = path.join(__dirname, 'resources/requirement-cheatsheets');
+if (!require('fs').existsSync(cheatsheetsPath)) {
+  cheatsheetsPath = path.join(__dirname, '../resources/requirement-cheatsheets');
+}
 app.use('/cheatsheets', express.static(cheatsheetsPath, {
   setHeaders: (res, filePath) => {
     // Set CORS headers for PDF files
