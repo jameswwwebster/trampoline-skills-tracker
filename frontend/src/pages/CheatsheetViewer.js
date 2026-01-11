@@ -40,8 +40,9 @@ const CheatsheetViewer = () => {
       imageUrl = `${apiBaseUrl}/cheatsheets/pages/page-${pageNumber}.jpg`;
     }
 
-    // Preload image
+    // Preload image with CORS
     const img = new Image();
+    img.crossOrigin = 'anonymous'; // Enable CORS for image loading
     img.onload = () => {
       setLoading(false);
       setError(null);
@@ -147,6 +148,7 @@ const CheatsheetViewer = () => {
             src={imageUrl} 
             alt={cheatsheetTitles[cheatsheetId] || 'Cheatsheet'}
             className="cheatsheet-image"
+            crossOrigin="anonymous"
             onLoad={() => setLoading(false)}
             onError={() => {
               setError('Failed to load cheatsheet image');
