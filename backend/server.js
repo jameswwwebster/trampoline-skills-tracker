@@ -97,24 +97,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 
 // Static file serving for cheatsheets (public access)
-// Try both locations: relative to backend (for Docker) and relative to project root (for local dev)
-const fs = require('fs');
-let cheatsheetsPath = path.join(__dirname, 'resources/requirement-cheatsheets');
-const rootCheatsheetsPath = path.join(__dirname, '../resources/requirement-cheatsheets');
-
-// Check which location has actual page files
-const backendPagesPath = path.join(cheatsheetsPath, 'pages');
-const rootPagesPath = path.join(rootCheatsheetsPath, 'pages');
-
-const backendHasPages = fs.existsSync(backendPagesPath) && fs.readdirSync(backendPagesPath).length > 0;
-const rootHasPages = fs.existsSync(rootPagesPath) && fs.readdirSync(rootPagesPath).length > 0;
-
-// Prefer root resources if it has pages, otherwise use backend resources
-if (rootHasPages) {
-  cheatsheetsPath = rootCheatsheetsPath;
-} else if (!backendHasPages && fs.existsSync(rootCheatsheetsPath)) {
-  cheatsheetsPath = rootCheatsheetsPath;
-}
+// Use backend/resources path directly
+const cheatsheetsPath = path.join(__dirname, 'resources/requirement-cheatsheets');
 app.use('/cheatsheets', express.static(cheatsheetsPath, {
   setHeaders: (res, filePath) => {
     // Set CORS headers for PDF and image files
@@ -130,9 +114,12 @@ app.get('/api/cheatsheets/test', (req, res) => {
   const fs = require('fs');
   try {
     const files = fs.readdirSync(cheatsheetsPath);
+    const pagesPath = path.join(cheatsheetsPath, 'pages');
+    const pagesFiles = fs.existsSync(pagesPath) ? fs.readdirSync(pagesPath) : [];
     res.json({ 
       path: cheatsheetsPath,
       files: files,
+      pagesFiles: pagesFiles,
       exists: fs.existsSync(cheatsheetsPath)
     });
   } catch (error) {
