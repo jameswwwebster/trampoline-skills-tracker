@@ -26,6 +26,8 @@ COPY package*.json ./
 RUN npm install canvas@^2.11.2 --verbose
 RUN npm ci --ignore-scripts
 COPY . .
+# Ensure resources directory exists (copied by buildCommand before Docker build)
+RUN if [ -d "resources" ]; then echo "Resources directory found"; ls -la resources/ || true; else echo "WARNING: Resources directory not found"; fi
 
 # Rebuild canvas native module to ensure it's properly compiled
 RUN npm rebuild canvas --verbose
