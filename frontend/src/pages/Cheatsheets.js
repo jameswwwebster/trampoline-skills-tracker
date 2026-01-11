@@ -1,8 +1,68 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Cheatsheets.css';
 
 const Cheatsheets = () => {
+  // SEO: Add structured data and meta tags
+  useEffect(() => {
+    const baseUrl = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:3000' 
+      : 'https://trampoline-frontend.onrender.com';
+    const pageUrl = `${baseUrl}/cheatsheets`;
+
+    // Update canonical URL
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', pageUrl);
+
+    // Add breadcrumb structured data
+    const breadcrumbScript = document.createElement('script');
+    breadcrumbScript.type = 'application/ld+json';
+    breadcrumbScript.id = 'breadcrumb-structured-data';
+    const existingBreadcrumb = document.getElementById('breadcrumb-structured-data');
+    if (existingBreadcrumb) {
+      existingBreadcrumb.remove();
+    }
+    breadcrumbScript.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Cheatsheets",
+          "item": pageUrl
+        }
+      ]
+    });
+    document.head.appendChild(breadcrumbScript);
+
+    // Add collection page structured data
+    const collectionScript = document.createElement('script');
+    collectionScript.type = 'application/ld+json';
+    collectionScript.id = 'collection-structured-data';
+    const existingCollection = document.getElementById('collection-structured-data');
+    if (existingCollection) {
+      existingCollection.remove();
+    }
+    collectionScript.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "2026 BG Rules Cheatsheets - Trampoline & DMT",
+      "description": "One-page cheatsheets for trampoline and DMT requirements for British Gymnastics competitions in the UK - 2026 rules, regulations and qualification pathways",
+      "url": pageUrl,
+      "inLanguage": "en-GB",
+      "publisher": {
+        "@type": "Organization",
+        "name": "British Gymnastics"
+      }
+    });
+    document.head.appendChild(collectionScript);
+  }, []);
   // List of cheatsheets - all 8 pages
   const cheatsheets = [
     {
