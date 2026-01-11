@@ -3,44 +3,55 @@ import { Link } from 'react-router-dom';
 import './Cheatsheets.css';
 
 const Cheatsheets = () => {
-  // List of cheatsheets from the PDF
-  // Based on the PDF content, these are the main sections
+  // List of cheatsheets - all 8 pages
   const cheatsheets = [
     {
       id: 'dmt-national',
-      title: 'DMT National Pathway',
+      title: 'DMT National Requirements',
       description: 'Requirements and qualification pathways in GB National DMT competition',
       page: 1
     },
     {
       id: 'dmt-regional',
-      title: 'DMT Regional Pathway',
+      title: 'DMT Regional Requirements',
       description: 'Requirements and qualification pathways in GB Regional DMT competition',
       page: 2
     },
     {
       id: 'dmt-disability',
-      title: 'DMT Disability',
+      title: 'DMT Disability Requirements',
       description: 'Requirements for DMT in different GB series for disabled athletes',
       page: 3
     },
     {
-      id: 'tra-disability',
-      title: 'TRA Disability',
-      description: 'Requirements for TRA in different GB series for disabled athletes',
+      id: 'trampoline-national',
+      title: 'Trampoline National Requirements',
+      description: 'Requirements and qualification pathways in GB National Trampoline competition',
       page: 4
     },
     {
-      id: 'club-level',
-      title: 'Club Level',
-      description: 'Requirements and qualification pathways in GB Club Level competition',
+      id: 'trampoline-regional',
+      title: 'Trampoline Regional Requirements',
+      description: 'Requirements and qualification pathways in GB Regional Trampoline competition',
       page: 5
     },
     {
-      id: 'club-level-north',
-      title: 'Club Level - North Region',
-      description: 'Requirements and qualification pathways in North Region Club Level competition',
+      id: 'trampoline-disability',
+      title: 'Trampoline Disability Requirements',
+      description: 'Requirements for Trampoline in different GB series for disabled athletes',
       page: 6
+    },
+    {
+      id: 'club-level',
+      title: 'Club Requirements',
+      description: 'Requirements and qualification pathways in GB Club Level competition',
+      page: 7
+    },
+    {
+      id: 'club-level-north',
+      title: 'North Region Club Requirements',
+      description: 'Requirements and qualification pathways in North Region Club Level competition',
+      page: 8
     }
   ];
 
