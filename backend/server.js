@@ -100,12 +100,11 @@ app.use('/uploads', express.static('uploads'));
 // Use backend/resources path directly
 const cheatsheetsPath = path.join(__dirname, 'resources/requirement-cheatsheets');
 app.use('/cheatsheets', express.static(cheatsheetsPath, {
-  setHeaders: (res, filePath) => {
-    // Set CORS headers for PDF and image files
-    if (filePath.endsWith('.pdf') || filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || filePath.endsWith('.png')) {
-      res.setHeader('Access-Control-Allow-Origin', corsOptions.origin[0] || '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET');
-    }
+  setHeaders: (res, filePath, stat) => {
+    // Set CORS headers for all files in cheatsheets directory
+    res.setHeader('Access-Control-Allow-Origin', corsOptions.origin[0] || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
   }
 }));
 

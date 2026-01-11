@@ -48,9 +48,12 @@ const CheatsheetViewer = () => {
     };
     img.onerror = (err) => {
       console.error('Error loading image:', err);
-      setError(`Failed to load cheatsheet image. Please try again.`);
+      console.error('Image URL attempted:', imageUrl);
+      console.error('Image load error details:', img.src, img.complete, img.naturalWidth);
+      setError(`Failed to load cheatsheet image from: ${imageUrl}`);
       setLoading(false);
     };
+    console.log('Loading cheatsheet image from:', imageUrl);
     img.src = imageUrl;
   }, [cheatsheetId, pageMap]);
 
