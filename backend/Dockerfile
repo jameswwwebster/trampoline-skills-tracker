@@ -26,8 +26,6 @@ COPY package*.json ./
 RUN npm install canvas@^2.11.2 --verbose
 RUN npm ci --ignore-scripts
 COPY . .
-# Copy resources directory if it exists (copied during build)
-COPY resources/ ./resources/ 2>/dev/null || true
 
 # Rebuild canvas native module to ensure it's properly compiled
 RUN npm rebuild canvas --verbose
