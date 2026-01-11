@@ -1,0 +1,98 @@
+.cheatsheets-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.cheatsheets-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.cheatsheets-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.cheatsheets-header .subtitle {
+  font-size: 1.5rem;
+  color: #666;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.cheatsheets-header .description {
+  font-size: 1.1rem;
+  color: #777;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.cheatsheets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.cheatsheet-card {
+  display: block;
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #e0e0e0;
+}
+
+.cheatsheet-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.cheatsheet-card-content h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #333;
+}
+
+.cheatsheet-card-content p {
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.view-link {
+  display: inline-block;
+  color: #0066cc;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+.cheatsheet-card:hover .view-link {
+  color: #0052a3;
+}
+
+@media (max-width: 768px) {
+  .cheatsheets-container {
+    padding: 1rem;
+  }
+
+  .cheatsheets-header h1 {
+    font-size: 2rem;
+  }
+
+  .cheatsheets-header .subtitle {
+    font-size: 1.2rem;
+  }
+
+  .cheatsheets-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+

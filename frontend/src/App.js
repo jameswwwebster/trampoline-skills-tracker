@@ -35,6 +35,8 @@ import CustomFields from './pages/CustomFields';
 import MyCertificates from './pages/MyCertificates';
 import Health from './pages/Health';
 import SuperAdmin from './pages/SuperAdmin';
+import Cheatsheets from './pages/Cheatsheets';
+import CheatsheetViewer from './pages/CheatsheetViewer';
 import './App.css';
 
 // Inner component to access rate limit context
@@ -84,6 +86,9 @@ function AppContent() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/parent-connection-request" element={<ParentConnectionRequest />} />
         <Route path="/invite/:token" element={<AcceptInvite />} />
+        {/* Public cheatsheet routes - no authentication required */}
+        <Route path="/cheatsheets" element={<Cheatsheets />} />
+        <Route path="/cheatsheets/:cheatsheetId" element={<CheatsheetViewer />} />
         <Route path="/" element={
           <ProtectedRoute>
             <Layout />

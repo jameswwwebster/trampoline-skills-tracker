@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 require('dotenv').config();
  
 
@@ -94,6 +95,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Static file serving for uploads
 app.use('/uploads', express.static('uploads'));
+
+// Static file serving for cheatsheets (public access)
+app.use('/cheatsheets', express.static(path.join(__dirname, '../resources/requirement-cheatsheets')));
 
 // Routes
 app.use('/api/auth', authRoutes);
