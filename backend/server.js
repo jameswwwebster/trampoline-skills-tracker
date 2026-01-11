@@ -97,7 +97,31 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 
 // Static file serving for cheatsheets (public access)
-app.use('/cheatsheets', express.static(path.join(__dirname, '../resources/requirement-cheatsheets')));
+const cheatsheetsPath = path.join(__dirname, '../resources/requirement-cheatsheets');
+app.use('/cheatsheets', express.static(cheatsheetsPath, {
+  setHeaders: (res, filePath) => {
+    // Set CORS headers for PDF files
+    if (filePath.endsWith('.pdf')) {
+      res.setHeader('Access-Control-Allow-Origin', corsOptions.origin[0] || '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET');
+    }
+  }
+}));
+
+// Test endpoint to verify cheatsheet files are accessible
+app.get('/api/cheatsheets/test', (req, res) => {
+  const fs = require('fs');
+  try {
+    const files = fs.readdirSync(cheatsheetsPath);
+    res.json({ 
+      path: cheatsheetsPath,
+      files: files,
+      exists: fs.existsSync(cheatsheetsPath)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Routes
 app.use('/api/auth', authRoutes);

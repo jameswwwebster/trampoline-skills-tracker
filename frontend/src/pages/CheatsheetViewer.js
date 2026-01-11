@@ -1,31 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import * as pdfjsLib from 'pdfjs-dist';
 import './CheatsheetViewer.css';
 
 // Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Use the worker file from the public directory
+pdfjsLib.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL || ''}/pdf.worker.min.js`;
 
 const CheatsheetViewer = () => {
   const { cheatsheetId } = useParams();
-  const navigate = useNavigate();
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [scale, setScale] = useState(1);
 
   // Map cheatsheet IDs to page numbers in the PDF
-  const pageMap = {
+  const pageMap = React.useMemo(() => ({
     'dmt-national': 1,
     'dmt-regional': 2,
     'dmt-disability': 3,
     'tra-disability': 4,
     'club-level': 5,
     'club-level-north': 6
-  };
+  }), []);
 
   const cheatsheetTitles = {
     'dmt-national': 'DMT National Pathway',
@@ -38,20 +37,24 @@ const CheatsheetViewer = () => {
 
   useEffect(() => {
     const loadPDF = async () => {
+      // Use the backend route to serve the PDF
+      // In development, use localhost backend directly; in production, use API URL
+      let pdfUrl;
+      if (process.env.NODE_ENV === 'development') {
+        // In development, use the backend directly
+        pdfUrl = 'http://localhost:5000/cheatsheets/2026%20Requirements%20(1).pdf';
+      } else {
+        // In production, use the configured API URL or relative path
+        const apiBaseUrl = process.env.REACT_APP_API_URL || '';
+        pdfUrl = `${apiBaseUrl}/cheatsheets/2026%20Requirements%20(1).pdf`;
+      }
+
       try {
         setLoading(true);
         setError(null);
 
-        // Use the backend route to serve the PDF
-        // In development, the proxy handles routing; in production, use full URL
-        const apiBaseUrl = process.env.NODE_ENV === 'production' 
-          ? (process.env.REACT_APP_API_URL || '') 
-          : '';
-        const pdfUrl = `${apiBaseUrl}/cheatsheets/2026%20Requirements%20(1).pdf`;
         const loadingTask = pdfjsLib.getDocument(pdfUrl);
         const pdf = await loadingTask.promise;
-        
-        setTotalPages(pdf.numPages);
         
         const pageNumber = pageMap[cheatsheetId] || 1;
         await renderPage(pdf, pageNumber);
@@ -60,13 +63,15 @@ const CheatsheetViewer = () => {
         setLoading(false);
       } catch (err) {
         console.error('Error loading PDF:', err);
-        setError('Failed to load cheatsheet. Please try again.');
+        console.error('PDF URL attempted:', pdfUrl);
+        console.error('Error details:', err.message, err.stack);
+        setError(`Failed to load cheatsheet: ${err.message || 'Please try again.'}`);
         setLoading(false);
       }
     };
 
     loadPDF();
-  }, [cheatsheetId]);
+  }, [cheatsheetId, pageMap]);
 
   useEffect(() => {
     const handleResize = () => {
