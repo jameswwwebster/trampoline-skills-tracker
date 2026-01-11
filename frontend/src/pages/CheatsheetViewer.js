@@ -14,18 +14,22 @@ const CheatsheetViewer = () => {
     'dmt-national': 1,
     'dmt-regional': 2,
     'dmt-disability': 3,
-    'tra-disability': 4,
-    'club-level': 5,
-    'club-level-north': 6
+    'trampoline-national': 4,
+    'trampoline-regional': 5,
+    'trampoline-disability': 6,
+    'club-level': 7,
+    'club-level-north': 8
   }), []);
 
   const cheatsheetTitles = {
-    'dmt-national': 'DMT National Pathway',
-    'dmt-regional': 'DMT Regional Pathway',
-    'dmt-disability': 'DMT Disability',
-    'tra-disability': 'TRA Disability',
-    'club-level': 'Club Level',
-    'club-level-north': 'Club Level - North Region'
+    'dmt-national': 'DMT National Requirements',
+    'dmt-regional': 'DMT Regional Requirements',
+    'dmt-disability': 'DMT Disability Requirements',
+    'trampoline-national': 'Trampoline National Requirements',
+    'trampoline-regional': 'Trampoline Regional Requirements',
+    'trampoline-disability': 'Trampoline Disability Requirements',
+    'club-level': 'Club Requirements',
+    'club-level-north': 'North Region Club Requirements'
   };
 
   useEffect(() => {
