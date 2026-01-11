@@ -98,9 +98,15 @@ app.use('/uploads', express.static('uploads'));
 
 // Static file serving for cheatsheets (public access)
 // Try both locations: relative to backend (for Docker) and relative to project root (for local dev)
+const fs = require('fs');
 let cheatsheetsPath = path.join(__dirname, 'resources/requirement-cheatsheets');
-if (!require('fs').existsSync(cheatsheetsPath)) {
-  cheatsheetsPath = path.join(__dirname, '../resources/requirement-cheatsheets');
+const rootCheatsheetsPath = path.join(__dirname, '../resources/requirement-cheatsheets');
+
+// Prefer root resources path if it exists and has pages, otherwise use backend resources (for Docker)
+if (fs.existsSync(rootCheatsheetsPath) && fs.existsSync(path.join(rootCheatsheetsPath, 'pages'))) {
+  cheatsheetsPath = rootCheatsheetsPath;
+} else if (!fs.existsSync(cheatsheetsPath)) {
+  cheatsheetsPath = rootCheatsheetsPath;
 }
 app.use('/cheatsheets', express.static(cheatsheetsPath, {
   setHeaders: (res, filePath) => {
