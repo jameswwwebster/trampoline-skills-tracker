@@ -4,10 +4,8 @@ import './CheatsheetViewer.css';
 
 const CheatsheetViewer = () => {
   const { cheatsheetId } = useParams();
-  const containerRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [scale, setScale] = useState(1);
 
   // Map cheatsheet IDs to page numbers
   const pageMap = React.useMemo(() => ({
@@ -62,42 +60,7 @@ const CheatsheetViewer = () => {
     img.src = imageUrl;
   }, [cheatsheetId, pageMap]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current) {
-        const container = containerRef.current;
-        const img = container.querySelector('img');
-        if (img) {
-          const containerWidth = container.clientWidth;
-          const containerHeight = container.clientHeight;
-          
-          // Calculate scale to fit container while maintaining aspect ratio
-          const scaleX = (containerWidth - 40) / img.naturalWidth;
-          const scaleY = (containerHeight - 40) / img.naturalHeight;
-          const newScale = Math.min(scaleX, scaleY, 2); // Max scale of 2
-          
-          setScale(newScale);
-        }
-      }
-    };
 
-    window.addEventListener('resize', handleResize);
-    handleResize(); // Initial calculation
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, [loading]);
-
-  const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 3));
-  };
-
-  const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.5));
-  };
-
-  const handleResetZoom = () => {
-    setScale(1);
-  };
 
   const pageNumber = pageMap[cheatsheetId] || 1;
   let imageUrl;
@@ -135,31 +98,20 @@ const CheatsheetViewer = () => {
       <div className="viewer-header">
         <Link to="/cheatsheets" className="back-link">← Back</Link>
         <h2>{cheatsheetTitles[cheatsheetId] || 'Cheatsheet'}</h2>
-        <div className="zoom-controls">
-          <button onClick={handleZoomOut} className="zoom-button" aria-label="Zoom out">−</button>
-          <span className="zoom-level">{Math.round(scale * 100)}%</span>
-          <button onClick={handleZoomIn} className="zoom-button" aria-label="Zoom in">+</button>
-          <button onClick={handleResetZoom} className="zoom-button reset" aria-label="Reset zoom">⌂</button>
-        </div>
       </div>
       
-      <div className="viewer-container" ref={containerRef}>
-        <div 
-          className="image-wrapper"
-          style={{ transform: `scale(${scale})` }}
-        >
-          <img 
-            src={imageUrl} 
-            alt={cheatsheetTitles[cheatsheetId] || 'Cheatsheet'}
-            className="cheatsheet-image"
-            crossOrigin="anonymous"
-            onLoad={() => setLoading(false)}
-            onError={() => {
-              setError('Failed to load cheatsheet image');
-              setLoading(false);
-            }}
-          />
-        </div>
+      <div className="viewer-container">
+        <img 
+          src={imageUrl} 
+          alt={cheatsheetTitles[cheatsheetId] || 'Cheatsheet'}
+          className="cheatsheet-image"
+          crossOrigin="anonymous"
+          onLoad={() => setLoading(false)}
+          onError={() => {
+            setError('Failed to load cheatsheet image');
+            setLoading(false);
+          }}
+        />
       </div>
     </div>
   );
