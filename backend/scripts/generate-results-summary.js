@@ -181,7 +181,8 @@ function buildHtml(data) {
 		.controls { display: grid; grid-template-columns: repeat(5, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
 		.controls label { display: flex; flex-direction: column; font-size: 12px; color: #444; gap: 6px; }
 		input[type="text"], select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-		table { width: 100%; border-collapse: collapse; }
+		.table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+		table { width: 100%; border-collapse: collapse; min-width: 720px; }
 		th, td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 14px; text-align: left; }
 		th { position: sticky; top: 0; background: #fafafa; z-index: 1; }
 		tbody tr:hover { background: #f8fbff; }
@@ -191,6 +192,14 @@ function buildHtml(data) {
 		.group-header { background: #f3f4f6; font-weight: 600; }
 		.group-header td { padding-top: 16px; }
 		.green-row { background: #e8fbe8 !important; }
+		@media (max-width: 640px) {
+			body { margin: 16px; }
+			.controls { grid-template-columns: 1fr; }
+			input[type="text"], select { font-size: 14px; }
+			table { min-width: 640px; }
+			th, td { padding: 8px 10px; font-size: 13px; }
+			.badge { font-size: 11px; }
+		}
 	</style>
 </head>
 <body>
@@ -231,6 +240,7 @@ function buildHtml(data) {
 		</label>
 	</div>
 	<div class="count"><span id="count"></span></div>
+	<div class="table-container">
 	<table>
 		<thead>
 			<tr>
@@ -245,6 +255,7 @@ function buildHtml(data) {
 		</thead>
 		<tbody id="resultsBody"></tbody>
 	</table>
+	</div>
 	<script>
 		const DATA = ${json};
 
