@@ -180,6 +180,10 @@ function buildHtml(data, customCss) {
 		h1 { font-size: 20px; margin: 0 0 16px; }
 		.controls { display: grid; grid-template-columns: repeat(5, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
 		.controls label { display: flex; flex-direction: column; font-size: 12px; color: #444; gap: 6px; }
+		.filters-header { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 8px; max-width: 90%}
+		.filters-toggle { appearance: none; border: 1px solid #d1d5db; background: #fff; color: #111; padding: 6px 10px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+		.filters-toggle:hover { background: #f9fafb; }
+		.filters-collapsible[hidden] { display: none !important; }
 		input[type="text"], select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
 		.table-container { width: 100%; max-width: 90%; }
 		table { width: 100%; border-collapse: collapse; min-width: 720px; }
@@ -203,7 +207,7 @@ function buildHtml(data, customCss) {
 			table, thead, tbody, th, td, tr { display: block; }
 			thead { display: none; }
 			tbody tr { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; margin: 0 0 12px 0; box-shadow: 0 1px 1px rgba(0,0,0,0.02); width: 100%; box-sizing: border-box; }
-			th, td { padding: 6px 0; font-size: 13px; border-bottom: none; }
+			th, td { padding: 6px 0; font-size: 13px; border-bottom: none; text-align: center; }
 			td { display: block; word-break: break-word; overflow-wrap: anywhere; }
 			td::before { content: attr(data-label); display: block; font-weight: 600; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: .02em; margin-bottom: 2px; }
 			td[data-key="name"] { font-size: 16px; font-weight: 700; margin-top: 2px; line-height: 1.2; }
@@ -212,13 +216,17 @@ function buildHtml(data, customCss) {
 			/* Hide verbose columns and show condensed summary/meta lines */
 			td[data-key="position"], td[data-key="name"], td[data-key="total"],
 			td[data-key="club"], td[data-key="discipline"], td[data-key="category"], td[data-key="age"] { display: none; }
-			td.summary-line-cell { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-			td.summary-line-cell .summary-left { display: flex; gap: 10px; align-items: center; min-width: 0; }
-			td.summary-line-cell .summary-name { font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70vw; }
-			td.summary-line-cell .summary-score { font-weight: 700; font-size: 16px; }
-			td.summary-line-cell .pos-badge { font-size: 18px; padding: 4px 10px; }
-			td.meta-line-cell { display: block; color: #6b7280; font-size: 12px; margin-top: 6px; }
-			td.meta-line-cell .dot { margin: 0 6px; color: #9ca3af; }
+
+			td.summary-line-cell { display: block; margin-bottom: 6px; padding: 0; width: 100%; box-sizing: border-box; }
+			td.summary-line-cell .sum-grid { display: grid; grid-template-columns: 28px 1fr; column-gap: 10px; align-items: stretch; }
+			td.summary-line-cell .sum-pos { background:rgb(193, 197, 199); color:white; border-radius: 90px; display: flex; align-items: center; justify-content: center; }
+			td.summary-line-cell .sum-pos .pos-badge { font-size: 24px; padding: 4px 12px; line-height: 1; }
+			td.summary-line-cell .sum-top { display: grid; grid-template-columns: 1fr max-content; align-items: center; column-gap: 8px; }
+			td.summary-line-cell .sum-name { font-weight: 700; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; min-width: 0; }
+			td.summary-line-cell .sum-score { font-weight: 600; font-size: 13px; text-align: center; white-space: nowrap; line-height: 1; justify-self: center; }
+			td.summary-line-cell .sum-bottom { margin-top: 4px; font-size: 12px; color: #6b7280; text-align: left; }
+			td.meta-line-cell { display: none; }
+
 			td[data-key="discipline"] .badge { font-size: 11px; }
 			.group-header td { display: block !important; padding: 6px 0; border: none; }
 			.badge { font-size: 11px; }
@@ -229,7 +237,10 @@ function buildHtml(data, customCss) {
 <body>
 	<h1>Competition Results Summary</h1>
 	<div class="meta">Generated from DMT and TRA sheets</div>
-	<div class="controls">
+	<div class="filters-header">
+		<button id="filtersToggle" class="filters-toggle" type="button" aria-expanded="true" aria-controls="filtersSection">Hide filters</button>
+	</div>
+	<div id="filtersSection" class="controls filters-collapsible">
 		<label>
 			Search (name)
 			<input id="searchInput" type="text" placeholder="Type a name..." />
@@ -292,6 +303,27 @@ function buildHtml(data, customCss) {
 				.replaceAll("'", '&#039;');
 		}
 
+		// Collapsible filters
+		const filtersToggleBtn = document.getElementById('filtersToggle');
+		const filtersSection = document.getElementById('filtersSection');
+		function setFiltersCollapsed(collapsed) {
+			filtersSection.hidden = collapsed;
+			filtersToggleBtn.setAttribute('aria-expanded', String(!collapsed));
+			filtersToggleBtn.textContent = collapsed ? 'Show filters' : 'Hide filters';
+		}
+		(function initFiltersCollapse() {
+			try {
+				const isMobile = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+				setFiltersCollapsed(!!isMobile);
+			} catch (_) {
+				setFiltersCollapsed(false);
+			}
+		})();
+		filtersToggleBtn.addEventListener('click', () => {
+			const collapsed = filtersSection.hidden === true;
+			setFiltersCollapsed(!collapsed);
+		});
+
 		function getGroupKey(row) {
 			return [row.discipline, row.categoryPart, row.ageGroup].filter(Boolean).join(' - ');
 		}
@@ -310,11 +342,16 @@ function buildHtml(data, customCss) {
 				html += \`
 				<tr\${trClass}>
 					<td class="summary-line-cell" data-key="summary">
-						<span class="summary-left">
-							<span class="pos-badge">\${escapeHtml(r.position)}</span>
-							<span class="summary-name">\${escapeHtml(r.name)}</span>
-						</span>
-						<span class="summary-score">\${escapeHtml(r.totalScore)}</span>
+						<div class="sum-grid">
+							<div class="sum-pos"><span class="pos-badge">\${escapeHtml(r.position)}</span></div>
+							<div class="sum-main">
+								<div class="sum-top">
+									<span class="sum-name">\${escapeHtml(r.name)}</span>
+									<span class="sum-score">\${escapeHtml(r.totalScore)}</span>
+								</div>
+								<div class="sum-bottom">\${escapeHtml(r.club)} <span class="dot">•</span> \${escapeHtml(r.discipline)} <span class="dot">•</span> \${escapeHtml(r.categoryPart)} <span class="dot">•</span> \${escapeHtml(r.ageGroup)}</div>
+							</div>
+						</div>
 					</td>
 					<td data-label="Position" data-key="position"><span class="pos-badge">\${escapeHtml(r.position)}</span></td>
 					<td data-label="Competitor" data-key="name">\${escapeHtml(r.name)}</td>
