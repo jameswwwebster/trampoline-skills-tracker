@@ -180,12 +180,12 @@ function buildHtml(data, customCss) {
 		h1 { font-size: 20px; margin: 0 0 16px; }
 		.controls { display: grid; grid-template-columns: repeat(5, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
 		.controls label { display: flex; flex-direction: column; font-size: 12px; color: #444; gap: 6px; }
-		.filters-header { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 8px; max-width: 90%}
+		.filters-header { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 8px; max-width: 100%}
 		.filters-toggle { appearance: none; border: 1px solid #d1d5db; background: #fff; color: #111; padding: 6px 10px; border-radius: 8px; font-size: 13px; cursor: pointer; }
 		.filters-toggle:hover { background: #f9fafb; }
 		.filters-collapsible[hidden] { display: none !important; }
 		input[type="text"], select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-		.table-container { width: 100%; max-width: 90%; }
+		.table-container { width: 100%; max-width: 100%; }
 		table { width: 100%; border-collapse: collapse; min-width: 720px; }
 		th, td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 14px; text-align: left; }
 		th { position: sticky; top: 0; background: #fafafa; z-index: 1; }
@@ -200,7 +200,7 @@ function buildHtml(data, customCss) {
 		td.meta-line-cell, td.summary-line-cell { display: none; }
 		@media (max-width: 640px) {
 			body { margin: 16px; }
-			.controls { grid-template-columns: 1fr; max-width: 90%; }
+			.controls { grid-template-columns: 1fr; max-width: 100%; }
 			input[type="text"], select { font-size: 12px; }
 			.table-container { overflow: visible; }
 			table { min-width: 0; max-width: 100%;}
