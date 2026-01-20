@@ -162,7 +162,7 @@ function uniqueSorted(values) {
 	return Array.from(new Set(values.filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b)));
 }
 
-function buildHtml(data) {
+function buildHtml(data, customCss) {
 	const disciplines = uniqueSorted(data.map((d) => d.discipline));
 	const categories = uniqueSorted(data.map((d) => d.categoryPart));
 	const ageGroups = uniqueSorted(data.map((d) => d.ageGroup));
@@ -181,7 +181,7 @@ function buildHtml(data) {
 		.controls { display: grid; grid-template-columns: repeat(5, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
 		.controls label { display: flex; flex-direction: column; font-size: 12px; color: #444; gap: 6px; }
 		input[type="text"], select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-		.table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+		.table-container { width: 100%; max-width: 90%; }
 		table { width: 100%; border-collapse: collapse; min-width: 720px; }
 		th, td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 14px; text-align: left; }
 		th { position: sticky; top: 0; background: #fafafa; z-index: 1; }
@@ -192,15 +192,39 @@ function buildHtml(data) {
 		.group-header { background: #f3f4f6; font-weight: 600; }
 		.group-header td { padding-top: 16px; }
 		.green-row { background: #e8fbe8 !important; }
+		/* Desktop/tablet: hide condensed meta line */
+		td.meta-line-cell, td.summary-line-cell { display: none; }
 		@media (max-width: 640px) {
 			body { margin: 16px; }
-			.controls { grid-template-columns: 1fr; }
-			input[type="text"], select { font-size: 14px; }
-			table { min-width: 640px; }
-			th, td { padding: 8px 10px; font-size: 13px; }
+			.controls { grid-template-columns: 1fr; max-width: 90%; }
+			input[type="text"], select { font-size: 12px; }
+			.table-container { overflow: visible; }
+			table { min-width: 0; max-width: 100%;}
+			table, thead, tbody, th, td, tr { display: block; }
+			thead { display: none; }
+			tbody tr { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; margin: 0 0 12px 0; box-shadow: 0 1px 1px rgba(0,0,0,0.02); width: 100%; box-sizing: border-box; }
+			th, td { padding: 6px 0; font-size: 13px; border-bottom: none; }
+			td { display: block; word-break: break-word; overflow-wrap: anywhere; }
+			td::before { content: attr(data-label); display: block; font-weight: 600; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: .02em; margin-bottom: 2px; }
+			td[data-key="name"] { font-size: 16px; font-weight: 700; margin-top: 2px; line-height: 1.2; }
+			td[data-key="position"] .pos-badge { background: #111; color: #fff; border-radius: 999px; padding: 2px 8px; font-size: 12px; display: inline-block; }
+			td[data-key="total"] { font-size: 16px; font-weight: 600; }
+			/* Hide verbose columns and show condensed summary/meta lines */
+			td[data-key="position"], td[data-key="name"], td[data-key="total"],
+			td[data-key="club"], td[data-key="discipline"], td[data-key="category"], td[data-key="age"] { display: none; }
+			td.summary-line-cell { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+			td.summary-line-cell .summary-left { display: flex; gap: 10px; align-items: center; min-width: 0; }
+			td.summary-line-cell .summary-name { font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70vw; }
+			td.summary-line-cell .summary-score { font-weight: 700; font-size: 16px; }
+			td.summary-line-cell .pos-badge { font-size: 18px; padding: 4px 10px; }
+			td.meta-line-cell { display: block; color: #6b7280; font-size: 12px; margin-top: 6px; }
+			td.meta-line-cell .dot { margin: 0 6px; color: #9ca3af; }
+			td[data-key="discipline"] .badge { font-size: 11px; }
+			.group-header td { display: block !important; padding: 6px 0; border: none; }
 			.badge { font-size: 11px; }
 		}
 	</style>
+	${customCss ? `<style data-preserved-user-css>\n${customCss}\n</style>` : ''}
 </head>
 <body>
 	<h1>Competition Results Summary</h1>
@@ -285,13 +309,21 @@ function buildHtml(data) {
 				const trClass = r.isGreen ? ' class="green-row"' : '';
 				html += \`
 				<tr\${trClass}>
-					<td>\${escapeHtml(r.position)}</td>
-					<td>\${escapeHtml(r.name)}</td>
-					<td>\${escapeHtml(r.club)}</td>
-					<td>\${escapeHtml(r.totalScore)}</td>
-					<td><span class="badge">\${escapeHtml(r.discipline)}</span></td>
-					<td>\${escapeHtml(r.categoryPart)}</td>
-					<td>\${escapeHtml(r.ageGroup)}</td>
+					<td class="summary-line-cell" data-key="summary">
+						<span class="summary-left">
+							<span class="pos-badge">\${escapeHtml(r.position)}</span>
+							<span class="summary-name">\${escapeHtml(r.name)}</span>
+						</span>
+						<span class="summary-score">\${escapeHtml(r.totalScore)}</span>
+					</td>
+					<td data-label="Position" data-key="position"><span class="pos-badge">\${escapeHtml(r.position)}</span></td>
+					<td data-label="Competitor" data-key="name">\${escapeHtml(r.name)}</td>
+					<td data-label="Club" data-key="club">\${escapeHtml(r.club)}</td>
+					<td data-label="Total Score" data-key="total">\${escapeHtml(r.totalScore)}</td>
+					<td data-label="Discipline" data-key="discipline"><span class="badge">\${escapeHtml(r.discipline)}</span></td>
+					<td data-label="Category" data-key="category">\${escapeHtml(r.categoryPart)}</td>
+					<td data-label="Age Group" data-key="age">\${escapeHtml(r.ageGroup)}</td>
+					<td class="meta-line-cell" data-key="meta">\${escapeHtml(r.club)} <span class="dot">•</span> \${escapeHtml(r.discipline)} <span class="dot">•</span> \${escapeHtml(r.categoryPart)} <span class="dot">•</span> \${escapeHtml(r.ageGroup)}</td>
 				</tr>\`;
 			}
 			tbody.innerHTML = html;
@@ -376,14 +408,35 @@ function main() {
 	collectGreenRows(inputPath, data)
 		.then((annotated) => {
 			data = annotated;
-			const html = buildHtml(data);
+			let preservedCss = '';
+			if (fs.existsSync(outputPath)) {
+				try {
+					const existing = fs.readFileSync(outputPath, 'utf8');
+					// Prefer explicitly marked preserved CSS if available
+					const marked = existing.match(/<style[^>]*data-preserved-user-css[^>]*>([\s\S]*?)<\/style>/i);
+					if (marked && marked[1]) {
+						preservedCss = marked[1].trim();
+					} else {
+						// Fallback: capture the last <style> block in the head as user CSS
+						const styles = Array.from(existing.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)).map(m => m[1]);
+						if (styles.length > 0) {
+							// Exclude our base CSS by heuristic: if it contains '.controls' and 'group-header', treat as base
+							const userBlocks = styles.filter(s => !/\.group-header/.test(s) || !/\.controls/.test(s));
+							preservedCss = (userBlocks[userBlocks.length - 1] || '').trim();
+						}
+					}
+				} catch (e) {
+					// ignore
+				}
+			}
+			const html = buildHtml(data, preservedCss);
 			fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 			fs.writeFileSync(outputPath, html, 'utf8');
 			console.log('Summary written to', outputPath, 'with', data.length, 'rows');
 		})
 		.catch((err) => {
 			console.warn('Warning: failed to detect green rows, continuing without highlight.', err && err.message ? err.message : err);
-			const html = buildHtml(data);
+			const html = buildHtml(data, '');
 			fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 			fs.writeFileSync(outputPath, html, 'utf8');
 			console.log('Summary written to', outputPath, 'with', data.length, 'rows');
