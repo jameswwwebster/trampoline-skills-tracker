@@ -148,8 +148,23 @@ const Cheatsheets = () => {
           These cheatsheets are based on the official British Gymnastics technical requirements and FIG regulations. 
           For complete details, please refer to the source documents below.
         </p>
-        
+
         <div className="source-documents">
+          <div className="source-category source-category-full-doc">
+            <h3>Full document</h3>
+            <ul>
+              <li>
+                <a
+                  href={`${process.env.REACT_APP_API_URL || ''}/cheatsheets/2026-Requirements.pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  2026 Requirements (full PDF)
+                </a>
+              </li>
+            </ul>
+          </div>
+
           <div className="source-category">
             <h3>Trampoline</h3>
             <ul>
