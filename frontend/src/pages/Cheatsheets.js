@@ -115,6 +115,8 @@ const Cheatsheets = () => {
     }
   ];
 
+  const fullPdfUrl = `${process.env.REACT_APP_API_URL || ''}/cheatsheets/2026-Requirements.pdf`;
+
   return (
     <div className="cheatsheets-container">
       <div className="cheatsheets-header">
@@ -123,6 +125,11 @@ const Cheatsheets = () => {
         <p className="description">
           Quick reference guides for competition requirements and qualification pathways.
           Tap any cheatsheet to view in full screen.
+        </p>
+        <p className="full-pdf-link">
+          <a href={fullPdfUrl} target="_blank" rel="noopener noreferrer">
+            Download full 2026 Requirements (PDF)
+          </a>
         </p>
       </div>
       
@@ -154,11 +161,7 @@ const Cheatsheets = () => {
             <h3>Full document</h3>
             <ul>
               <li>
-                <a
-                  href={`${process.env.REACT_APP_API_URL || ''}/cheatsheets/2026-Requirements.pdf`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+                <a href={fullPdfUrl} target="_blank" rel="noopener noreferrer">
                   2026 Requirements (full PDF)
                 </a>
               </li>

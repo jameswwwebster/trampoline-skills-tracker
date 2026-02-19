@@ -37,6 +37,7 @@ import Health from './pages/Health';
 import SuperAdmin from './pages/SuperAdmin';
 import Cheatsheets from './pages/Cheatsheets';
 import CheatsheetViewer from './pages/CheatsheetViewer';
+import WaveLength from './pages/WaveLength';
 import './App.css';
 
 // Inner component to access rate limit context
@@ -89,6 +90,8 @@ function AppContent() {
         {/* Public cheatsheet routes - no authentication required */}
         <Route path="/cheatsheets" element={<Cheatsheets />} />
         <Route path="/cheatsheets/:cheatsheetId" element={<CheatsheetViewer />} />
+        {/* Public game route - no authentication required */}
+        <Route path="/wavelength" element={<WaveLength />} />
         <Route path="/" element={
           <ProtectedRoute>
             <Layout />

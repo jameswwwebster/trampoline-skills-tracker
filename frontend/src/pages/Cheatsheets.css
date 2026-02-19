@@ -30,6 +30,25 @@
   line-height: 1.6;
 }
 
+.cheatsheets-header .full-pdf-link {
+  margin-top: 1rem;
+}
+
+.cheatsheets-header .full-pdf-link a {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: #0066cc;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.cheatsheets-header .full-pdf-link a:hover {
+  background: #0052a3;
+}
+
 .cheatsheets-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

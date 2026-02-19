@@ -1,0 +1,440 @@
+.wavelength-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.wavelength-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 30px;
+}
+
+.wavelength-header h1 {
+  font-size: 3rem;
+  margin: 0 0 10px 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.phase-indicator {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.wavelength-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Labels Input */
+.labels-input {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 40px;
+}
+
+.label-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.label-input-group label {
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.label-input {
+  padding: 20px;
+  font-size: 1.5rem;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  transition: all 0.3s ease;
+  touch-action: manipulation;
+}
+
+.label-input:focus {
+  outline: none;
+  border-color: white;
+  background: white;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+/* Disc Wrapper - contains labels and disc */
+.disc-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  width: 100%;
+  max-width: 900px;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+/* Side Labels */
+.side-label {
+  color: white;
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  padding: 20px 30px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 15px;
+  min-width: 150px;
+  text-align: center;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.side-label-left {
+  order: 1;
+}
+
+.side-label-right {
+  order: 3;
+}
+
+/* Disc Container - shows only top half */
+.disc-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  aspect-ratio: 2 / 1; /* Width is 2x height to show only top half */
+  overflow: hidden;
+  order: 2;
+}
+
+.disc {
+  position: absolute;
+  width: 100%;
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border: 6px solid white;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  overflow: visible;
+  transform-origin: center center;
+  /* Position so only top half is visible - disc is full circle, but container clips bottom */
+  top: 0;
+  left: 0;
+}
+
+.disc.spinning {
+  animation: spin 2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(var(--final-rotation, 0deg));
+  }
+}
+
+.disc-svg {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+
+/* Score Segments */
+.score-segment {
+  transition: opacity 0.3s ease;
+}
+
+.score-segment.score-0 {
+  fill: rgba(46, 204, 113, 0.6);
+}
+
+.score-segment.score-1 {
+  fill: rgba(241, 196, 15, 0.6);
+}
+
+.score-segment.score-2 {
+  fill: rgba(243, 156, 18, 0.6);
+}
+
+.score-segment.score-3 {
+  fill: rgba(231, 76, 60, 0.6);
+}
+
+/* Guessing Area - hidden disc, draggable dial */
+.disc-guess-area {
+  position: absolute;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  cursor: grab;
+  touch-action: none;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50% 50% 0 0;
+  border: 6px solid white;
+  border-bottom: none;
+  overflow: hidden;
+  top: 0;
+  left: 0;
+  user-select: none;
+}
+
+.disc-guess-area:active {
+  cursor: grabbing;
+}
+
+/* Dial pointer - extends from center to edge */
+/* For semicircle container, the circle center is at the bottom (100% from top) */
+.dial-pointer {
+  position: absolute;
+  bottom: 0; /* Bottom of container = center of circle */
+  left: 50%;
+  width: 50%;
+  height: 100%; /* Full height of container */
+  transform-origin: 0 100%; /* Rotate around bottom-left (which is the center) */
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 0.2s ease;
+}
+
+.dial-line {
+  position: absolute;
+  bottom: 0; /* Starts at center */
+  left: 0;
+  width: 4px;
+  height: 100%; /* Extends to edge */
+  background: #4ecdc4;
+  box-shadow: 0 0 10px rgba(78, 205, 196, 0.8);
+  border-radius: 2px;
+  transform-origin: center bottom; /* Rotate around bottom (center) */
+}
+
+.dial-handle {
+  position: absolute;
+  top: 0; /* At the edge of the semicircle */
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #4ecdc4;
+  border: 4px solid white;
+  box-shadow: 0 0 15px rgba(78, 205, 196, 0.9);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.disc-guess-area:active .dial-handle {
+  cursor: grabbing;
+  transform: translateX(-50%) translateY(-50%) scale(1.1);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+/* Score Display */
+.score-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  pointer-events: none;
+}
+
+.score-result {
+  padding: 25px 50px;
+  border-radius: 20px;
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.8);
+  border: 5px solid white;
+  box-shadow: 0 0 40px rgba(255, 255, 255, 0.6);
+  animation: scorePulse 0.6s ease-out;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@keyframes scorePulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.7);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.score-result.score-0 {
+  background: rgba(46, 204, 113, 0.95);
+  border-color: #2ecc71;
+  color: white;
+}
+
+.score-result.score-1 {
+  background: rgba(241, 196, 15, 0.95);
+  border-color: #f1c40f;
+  color: #333;
+}
+
+.score-result.score-2 {
+  background: rgba(243, 156, 18, 0.95);
+  border-color: #f39c12;
+  color: white;
+}
+
+.score-result.score-3 {
+  background: rgba(231, 76, 60, 0.95);
+  border-color: #e74c3c;
+  color: white;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.action-button {
+  padding: 20px 40px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  touch-action: manipulation;
+  min-width: 150px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.action-button:active {
+  transform: scale(0.95);
+}
+
+.action-button.primary {
+  background: white;
+  color: #667eea;
+}
+
+.action-button.primary:hover:not(:disabled) {
+  background: #f0f0f0;
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.4);
+}
+
+.action-button.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-button.secondary {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid white;
+}
+
+.action-button.secondary:hover {
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+}
+
+/* iPad Landscape Optimizations */
+@media screen and (orientation: landscape) and (max-width: 1366px) {
+  .wavelength-header h1 {
+    font-size: 2.5rem;
+  }
+
+  .disc-container {
+    max-width: 450px;
+  }
+
+  .side-label {
+    font-size: 2rem;
+    padding: 15px 25px;
+    min-width: 120px;
+  }
+
+  .action-button {
+    padding: 18px 35px;
+    font-size: 1.3rem;
+  }
+}
+
+/* Touch optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .action-button {
+    padding: 25px 45px;
+    font-size: 1.6rem;
+  }
+
+  .label-input {
+    padding: 25px;
+    font-size: 1.6rem;
+  }
+
+  .disc-container {
+    max-width: 500px;
+  }
+
+  .side-label {
+    font-size: 2.2rem;
+  }
+}
+
+/* Smaller screens */
+@media (max-width: 768px) {
+  .disc-wrapper {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .side-label {
+    order: 0;
+    font-size: 1.8rem;
+    padding: 15px 20px;
+    min-width: auto;
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .side-label-left {
+    order: 1;
+  }
+
+  .side-label-right {
+    order: 3;
+  }
+
+  .disc-container {
+    order: 2;
+  }
+}
