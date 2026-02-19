@@ -2,9 +2,12 @@ services:
   - type: web
     name: trampoline-backend
     runtime: docker
-    rootDir: backend
+    rootDir: .
+    dockerContext: .
+    dockerfilePath: backend/Dockerfile
     plan: starter
-    buildCommand: cp -r ../resources ./resources && npm ci && npx prisma migrate deploy && npx prisma generate
+    buildCommand: "true"
+    preDeployCommand: npx prisma migrate deploy
     envVars:
       - key: NODE_ENV
         value: production

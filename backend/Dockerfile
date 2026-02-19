@@ -22,12 +22,14 @@ RUN apt-get update && apt-get install -y \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY package*.json ./
+# When build context is repo root (render.yaml dockerContext: .), copy from backend/ and resources/
+COPY backend/package*.json ./
 RUN npm install canvas@^2.11.2 --verbose
 RUN npm ci --ignore-scripts
-COPY . .
-# Ensure resources directory exists (copied by buildCommand before Docker build)
-RUN if [ -d "resources" ]; then echo "Resources directory found"; ls -la resources/ || true; else echo "WARNING: Resources directory not found"; fi
+COPY backend/ .
+COPY resources ./resources
+RUN echo "Cheatsheet files:" && ls -la resources/requirement-cheatsheets/ && \
+    (test -f resources/requirement-cheatsheets/2026-Requirements.pdf && echo "2026-Requirements.pdf OK" || echo "WARNING: 2026-Requirements.pdf not found")
 
 # Rebuild canvas native module to ensure it's properly compiled
 RUN npm rebuild canvas --verbose
