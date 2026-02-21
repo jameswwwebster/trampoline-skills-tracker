@@ -121,7 +121,9 @@ const Cheatsheets = () => {
     }
   ];
 
-  const fullPdfUrl = `${process.env.REACT_APP_API_URL || ''}/cheatsheets/2026-Requirements.pdf`;
+  const apiBaseUrl = process.env.REACT_APP_API_URL || '';
+  const fullPdfUrl = `${apiBaseUrl}/cheatsheets/2026-Requirements.pdf`;
+  const sourceUrl = (filename) => `${apiBaseUrl}/sources/${encodeURIComponent(filename)}`;
 
   return (
     <div className="cheatsheets-container">
@@ -163,12 +165,22 @@ const Cheatsheets = () => {
         </p>
 
         <div className="source-documents">
-          <div className="source-category source-category-full-doc">
-            <h3>Full document</h3>
+          <div className="source-category">
+            <h3>English</h3>
             <ul>
               <li>
-                <a href={fullPdfUrl} target="_blank" rel="noopener noreferrer">
-                  2026 Requirements (full PDF)
+                <a href={sourceUrl('English Requirements 2026.pdf')} target="_blank" rel="noopener noreferrer">
+                  English Requirements 2026
+                </a>
+              </li>
+              <li>
+                <a href={sourceUrl('English Handbook 2026.pdf')} target="_blank" rel="noopener noreferrer">
+                  English Handbook 2026
+                </a>
+              </li>
+              <li>
+                <a href={sourceUrl('English Disability 2026.pdf')} target="_blank" rel="noopener noreferrer">
+                  English Disability 2026
                 </a>
               </li>
             </ul>

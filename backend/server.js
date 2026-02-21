@@ -112,6 +112,17 @@ app.use('/cheatsheets', (req, res, next) => {
   next();
 }, express.static(cheatsheetsPath));
 
+// Static file serving for source documents (public access)
+const sourcesPath = path.join(__dirname, 'resources/sources');
+app.use('/sources', (req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigin = corsOptions.origin.find(allowed => allowed === origin) || corsOptions.origin[0] || '*';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  next();
+}, express.static(sourcesPath));
+
 // Test endpoint to verify cheatsheet files are accessible
 app.get('/api/cheatsheets/test', (req, res) => {
   const fs = require('fs');
