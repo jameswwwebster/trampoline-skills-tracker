@@ -63,7 +63,7 @@ const Cheatsheets = () => {
     });
     document.head.appendChild(collectionScript);
   }, []);
-  // List of cheatsheets - all 8 pages
+  // List of cheatsheets
   const cheatsheets = [
     {
       id: 'dmt-national',
@@ -112,6 +112,12 @@ const Cheatsheets = () => {
       title: 'North Region Club Requirements',
       description: 'Requirements and qualification pathways in North Region Club Level competition',
       page: 8
+    },
+    {
+      id: 'dmt-english',
+      title: 'DMT English Pathway',
+      description: 'Reference for requirements and qualification pathways in ENG National DMT competition',
+      page: 9
     }
   ];
 

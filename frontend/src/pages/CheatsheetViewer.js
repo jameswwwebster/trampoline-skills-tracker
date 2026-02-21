@@ -16,7 +16,8 @@ const CheatsheetViewer = () => {
     'trampoline-regional': 5,
     'trampoline-disability': 6,
     'club-level': 7,
-    'club-level-north': 8
+    'club-level-north': 8,
+    'dmt-english': 9
   }), []);
 
   const cheatsheetTitles = {
@@ -27,7 +28,8 @@ const CheatsheetViewer = () => {
     'trampoline-regional': 'Trampoline Regional Requirements',
     'trampoline-disability': 'Trampoline Disability Requirements',
     'club-level': 'Club Requirements',
-    'club-level-north': 'North Region Club Requirements'
+    'club-level-north': 'North Region Club Requirements',
+    'dmt-english': 'DMT English Pathway'
   };
 
   const cheatsheetDescriptions = {
@@ -38,7 +40,8 @@ const CheatsheetViewer = () => {
     'trampoline-regional': 'Requirements and qualification pathways in GB Regional Trampoline competition',
     'trampoline-disability': 'Requirements for Trampoline in different GB series for disabled athletes',
     'club-level': 'Requirements and qualification pathways in GB Club Level competition',
-    'club-level-north': 'Requirements and qualification pathways in North Region Club Level competition'
+    'club-level-north': 'Requirements and qualification pathways in North Region Club Level competition',
+    'dmt-english': 'Reference for requirements and qualification pathways in ENG National DMT competition'
   };
 
   // Dynamic meta tags and structured data
