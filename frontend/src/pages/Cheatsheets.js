@@ -118,11 +118,17 @@ const Cheatsheets = () => {
       title: 'DMT English Pathway',
       description: 'Reference for requirements and qualification pathways in ENG National DMT competition',
       page: 9
+    },
+    {
+      id: 'trampoline-english',
+      title: 'Trampoline English Pathway',
+      description: 'Reference for requirements and qualification pathways in ENG National Trampoline competition',
+      page: 10
     }
   ];
 
   const apiBaseUrl = process.env.REACT_APP_API_URL || '';
-  const fullPdfUrl = `${apiBaseUrl}/cheatsheets/2026-Requirements.pdf`;
+  const fullPdfUrl = `${apiBaseUrl}/cheatsheets/${encodeURIComponent('2026 Requirements.pdf')}`;
   const sourceUrl = (filename) => `${apiBaseUrl}/sources/${encodeURIComponent(filename)}`;
 
   return (
