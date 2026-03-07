@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
@@ -12,15 +12,17 @@ const Login = () => {
   const [loadingUser, setLoadingUser] = useState(null);
   const { login, devLogin, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const next = searchParams.get('next') || '/';
 
   // Check if we're in development mode
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/', { replace: true });
+      navigate(next, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, next]);
 
   const handleChange = (e) => {
     setFormData({
@@ -34,11 +36,11 @@ const Login = () => {
     setIsLoading(true);
 
     const result = await login(formData.email, formData.password);
-    
+
     if (result.success) {
-      navigate('/', { replace: true });
+      navigate(next, { replace: true });
     }
-    
+
     setIsLoading(false);
   };
 
@@ -46,13 +48,13 @@ const Login = () => {
     console.log('handleDevLogin called with email:', email);
     setIsDevLoading(true);
     setLoadingUser(email);
-    
+
     const result = await devLogin(email);
-    
+
     if (result.success) {
-      navigate('/', { replace: true });
+      navigate(next, { replace: true });
     }
-    
+
     setIsDevLoading(false);
     setLoadingUser(null);
   };
