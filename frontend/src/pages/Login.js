@@ -13,7 +13,7 @@ const Login = () => {
   const { login, devLogin, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const next = searchParams.get('next') || '/';
+  const next = searchParams.get('next') || '/booking';
 
   // Check if we're in development mode
   const isDevelopment = process.env.NODE_ENV === 'development';

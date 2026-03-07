@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { BrandingProvider } from './contexts/BrandingContext';
 import { RateLimitProvider, useRateLimit } from './contexts/RateLimitContext';
@@ -108,7 +108,7 @@ function AppContent() {
             <Layout />
           </ProtectedRoute>
         }>
-          <Route index element={<Dashboard />} />
+          <Route index element={<Navigate to="/booking" replace />} />
           <Route path="gymnasts" element={<Gymnasts />} />
           <Route path="levels" element={<Levels />} />
           <Route path="competitions" element={<Competitions />} />
