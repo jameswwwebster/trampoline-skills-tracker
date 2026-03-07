@@ -163,6 +163,9 @@ app.use('/api/user-custom-fields', userCustomFieldRoutes);
 app.use('/api/system-admin', systemAdminRoutes);
 app.use('/api/super-admin', require('./routes/superAdmin'));
 
+// Booking routes
+app.use('/api/booking/sessions', require('./routes/booking/sessions'));
+
 // Booking: daily session generation cron
 const cron = require('node-cron');
 const { generateRollingInstances } = require('./services/sessionGenerator');
@@ -285,9 +288,11 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
