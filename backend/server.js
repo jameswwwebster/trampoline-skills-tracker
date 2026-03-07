@@ -170,6 +170,8 @@ app.use('/api/super-admin', require('./routes/superAdmin'));
 app.use('/api/booking/sessions', require('./routes/booking/sessions'));
 app.use('/api/booking/bookings', require('./routes/booking/bookings'));
 app.use('/api/booking/credits', require('./routes/booking/credits'));
+app.use('/api/booking/closures', require('./routes/booking/closures'));
+app.use('/api/booking/memberships', require('./routes/booking/memberships'));
 
 // Booking: daily session generation cron
 const cron = require('node-cron');
