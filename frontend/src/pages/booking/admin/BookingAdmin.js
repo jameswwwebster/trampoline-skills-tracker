@@ -4,6 +4,81 @@ import '../booking-shared.css';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+function ManualAddForm({ sessionId, onAdded }) {
+  const [users, setUsers] = useState([]);
+  const [gymnasts, setGymnasts] = useState([]);
+  const [userId, setUserId] = useState('');
+  const [gymnastIds, setGymnastIds] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const API_URL = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api`;
+    const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
+    Promise.all([
+      fetch(`${API_URL}/users`, { headers }).then(r => r.json()),
+      fetch(`${API_URL}/gymnasts`, { headers }).then(r => r.json()),
+    ]).then(([u, g]) => {
+      setUsers(Array.isArray(u) ? u : u.users || []);
+      setGymnasts(Array.isArray(g) ? g : g.gymnasts || []);
+    }).catch(console.error);
+  }, []);
+
+  const toggleGymnast = (id) =>
+    setGymnastIds(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!userId || gymnastIds.length === 0) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await bookingApi.adminAddToSession({ sessionInstanceId: sessionId, gymnastIds, userId });
+      setUserId('');
+      setGymnastIds([]);
+      onAdded();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to add to session.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="bk-form-card" style={{ marginTop: '1rem' }}>
+      <h4 style={{ margin: '0 0 0.75rem' }}>Add participant</h4>
+      <div className="bk-grid-2">
+        <label className="bk-label" style={{ fontWeight: 'normal' }}>Account holder
+          <select className="bk-input" value={userId} onChange={e => setUserId(e.target.value)} required style={{ marginTop: '0.25rem' }}>
+            <option value="">Select user...</option>
+            {users.map(u => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
+          </select>
+        </label>
+      </div>
+      <div style={{ marginBottom: '0.75rem' }}>
+        <p className="bk-label" style={{ fontWeight: 'normal', marginBottom: '0.4rem' }}>Gymnasts</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+          {gymnasts.filter(g => !g.isArchived).map(g => (
+            <label key={g.id} style={{
+              display: 'flex', alignItems: 'center', gap: '0.3rem',
+              padding: '0.3rem 0.6rem', border: `1px solid ${gymnastIds.includes(g.id) ? 'var(--booking-accent)' : 'var(--booking-border)'}`,
+              borderRadius: 'var(--booking-radius)', cursor: 'pointer', fontSize: '0.875rem',
+              background: gymnastIds.includes(g.id) ? 'rgba(124,53,232,0.08)' : 'var(--booking-bg-white)',
+            }}>
+              <input type="checkbox" checked={gymnastIds.includes(g.id)} onChange={() => toggleGymnast(g.id)} />
+              {g.firstName} {g.lastName}
+            </label>
+          ))}
+        </div>
+      </div>
+      {error && <p className="bk-error">{error}</p>}
+      <button type="submit" disabled={submitting || !userId || gymnastIds.length === 0} className="bk-btn bk-btn--primary bk-btn--sm">
+        {submitting ? 'Adding...' : 'Add to session'}
+      </button>
+    </form>
+  );
+}
+
 export default function BookingAdmin() {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
@@ -11,16 +86,24 @@ export default function BookingAdmin() {
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [sessionDetail, setSessionDetail] = useState(null);
+  const [showManualAdd, setShowManualAdd] = useState(false);
 
-  useEffect(() => {
+  const loadSessions = () =>
     bookingApi.getSessions(year, month).then(res => setSessions(res.data));
-  }, [year, month]);
+
+  const loadDetail = (id) =>
+    bookingApi.getSession(id).then(res => setSessionDetail(res.data));
+
+  useEffect(() => { loadSessions(); }, [year, month]);
 
   useEffect(() => {
-    if (selectedSession) {
-      bookingApi.getSession(selectedSession).then(res => setSessionDetail(res.data));
-    }
+    if (selectedSession) loadDetail(selectedSession);
   }, [selectedSession]);
+
+  const handleSelect = (id) => {
+    setSelectedSession(id);
+    setShowManualAdd(false);
+  };
 
   return (
     <div className="bk-page bk-page--xl">
@@ -45,14 +128,16 @@ export default function BookingAdmin() {
         </thead>
         <tbody>
           {sessions.map(s => (
-            <tr key={s.id}>
+            <tr key={s.id} style={selectedSession === s.id ? { background: 'rgba(124,53,232,0.06)' } : {}}>
               <td>{new Date(s.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</td>
               <td>{s.startTime}–{s.endTime}{s.minAge ? ' (16+)' : ''}</td>
               <td style={{ textAlign: 'center' }}>{s.bookedCount}</td>
               <td style={{ textAlign: 'center' }}>{s.availableSlots}</td>
               <td>{s.cancelledAt ? 'Cancelled' : 'Active'}</td>
               <td>
-                <button onClick={() => setSelectedSession(s.id)} className="bk-btn bk-btn--sm bk-btn--primary">View</button>
+                <button onClick={() => handleSelect(s.id)} className="bk-btn bk-btn--sm bk-btn--primary">
+                  {selectedSession === s.id ? 'Selected ▾' : 'View'}
+                </button>
               </td>
             </tr>
           ))}
@@ -64,11 +149,17 @@ export default function BookingAdmin() {
 
       {sessionDetail && (
         <div className="bk-card">
-          <h3>
-            {new Date(sessionDetail.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
-            {' '}{sessionDetail.startTime}–{sessionDetail.endTime}
-          </h3>
-          <p>{sessionDetail.bookedCount}/{sessionDetail.capacity} booked</p>
+          <div className="bk-row bk-row--between" style={{ marginBottom: '0.5rem' }}>
+            <h3 style={{ margin: 0 }}>
+              {new Date(sessionDetail.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+              {' '}{sessionDetail.startTime}–{sessionDetail.endTime}
+            </h3>
+            <span className="bk-muted" style={{ fontSize: '0.9rem' }}>{sessionDetail.bookedCount}/{sessionDetail.capacity} booked</span>
+          </div>
+
+          {sessionDetail.bookings?.length === 0 && (
+            <p className="bk-muted">No bookings yet.</p>
+          )}
           {sessionDetail.bookings?.map(b => (
             <div key={b.id} style={{ padding: '0.5rem 0', borderBottom: `1px solid var(--booking-bg-light)` }}>
               {b.lines.map(l => (
@@ -93,6 +184,26 @@ export default function BookingAdmin() {
               <span className="bk-muted" style={{ fontSize: '0.8rem' }}>Booked by {b.user.firstName} {b.user.lastName}</span>
             </div>
           ))}
+
+          <div style={{ marginTop: '0.75rem' }}>
+            <button
+              className="bk-btn bk-btn--sm bk-btn--primary"
+              onClick={() => setShowManualAdd(v => !v)}
+            >
+              {showManualAdd ? 'Cancel' : '+ Add participant manually'}
+            </button>
+          </div>
+
+          {showManualAdd && (
+            <ManualAddForm
+              sessionId={selectedSession}
+              onAdded={() => {
+                setShowManualAdd(false);
+                loadDetail(selectedSession);
+                loadSessions();
+              }}
+            />
+          )}
         </div>
       )}
     </div>

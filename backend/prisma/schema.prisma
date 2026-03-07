@@ -506,11 +506,11 @@ model Credit {
   expiresAt       DateTime
   usedAt          DateTime?
   usedOnBookingId String?
-  sourceBookingId String
+  sourceBookingId String?
   createdAt       DateTime  @default(now())
   user            User      @relation(fields: [userId], references: [id])
   usedOnBooking   Booking?  @relation("UsedOnBooking", fields: [usedOnBookingId], references: [id])
-  sourceBooking   Booking   @relation("SourceBooking", fields: [sourceBookingId], references: [id])
+  sourceBooking   Booking?  @relation("SourceBooking", fields: [sourceBookingId], references: [id])
 
   @@map("credits")
 }

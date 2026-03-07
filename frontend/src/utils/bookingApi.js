@@ -40,6 +40,15 @@ export const bookingApi = {
   getMyCredits: () =>
     axios.get(`${API_URL}/booking/credits/my`, { headers: getHeaders() }),
 
+  getAllCredits: () =>
+    axios.get(`${API_URL}/booking/credits/all`, { headers: getHeaders() }),
+
+  assignCredit: (data) =>
+    axios.post(`${API_URL}/booking/credits/assign`, data, { headers: getHeaders() }),
+
+  adminAddToSession: (data) =>
+    axios.post(`${API_URL}/booking/bookings/admin-add`, data, { headers: getHeaders() }),
+
   getClosures: () =>
     axios.get(`${API_URL}/booking/closures`, { headers: getHeaders() }),
 

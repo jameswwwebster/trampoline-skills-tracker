@@ -176,6 +176,51 @@ router.get('/my', auth, async (req, res) => {
   }
 });
 
+// POST /api/booking/bookings/admin-add
+// Manually add gymnasts to a session, bypassing payment (coach/admin only)
+router.post('/admin-add', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const { error, value } = Joi.object({
+      sessionInstanceId: Joi.string().required(),
+      gymnastIds: Joi.array().items(Joi.string()).min(1).required(),
+      userId: Joi.string().required(), // the account holder to attach booking to
+    }).validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    const instance = await prisma.sessionInstance.findUnique({
+      where: { id: value.sessionInstanceId },
+      include: {
+        template: true,
+        bookings: { where: { status: 'CONFIRMED' }, include: { lines: true } },
+      },
+    });
+    if (!instance) return res.status(404).json({ error: 'Session not found' });
+    if (instance.template.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
+
+    const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+    const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
+    if (bookedCount + value.gymnastIds.length > capacity) {
+      return res.status(400).json({ error: 'Not enough slots available' });
+    }
+
+    const booking = await prisma.booking.create({
+      data: {
+        userId: value.userId,
+        sessionInstanceId: value.sessionInstanceId,
+        status: 'CONFIRMED',
+        totalAmount: 0,
+        lines: { create: value.gymnastIds.map(id => ({ gymnastId: id, amount: 0 })) },
+      },
+      include: { lines: true },
+    });
+
+    res.status(201).json(booking);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST /api/booking/bookings/:bookingId/cancel
 // Cancel a booking and issue credits
 router.post('/:bookingId/cancel', auth, async (req, res) => {
