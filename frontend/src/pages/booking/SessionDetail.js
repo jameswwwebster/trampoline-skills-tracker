@@ -19,12 +19,14 @@ export default function SessionDetail() {
 
   useEffect(() => {
     const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    const gymFetch = fetch(`${API_URL}/gymnasts/my-children`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    }).then(r => r.ok ? r.json() : []).catch(() => []);
+
     Promise.all([
       bookingApi.getSession(instanceId),
-      bookingApi.getMyCredits(),
-      fetch(`${API_URL}/gymnasts/my-children`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      }).then(r => r.json()),
+      bookingApi.getMyCredits().catch(() => ({ data: [] })),
+      gymFetch,
     ]).then(([sessRes, credRes, gymData]) => {
       setSession(sessRes.data);
       setCredits(credRes.data);
