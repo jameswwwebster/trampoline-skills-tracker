@@ -17,7 +17,7 @@ const createBookingSchema = Joi.object({
 
 // POST /api/booking/bookings
 // Create a booking + Stripe Payment Intent
-router.post('/', auth, requireRole(['PARENT', 'CLUB_ADMIN', 'COACH']), async (req, res) => {
+router.post('/', auth, async (req, res) => {
   try {
     const { error, value } = createBookingSchema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });

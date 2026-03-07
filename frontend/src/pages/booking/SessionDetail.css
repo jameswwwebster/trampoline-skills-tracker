@@ -116,3 +116,61 @@
   padding: 2rem;
   text-align: center;
 }
+
+.session-detail__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.session-detail__add-btn {
+  background: none;
+  border: 1px dashed var(--booking-accent);
+  color: var(--booking-accent);
+  border-radius: var(--booking-radius);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  font-family: var(--booking-font);
+  transition: background 0.15s;
+}
+
+.session-detail__add-btn:hover {
+  background: rgba(124, 53, 232, 0.06);
+}
+
+.session-detail__add-child-form {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: var(--booking-bg-light);
+  border-radius: var(--booking-radius);
+}
+
+.session-detail__add-child-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.session-detail__add-child-input {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--booking-border);
+  border-radius: var(--booking-radius);
+  font-family: var(--booking-font);
+  font-size: 0.9rem;
+}
+
+.session-detail__add-child-submit {
+  background: var(--booking-accent-gradient);
+  color: var(--booking-text-on-dark);
+  border: none;
+  border-radius: var(--booking-radius);
+  padding: 0.4rem 1rem;
+  font-family: var(--booking-font);
+  font-weight: 600;
+  cursor: pointer;
+}

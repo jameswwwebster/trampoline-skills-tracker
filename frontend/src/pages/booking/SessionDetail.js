@@ -17,22 +17,53 @@ export default function SessionDetail() {
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-    const gymFetch = fetch(`${API_URL}/gymnasts/my-children`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    }).then(r => r.ok ? r.json() : []).catch(() => []);
+  // Add-child form state
+  const [showAddChild, setShowAddChild] = useState(false);
+  const [childForm, setChildForm] = useState({ firstName: '', lastName: '', dateOfBirth: '' });
+  const [addingChild, setAddingChild] = useState(false);
+  const [addChildError, setAddChildError] = useState(null);
 
+  const loadGymnasts = () =>
+    bookingApi.getBookableGymnasts().then(r => setMyGymnasts(r.data)).catch(() => setMyGymnasts([]));
+
+  useEffect(() => {
     Promise.all([
       bookingApi.getSession(instanceId),
       bookingApi.getMyCredits().catch(() => ({ data: [] })),
-      gymFetch,
-    ]).then(([sessRes, credRes, gymData]) => {
+    ]).then(([sessRes, credRes]) => {
       setSession(sessRes.data);
       setCredits(credRes.data);
-      setMyGymnasts(Array.isArray(gymData) ? gymData : []);
     }).catch(console.error).finally(() => setLoading(false));
+
+    loadGymnasts();
   }, [instanceId]);
+
+  const handleBookForMyself = async () => {
+    try {
+      const res = await bookingApi.createSelfGymnast();
+      await loadGymnasts();
+      setSelectedGymnastIds(ids => ids.includes(res.data.id) ? ids : [...ids, res.data.id]);
+    } catch (err) {
+      setError('Could not create self-booking record. Please try again.');
+    }
+  };
+
+  const handleAddChild = async (e) => {
+    e.preventDefault();
+    setAddingChild(true);
+    setAddChildError(null);
+    try {
+      const res = await bookingApi.addChild(childForm);
+      await loadGymnasts();
+      setSelectedGymnastIds(ids => [...ids, res.data.id]);
+      setChildForm({ firstName: '', lastName: '', dateOfBirth: '' });
+      setShowAddChild(false);
+    } catch (err) {
+      setAddChildError(err.response?.data?.error || 'Failed to add child.');
+    } finally {
+      setAddingChild(false);
+    }
+  };
 
   // Filter gymnasts by age restriction
   const eligibleGymnasts = session?.minAge
@@ -42,6 +73,8 @@ export default function SessionDetail() {
         return age >= session.minAge;
       })
     : myGymnasts;
+
+  const hasSelf = myGymnasts.some(g => g.isSelf);
 
   const toggleGymnast = (id) => {
     setSelectedGymnastIds(prev =>
@@ -102,7 +135,7 @@ export default function SessionDetail() {
       <div className="session-detail__info">
         <h2>{dateStr}</h2>
         <p>{session.startTime} – {session.endTime}</p>
-        {session.minAge && <p className="session-detail__age-restriction">16+ only</p>}
+        {session.minAge && <p className="session-detail__age-restriction">{session.minAge}+ only</p>}
         <p>{session.availableSlots} of {session.capacity} slots available</p>
         {session.cancelledAt && (
           <p className="session-detail__cancelled">This session has been cancelled.</p>
@@ -112,14 +145,8 @@ export default function SessionDetail() {
       {!session.cancelledAt && session.availableSlots > 0 && (
         <>
           <div className="session-detail__gymnasts">
-            <h3>Select gymnasts</h3>
-            {eligibleGymnasts.length === 0 && (
-              <p>
-                {session.minAge
-                  ? `No gymnasts meet the ${session.minAge}+ age requirement for this session.`
-                  : 'No gymnasts found. Add gymnasts to your account first.'}
-              </p>
-            )}
+            <h3>Who's coming?</h3>
+
             {eligibleGymnasts.map(g => (
               <label key={g.id} className="session-detail__gymnast-option">
                 <input
@@ -127,9 +154,58 @@ export default function SessionDetail() {
                   checked={selectedGymnastIds.includes(g.id)}
                   onChange={() => toggleGymnast(g.id)}
                 />
-                {g.firstName} {g.lastName}
+                {g.firstName} {g.lastName}{g.isSelf ? ' (me)' : ''}
               </label>
             ))}
+
+            {session.minAge && myGymnasts.length > eligibleGymnasts.length && (
+              <p style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>
+                Some people are hidden because they don't meet the {session.minAge}+ age requirement.
+              </p>
+            )}
+
+            <div className="session-detail__actions">
+              {!hasSelf && (
+                <button className="session-detail__add-btn" onClick={handleBookForMyself}>
+                  + Book for myself
+                </button>
+              )}
+              <button className="session-detail__add-btn" onClick={() => setShowAddChild(v => !v)}>
+                {showAddChild ? 'Cancel' : '+ Add a child'}
+              </button>
+            </div>
+
+            {showAddChild && (
+              <form className="session-detail__add-child-form" onSubmit={handleAddChild}>
+                <div className="session-detail__add-child-row">
+                  <input
+                    placeholder="First name"
+                    value={childForm.firstName}
+                    onChange={e => setChildForm(f => ({ ...f, firstName: e.target.value }))}
+                    required
+                    className="session-detail__add-child-input"
+                  />
+                  <input
+                    placeholder="Last name"
+                    value={childForm.lastName}
+                    onChange={e => setChildForm(f => ({ ...f, lastName: e.target.value }))}
+                    required
+                    className="session-detail__add-child-input"
+                  />
+                  <input
+                    type="date"
+                    value={childForm.dateOfBirth}
+                    onChange={e => setChildForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+                    className="session-detail__add-child-input"
+                    placeholder="Date of birth (optional)"
+                  />
+                </div>
+                {addChildError && <p className="session-detail__error">{addChildError}</p>}
+                <button type="submit" disabled={addingChild} className="session-detail__add-child-submit">
+                  {addingChild ? 'Adding...' : 'Add child'}
+                </button>
+              </form>
+            )}
           </div>
 
           {credits.length > 0 && (

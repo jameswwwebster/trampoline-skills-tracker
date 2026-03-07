@@ -21,6 +21,86 @@ const updateGymnastSchema = Joi.object({
   coachNotes: Joi.string().allow('').optional()
 });
 
+// GET /api/gymnasts/bookable-for-me
+// Returns gymnasts the current user can book for: themselves + their linked children
+router.get('/bookable-for-me', auth, async (req, res) => {
+  try {
+    const [selfGymnast, linked] = await Promise.all([
+      prisma.gymnast.findFirst({
+        where: { userId: req.user.id, isArchived: false },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true },
+      }),
+      prisma.gymnast.findMany({
+        where: {
+          isArchived: false,
+          userId: { not: req.user.id },
+          guardians: { some: { id: req.user.id } },
+        },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true },
+      }),
+    ]);
+    const all = selfGymnast
+      ? [{ ...selfGymnast, isSelf: true }, ...linked]
+      : linked;
+    res.json(all);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/gymnasts/self
+// Gets or creates a gymnast record for the current user
+router.post('/self', auth, async (req, res) => {
+  try {
+    let gymnast = await prisma.gymnast.findFirst({
+      where: { userId: req.user.id },
+    });
+    if (!gymnast) {
+      gymnast = await prisma.gymnast.create({
+        data: {
+          firstName: req.user.firstName,
+          lastName: req.user.lastName,
+          clubId: req.user.clubId,
+          userId: req.user.id,
+          guardians: { connect: { id: req.user.id } },
+        },
+      });
+    }
+    res.json(gymnast);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/gymnasts/add-child
+// Any authenticated user can add a child gymnast linked to themselves
+router.post('/add-child', auth, async (req, res) => {
+  try {
+    const { error, value } = Joi.object({
+      firstName: Joi.string().min(1).max(50).required(),
+      lastName: Joi.string().min(1).max(50).required(),
+      dateOfBirth: Joi.date().optional(),
+    }).validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    const gymnast = await prisma.gymnast.create({
+      data: {
+        firstName: value.firstName,
+        lastName: value.lastName,
+        dateOfBirth: value.dateOfBirth,
+        clubId: req.user.clubId,
+        guardians: { connect: { id: req.user.id } },
+      },
+    });
+    res.status(201).json(gymnast);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get children for current parent/guardian
 router.get('/my-children', auth, requireRole(['PARENT']), async (req, res) => {
   try {
