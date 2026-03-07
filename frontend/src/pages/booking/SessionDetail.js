@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { bookingApi } from '../../utils/bookingApi';
-import { AuthContext } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import './SessionDetail.css';
 
 export default function SessionDetail() {
   const { instanceId } = useParams();
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [session, setSession] = useState(null);
   const [myGymnasts, setMyGymnasts] = useState([]);
   const [selectedGymnastIds, setSelectedGymnastIds] = useState([]);

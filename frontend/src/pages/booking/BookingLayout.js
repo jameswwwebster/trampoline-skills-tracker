@@ -1,10 +1,10 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Outlet, NavLink, Link } from 'react-router-dom';
-import { AuthContext } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import './BookingLayout.css';
 
 export default function BookingLayout() {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
 
   return (
