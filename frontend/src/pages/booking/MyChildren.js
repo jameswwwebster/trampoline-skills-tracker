@@ -2,7 +2,54 @@ import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../utils/bookingApi';
 import './booking-shared.css';
 
-const EMPTY_EC = { emergencyContactName: '', emergencyContactPhone: '', emergencyContactRelationship: '' };
+const CONSENT_LABELS = {
+  photo_coaching: 'Photography & video for coaching purposes',
+  photo_social_media: 'Photography & video for social media',
+};
+
+function ConsentToggles({ gymnast, onUpdated }) {
+  const [saving, setSaving] = useState(null);
+
+  const getGranted = (type) =>
+    gymnast.consents?.find(c => c.type === type)?.granted ?? false;
+
+  const handleToggle = async (type) => {
+    setSaving(type);
+    try {
+      await bookingApi.updateConsents(gymnast.id, { [type]: !getGranted(type) });
+      onUpdated();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--booking-border)' }}>
+      <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>Consents</p>
+      {Object.entries(CONSENT_LABELS).map(([type, label]) => {
+        const granted = getGranted(type);
+        return (
+          <label key={type} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', cursor: 'pointer' }}>
+            <span style={{
+              width: 40, height: 22, borderRadius: 11, background: granted ? 'var(--booking-accent)' : 'var(--booking-border)',
+              display: 'inline-flex', alignItems: 'center', padding: '0 3px', transition: 'background 0.2s',
+              opacity: saving === type ? 0.6 : 1,
+            }}>
+              <span style={{
+                width: 16, height: 16, borderRadius: '50%', background: 'white',
+                transform: granted ? 'translateX(18px)' : 'translateX(0)', transition: 'transform 0.2s',
+              }} />
+            </span>
+            <input type="checkbox" checked={granted} onChange={() => handleToggle(type)} disabled={!!saving} style={{ display: 'none' }} />
+            <span style={{ fontSize: '0.875rem' }}>{label}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
 
 function EmergencyContactForm({ gymnast, onSaved }) {
   const [form, setForm] = useState({
@@ -112,6 +159,8 @@ function GymnastCard({ gymnast, onUpdated }) {
           onSaved={() => { setEditingEC(false); onUpdated(); }}
         />
       )}
+
+      <ConsentToggles gymnast={gymnast} onUpdated={onUpdated} />
     </div>
   );
 }

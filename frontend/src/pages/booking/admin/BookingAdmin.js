@@ -179,6 +179,23 @@ export default function BookingAdmin() {
                       No emergency contact
                     </span>
                   )}
+                  <span style={{ marginLeft: '0.75rem', fontSize: '0.8rem' }}>
+                    {[
+                      { type: 'photo_coaching', label: 'Coaching photos' },
+                      { type: 'photo_social_media', label: 'Social media' },
+                    ].map(({ type, label }) => {
+                      const granted = l.gymnast.consents?.find(c => c.type === type)?.granted;
+                      return (
+                        <span key={type} style={{
+                          marginRight: '0.4rem', padding: '1px 6px', borderRadius: 4,
+                          background: granted ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.1)',
+                          color: granted ? 'var(--booking-success)' : 'var(--booking-danger)',
+                        }}>
+                          {granted ? '✓' : '✗'} {label}
+                        </span>
+                      );
+                    })}
+                  </span>
                 </div>
               ))}
               <span className="bk-muted" style={{ fontSize: '0.8rem' }}>Booked by {b.user.firstName} {b.user.lastName}</span>

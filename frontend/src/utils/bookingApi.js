@@ -19,6 +19,9 @@ export const bookingApi = {
   updateEmergencyContact: (gymnastId, data) =>
     axios.patch(`${API_URL}/gymnasts/${gymnastId}/emergency-contact`, data, { headers: getHeaders() }),
 
+  updateConsents: (gymnastId, data) =>
+    axios.patch(`${API_URL}/gymnasts/${gymnastId}/consents`, data, { headers: getHeaders() }),
+
   getSessions: (year, month) =>
     axios.get(`${API_URL}/booking/sessions`, {
       params: { year, month },

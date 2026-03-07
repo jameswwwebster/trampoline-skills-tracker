@@ -28,7 +28,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
     const [selfGymnast, linked] = await Promise.all([
       prisma.gymnast.findFirst({
         where: { userId: req.user.id, isArchived: false },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true },
       }),
       prisma.gymnast.findMany({
         where: {
@@ -36,7 +36,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
           userId: { not: req.user.id },
           guardians: { some: { id: req.user.id } },
         },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true },
       }),
     ]);
     const all = selfGymnast
@@ -95,6 +95,41 @@ router.post('/add-child', auth, async (req, res) => {
       },
     });
     res.status(201).json(gymnast);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /api/gymnasts/:id/consents
+// Guardian or staff can update consent settings for a gymnast
+const CONSENT_TYPES = ['photo_coaching', 'photo_social_media'];
+
+router.patch('/:id/consents', auth, async (req, res) => {
+  try {
+    const gymnast = await prisma.gymnast.findUnique({
+      where: { id: req.params.id },
+      include: { guardians: { select: { id: true } } },
+    });
+    if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
+
+    const isGuardian = gymnast.guardians.some(g => g.id === req.user.id);
+    const isStaff = ['CLUB_ADMIN', 'COACH'].includes(req.user.role);
+    if (!isGuardian && !isStaff) return res.status(403).json({ error: 'Access denied' });
+
+    // req.body is an object of { type: boolean }
+    const updates = Object.entries(req.body).filter(([type]) => CONSENT_TYPES.includes(type));
+    if (updates.length === 0) return res.status(400).json({ error: 'No valid consent types provided' });
+
+    const upserts = updates.map(([type, granted]) =>
+      prisma.consent.upsert({
+        where: { gymnastId_type: { gymnastId: gymnast.id, type } },
+        create: { gymnastId: gymnast.id, type, granted, updatedBy: req.user.id },
+        update: { granted, updatedBy: req.user.id },
+      })
+    );
+    const results = await prisma.$transaction(upserts);
+    res.json(results);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

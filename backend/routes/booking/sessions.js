@@ -74,6 +74,7 @@ router.get('/:instanceId', auth, async (req, res) => {
                   select: {
                     id: true, firstName: true, lastName: true, dateOfBirth: true,
                     emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true,
+                    consents: true,
                   },
                 },
               },

@@ -153,8 +153,22 @@ model Gymnast {
   guardians        User[]            @relation("GuardianGymnasts")
   bookingLines     BookingLine[]
   memberships      Membership[]
+  consents         Consent[]
 
   @@map("gymnasts")
+}
+
+model Consent {
+  id        String   @id @default(cuid())
+  gymnastId String
+  type      String   // e.g. "photo_coaching", "photo_social_media"
+  granted   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  updatedBy String?  // userId who last changed this
+  gymnast   Gymnast  @relation(fields: [gymnastId], references: [id])
+
+  @@unique([gymnastId, type])
+  @@map("consents")
 }
 
 model Level {
