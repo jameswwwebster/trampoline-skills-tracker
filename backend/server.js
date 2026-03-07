@@ -163,6 +163,41 @@ app.use('/api/user-custom-fields', userCustomFieldRoutes);
 app.use('/api/system-admin', systemAdminRoutes);
 app.use('/api/super-admin', require('./routes/superAdmin'));
 
+// Booking: daily session generation cron
+const cron = require('node-cron');
+const { generateRollingInstances } = require('./services/sessionGenerator');
+
+// Run at 02:00 every day
+cron.schedule('0 2 * * *', async () => {
+  console.log('Running daily session generation...');
+  try {
+    const clubs = await prisma.club.findMany({
+      where: { isArchived: false },
+      select: { id: true },
+    });
+    for (const club of clubs) {
+      await generateRollingInstances(club.id);
+    }
+  } catch (err) {
+    console.error('Session generation cron error:', err);
+  }
+});
+
+// Also run on startup to ensure instances exist immediately after deploy
+(async () => {
+  try {
+    const clubs = await prisma.club.findMany({
+      where: { isArchived: false },
+      select: { id: true },
+    });
+    for (const club of clubs) {
+      await generateRollingInstances(club.id);
+    }
+  } catch (err) {
+    console.error('Startup session generation error:', err);
+  }
+})();
+
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
   let dbConnected = false;
