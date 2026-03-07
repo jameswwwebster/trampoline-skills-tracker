@@ -28,7 +28,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
     const [selfGymnast, linked] = await Promise.all([
       prisma.gymnast.findFirst({
         where: { userId: req.user.id, isArchived: false },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgInsuranceConfirmed: true, bgInsuranceConfirmedAt: true },
       }),
       prisma.gymnast.findMany({
         where: {
@@ -36,13 +36,29 @@ router.get('/bookable-for-me', auth, async (req, res) => {
           userId: { not: req.user.id },
           guardians: { some: { id: req.user.id } },
         },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgInsuranceConfirmed: true, bgInsuranceConfirmedAt: true },
       }),
     ]);
-    const all = selfGymnast
+    const allGymnasts = selfGymnast
       ? [{ ...selfGymnast, isSelf: true }, ...linked]
       : linked;
-    res.json(all);
+
+    // Count past confirmed sessions for each gymnast
+    const now = new Date();
+    const withCounts = await Promise.all(allGymnasts.map(async g => {
+      const pastSessions = await prisma.bookingLine.count({
+        where: {
+          gymnastId: g.id,
+          booking: {
+            status: 'CONFIRMED',
+            sessionInstance: { date: { lte: now } },
+          },
+        },
+      });
+      return { ...g, pastSessionCount: pastSessions };
+    }));
+
+    res.json(withCounts);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -95,6 +111,38 @@ router.post('/add-child', auth, async (req, res) => {
       },
     });
     res.status(201).json(gymnast);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /api/gymnasts/:id/insurance
+// Guardian confirms BG insurance for a gymnast; staff can also confirm/clear
+router.patch('/:id/insurance', auth, async (req, res) => {
+  try {
+    const gymnast = await prisma.gymnast.findUnique({
+      where: { id: req.params.id },
+      include: { guardians: { select: { id: true } } },
+    });
+    if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
+
+    const isGuardian = gymnast.guardians.some(g => g.id === req.user.id);
+    const isStaff = ['CLUB_ADMIN', 'COACH'].includes(req.user.role);
+    if (!isGuardian && !isStaff) return res.status(403).json({ error: 'Access denied' });
+
+    const { confirmed } = req.body;
+    if (typeof confirmed !== 'boolean') return res.status(400).json({ error: 'confirmed must be a boolean' });
+
+    const updated = await prisma.gymnast.update({
+      where: { id: req.params.id },
+      data: {
+        bgInsuranceConfirmed: confirmed,
+        bgInsuranceConfirmedAt: confirmed ? new Date() : null,
+        bgInsuranceConfirmedBy: confirmed ? req.user.id : null,
+      },
+    });
+    res.json(updated);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

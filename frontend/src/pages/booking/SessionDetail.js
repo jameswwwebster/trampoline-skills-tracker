@@ -221,23 +221,32 @@ export default function SessionDetail() {
 
             {eligibleGymnasts.map(g => {
               const selected = selectedGymnastIds.includes(g.id);
+              const needsInsurance = g.pastSessionCount >= 2 && !g.bgInsuranceConfirmed;
               const atCapacity = !selected && selectedGymnastIds.length >= session.availableSlots;
+              const blocked = needsInsurance;
               return (
-                <div
-                  key={g.id}
-                  role="checkbox"
-                  aria-checked={selected}
-                  className={[
-                    'session-detail__gymnast-option',
-                    selected ? 'session-detail__gymnast-option--selected' : '',
-                    atCapacity ? 'session-detail__gymnast-option--disabled' : '',
-                  ].join(' ')}
-                  onClick={atCapacity ? undefined : () => toggleGymnast(g.id)}
-                >
-                  <span className="session-detail__option-check">
-                    {selected && '✓'}
-                  </span>
-                  <span>{g.firstName} {g.lastName}{g.isSelf ? ' (me)' : ''}</span>
+                <div key={g.id}>
+                  <div
+                    role="checkbox"
+                    aria-checked={selected}
+                    className={[
+                      'session-detail__gymnast-option',
+                      selected ? 'session-detail__gymnast-option--selected' : '',
+                      (atCapacity || blocked) ? 'session-detail__gymnast-option--disabled' : '',
+                    ].join(' ')}
+                    onClick={(atCapacity || blocked) ? undefined : () => toggleGymnast(g.id)}
+                  >
+                    <span className="session-detail__option-check">
+                      {selected && '✓'}
+                    </span>
+                    <span>{g.firstName} {g.lastName}{g.isSelf ? ' (me)' : ''}</span>
+                  </div>
+                  {needsInsurance && (
+                    <p style={{ fontSize: '0.8rem', color: 'var(--booking-danger)', margin: '-0.25rem 0 0.5rem 0.5rem' }}>
+                      Insurance confirmation required —{' '}
+                      <a href="/booking/my-account" style={{ color: 'var(--booking-danger)' }}>confirm in My Account</a>
+                    </p>
+                  )}
                 </div>
               );
             })}

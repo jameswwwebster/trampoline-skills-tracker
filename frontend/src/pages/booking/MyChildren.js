@@ -161,6 +161,70 @@ function GymnastCard({ gymnast, onUpdated }) {
       )}
 
       <ConsentToggles gymnast={gymnast} onUpdated={onUpdated} />
+
+      <InsuranceSection gymnast={gymnast} onUpdated={onUpdated} />
+    </div>
+  );
+}
+
+function InsuranceSection({ gymnast, onUpdated }) {
+  const [confirming, setConfirming] = useState(false);
+  const [checked, setChecked] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const needsInsurance = gymnast.pastSessionCount >= 2 && !gymnast.bgInsuranceConfirmed;
+  const isConfirmed = gymnast.bgInsuranceConfirmed;
+
+  if (gymnast.pastSessionCount < 2 && !isConfirmed) return null;
+
+  const handleConfirm = async () => {
+    if (!checked) return;
+    setSaving(true);
+    try {
+      await bookingApi.confirmInsurance(gymnast.id, true);
+      onUpdated();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--booking-border)' }}>
+      <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>British Gymnastics Insurance</p>
+      {isConfirmed ? (
+        <p style={{ fontSize: '0.875rem', color: 'var(--booking-success)' }}>
+          ✓ Confirmed{gymnast.bgInsuranceConfirmedAt ? ` on ${new Date(gymnast.bgInsuranceConfirmedAt).toLocaleDateString('en-GB')}` : ''}
+        </p>
+      ) : needsInsurance ? (
+        <div>
+          <p style={{ fontSize: '0.875rem', color: 'var(--booking-danger)', marginBottom: '0.5rem' }}>
+            {gymnast.firstName} has attended 2 sessions and now requires British Gymnastics insurance to continue booking.
+          </p>
+          {!confirming ? (
+            <button className="bk-btn bk-btn--danger bk-btn--sm" onClick={() => setConfirming(true)}>
+              Confirm insurance
+            </button>
+          ) : (
+            <div>
+              <label style={{ display: 'flex', gap: '0.6rem', fontSize: '0.875rem', marginBottom: '0.75rem', cursor: 'pointer', alignItems: 'flex-start' }}>
+                <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} style={{ marginTop: 2 }} />
+                <span>
+                  I confirm that {gymnast.firstName} {gymnast.lastName} has an active British Gymnastics membership
+                  and has linked <strong>Trampoline Life</strong> as their club.
+                </span>
+              </label>
+              <div className="bk-row">
+                <button className="bk-btn bk-btn--primary bk-btn--sm" onClick={handleConfirm} disabled={!checked || saving}>
+                  {saving ? 'Saving...' : 'Confirm'}
+                </button>
+                <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => setConfirming(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

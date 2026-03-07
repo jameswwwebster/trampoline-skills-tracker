@@ -8,6 +8,8 @@ function ManualAddForm({ sessionId, onAdded }) {
   const [users, setUsers] = useState([]);
   const [gymnasts, setGymnasts] = useState([]);
   const [userId, setUserId] = useState('');
+  const [userSearch, setUserSearch] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [gymnastIds, setGymnastIds] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -27,6 +29,18 @@ function ManualAddForm({ sessionId, onAdded }) {
   const toggleGymnast = (id) =>
     setGymnastIds(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]);
 
+  const filteredUsers = userSearch.trim().length > 0
+    ? users.filter(u => `${u.firstName} ${u.lastName}`.toLowerCase().includes(userSearch.toLowerCase()))
+    : [];
+
+  const selectedUser = users.find(u => u.id === userId);
+
+  const handleSelectUser = (u) => {
+    setUserId(u.id);
+    setUserSearch(`${u.firstName} ${u.lastName}`);
+    setShowUserDropdown(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!userId || gymnastIds.length === 0) return;
@@ -35,6 +49,7 @@ function ManualAddForm({ sessionId, onAdded }) {
     try {
       await bookingApi.adminAddToSession({ sessionInstanceId: sessionId, gymnastIds, userId });
       setUserId('');
+      setUserSearch('');
       setGymnastIds([]);
       onAdded();
     } catch (err) {
@@ -49,10 +64,45 @@ function ManualAddForm({ sessionId, onAdded }) {
       <h4 style={{ margin: '0 0 0.75rem' }}>Add participant</h4>
       <div className="bk-grid-2">
         <label className="bk-label" style={{ fontWeight: 'normal' }}>Account holder
-          <select className="bk-input" value={userId} onChange={e => setUserId(e.target.value)} required style={{ marginTop: '0.25rem' }}>
-            <option value="">Select user...</option>
-            {users.map(u => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
-          </select>
+          <div style={{ position: 'relative', marginTop: '0.25rem' }}>
+            <input
+              className="bk-input"
+              placeholder="Search by name..."
+              value={userSearch}
+              onChange={e => { setUserSearch(e.target.value); setUserId(''); setShowUserDropdown(true); }}
+              onFocus={() => setShowUserDropdown(true)}
+              onBlur={() => setTimeout(() => setShowUserDropdown(false), 150)}
+              autoComplete="off"
+            />
+            {showUserDropdown && filteredUsers.length > 0 && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                background: 'var(--booking-bg-white)', border: '1px solid var(--booking-border)',
+                borderRadius: 'var(--booking-radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                maxHeight: 200, overflowY: 'auto',
+              }}>
+                {filteredUsers.map(u => (
+                  <div
+                    key={u.id}
+                    onMouseDown={() => handleSelectUser(u)}
+                    style={{
+                      padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.875rem',
+                      background: u.id === userId ? 'rgba(124,53,232,0.08)' : 'transparent',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--booking-bg-light)'}
+                    onMouseLeave={e => e.currentTarget.style.background = u.id === userId ? 'rgba(124,53,232,0.08)' : 'transparent'}
+                  >
+                    {u.firstName} {u.lastName}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {selectedUser && (
+            <span style={{ fontSize: '0.8rem', color: 'var(--booking-success)', marginTop: '0.2rem', display: 'block' }}>
+              ✓ {selectedUser.firstName} {selectedUser.lastName} selected
+            </span>
+          )}
         </label>
       </div>
       <div style={{ marginBottom: '0.75rem' }}>
