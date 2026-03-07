@@ -151,8 +151,10 @@ export default function SessionDetail() {
               const selected = selectedGymnastIds.includes(g.id);
               const atCapacity = !selected && selectedGymnastIds.length >= session.availableSlots;
               return (
-                <label
+                <div
                   key={g.id}
+                  role="checkbox"
+                  aria-checked={selected}
                   className={[
                     'session-detail__gymnast-option',
                     selected ? 'session-detail__gymnast-option--selected' : '',
@@ -160,12 +162,11 @@ export default function SessionDetail() {
                   ].join(' ')}
                   onClick={atCapacity ? undefined : () => toggleGymnast(g.id)}
                 >
-                  <input type="checkbox" checked={selected} readOnly />
                   <span className="session-detail__option-check">
                     {selected && '✓'}
                   </span>
                   <span>{g.firstName} {g.lastName}{g.isSelf ? ' (me)' : ''}</span>
-                </label>
+                </div>
               );
             })}
             {selectedGymnastIds.length >= session.availableSlots && eligibleGymnasts.length > selectedGymnastIds.length && (
@@ -230,17 +231,18 @@ export default function SessionDetail() {
               {credits.map(c => {
                 const selected = selectedCreditIds.includes(c.id);
                 return (
-                  <label
+                  <div
                     key={c.id}
+                    role="checkbox"
+                    aria-checked={selected}
                     className={`session-detail__credit-option${selected ? ' session-detail__credit-option--selected' : ''}`}
                     onClick={() => toggleCredit(c.id)}
                   >
-                    <input type="checkbox" checked={selected} readOnly />
                     <span className="session-detail__option-check">
                       {selected && '✓'}
                     </span>
                     <span>£{(c.amount / 100).toFixed(2)} — expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
-                  </label>
+                  </div>
                 );
               })}
             </div>

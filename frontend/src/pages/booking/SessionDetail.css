@@ -80,10 +80,6 @@
   background: rgba(124, 53, 232, 0.08);
 }
 
-.session-detail__gymnast-option input[type="checkbox"],
-.session-detail__credit-option input[type="checkbox"] {
-  display: none;
-}
 
 .session-detail__option-check {
   width: 20px;
