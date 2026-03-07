@@ -38,6 +38,16 @@ import SuperAdmin from './pages/SuperAdmin';
 import Cheatsheets from './pages/Cheatsheets';
 import CheatsheetViewer from './pages/CheatsheetViewer';
 import WaveLength from './pages/WaveLength';
+import BookingLayout from './pages/booking/BookingLayout';
+import BookingCalendar from './pages/booking/BookingCalendar';
+import SessionDetail from './pages/booking/SessionDetail';
+import Checkout from './pages/booking/Checkout';
+import BookingConfirmation from './pages/booking/BookingConfirmation';
+import MyBookings from './pages/booking/MyBookings';
+import MyCredits from './pages/booking/MyCredits';
+import BookingAdmin from './pages/booking/admin/BookingAdmin';
+import AdminClosures from './pages/booking/admin/AdminClosures';
+import AdminMemberships from './pages/booking/admin/AdminMemberships';
 import './App.css';
 
 // Inner component to access rate limit context
@@ -117,6 +127,22 @@ function AppContent() {
           <Route path="parent-requests" element={<ParentRequests />} />
           <Route path="health" element={<Health />} />
           <Route path="super-admin" element={<SuperAdmin />} />
+        </Route>
+        {/* Booking section — separate layout under /booking */}
+        <Route path="/booking" element={
+          <ProtectedRoute>
+            <BookingLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<BookingCalendar />} />
+          <Route path="session/:instanceId" element={<SessionDetail />} />
+          <Route path="checkout/:bookingId" element={<Checkout />} />
+          <Route path="confirmation/:bookingId" element={<BookingConfirmation />} />
+          <Route path="my-bookings" element={<MyBookings />} />
+          <Route path="my-credits" element={<MyCredits />} />
+          <Route path="admin" element={<BookingAdmin />} />
+          <Route path="admin/closures" element={<AdminClosures />} />
+          <Route path="admin/memberships" element={<AdminMemberships />} />
         </Route>
       </Routes>
     </div>

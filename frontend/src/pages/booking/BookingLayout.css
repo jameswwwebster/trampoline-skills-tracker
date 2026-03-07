@@ -1,0 +1,54 @@
+.booking-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.booking-layout__nav {
+  background: #2c3e50;
+  color: white;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.booking-layout__home-link {
+  color: #aaa;
+  text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.booking-layout__links {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.booking-layout__links a {
+  color: #ccc;
+  text-decoration: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.booking-layout__links a.active,
+.booking-layout__links a:hover {
+  color: white;
+  background: rgba(255,255,255,0.1);
+}
+
+.booking-layout__main {
+  flex: 1;
+  padding: 1rem;
+}
+
+@media (max-width: 480px) {
+  .booking-layout__nav {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
