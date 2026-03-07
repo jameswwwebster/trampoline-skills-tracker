@@ -134,8 +134,11 @@ model Gymnast {
   userId           String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
-  coachNotes       String?
-  archivedAt       DateTime?
+  coachNotes                   String?
+  emergencyContactName         String?
+  emergencyContactPhone        String?
+  emergencyContactRelationship String?
+  archivedAt                   DateTime?
   archivedById     String?
   archivedReason   String?
   isArchived       Boolean           @default(false)

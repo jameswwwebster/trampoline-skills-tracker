@@ -70,10 +70,27 @@ export default function BookingAdmin() {
           </h3>
           <p>{sessionDetail.bookedCount}/{sessionDetail.capacity} booked</p>
           {sessionDetail.bookings?.map(b => (
-            <div key={b.id} style={{ padding: '0.5rem', borderBottom: `1px solid var(--booking-bg-light)` }}>
-              <strong>{b.user.firstName} {b.user.lastName}</strong>
-              {' — '}
-              {b.lines.map(l => `${l.gymnast.firstName} ${l.gymnast.lastName}`).join(', ')}
+            <div key={b.id} style={{ padding: '0.5rem 0', borderBottom: `1px solid var(--booking-bg-light)` }}>
+              {b.lines.map(l => (
+                <div key={l.id} style={{ marginBottom: '0.4rem' }}>
+                  <strong>{l.gymnast.firstName} {l.gymnast.lastName}</strong>
+                  {l.gymnast.emergencyContactName ? (
+                    <span className="bk-muted" style={{ marginLeft: '0.75rem', fontSize: '0.85rem' }}>
+                      Emergency: {l.gymnast.emergencyContactName}
+                      {l.gymnast.emergencyContactRelationship && ` (${l.gymnast.emergencyContactRelationship})`}
+                      {' · '}
+                      <a href={`tel:${l.gymnast.emergencyContactPhone}`} style={{ color: 'var(--booking-accent)' }}>
+                        {l.gymnast.emergencyContactPhone}
+                      </a>
+                    </span>
+                  ) : (
+                    <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: 'var(--booking-danger)' }}>
+                      No emergency contact
+                    </span>
+                  )}
+                </div>
+              ))}
+              <span className="bk-muted" style={{ fontSize: '0.8rem' }}>Booked by {b.user.firstName} {b.user.lastName}</span>
             </div>
           ))}
         </div>

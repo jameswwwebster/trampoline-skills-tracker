@@ -68,7 +68,16 @@ router.get('/:instanceId', auth, async (req, res) => {
         bookings: {
           where: { status: { not: 'CANCELLED' } },
           include: {
-            lines: { include: { gymnast: true } },
+            lines: {
+              include: {
+                gymnast: {
+                  select: {
+                    id: true, firstName: true, lastName: true, dateOfBirth: true,
+                    emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true,
+                  },
+                },
+              },
+            },
             user: { select: { id: true, firstName: true, lastName: true } },
           },
         },

@@ -28,7 +28,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
     const [selfGymnast, linked] = await Promise.all([
       prisma.gymnast.findFirst({
         where: { userId: req.user.id, isArchived: false },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true },
       }),
       prisma.gymnast.findMany({
         where: {
@@ -36,7 +36,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
           userId: { not: req.user.id },
           guardians: { some: { id: req.user.id } },
         },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true },
       }),
     ]);
     const all = selfGymnast
@@ -95,6 +95,40 @@ router.post('/add-child', auth, async (req, res) => {
       },
     });
     res.status(201).json(gymnast);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /api/gymnasts/:id/emergency-contact
+// Any guardian (or club admin/coach) can update emergency contact
+router.patch('/:id/emergency-contact', auth, async (req, res) => {
+  try {
+    const gymnast = await prisma.gymnast.findUnique({
+      where: { id: req.params.id },
+      include: { guardians: { select: { id: true } } },
+    });
+    if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
+
+    const isGuardian = gymnast.guardians.some(g => g.id === req.user.id);
+    const isStaff = ['CLUB_ADMIN', 'COACH'].includes(req.user.role);
+    if (!isGuardian && !isStaff) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { error, value } = Joi.object({
+      emergencyContactName: Joi.string().min(1).max(100).required(),
+      emergencyContactPhone: Joi.string().min(1).max(30).required(),
+      emergencyContactRelationship: Joi.string().min(1).max(50).optional(),
+    }).validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    const updated = await prisma.gymnast.update({
+      where: { id: req.params.id },
+      data: value,
+    });
+    res.json(updated);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
