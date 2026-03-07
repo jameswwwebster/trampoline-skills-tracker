@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, NavLink, Link } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './BookingLayout.css';
 
@@ -10,7 +10,6 @@ export default function BookingLayout() {
   return (
     <div className="booking-layout">
       <nav className="booking-layout__nav">
-        <Link to="/" className="booking-layout__home-link">← Main app</Link>
         <div className="booking-layout__links">
           <NavLink to="/booking" end>Calendar</NavLink>
           <NavLink to="/booking/my-bookings">My Bookings</NavLink>
