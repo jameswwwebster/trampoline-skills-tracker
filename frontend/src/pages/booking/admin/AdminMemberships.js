@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
+import '../booking-shared.css';
 
 export default function AdminMemberships() {
   const [memberships, setMemberships] = useState([]);
@@ -38,59 +39,59 @@ export default function AdminMemberships() {
   };
 
   return (
-    <div style={{ maxWidth: 700, margin: '0 auto', padding: '1rem' }}>
+    <div className="bk-page bk-page--lg">
       <h2>Memberships</h2>
 
-      <form onSubmit={handleSubmit} style={{ background: '#f8f9fa', padding: '1rem', borderRadius: 8, marginBottom: '1.5rem' }}>
+      <form onSubmit={handleSubmit} className="bk-form-card">
         <h3 style={{ margin: '0 0 1rem' }}>Add member</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
-          <label>Gymnast<br />
-            <select value={form.gymnastId} onChange={e => setForm(f => ({ ...f, gymnastId: e.target.value }))} required style={{ width: '100%', padding: '0.4rem' }}>
+        <div className="bk-grid-2">
+          <label className="bk-label">Gymnast
+            <select value={form.gymnastId} onChange={e => setForm(f => ({ ...f, gymnastId: e.target.value }))} required className="bk-input" style={{ marginTop: '0.25rem' }}>
               <option value="">Select gymnast</option>
               {gymnasts.map(g => <option key={g.id} value={g.id}>{g.firstName} {g.lastName}</option>)}
             </select>
           </label>
-          <label>Monthly amount (£)<br />
-            <input type="number" step="0.01" min="0" value={form.monthlyAmount} onChange={e => setForm(f => ({ ...f, monthlyAmount: e.target.value }))} required placeholder="e.g. 40.00" style={{ width: '100%', padding: '0.4rem' }} />
+          <label className="bk-label">Monthly amount (£)
+            <input type="number" step="0.01" min="0" value={form.monthlyAmount} onChange={e => setForm(f => ({ ...f, monthlyAmount: e.target.value }))} required placeholder="e.g. 40.00" className="bk-input" style={{ marginTop: '0.25rem' }} />
           </label>
         </div>
-        <div style={{ marginBottom: '0.75rem' }}>
-          <label>Start date<br />
-            <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} required style={{ width: '100%', padding: '0.4rem' }} />
-          </label>
-        </div>
-        <button type="submit" disabled={submitting} style={{ background: '#3498db', color: 'white', border: 'none', borderRadius: 4, padding: '0.5rem 1rem', cursor: 'pointer' }}>
+        <label className="bk-label">Start date
+          <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} required className="bk-input" style={{ marginTop: '0.25rem' }} />
+        </label>
+        <button type="submit" disabled={submitting} className="bk-btn bk-btn--primary">
           {submitting ? 'Adding...' : 'Add member'}
         </button>
       </form>
 
       {memberships.length === 0 && <p>No memberships.</p>}
       {memberships.length > 0 && (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table className="bk-table">
           <thead>
-            <tr style={{ background: '#f5f5f5' }}>
-              <th style={{ padding: '0.5rem', textAlign: 'left' }}>Gymnast</th>
-              <th style={{ padding: '0.5rem', textAlign: 'right' }}>Monthly</th>
-              <th style={{ padding: '0.5rem' }}>Status</th>
-              <th style={{ padding: '0.5rem' }}>Actions</th>
+            <tr>
+              <th>Gymnast</th>
+              <th style={{ textAlign: 'right' }}>Monthly</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {memberships.map(m => (
-              <tr key={m.id} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '0.5rem' }}>{m.gymnast.firstName} {m.gymnast.lastName}</td>
-                <td style={{ padding: '0.5rem', textAlign: 'right' }}>£{(m.monthlyAmount / 100).toFixed(2)}</td>
-                <td style={{ padding: '0.5rem' }}>{m.status}</td>
-                <td style={{ padding: '0.5rem', display: 'flex', gap: '0.4rem' }}>
-                  {m.status === 'ACTIVE' && (
-                    <button onClick={() => handleStatusChange(m.id, 'PAUSED')} style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>Pause</button>
-                  )}
-                  {m.status === 'PAUSED' && (
-                    <button onClick={() => handleStatusChange(m.id, 'ACTIVE')} style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>Resume</button>
-                  )}
-                  {m.status !== 'CANCELLED' && (
-                    <button onClick={() => handleStatusChange(m.id, 'CANCELLED')} style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', color: '#e74c3c' }}>Cancel</button>
-                  )}
+              <tr key={m.id}>
+                <td>{m.gymnast.firstName} {m.gymnast.lastName}</td>
+                <td style={{ textAlign: 'right' }}>£{(m.monthlyAmount / 100).toFixed(2)}</td>
+                <td>{m.status}</td>
+                <td>
+                  <div className="bk-row">
+                    {m.status === 'ACTIVE' && (
+                      <button onClick={() => handleStatusChange(m.id, 'PAUSED')} className="bk-btn bk-btn--sm">Pause</button>
+                    )}
+                    {m.status === 'PAUSED' && (
+                      <button onClick={() => handleStatusChange(m.id, 'ACTIVE')} className="bk-btn bk-btn--sm bk-btn--primary">Resume</button>
+                    )}
+                    {m.status !== 'CANCELLED' && (
+                      <button onClick={() => handleStatusChange(m.id, 'CANCELLED')} className="bk-btn bk-btn--sm bk-btn--muted" style={{ color: 'var(--booking-danger)' }}>Cancel</button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

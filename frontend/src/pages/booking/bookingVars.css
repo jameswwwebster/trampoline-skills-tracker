@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;800&display=swap');
+
+/* Booking system design tokens — override these per club to whitelabel */
+:root {
+  --booking-bg-dark: #2d2d2d;
+  --booking-bg-light: #eaeaec;
+  --booking-bg-white: #ffffff;
+  --booking-accent: #7c35e8;
+  --booking-accent-dark: #6a1fd4;
+  --booking-accent-light: #9b4dca;
+  --booking-accent-gradient: linear-gradient(135deg, #6a1fd4, #9b4dca);
+  --booking-text-on-dark: #ffffff;
+  --booking-text-on-light: #1a1a1a;
+  --booking-text-muted: #888888;
+  --booking-border: #d4d4d8;
+  --booking-danger: #e74c3c;
+  --booking-success: #27ae60;
+  --booking-font: 'Exo 2', Arial, sans-serif;
+  --booking-radius: 6px;
+  --booking-radius-lg: 10px;
+}

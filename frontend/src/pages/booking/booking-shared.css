@@ -1,0 +1,190 @@
+@import './bookingVars.css';
+
+/* Shared booking page styles */
+
+.bk-page {
+  margin: 0 auto;
+  padding: 1rem;
+  font-family: var(--booking-font);
+}
+
+.bk-page--sm { max-width: 480px; }
+.bk-page--md { max-width: 600px; }
+.bk-page--lg { max-width: 700px; }
+.bk-page--xl { max-width: 900px; }
+
+.bk-page h2 {
+  font-weight: 700;
+  margin-top: 0;
+}
+
+.bk-page h3 {
+  font-weight: 600;
+}
+
+/* Card */
+.bk-card {
+  border: 1px solid var(--booking-border);
+  border-radius: var(--booking-radius-lg);
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: var(--booking-bg-white);
+}
+
+/* Form card */
+.bk-form-card {
+  background: var(--booking-bg-light);
+  border-radius: var(--booking-radius-lg);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Inputs and selects */
+.bk-input {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--booking-border);
+  border-radius: var(--booking-radius);
+  font-family: var(--booking-font);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.bk-input:focus {
+  outline: none;
+  border-color: var(--booking-accent);
+}
+
+.bk-label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Buttons */
+.bk-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--booking-radius);
+  font-family: var(--booking-font);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.bk-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.bk-btn--primary {
+  background: var(--booking-accent-gradient);
+  color: var(--booking-text-on-dark);
+}
+
+.bk-btn--full {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  margin-top: 1rem;
+}
+
+.bk-btn--danger {
+  background: var(--booking-danger);
+  color: var(--booking-text-on-dark);
+}
+
+.bk-btn--outline-danger {
+  background: none;
+  border: 1px solid var(--booking-danger);
+  color: var(--booking-danger);
+}
+
+.bk-btn--sm {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.bk-btn--muted {
+  background: none;
+  border: none;
+  color: var(--booking-text-muted);
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+}
+
+/* Error / muted text */
+.bk-error {
+  color: var(--booking-danger);
+  margin-bottom: 0.75rem;
+}
+
+.bk-muted {
+  color: var(--booking-text-muted);
+}
+
+/* Table */
+.bk-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+}
+
+.bk-table thead tr {
+  background: var(--booking-bg-light);
+}
+
+.bk-table th {
+  padding: 0.5rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.bk-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--booking-bg-light);
+}
+
+/* Grid form */
+.bk-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Flex row */
+.bk-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bk-row--between {
+  justify-content: space-between;
+}
+
+/* Center / loading */
+.bk-center {
+  padding: 2rem;
+  text-align: center;
+  color: var(--booking-text-muted);
+}
+
+/* Link */
+.bk-link {
+  color: var(--booking-accent);
+  text-decoration: none;
+}
+
+.bk-link:hover {
+  text-decoration: underline;
+}
+
+/* Confirmation page */
+.bk-confirm-icon {
+  font-size: 3rem;
+  color: var(--booking-success);
+  margin-bottom: 0.5rem;
+}

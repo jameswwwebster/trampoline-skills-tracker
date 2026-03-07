@@ -1,3 +1,5 @@
+@import './bookingVars.css';
+
 .booking-calendar {
   max-width: 900px;
   margin: 0 auto;
@@ -14,14 +16,22 @@
 .booking-calendar__header h2 {
   margin: 0;
   font-size: 1.25rem;
+  font-weight: 700;
 }
 
 .booking-calendar__header button {
-  background: none;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  background: var(--booking-bg-white);
+  border: 1px solid var(--booking-border);
+  border-radius: var(--booking-radius);
   padding: 0.4rem 0.8rem;
   cursor: pointer;
+  color: var(--booking-text-on-light);
+  transition: border-color 0.15s;
+}
+
+.booking-calendar__header button:hover {
+  border-color: var(--booking-accent);
+  color: var(--booking-accent);
 }
 
 .booking-calendar__grid {
@@ -34,16 +44,16 @@
   text-align: center;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #666;
+  color: var(--booking-text-muted);
   padding: 0.25rem 0;
 }
 
 .booking-calendar__cell {
   min-height: 80px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid var(--booking-border);
+  border-radius: var(--booking-radius);
   padding: 4px;
-  background: #fff;
+  background: var(--booking-bg-white);
 }
 
 .booking-calendar__cell--empty {
@@ -52,21 +62,22 @@
 }
 
 .booking-calendar__cell--closed {
-  background: #f5f5f5;
-  color: #999;
+  background: var(--booking-bg-light);
+  color: var(--booking-text-muted);
 }
 
 .booking-calendar__cell--past {
-  background: #fafafa;
-  color: #bbb;
+  background: var(--booking-bg-light);
+  color: var(--booking-border);
 }
 
 .booking-calendar__cell--available {
-  background: #f0fff4;
+  background: var(--booking-bg-white);
+  border-color: var(--booking-accent);
 }
 
 .booking-calendar__cell--full {
-  background: #fff8f0;
+  background: var(--booking-bg-light);
 }
 
 .booking-calendar__date {
@@ -89,24 +100,24 @@
 }
 
 .booking-calendar__session--open {
-  background: #38a169;
-  color: #fff;
+  background: var(--booking-accent-gradient);
+  color: var(--booking-text-on-dark);
 }
 
 .booking-calendar__session--full {
-  background: #e2e8f0;
-  color: #666;
+  background: var(--booking-bg-light);
+  color: var(--booking-text-muted);
   cursor: default;
 }
 
 .booking-calendar__closed-label {
   font-size: 0.7rem;
-  color: #999;
+  color: var(--booking-text-muted);
 }
 
 .booking-calendar__loading {
   text-align: center;
-  color: #666;
+  color: var(--booking-text-muted);
   margin-top: 1rem;
 }
 

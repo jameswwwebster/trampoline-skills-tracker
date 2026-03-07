@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
+import '../booking-shared.css';
 
 export default function AdminClosures() {
   const [closures, setClosures] = useState([]);
@@ -33,42 +34,36 @@ export default function AdminClosures() {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto', padding: '1rem' }}>
+    <div className="bk-page bk-page--md">
       <h2>Closure Periods</h2>
 
-      <form onSubmit={handleSubmit} style={{ background: '#f8f9fa', padding: '1rem', borderRadius: 8, marginBottom: '1.5rem' }}>
+      <form onSubmit={handleSubmit} className="bk-form-card">
         <h3 style={{ margin: '0 0 1rem' }}>Add closure</h3>
-        <div style={{ marginBottom: '0.75rem' }}>
-          <label>Start date<br />
-            <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} required style={{ width: '100%', padding: '0.4rem' }} />
-          </label>
-        </div>
-        <div style={{ marginBottom: '0.75rem' }}>
-          <label>End date<br />
-            <input type="date" value={form.endDate} min={form.startDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} required style={{ width: '100%', padding: '0.4rem' }} />
-          </label>
-        </div>
-        <div style={{ marginBottom: '0.75rem' }}>
-          <label>Reason<br />
-            <input type="text" value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} required placeholder="e.g. Christmas 2026" style={{ width: '100%', padding: '0.4rem' }} />
-          </label>
-        </div>
-        {error && <p style={{ color: '#e74c3c' }}>{error}</p>}
-        <button type="submit" disabled={submitting} style={{ background: '#e74c3c', color: 'white', border: 'none', borderRadius: 4, padding: '0.5rem 1rem', cursor: 'pointer' }}>
+        <label className="bk-label">Start date
+          <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} required className="bk-input" style={{ marginTop: '0.25rem' }} />
+        </label>
+        <label className="bk-label">End date
+          <input type="date" value={form.endDate} min={form.startDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} required className="bk-input" style={{ marginTop: '0.25rem' }} />
+        </label>
+        <label className="bk-label">Reason
+          <input type="text" value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} required placeholder="e.g. Christmas 2026" className="bk-input" style={{ marginTop: '0.25rem' }} />
+        </label>
+        {error && <p className="bk-error">{error}</p>}
+        <button type="submit" disabled={submitting} className="bk-btn bk-btn--danger">
           {submitting ? 'Creating...' : 'Create closure'}
         </button>
       </form>
 
       {closures.length === 0 && <p>No closure periods.</p>}
       {closures.map(c => (
-        <div key={c.id} style={{ border: '1px solid #e0e0e0', borderRadius: 6, padding: '0.75rem', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div key={c.id} className="bk-card bk-row bk-row--between">
           <div>
             <strong>{c.reason}</strong>
-            <p style={{ margin: '0.2rem 0', color: '#666', fontSize: '0.85rem' }}>
+            <p style={{ margin: '0.2rem 0', fontSize: '0.85rem' }} className="bk-muted">
               {new Date(c.startDate).toLocaleDateString('en-GB')} – {new Date(c.endDate).toLocaleDateString('en-GB')}
             </p>
           </div>
-          <button onClick={() => handleDelete(c.id)} style={{ background: 'none', border: '1px solid #e74c3c', color: '#e74c3c', borderRadius: 4, padding: '0.3rem 0.6rem', cursor: 'pointer' }}>Delete</button>
+          <button onClick={() => handleDelete(c.id)} className="bk-btn bk-btn--outline-danger bk-btn--sm">Delete</button>
         </div>
       ))}
     </div>

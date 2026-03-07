@@ -1,12 +1,16 @@
+@import './bookingVars.css';
+
 .booking-layout {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  font-family: var(--booking-font);
+  background: var(--booking-bg-light);
 }
 
 .booking-layout__nav {
-  background: #2c3e50;
-  color: white;
+  background: var(--booking-bg-dark);
+  color: var(--booking-text-on-dark);
   padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
@@ -15,7 +19,7 @@
 }
 
 .booking-layout__home-link {
-  color: #aaa;
+  color: rgba(255,255,255,0.5);
   text-decoration: none;
   font-size: 0.85rem;
   white-space: nowrap;
@@ -28,17 +32,18 @@
 }
 
 .booking-layout__links a {
-  color: #ccc;
+  color: rgba(255,255,255,0.7);
   text-decoration: none;
   padding: 0.3rem 0.6rem;
-  border-radius: 4px;
+  border-radius: var(--booking-radius);
   font-size: 0.9rem;
+  transition: background 0.15s;
 }
 
 .booking-layout__links a.active,
 .booking-layout__links a:hover {
-  color: white;
-  background: rgba(255,255,255,0.1);
+  color: var(--booking-text-on-dark);
+  background: var(--booking-accent);
 }
 
 .booking-layout__main {

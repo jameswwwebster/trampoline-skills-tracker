@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../utils/bookingApi';
+import './booking-shared.css';
 
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -23,19 +24,19 @@ export default function MyBookings() {
     }
   };
 
-  if (loading) return <p style={{ padding: '2rem', textAlign: 'center' }}>Loading...</p>;
+  if (loading) return <p className="bk-center">Loading...</p>;
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto', padding: '1rem' }}>
+    <div className="bk-page bk-page--md">
       <h2>My Bookings</h2>
       {bookings.length === 0 && <p>No upcoming bookings.</p>}
       {bookings.map(b => {
         const d = new Date(b.sessionInstance.date);
         const dateStr = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
         return (
-          <div key={b.id} style={{ border: '1px solid #e0e0e0', borderRadius: 8, padding: '1rem', marginBottom: '0.75rem' }}>
+          <div key={b.id} className="bk-card">
             <strong>{dateStr} — {b.sessionInstance.template.startTime}–{b.sessionInstance.template.endTime}</strong>
-            <p style={{ margin: '0.25rem 0', color: '#555' }}>
+            <p style={{ margin: '0.25rem 0' }} className="bk-muted">
               {b.lines.map(l => `${l.gymnast.firstName} ${l.gymnast.lastName}`).join(', ')}
             </p>
             <p style={{ margin: '0.25rem 0', fontSize: '0.85rem' }}>
@@ -45,7 +46,8 @@ export default function MyBookings() {
               <button
                 onClick={() => handleCancel(b.id)}
                 disabled={cancelling === b.id}
-                style={{ marginTop: '0.5rem', background: '#e74c3c', color: 'white', border: 'none', borderRadius: 4, padding: '0.4rem 0.8rem', cursor: 'pointer' }}
+                className="bk-btn bk-btn--danger bk-btn--sm"
+                style={{ marginTop: '0.5rem' }}
               >
                 {cancelling === b.id ? 'Cancelling...' : 'Cancel booking'}
               </button>
