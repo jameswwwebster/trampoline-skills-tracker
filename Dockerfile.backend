@@ -1,3 +1,5 @@
+# Build from repo root so context includes both backend/ and resources/.
+# Render: rootDir: ., dockerContext: ., dockerfilePath: Dockerfile.backend
 FROM node:18-bullseye
 
 # Install system deps for node-canvas
@@ -22,12 +24,13 @@ RUN apt-get update && apt-get install -y \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY package*.json ./
+COPY backend/package*.json ./
 RUN npm install canvas@^2.11.2 --verbose
 RUN npm ci --ignore-scripts
-# Build context is backend/ (resources/ not available here; use Dockerfile.backend at repo root for Render)
-COPY . .
-RUN if [ -d "resources/requirement-cheatsheets" ]; then echo "Cheatsheet files:" && ls -la resources/requirement-cheatsheets/; else echo "WARNING: resources/requirement-cheatsheets not in context"; fi
+COPY backend/ .
+COPY resources ./resources
+RUN echo "Cheatsheet files:" && ls -la resources/requirement-cheatsheets/ && \
+    (test -f resources/requirement-cheatsheets/2026-Requirements.pdf && echo "2026-Requirements.pdf OK" || echo "WARNING: 2026-Requirements.pdf not found")
 
 # Rebuild canvas native module to ensure it's properly compiled
 RUN npm rebuild canvas --verbose

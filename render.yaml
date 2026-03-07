@@ -4,9 +4,8 @@ services:
     runtime: docker
     rootDir: .
     dockerContext: .
-    dockerfilePath: backend/Dockerfile
+    dockerfilePath: Dockerfile.backend
     plan: starter
-    buildCommand: "true"
     preDeployCommand: npx prisma migrate deploy
     envVars:
       - key: NODE_ENV
