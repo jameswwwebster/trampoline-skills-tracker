@@ -3,6 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const Joi = require('joi');
 const getStripe = () => require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { processWaitlist } = require('../../services/waitlistService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -192,27 +193,49 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
       return res.status(400).json({ error: 'Booking is already cancelled' });
     }
 
+    // Day-of cancellations don't receive credits
+    const sessionDate = new Date(booking.sessionInstance.date);
+    const today = new Date();
+    const isToday =
+      sessionDate.getFullYear() === today.getFullYear() &&
+      sessionDate.getMonth() === today.getMonth() &&
+      sessionDate.getDate() === today.getDate();
+
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + 1);
 
-    await prisma.$transaction([
-      prisma.booking.update({
+    if (isToday) {
+      await prisma.booking.update({
         where: { id: booking.id },
         data: { status: 'CANCELLED' },
-      }),
-      ...booking.lines.map(() =>
-        prisma.credit.create({
-          data: {
-            userId: booking.userId,
-            amount: 600, // £6 per gymnast
-            expiresAt,
-            sourceBookingId: booking.id,
-          },
-        })
-      ),
-    ]);
+      });
+    } else {
+      await prisma.$transaction([
+        prisma.booking.update({
+          where: { id: booking.id },
+          data: { status: 'CANCELLED' },
+        }),
+        ...booking.lines.map(() =>
+          prisma.credit.create({
+            data: {
+              userId: booking.userId,
+              amount: 600,
+              expiresAt,
+              sourceBookingId: booking.id,
+            },
+          })
+        ),
+      ]);
+    }
 
-    res.json({ message: `Booking cancelled. ${booking.lines.length} credit(s) issued.` });
+    // Free slot — offer to next person on waitlist
+    await processWaitlist(booking.sessionInstanceId);
+
+    const creditMsg = isToday
+      ? 'Booking cancelled. No credit issued for same-day cancellations.'
+      : `Booking cancelled. ${booking.lines.length} credit(s) issued.`;
+
+    res.json({ message: creditMsg, creditsIssued: !isToday });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

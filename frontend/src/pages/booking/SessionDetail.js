@@ -16,6 +16,8 @@ export default function SessionDetail() {
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState(null);
+  const [waitlistEntry, setWaitlistEntry] = useState(null);
+  const [waitlistBusy, setWaitlistBusy] = useState(false);
 
   // Add-child form state
   const [showAddChild, setShowAddChild] = useState(false);
@@ -30,9 +32,12 @@ export default function SessionDetail() {
     Promise.all([
       bookingApi.getSession(instanceId),
       bookingApi.getMyCredits().catch(() => ({ data: [] })),
-    ]).then(([sessRes, credRes]) => {
+      bookingApi.getMyWaitlist().catch(() => ({ data: [] })),
+    ]).then(([sessRes, credRes, waitRes]) => {
       setSession(sessRes.data);
       setCredits(credRes.data);
+      const entry = waitRes.data.find(e => e.sessionInstanceId === instanceId);
+      setWaitlistEntry(entry || null);
     }).catch(console.error).finally(() => setLoading(false));
 
     loadGymnasts();
@@ -120,6 +125,30 @@ export default function SessionDetail() {
     }
   };
 
+  const handleJoinWaitlist = async () => {
+    setWaitlistBusy(true);
+    try {
+      const res = await bookingApi.joinWaitlist(instanceId);
+      setWaitlistEntry(res.data);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not join waitlist.');
+    } finally {
+      setWaitlistBusy(false);
+    }
+  };
+
+  const handleLeaveWaitlist = async () => {
+    setWaitlistBusy(true);
+    try {
+      await bookingApi.leaveWaitlist(instanceId);
+      setWaitlistEntry(null);
+    } catch (err) {
+      setError('Could not leave waitlist.');
+    } finally {
+      setWaitlistBusy(false);
+    }
+  };
+
   if (loading) return <div className="session-detail__loading">Loading session...</div>;
   if (!session) return <div className="session-detail__error">Session not found.</div>;
 
@@ -141,6 +170,49 @@ export default function SessionDetail() {
           <p className="session-detail__cancelled">This session has been cancelled.</p>
         )}
       </div>
+
+      {!session.cancelledAt && session.availableSlots === 0 && (
+        <div className="session-detail__waitlist">
+          {waitlistEntry?.status === 'OFFERED' ? (
+            <>
+              <p className="session-detail__waitlist-offered">
+                A slot is available for you! Claim it before{' '}
+                {new Date(waitlistEntry.offerExpiresAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}.
+              </p>
+              <p style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', marginBottom: '0.75rem' }}>
+                Go back to the calendar and book this session to claim your slot.
+              </p>
+            </>
+          ) : waitlistEntry?.status === 'WAITING' ? (
+            <>
+              <p className="session-detail__waitlist-waiting">
+                You're on the waitlist. We'll let you know if a slot becomes available.
+              </p>
+              <button
+                className="session-detail__add-btn"
+                onClick={handleLeaveWaitlist}
+                disabled={waitlistBusy}
+              >
+                {waitlistBusy ? 'Leaving...' : 'Leave waitlist'}
+              </button>
+            </>
+          ) : (
+            <>
+              <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.75rem' }}>
+                This session is full.
+              </p>
+              <button
+                className="session-detail__book-btn"
+                onClick={handleJoinWaitlist}
+                disabled={waitlistBusy}
+              >
+                {waitlistBusy ? 'Joining...' : 'Join waitlist'}
+              </button>
+            </>
+          )}
+          {error && <p className="session-detail__error">{error}</p>}
+        </div>
+      )}
 
       {!session.cancelledAt && session.availableSlots > 0 && (
         <>

@@ -54,4 +54,13 @@ export const bookingApi = {
 
   updateMembership: (id, data) =>
     axios.patch(`${API_URL}/booking/memberships/${id}`, data, { headers: getHeaders() }),
+
+  joinWaitlist: (instanceId) =>
+    axios.post(`${API_URL}/booking/waitlist/${instanceId}`, {}, { headers: getHeaders() }),
+
+  leaveWaitlist: (instanceId) =>
+    axios.delete(`${API_URL}/booking/waitlist/${instanceId}`, { headers: getHeaders() }),
+
+  getMyWaitlist: () =>
+    axios.get(`${API_URL}/booking/waitlist/my`, { headers: getHeaders() }),
 };

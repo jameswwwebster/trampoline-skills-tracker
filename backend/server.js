@@ -172,10 +172,12 @@ app.use('/api/booking/bookings', require('./routes/booking/bookings'));
 app.use('/api/booking/credits', require('./routes/booking/credits'));
 app.use('/api/booking/closures', require('./routes/booking/closures'));
 app.use('/api/booking/memberships', require('./routes/booking/memberships'));
+app.use('/api/booking/waitlist', require('./routes/booking/waitlist'));
 
 // Booking: daily session generation cron
 const cron = require('node-cron');
 const { generateRollingInstances } = require('./services/sessionGenerator');
+const { expireStaleOffers } = require('./services/waitlistService');
 
 // Run at 02:00 every day
 cron.schedule('0 2 * * *', async () => {
@@ -190,6 +192,15 @@ cron.schedule('0 2 * * *', async () => {
     }
   } catch (err) {
     console.error('Session generation cron error:', err);
+  }
+});
+
+// Expire stale waitlist offers every 15 minutes
+cron.schedule('*/15 * * * *', async () => {
+  try {
+    await expireStaleOffers();
+  } catch (err) {
+    console.error('Waitlist expiry cron error:', err);
   }
 });
 

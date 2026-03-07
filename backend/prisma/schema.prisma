@@ -46,6 +46,7 @@ model User {
   archivedClubs                 Club[]            @relation("ArchivedClubs")
   bookings                      Booking[]
   credits                       Credit[]
+  waitlistEntries               WaitlistEntry[]
 
   @@map("users")
 }
@@ -459,6 +460,7 @@ model SessionInstance {
   createdAt          DateTime         @default(now())
   template           SessionTemplate  @relation(fields: [templateId], references: [id])
   bookings           Booking[]
+  waitlistEntries    WaitlistEntry[]
 
   @@unique([templateId, date])
   @@map("session_instances")
@@ -614,4 +616,25 @@ enum MembershipStatus {
   ACTIVE
   CANCELLED
   PAUSED
+}
+
+model WaitlistEntry {
+  id                String          @id @default(cuid())
+  sessionInstanceId String
+  userId            String
+  status            WaitlistStatus  @default(WAITING)
+  offerExpiresAt    DateTime?
+  createdAt         DateTime        @default(now())
+  sessionInstance   SessionInstance @relation(fields: [sessionInstanceId], references: [id])
+  user              User            @relation(fields: [userId], references: [id])
+
+  @@unique([sessionInstanceId, userId])
+  @@map("waitlist_entries")
+}
+
+enum WaitlistStatus {
+  WAITING
+  OFFERED
+  CLAIMED
+  EXPIRED
 }

@@ -111,6 +111,22 @@
   margin: 0.25rem 0 0.75rem;
 }
 
+.session-detail__waitlist {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.session-detail__waitlist-waiting {
+  color: var(--booking-text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.session-detail__waitlist-offered {
+  font-weight: 700;
+  color: var(--booking-accent);
+  margin-bottom: 0.5rem;
+}
+
 .session-detail__summary {
   background: var(--booking-bg-light);
   border-left: 3px solid var(--booking-accent);
