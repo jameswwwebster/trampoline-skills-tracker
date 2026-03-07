@@ -129,6 +129,210 @@ function ManualAddForm({ sessionId, onAdded }) {
   );
 }
 
+const CONSENT_BADGES = [
+  { type: 'photo_coaching', label: 'Coaching' },
+  { type: 'photo_social_media', label: 'Social media' },
+];
+
+function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, setShowManualAdd, onAdded }) {
+  const [confirmingRemove, setConfirmingRemove] = useState(null); // bookingId
+  const [removing, setRemoving] = useState(null);
+  const [removeError, setRemoveError] = useState(null);
+  const totalGymnasts = sessionDetail.bookings?.reduce((n, b) => n + b.lines.length, 0) ?? 0;
+  const capacity = sessionDetail.capacity;
+
+  const handleRemove = async (bookingId, issueCredit) => {
+    setRemoving(bookingId);
+    setRemoveError(null);
+    try {
+      await bookingApi.cancelBooking(bookingId, { issueCredit });
+      setConfirmingRemove(null);
+      onAdded();
+    } catch (err) {
+      setRemoveError(err.response?.data?.error || 'Failed to remove.');
+      setRemoving(null);
+    }
+  };
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{
+        background: 'var(--booking-accent-gradient)',
+        borderRadius: 'var(--booking-radius-lg)',
+        padding: '1.25rem 1.5rem',
+        marginBottom: '1rem',
+        color: '#fff',
+      }}>
+        <p style={{ margin: '0 0 0.2rem', fontSize: '0.8rem', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {new Date(sessionDetail.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+        <p style={{ margin: '0 0 1rem', fontSize: '1.5rem', fontWeight: 700 }}>
+          {sessionDetail.startTime} – {sessionDetail.endTime}
+          {sessionDetail.minAge && <span style={{ fontSize: '0.9rem', fontWeight: 400, marginLeft: '0.6rem', opacity: 0.85 }}>{sessionDetail.minAge}+</span>}
+        </p>
+        {/* Capacity bar */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem', opacity: 0.9 }}>
+            <span>{totalGymnasts} booked</span>
+            <span>{capacity - totalGymnasts} remaining</span>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.25)', borderRadius: 99, height: 8 }}>
+            <div style={{
+              height: 8, borderRadius: 99,
+              background: totalGymnasts >= capacity ? '#e74c3c' : '#fff',
+              width: `${Math.min(100, (totalGymnasts / capacity) * 100)}%`,
+              transition: 'width 0.3s',
+            }} />
+          </div>
+        </div>
+        {sessionDetail.cancelledAt && (
+          <p style={{ margin: '0.75rem 0 0', fontSize: '0.875rem', background: 'rgba(231,76,60,0.3)', borderRadius: 4, padding: '0.3rem 0.6rem', display: 'inline-block' }}>
+            Cancelled
+          </p>
+        )}
+      </div>
+
+      {/* Attendees */}
+      <div className="bk-card" style={{ marginBottom: '1rem' }}>
+        <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--booking-text-muted)' }}>
+          Attendees
+        </h4>
+
+        {totalGymnasts === 0 && <p className="bk-muted" style={{ margin: 0 }}>No bookings yet.</p>}
+        {removeError && <p className="bk-error" style={{ margin: '0 0 0.5rem' }}>{removeError}</p>}
+
+        {sessionDetail.bookings?.map(b =>
+          b.lines.map(l => (
+            <div key={l.id} style={{
+              padding: '0.75rem 0',
+              borderBottom: '1px solid var(--booking-bg-light)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                <div>
+                  <strong style={{ fontSize: '0.95rem' }}>{l.gymnast.firstName} {l.gymnast.lastName}</strong>
+                  <span className="bk-muted" style={{ marginLeft: '0.5rem', fontSize: '0.8rem' }}>
+                    via {b.user.firstName} {b.user.lastName}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.3rem', flexShrink: 0, maxWidth: '55%' }}>
+                  {CONSENT_BADGES.map(({ type, label }) => {
+                    const granted = l.gymnast.consents?.find(c => c.type === type)?.granted;
+                    return (
+                      <span key={type} title={label} style={{
+                        padding: '1px 6px', borderRadius: 4, fontSize: '0.75rem',
+                        background: granted ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.1)',
+                        color: granted ? 'var(--booking-success)' : 'var(--booking-danger)',
+                      }}>
+                        {granted ? '✓' : '✗'} {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {confirmingRemove !== b.id && (
+                <button
+                  className="bk-btn bk-btn--sm"
+                  onClick={() => { setConfirmingRemove(b.id); setRemoveError(null); }}
+                  style={{ marginTop: '0.4rem', color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+                >
+                  Remove
+                </button>
+              )}
+
+              {confirmingRemove === b.id && (
+                <div style={{
+                  margin: '0.6rem 0 0.25rem',
+                  padding: '0.65rem 0.75rem',
+                  background: 'rgba(231,76,60,0.06)',
+                  border: '1px solid rgba(231,76,60,0.25)',
+                  borderRadius: 'var(--booking-radius)',
+                }}>
+                  <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>
+                    Remove {l.gymnast.firstName} from this session?
+                  </p>
+                  <div className="bk-row" style={{ gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <button
+                      className="bk-btn bk-btn--sm"
+                      disabled={!!removing}
+                      onClick={() => handleRemove(b.id, true)}
+                      style={{ background: 'var(--booking-accent)', color: '#fff', border: 'none' }}
+                    >
+                      {removing === b.id ? '…' : 'Remove + issue credit'}
+                    </button>
+                    <button
+                      className="bk-btn bk-btn--sm"
+                      disabled={!!removing}
+                      onClick={() => handleRemove(b.id, false)}
+                      style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+                    >
+                      {removing === b.id ? '…' : 'Remove, no credit'}
+                    </button>
+                    <button
+                      className="bk-btn bk-btn--sm"
+                      disabled={!!removing}
+                      onClick={() => setConfirmingRemove(null)}
+                      style={{ border: '1px solid var(--booking-border)' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {l.gymnast.userId !== b.user.id ? (
+                /* Child — show parent as emergency contact */
+                b.user.phone ? (
+                  <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
+                    Parent: <strong style={{ color: 'var(--booking-text-on-light)' }}>{b.user.firstName} {b.user.lastName}</strong>
+                    {' · '}
+                    <a href={`tel:${b.user.phone}`} style={{ color: 'var(--booking-accent)' }}>{b.user.phone}</a>
+                  </p>
+                ) : (
+                  <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>
+                    Parent {b.user.firstName} {b.user.lastName} has no phone number
+                  </p>
+                )
+              ) : l.gymnast.emergencyContactName ? (
+                /* Self — show their own emergency contact */
+                <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
+                  Emergency: <strong style={{ color: 'var(--booking-text-on-light)' }}>{l.gymnast.emergencyContactName}</strong>
+                  {l.gymnast.emergencyContactRelationship && ` (${l.gymnast.emergencyContactRelationship})`}
+                  {' · '}
+                  <a href={`tel:${l.gymnast.emergencyContactPhone}`} style={{ color: 'var(--booking-accent)' }}>
+                    {l.gymnast.emergencyContactPhone}
+                  </a>
+                </p>
+              ) : (
+                <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>
+                  No emergency contact
+                </p>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Add participant */}
+      <button
+        className="bk-btn bk-btn--primary"
+        style={{ width: '100%' }}
+        onClick={() => setShowManualAdd(v => !v)}
+      >
+        {showManualAdd ? 'Cancel' : '+ Add participant manually'}
+      </button>
+
+      {showManualAdd && (
+        <ManualAddForm
+          sessionId={selectedSession}
+          onAdded={onAdded}
+        />
+      )}
+    </div>
+  );
+}
+
 export default function BookingAdmin() {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
@@ -151,128 +355,93 @@ export default function BookingAdmin() {
   }, [selectedSession]);
 
   const handleSelect = (id) => {
-    setSelectedSession(id);
+    setSelectedSession(prev => prev === id ? null : id);
+    setSessionDetail(null);
     setShowManualAdd(false);
   };
 
   return (
     <div className="bk-page bk-page--xl">
-      <h2>Booking Admin</h2>
+      <h2 style={{ marginBottom: '1.25rem' }}>Booking Admin</h2>
 
-      <div className="bk-row" style={{ marginBottom: '1rem' }}>
+      <div className="bk-row" style={{ marginBottom: '0.75rem' }}>
         <button className="bk-btn" onClick={() => month === 1 ? (setMonth(12), setYear(y => y - 1)) : setMonth(m => m - 1)}>&lsaquo;</button>
         <strong>{MONTHS[month - 1]} {year}</strong>
         <button className="bk-btn" onClick={() => month === 12 ? (setMonth(1), setYear(y => y + 1)) : setMonth(m => m + 1)}>&rsaquo;</button>
       </div>
 
-      <table className="bk-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Time</th>
-            <th style={{ textAlign: 'center' }}>Booked</th>
-            <th style={{ textAlign: 'center' }}>Available</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {sessions.map(s => (
-            <tr key={s.id} style={selectedSession === s.id ? { background: 'rgba(124,53,232,0.06)' } : {}}>
-              <td>{new Date(s.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</td>
-              <td>{s.startTime}–{s.endTime}{s.minAge ? ' (16+)' : ''}</td>
-              <td style={{ textAlign: 'center' }}>{s.bookedCount}</td>
-              <td style={{ textAlign: 'center' }}>{s.availableSlots}</td>
-              <td>{s.cancelledAt ? 'Cancelled' : 'Active'}</td>
-              <td>
-                <button onClick={() => handleSelect(s.id)} className="bk-btn bk-btn--sm bk-btn--primary">
-                  {selectedSession === s.id ? 'Selected ▾' : 'View'}
-                </button>
-              </td>
-            </tr>
-          ))}
-          {sessions.length === 0 && (
-            <tr><td colSpan={6} className="bk-center">No sessions this month.</td></tr>
-          )}
-        </tbody>
-      </table>
-
-      {sessionDetail && (
-        <div className="bk-card">
-          <div className="bk-row bk-row--between" style={{ marginBottom: '0.5rem' }}>
-            <h3 style={{ margin: 0 }}>
-              {new Date(sessionDetail.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
-              {' '}{sessionDetail.startTime}–{sessionDetail.endTime}
-            </h3>
-            <span className="bk-muted" style={{ fontSize: '0.9rem' }}>{sessionDetail.bookedCount}/{sessionDetail.capacity} booked</span>
-          </div>
-
-          {sessionDetail.bookings?.length === 0 && (
-            <p className="bk-muted">No bookings yet.</p>
-          )}
-          {sessionDetail.bookings?.map(b => (
-            <div key={b.id} style={{ padding: '0.5rem 0', borderBottom: `1px solid var(--booking-bg-light)` }}>
-              {b.lines.map(l => (
-                <div key={l.id} style={{ marginBottom: '0.4rem' }}>
-                  <strong>{l.gymnast.firstName} {l.gymnast.lastName}</strong>
-                  {l.gymnast.emergencyContactName ? (
-                    <span className="bk-muted" style={{ marginLeft: '0.75rem', fontSize: '0.85rem' }}>
-                      Emergency: {l.gymnast.emergencyContactName}
-                      {l.gymnast.emergencyContactRelationship && ` (${l.gymnast.emergencyContactRelationship})`}
-                      {' · '}
-                      <a href={`tel:${l.gymnast.emergencyContactPhone}`} style={{ color: 'var(--booking-accent)' }}>
-                        {l.gymnast.emergencyContactPhone}
-                      </a>
-                    </span>
-                  ) : (
-                    <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: 'var(--booking-danger)' }}>
-                      No emergency contact
-                    </span>
-                  )}
-                  <span style={{ marginLeft: '0.75rem', fontSize: '0.8rem' }}>
-                    {[
-                      { type: 'photo_coaching', label: 'Coaching photos' },
-                      { type: 'photo_social_media', label: 'Social media' },
-                    ].map(({ type, label }) => {
-                      const granted = l.gymnast.consents?.find(c => c.type === type)?.granted;
-                      return (
-                        <span key={type} style={{
-                          marginRight: '0.4rem', padding: '1px 6px', borderRadius: 4,
-                          background: granted ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.1)',
-                          color: granted ? 'var(--booking-success)' : 'var(--booking-danger)',
-                        }}>
-                          {granted ? '✓' : '✗'} {label}
-                        </span>
-                      );
-                    })}
-                  </span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        {sessions.length === 0 && <p className="bk-muted">No sessions this month.</p>}
+        {sessions.map(s => {
+          const isSelected = selectedSession === s.id;
+          const full = s.availableSlots === 0;
+          return (
+            <div key={s.id}>
+              <button
+                onClick={() => handleSelect(s.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: `2px solid ${isSelected ? 'var(--booking-accent)' : 'var(--booking-border)'}`,
+                  borderRadius: isSelected && sessionDetail ? 'var(--booking-radius) var(--booking-radius) 0 0' : 'var(--booking-radius)',
+                  background: isSelected ? 'rgba(124,53,232,0.06)' : 'var(--booking-bg-white)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  font: 'inherit',
+                  transition: 'border-color 0.15s, background 0.15s',
+                  borderBottom: isSelected && sessionDetail ? 'none' : undefined,
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: s.cancelledAt ? 'var(--booking-text-muted)' : 'var(--booking-text-on-light)' }}>
+                    {new Date(s.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    {s.cancelledAt && <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--booking-danger)' }}>Cancelled</span>}
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--booking-text-muted)', marginTop: '0.1rem' }}>
+                    {s.startTime}–{s.endTime}{s.minAge ? ` · ${s.minAge}+` : ''}
+                  </div>
                 </div>
-              ))}
-              <span className="bk-muted" style={{ fontSize: '0.8rem' }}>Booked by {b.user.firstName} {b.user.lastName}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0, marginLeft: '0.75rem' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 700, fontSize: '1rem', color: full ? 'var(--booking-danger)' : 'var(--booking-accent)' }}>
+                      {s.bookedCount}/{s.bookedCount + s.availableSlots}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--booking-text-muted)' }}>
+                      {full ? 'Full' : `${s.availableSlots} left`}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)', transition: 'transform 0.2s', display: 'inline-block', transform: isSelected ? 'rotate(180deg)' : 'none' }}>▾</span>
+                </div>
+              </button>
+
+              {isSelected && sessionDetail && (
+                <div style={{
+                  border: `2px solid var(--booking-accent)`,
+                  borderTop: 'none',
+                  borderRadius: '0 0 var(--booking-radius) var(--booking-radius)',
+                  background: 'var(--booking-bg-white)',
+                  padding: '1rem',
+                }}>
+                  <SessionDetailPanel
+                    sessionDetail={sessionDetail}
+                    selectedSession={selectedSession}
+                    showManualAdd={showManualAdd}
+                    setShowManualAdd={setShowManualAdd}
+                    onAdded={() => {
+                      setShowManualAdd(false);
+                      loadDetail(selectedSession);
+                      loadSessions();
+                    }}
+                  />
+                </div>
+              )}
             </div>
-          ))}
-
-          <div style={{ marginTop: '0.75rem' }}>
-            <button
-              className="bk-btn bk-btn--sm bk-btn--primary"
-              onClick={() => setShowManualAdd(v => !v)}
-            >
-              {showManualAdd ? 'Cancel' : '+ Add participant manually'}
-            </button>
-          </div>
-
-          {showManualAdd && (
-            <ManualAddForm
-              sessionId={selectedSession}
-              onAdded={() => {
-                setShowManualAdd(false);
-                loadDetail(selectedSession);
-                loadSessions();
-              }}
-            />
-          )}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }

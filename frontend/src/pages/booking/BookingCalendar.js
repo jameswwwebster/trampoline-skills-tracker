@@ -4,6 +4,7 @@ import { bookingApi } from '../../utils/bookingApi';
 import './BookingCalendar.css';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const MONTHS = ['January','February','March','April','May','June',
                 'July','August','September','October','November','December'];
 
@@ -66,8 +67,11 @@ export default function BookingCalendar() {
       </div>
 
       <div className="booking-calendar__grid">
-        {DAYS.map(d => (
-          <div key={d} className="booking-calendar__day-label">{d}</div>
+        {DAYS.map((d, i) => (
+          <div key={d} className="booking-calendar__day-label">
+            <span className="booking-calendar__day-long">{d}</span>
+            <span className="booking-calendar__day-short">{DAYS_SHORT[i]}</span>
+          </div>
         ))}
         {cells.map((date, i) => {
           if (!date) return <div key={`empty-${i}`} className="booking-calendar__cell booking-calendar__cell--empty" />;

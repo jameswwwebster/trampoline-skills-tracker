@@ -10,17 +10,35 @@ export default function BookingLayout() {
   return (
     <div className="booking-layout">
       <nav className="booking-layout__nav">
+        {/* Top row: brand + user + logout */}
+        <div className="booking-layout__topbar">
+          <span className="booking-layout__brand">Trampoline Life</span>
+          <div className="booking-layout__user">
+            {user && (
+              <span className="booking-layout__username">
+                {user.firstName} {user.lastName}
+              </span>
+            )}
+            <button className="booking-layout__logout" onClick={logout}>Log out</button>
+          </div>
+        </div>
+
+        {/* Bottom row: scrollable links */}
         <div className="booking-layout__links">
           <NavLink to="/booking" end>Calendar</NavLink>
           <NavLink to="/booking/my-bookings">My Bookings</NavLink>
           <NavLink to="/booking/my-credits">Credits</NavLink>
           <NavLink to="/booking/my-account">My Account</NavLink>
-          {isAdmin && <NavLink to="/booking/admin">Sessions</NavLink>}
-          {isAdmin && <NavLink to="/booking/admin/credits">Credits</NavLink>}
-          {isAdmin && <NavLink to="/booking/admin/closures">Closures</NavLink>}
-          {isAdmin && <NavLink to="/booking/admin/memberships">Members</NavLink>}
+          {isAdmin && (
+            <>
+              <span className="booking-layout__admin-divider" />
+              <span className="booking-layout__admin-label">Admin</span>
+              <NavLink to="/booking/admin" className="booking-layout__admin-link">Sessions</NavLink>
+              <NavLink to="/booking/admin/members" className="booking-layout__admin-link">Members</NavLink>
+              <NavLink to="/booking/admin/closures" className="booking-layout__admin-link">Closures</NavLink>
+            </>
+          )}
         </div>
-        <button className="booking-layout__logout" onClick={logout}>Log out</button>
       </nav>
       <main className="booking-layout__main">
         <Outlet />

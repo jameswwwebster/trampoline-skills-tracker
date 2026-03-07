@@ -10,7 +10,7 @@ export default function AdminMemberships() {
 
   const load = () => {
     bookingApi.getMemberships().then(res => setMemberships(res.data));
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    const API_URL = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api`;
     fetch(`${API_URL}/gymnasts`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
       .then(r => r.json()).then(data => setGymnasts(Array.isArray(data) ? data : data.gymnasts || []));
   };

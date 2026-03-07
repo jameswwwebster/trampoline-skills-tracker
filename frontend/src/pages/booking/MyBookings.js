@@ -23,7 +23,7 @@ export default function MyBookings() {
       bookingApi.getMyBookings(),
       bookingApi.getMyWaitlist().catch(() => ({ data: [] })),
     ]).then(([bRes, wRes]) => {
-      setBookings(bRes.data);
+      setBookings(bRes.data.filter(b => b.status === 'CONFIRMED'));
       setWaitlist(wRes.data);
     }).finally(() => setLoading(false));
   };

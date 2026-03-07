@@ -22,6 +22,7 @@ model User {
   passwordResetToken            String?
   passwordResetTokenExpiresAt   DateTime?
   mustChangePassword            Boolean           @default(false)
+  phone                         String?
   archivedAt                    DateTime?
   archivedById                  String?
   archivedReason                String?

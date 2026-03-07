@@ -33,6 +33,40 @@ async function main() {
   console.log(`   Role: SUPER_ADMIN`);
   console.log(`   🔧 Can manage all clubs and users`);
 
+  // Ensure the Trampoline Life club exists (the production club)
+  const trampolineLifeClub = await prisma.club.upsert({
+    where: { name: 'Trampoline Life' },
+    update: {},
+    create: { name: 'Trampoline Life' },
+  }).catch(async () => {
+    // upsert by name needs a unique constraint — fall back to findFirst/create
+    const existing = await prisma.club.findFirst({ where: { name: 'Trampoline Life' } });
+    if (existing) return existing;
+    return prisma.club.create({ data: { name: 'Trampoline Life' } });
+  });
+  console.log(`✅ Trampoline Life club ready (id: ${trampolineLifeClub.id})`);
+
+  // Create Trampoline Life admin account
+  const trampolineAdmin = await prisma.user.upsert({
+    where: { email: 'contact@trampoline.life' },
+    update: {},
+    create: {
+      email: 'contact@trampoline.life',
+      password: await bcrypt.hash('ChangeMe2026!', 10),
+      firstName: 'Admin',
+      lastName: 'Trampoline Life',
+      role: 'CLUB_ADMIN',
+      clubId: trampolineLifeClub.id,
+      mustChangePassword: true,
+    }
+  });
+  console.log(`✅ Trampoline Life admin ready: ${trampolineAdmin.email} (mustChangePassword: ${trampolineAdmin.mustChangePassword})`);
+
+  // Dev-only accounts — not created in production
+  if (process.env.NODE_ENV === 'production') {
+    console.log('ℹ️  Skipping dev test accounts in production');
+  } else {
+
   // Create the development club and user
   console.log('👥 Creating development club and user...');
 
@@ -258,6 +292,8 @@ async function main() {
   console.log(`   - Emma Smith (linked to gymnast@test.com)`);
   console.log(`   - Liam Johnson (child of parent@test.com)`);
   console.log(`   - Sophia Davis (independent gymnast)`);
+
+  } // end dev-only block
 
   // Read the skills data with better path resolution
   const possiblePaths = [

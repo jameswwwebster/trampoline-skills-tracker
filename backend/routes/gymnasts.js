@@ -97,7 +97,7 @@ router.post('/add-child', auth, async (req, res) => {
     const { error, value } = Joi.object({
       firstName: Joi.string().min(1).max(50).required(),
       lastName: Joi.string().min(1).max(50).required(),
-      dateOfBirth: Joi.date().optional(),
+      dateOfBirth: Joi.date().required(),
     }).validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
@@ -108,6 +108,38 @@ router.post('/add-child', auth, async (req, res) => {
         dateOfBirth: value.dateOfBirth,
         clubId: req.user.clubId,
         guardians: { connect: { id: req.user.id } },
+      },
+    });
+    res.status(201).json(gymnast);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/gymnasts/admin-add-child
+// Admin/coach adds a child gymnast linked to a specific user account
+router.post('/admin-add-child', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const { error, value } = Joi.object({
+      userId: Joi.string().required(),
+      firstName: Joi.string().min(1).max(50).required(),
+      lastName: Joi.string().min(1).max(50).required(),
+      dateOfBirth: Joi.date().required(),
+    }).validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    const user = await prisma.user.findUnique({ where: { id: value.userId }, select: { id: true, clubId: true } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
+
+    const gymnast = await prisma.gymnast.create({
+      data: {
+        firstName: value.firstName,
+        lastName: value.lastName,
+        dateOfBirth: value.dateOfBirth,
+        clubId: req.user.clubId,
+        guardians: { connect: { id: value.userId } },
       },
     });
     res.status(201).json(gymnast);

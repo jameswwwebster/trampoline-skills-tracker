@@ -173,6 +173,7 @@ app.use('/api/booking/credits', require('./routes/booking/credits'));
 app.use('/api/booking/closures', require('./routes/booking/closures'));
 app.use('/api/booking/memberships', require('./routes/booking/memberships'));
 app.use('/api/booking/waitlist', require('./routes/booking/waitlist'));
+app.use('/api/booking/admin', require('./routes/booking/admin'));
 
 // Booking: daily session generation cron
 const cron = require('node-cron');
@@ -201,6 +202,31 @@ cron.schedule('*/15 * * * *', async () => {
     await expireStaleOffers();
   } catch (err) {
     console.error('Waitlist expiry cron error:', err);
+  }
+});
+
+// Cancel stale PENDING bookings every hour (abandoned checkouts)
+cron.schedule('0 * * * *', async () => {
+  try {
+    const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago
+    const stale = await prisma.booking.findMany({
+      where: { status: 'PENDING', createdAt: { lt: cutoff } },
+    });
+    for (const booking of stale) {
+      await prisma.credit.updateMany({
+        where: { usedOnBookingId: booking.id },
+        data: { usedAt: null, usedOnBookingId: null },
+      });
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: { status: 'CANCELLED' },
+      });
+    }
+    if (stale.length > 0) {
+      console.log(`Cleaned up ${stale.length} stale PENDING booking(s)`);
+    }
+  } catch (err) {
+    console.error('Stale booking cleanup cron error:', err);
   }
 });
 

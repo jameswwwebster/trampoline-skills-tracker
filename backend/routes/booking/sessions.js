@@ -73,13 +73,14 @@ router.get('/:instanceId', auth, async (req, res) => {
                 gymnast: {
                   select: {
                     id: true, firstName: true, lastName: true, dateOfBirth: true,
+                    userId: true,
                     emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true,
                     consents: true,
                   },
                 },
               },
             },
-            user: { select: { id: true, firstName: true, lastName: true } },
+            user: { select: { id: true, firstName: true, lastName: true, phone: true } },
           },
         },
       },

@@ -40,8 +40,8 @@ export const bookingApi = {
   getMyBookings: () =>
     axios.get(`${API_URL}/booking/bookings/my`, { headers: getHeaders() }),
 
-  cancelBooking: (bookingId) =>
-    axios.post(`${API_URL}/booking/bookings/${bookingId}/cancel`, {}, { headers: getHeaders() }),
+  cancelBooking: (bookingId, options = {}) =>
+    axios.post(`${API_URL}/booking/bookings/${bookingId}/cancel`, options, { headers: getHeaders() }),
 
   getMyCredits: () =>
     axios.get(`${API_URL}/booking/credits/my`, { headers: getHeaders() }),
@@ -51,6 +51,15 @@ export const bookingApi = {
 
   assignCredit: (data) =>
     axios.post(`${API_URL}/booking/credits/assign`, data, { headers: getHeaders() }),
+
+  getMembers: () =>
+    axios.get(`${API_URL}/users`, { headers: getHeaders() }),
+
+  getMember: (userId) =>
+    axios.get(`${API_URL}/users/${userId}`, { headers: getHeaders() }),
+
+  updateMemberProfile: (userId, data) =>
+    axios.put(`${API_URL}/users/${userId}/profile`, data, { headers: getHeaders() }),
 
   adminAddToSession: (data) =>
     axios.post(`${API_URL}/booking/bookings/admin-add`, data, { headers: getHeaders() }),
@@ -81,4 +90,13 @@ export const bookingApi = {
 
   getMyWaitlist: () =>
     axios.get(`${API_URL}/booking/waitlist/my`, { headers: getHeaders() }),
+
+  adminAddChild: (data) =>
+    axios.post(`${API_URL}/gymnasts/admin-add-child`, data, { headers: getHeaders() }),
+
+  deleteGymnast: (id) =>
+    axios.delete(`${API_URL}/booking/admin/gymnasts/${id}`, { headers: getHeaders() }),
+
+  deleteMember: (userId) =>
+    axios.delete(`${API_URL}/booking/admin/members/${userId}`, { headers: getHeaders() }),
 };

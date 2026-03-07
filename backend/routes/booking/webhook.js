@@ -19,17 +19,18 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
 
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
+    // Only confirm if still PENDING — cron may have already cancelled it
     await prisma.booking.updateMany({
-      where: { stripePaymentIntentId: paymentIntent.id },
+      where: { stripePaymentIntentId: paymentIntent.id, status: 'PENDING' },
       data: { status: 'CONFIRMED' },
     });
     console.log(`Booking confirmed for payment intent ${paymentIntent.id}`);
   }
 
-  if (event.type === 'payment_intent.payment_failed') {
+  if (event.type === 'payment_intent.payment_failed' || event.type === 'payment_intent.canceled') {
     const paymentIntent = event.data.object;
     const booking = await prisma.booking.findFirst({
-      where: { stripePaymentIntentId: paymentIntent.id },
+      where: { stripePaymentIntentId: paymentIntent.id, status: 'PENDING' },
     });
     if (booking) {
       await prisma.credit.updateMany({
@@ -40,6 +41,7 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
         where: { id: booking.id },
         data: { status: 'CANCELLED' },
       });
+      console.log(`Booking cancelled and credits released for payment intent ${paymentIntent.id} (${event.type})`);
     }
   }
 

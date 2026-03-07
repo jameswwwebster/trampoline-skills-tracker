@@ -1,288 +1,115 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { get } from '../utils/apiInterceptor';
+import './booking/bookingVars.css';
+import './AuthPages.css';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    role: 'COACH',
-    clubId: ''
+    firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '',
   });
-  const [clubs, setClubs] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
   const { register, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/', { replace: true });
-    }
+    if (isAuthenticated) navigate('/', { replace: true });
   }, [isAuthenticated, navigate]);
-
-  useEffect(() => {
-    const fetchClubs = async () => {
-      try {
-        const response = await get('/api/clubs');
-        // Ensure we always set an array
-        setClubs(Array.isArray(response.data) ? response.data : []);
-      } catch (error) {
-        console.error('Failed to fetch clubs:', error);
-        // Ensure clubs stays as an empty array if API fails
-        setClubs([]);
-      }
-    };
-
-    fetchClubs();
-  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-
-    // Clear validation error when user starts typing
-    if (validationErrors[name]) {
-      setValidationErrors({
-        ...validationErrors,
-        [name]: ''
-      });
-    }
+    setFormData(f => ({ ...f, [name]: value }));
+    if (validationErrors[name]) setValidationErrors(v => ({ ...v, [name]: '' }));
   };
 
-  const validateForm = () => {
+  const validate = () => {
     const errors = {};
-
-    if (!formData.firstName.trim()) {
-      errors.firstName = 'First name is required';
-    }
-
-    if (!formData.lastName.trim()) {
-      errors.lastName = 'Last name is required';
-    }
-
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Email is invalid';
-    }
-
-    if (!formData.password) {
-      errors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
-    }
-
-    if (formData.role !== 'CLUB_ADMIN' && !formData.clubId) {
-      errors.clubId = 'Please select a club';
-    }
-
+    if (!formData.firstName.trim()) errors.firstName = 'Required';
+    if (!formData.lastName.trim()) errors.lastName = 'Required';
+    if (!formData.email.trim()) errors.email = 'Required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Invalid email';
+    if (!formData.phone.trim()) errors.phone = 'Required';
+    if (!formData.password) errors.password = 'Required';
+    else if (formData.password.length < 6) errors.password = 'At least 6 characters';
+    if (formData.password !== formData.confirmPassword) errors.confirmPassword = 'Passwords do not match';
     return errors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      return;
-    }
-
+    const errors = validate();
+    if (Object.keys(errors).length > 0) { setValidationErrors(errors); return; }
     setIsLoading(true);
     setValidationErrors({});
-
-    const registrationData = {
+    const result = await register({
       firstName: formData.firstName,
       lastName: formData.lastName,
       email: formData.email,
+      phone: formData.phone,
       password: formData.password,
-      role: formData.role,
-      clubId: formData.role === 'CLUB_ADMIN' ? undefined : formData.clubId
-    };
-
-    const result = await register(registrationData);
-    
-    if (result.success) {
-      navigate('/', { replace: true });
-    }
-    
+    });
+    if (result.success) navigate('/booking', { replace: true });
     setIsLoading(false);
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-page">
       <div className="auth-card">
-        <h2 className="auth-title">Register for Trampoline Tracker</h2>
-        
-        {error && (
-          <div className="alert alert-error">
-            {error}
-          </div>
-        )}
+        <div className="auth-brand">Trampoline Life</div>
+        <h1 className="auth-heading">Create an account</h1>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="firstName" className="form-label">
-              First Name
+        {error && <p className="auth-error">{error}</p>}
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="auth-grid-2">
+            <label className="auth-label">First name
+              <input name="firstName" value={formData.firstName} onChange={handleChange}
+                className={`auth-input${validationErrors.firstName ? ' auth-input--error' : ''}`} required />
+              {validationErrors.firstName && <span className="auth-field-error">{validationErrors.firstName}</span>}
             </label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              className="form-control"
-              required
-            />
-            {validationErrors.firstName && (
-              <div className="text-danger">{validationErrors.firstName}</div>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="lastName" className="form-label">
-              Last Name
+            <label className="auth-label">Last name
+              <input name="lastName" value={formData.lastName} onChange={handleChange}
+                className={`auth-input${validationErrors.lastName ? ' auth-input--error' : ''}`} required />
+              {validationErrors.lastName && <span className="auth-field-error">{validationErrors.lastName}</span>}
             </label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              className="form-control"
-              required
-            />
-            {validationErrors.lastName && (
-              <div className="text-danger">{validationErrors.lastName}</div>
-            )}
           </div>
 
-          <div className="form-group">
-            <label htmlFor="email" className="form-label">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="form-control"
-              required
-            />
-            {validationErrors.email && (
-              <div className="text-danger">{validationErrors.email}</div>
-            )}
-          </div>
+          <label className="auth-label">Email
+            <input type="email" name="email" value={formData.email} onChange={handleChange}
+              className={`auth-input${validationErrors.email ? ' auth-input--error' : ''}`} required autoComplete="email" />
+            {validationErrors.email && <span className="auth-field-error">{validationErrors.email}</span>}
+          </label>
 
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="form-control"
-              required
-            />
-            {validationErrors.password && (
-              <div className="text-danger">{validationErrors.password}</div>
-            )}
-          </div>
+          <label className="auth-label">Phone number
+            <input type="tel" name="phone" value={formData.phone} onChange={handleChange}
+              className={`auth-input${validationErrors.phone ? ' auth-input--error' : ''}`} required />
+            {validationErrors.phone && <span className="auth-field-error">{validationErrors.phone}</span>}
+          </label>
 
-          <div className="form-group">
-            <label htmlFor="confirmPassword" className="form-label">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="form-control"
-              required
-            />
-            {validationErrors.confirmPassword && (
-              <div className="text-danger">{validationErrors.confirmPassword}</div>
-            )}
-          </div>
+          <label className="auth-label">Password
+            <input type="password" name="password" value={formData.password} onChange={handleChange}
+              className={`auth-input${validationErrors.password ? ' auth-input--error' : ''}`} required autoComplete="new-password" />
+            {validationErrors.password && <span className="auth-field-error">{validationErrors.password}</span>}
+          </label>
 
-          <div className="form-group">
-            <label htmlFor="role" className="form-label">
-              Role
-            </label>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="form-select"
-              required
-            >
-              <option value="COACH">Coach</option>
-              <option value="PARENT">Parent/Guardian</option>
-              <option value="CLUB_ADMIN">Club Admin (Create New Club)</option>
-            </select>
-          </div>
+          <label className="auth-label">Confirm password
+            <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange}
+              className={`auth-input${validationErrors.confirmPassword ? ' auth-input--error' : ''}`} required />
+            {validationErrors.confirmPassword && <span className="auth-field-error">{validationErrors.confirmPassword}</span>}
+          </label>
 
-          {formData.role !== 'CLUB_ADMIN' && (
-            <div className="form-group">
-              <label htmlFor="clubId" className="form-label">
-                Select Club
-              </label>
-              <select
-                id="clubId"
-                name="clubId"
-                value={formData.clubId}
-                onChange={handleChange}
-                className="form-select"
-                required
-              >
-                <option value="">Select a club...</option>
-                {clubs && Array.isArray(clubs) && clubs.map(club => (
-                  <option key={club.id} value={club.id}>
-                    {club.name}
-                  </option>
-                ))}
-              </select>
-              {validationErrors.clubId && (
-                <div className="text-danger">{validationErrors.clubId}</div>
-              )}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isLoading}
-            style={{ width: '100%' }}
-          >
-            {isLoading ? 'Registering...' : 'Register'}
+          <button type="submit" disabled={isLoading} className="auth-btn auth-btn--primary">
+            {isLoading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
 
-        <div className="auth-link">
-          Already have an account? <Link to="/login">Login here</Link>
+        <div className="auth-links">
+          Already have an account? <Link to="/login" className="auth-link">Sign in</Link>
         </div>
       </div>
     </div>
   );
 };
 
-export default Register; 
+export default Register;

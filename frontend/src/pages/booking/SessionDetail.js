@@ -295,7 +295,7 @@ export default function SessionDetail() {
                     value={childForm.dateOfBirth}
                     onChange={e => setChildForm(f => ({ ...f, dateOfBirth: e.target.value }))}
                     className="session-detail__add-child-input"
-                    placeholder="Date of birth (optional)"
+                    required
                   />
                 </div>
                 {addChildError && <p className="session-detail__error">{addChildError}</p>}

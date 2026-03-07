@@ -11,11 +11,10 @@ const prisma = new PrismaClient();
 // Validation schemas
 const registerSchema = Joi.object({
   email: Joi.string().email().required(),
+  phone: Joi.string().min(7).required(),
   password: Joi.string().min(6).required(),
   firstName: Joi.string().min(2).max(50).required(),
   lastName: Joi.string().min(2).max(50).required(),
-  role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'GYMNAST', 'PARENT').required(),
-  clubId: Joi.string().optional()
 });
 
 const loginSchema = Joi.object({
@@ -31,41 +30,34 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { email, password, firstName, lastName, role, clubId } = req.body;
+    const { email, phone, password, firstName, lastName } = req.body;
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
+      return res.status(400).json({ error: 'An account with this email already exists' });
     }
 
-    // Validate club exists if clubId is provided
-    if (clubId) {
-      const club = await prisma.club.findUnique({
-        where: { id: clubId }
-      });
-
-      if (!club) {
-        return res.status(400).json({ error: 'Club not found' });
-      }
+    // Find the Trampoline Life club
+    const club = await prisma.club.findFirst({ where: { name: 'Trampoline Life' } });
+    if (!club) {
+      return res.status(500).json({ error: 'Club not configured. Please contact an administrator.' });
     }
 
     // Hash password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create user
+    // Create user as PARENT in Trampoline Life club
     const user = await prisma.user.create({
       data: {
         email,
+        phone,
         password: hashedPassword,
         firstName,
         lastName,
-        role,
-        clubId
+        role: 'PARENT',
+        clubId: club.id,
       },
       include: {
         club: true

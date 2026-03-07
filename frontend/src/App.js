@@ -50,6 +50,7 @@ import BookingAdmin from './pages/booking/admin/BookingAdmin';
 import AdminClosures from './pages/booking/admin/AdminClosures';
 import AdminMemberships from './pages/booking/admin/AdminMemberships';
 import AdminCredits from './pages/booking/admin/AdminCredits';
+import AdminMembers from './pages/booking/admin/AdminMembers';
 import './App.css';
 
 // Inner component to access rate limit context
@@ -147,6 +148,7 @@ function AppContent() {
           <Route path="admin/closures" element={<AdminClosures />} />
           <Route path="admin/memberships" element={<AdminMemberships />} />
           <Route path="admin/credits" element={<AdminCredits />} />
+          <Route path="admin/members" element={<AdminMembers />} />
         </Route>
       </Routes>
     </div>

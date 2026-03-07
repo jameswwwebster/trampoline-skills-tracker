@@ -1,11 +1,93 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { bookingApi } from '../../utils/bookingApi';
+import { useAuth } from '../../contexts/AuthContext';
 import './booking-shared.css';
+
+const API_URL = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api`;
+const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 
 const CONSENT_LABELS = {
   photo_coaching: 'Photography & video for coaching purposes',
   photo_social_media: 'Photography & video for social media',
 };
+
+function ContactDetailsSection({ user, onSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ email: user.email || '', phone: user.phone || '' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      await axios.put(`${API_URL}/users/profile`, form, { headers: getHeaders() });
+      setEditing(false);
+      onSaved();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to save.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const missing = !user.email || !user.phone;
+
+  if (!editing) {
+    return (
+      <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
+        <div className="bk-row bk-row--between" style={{ marginBottom: '0.5rem' }}>
+          <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600 }}>Contact details</p>
+          <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => setEditing(true)}>
+            Edit
+          </button>
+        </div>
+        <div style={{ fontSize: '0.875rem', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.3rem 0.75rem' }}>
+          <span className="bk-muted">Email</span>
+          <span>{user.email || <span style={{ color: 'var(--booking-danger)' }}>Not set</span>}</span>
+          <span className="bk-muted">Phone</span>
+          <span>{user.phone || <span style={{ color: 'var(--booking-danger)' }}>Not set</span>}</span>
+        </div>
+        {missing && (
+          <p style={{ margin: '0.5rem 0 0', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>
+            Please complete your contact details.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
+      <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', fontWeight: 600 }}>Contact details</p>
+      <form onSubmit={handleSubmit}>
+        <label className="bk-label" style={{ fontWeight: 'normal', display: 'block', marginBottom: '0.5rem' }}>Email
+          <input type="email" className="bk-input" value={form.email}
+            onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+            required style={{ marginTop: '0.25rem' }} />
+        </label>
+        <label className="bk-label" style={{ fontWeight: 'normal', display: 'block', marginBottom: '0.5rem' }}>Phone number
+          <input type="tel" className="bk-input" value={form.phone}
+            onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+            placeholder="e.g. 07700 900123"
+            required style={{ marginTop: '0.25rem' }} />
+        </label>
+        {error && <p className="bk-error">{error}</p>}
+        <div className="bk-row">
+          <button type="submit" disabled={saving} className="bk-btn bk-btn--primary bk-btn--sm">
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+          <button type="button" className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
+            onClick={() => { setEditing(false); setForm({ email: user.email || '', phone: user.phone || '' }); }}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
 
 function ConsentToggles({ gymnast, onUpdated }) {
   const [saving, setSaving] = useState(null);
@@ -130,16 +212,18 @@ function GymnastCard({ gymnast, onUpdated }) {
             </span>
           )}
         </div>
-        <button
-          className="bk-btn bk-btn--sm"
-          style={{ border: '1px solid var(--booking-border)' }}
-          onClick={() => setEditingEC(v => !v)}
-        >
-          {editingEC ? 'Cancel' : hasEC ? 'Edit emergency contact' : 'Add emergency contact'}
-        </button>
+        {gymnast.isSelf && (
+          <button
+            className="bk-btn bk-btn--sm"
+            style={{ border: '1px solid var(--booking-border)' }}
+            onClick={() => setEditingEC(v => !v)}
+          >
+            {editingEC ? 'Cancel' : hasEC ? 'Edit emergency contact' : 'Add emergency contact'}
+          </button>
+        )}
       </div>
 
-      {!editingEC && hasEC && (
+      {gymnast.isSelf && !editingEC && hasEC && (
         <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--booking-text-muted)' }}>
           Emergency: <strong style={{ color: 'var(--booking-text-on-light)' }}>{gymnast.emergencyContactName}</strong>
           {gymnast.emergencyContactRelationship && ` (${gymnast.emergencyContactRelationship})`}
@@ -147,13 +231,13 @@ function GymnastCard({ gymnast, onUpdated }) {
         </div>
       )}
 
-      {!editingEC && !hasEC && (
+      {gymnast.isSelf && !editingEC && !hasEC && (
         <p style={{ marginTop: '0.4rem', fontSize: '0.85rem', color: 'var(--booking-danger)' }}>
           No emergency contact — please add one.
         </p>
       )}
 
-      {editingEC && (
+      {gymnast.isSelf && editingEC && (
         <EmergencyContactForm
           gymnast={gymnast}
           onSaved={() => { setEditingEC(false); onUpdated(); }}
@@ -230,12 +314,22 @@ function InsuranceSection({ gymnast, onUpdated }) {
 }
 
 export default function MyChildren() {
+  const { user, updateUser } = useAuth();
   const [gymnasts, setGymnasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ firstName: '', lastName: '', dateOfBirth: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
+
+  const refreshUser = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/auth/me`, { headers: getHeaders() });
+      updateUser(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const load = () =>
     bookingApi.getBookableGymnasts()
@@ -279,6 +373,8 @@ export default function MyChildren() {
     <div className="bk-page bk-page--md">
       <h2>My Account</h2>
 
+      {user && <ContactDetailsSection user={user} onSaved={refreshUser} />}
+
       <section style={{ marginBottom: '2rem' }}>
         <h3>Myself</h3>
         {hasSelf ? (
@@ -315,8 +411,8 @@ export default function MyChildren() {
                 <input className="bk-input" value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} required style={{ marginTop: '0.25rem' }} />
               </label>
             </div>
-            <label className="bk-label">Date of birth <span className="bk-muted">(optional — needed for age-restricted sessions)</span>
-              <input type="date" className="bk-input" value={form.dateOfBirth} onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))} style={{ marginTop: '0.25rem' }} />
+            <label className="bk-label">Date of birth
+              <input type="date" className="bk-input" value={form.dateOfBirth} onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))} required style={{ marginTop: '0.25rem' }} />
             </label>
             {error && <p className="bk-error">{error}</p>}
             <button type="submit" disabled={submitting} className="bk-btn bk-btn--primary">

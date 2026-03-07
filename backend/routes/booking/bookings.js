@@ -264,7 +264,8 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
       return res.status(400).json({ error: 'Booking is already cancelled' });
     }
 
-    // Day-of cancellations don't receive credits
+    // Admins/coaches can explicitly override credit behaviour via `issueCredit`
+    const isAdminAction = ['CLUB_ADMIN', 'COACH'].includes(req.user.role);
     const sessionDate = new Date(booking.sessionInstance.date);
     const today = new Date();
     const isToday =
@@ -272,10 +273,18 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
       sessionDate.getMonth() === today.getMonth() &&
       sessionDate.getDate() === today.getDate();
 
+    // Determine whether to issue credits
+    let issueCredit;
+    if (isAdminAction && req.body.issueCredit !== undefined) {
+      issueCredit = !!req.body.issueCredit;
+    } else {
+      issueCredit = !isToday;
+    }
+
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + 1);
 
-    if (isToday) {
+    if (!issueCredit) {
       await prisma.booking.update({
         where: { id: booking.id },
         data: { status: 'CANCELLED' },
@@ -302,11 +311,11 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
     // Free slot — offer to next person on waitlist
     await processWaitlist(booking.sessionInstanceId);
 
-    const creditMsg = isToday
-      ? 'Booking cancelled. No credit issued for same-day cancellations.'
-      : `Booking cancelled. ${booking.lines.length} credit(s) issued.`;
+    const creditMsg = issueCredit
+      ? `Booking cancelled. ${booking.lines.length} credit(s) issued.`
+      : 'Booking cancelled. No credit issued.';
 
-    res.json({ message: creditMsg, creditsIssued: !isToday });
+    res.json({ message: creditMsg, creditsIssued: issueCredit });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

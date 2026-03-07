@@ -48,6 +48,9 @@
   padding: 0.25rem 0;
 }
 
+.booking-calendar__day-short { display: none; }
+.booking-calendar__day-long  { display: inline; }
+
 .booking-calendar__cell {
   min-height: 80px;
   border: 1px solid var(--booking-border);
@@ -121,11 +124,45 @@
   margin-top: 1rem;
 }
 
-@media (max-width: 480px) {
-  .booking-calendar__cell {
-    min-height: 60px;
+@media (max-width: 520px) {
+  .booking-calendar__grid {
+    gap: 2px;
   }
+
+  .booking-calendar__cell {
+    min-height: 44px;
+    padding: 3px;
+  }
+
+  .booking-calendar__date {
+    font-size: 0.72rem;
+  }
+
+  .booking-calendar__day-long { display: none; }
+  .booking-calendar__day-short { display: inline; }
+
   .booking-calendar__session {
-    font-size: 0.65rem;
+    padding: 4px 2px;
+    width: 100%;
+    min-height: 20px;
+    border-radius: 3px;
+    margin-bottom: 2px;
+    font-size: 0px; /* hide text on tiny screens */
+    position: relative;
+  }
+
+  /* coloured dot indicator */
+  .booking-calendar__session::after {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    margin: 0 auto;
+  }
+
+  .booking-calendar__closed-label {
+    font-size: 0.6rem;
   }
 }

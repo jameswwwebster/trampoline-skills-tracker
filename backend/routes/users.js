@@ -11,7 +11,8 @@ const prisma = new PrismaClient();
 const updateProfileSchema = Joi.object({
   firstName: Joi.string().min(2).max(50).optional(),
   lastName: Joi.string().min(2).max(50).optional(),
-  email: Joi.string().email().optional()
+  email: Joi.string().email().optional(),
+  phone: Joi.string().allow('').optional(),
 });
 
 const changePasswordSchema = Joi.object({
@@ -27,7 +28,8 @@ const updateUserRoleSchema = Joi.object({
 const updateOtherUserProfileSchema = Joi.object({
   firstName: Joi.string().min(2).max(50).optional(),
   lastName: Joi.string().min(2).max(50).optional(),
-  email: Joi.string().email().optional()
+  email: Joi.string().email().optional(),
+  phone: Joi.string().allow('').optional(),
 });
 
 const updateGymnastProfileSchema = Joi.object({
@@ -89,6 +91,7 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
         lastName: true,
         userId: true,
         createdAt: true,
+        guardians: { select: { id: true } },
         user: {
           select: {
             email: true,
@@ -114,14 +117,15 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
     // Transform gymnasts to match user format
     const gymnastsAsUsers = gymnasts.map(gymnast => ({
       id: gymnast.id,
-      email: gymnast.user?.email || null, // Email is optional for gymnasts
+      email: gymnast.user?.email || null,
       firstName: gymnast.firstName,
       lastName: gymnast.lastName,
       role: 'GYMNAST',
       createdAt: gymnast.createdAt,
-      userId: gymnast.userId, // Track if gymnast has a user account
-      isGymnast: true, // Flag to identify gymnasts
-      customFieldValues: gymnast.user?.customFieldValues || [] // Include custom field values
+      userId: gymnast.userId,
+      guardianIds: gymnast.guardians.map(g => g.id),
+      isGymnast: true,
+      customFieldValues: gymnast.user?.customFieldValues || [],
     }));
 
     // Add custom field values to regular users
@@ -151,7 +155,7 @@ router.put('/profile', auth, async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { firstName, lastName, email } = value;
+    const { firstName, lastName, email, phone } = value;
 
     // If email is being updated, check if it's already taken
     if (email && email !== req.user.email) {
@@ -170,7 +174,8 @@ router.put('/profile', auth, async (req, res) => {
       data: {
         firstName: firstName || req.user.firstName,
         lastName: lastName || req.user.lastName,
-        email: email || req.user.email
+        email: email || req.user.email,
+        ...(phone !== undefined && { phone: phone || null }),
       },
       include: {
         club: true,
@@ -238,6 +243,48 @@ router.put('/password', auth, async (req, res) => {
 });
 
 // Add email to user account (club admins only)
+// GET /api/users/:userId — full member detail for admins
+router.get('/:userId', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.userId },
+      select: {
+        id: true, firstName: true, lastName: true, email: true, phone: true,
+        role: true, createdAt: true, isArchived: true, clubId: true,
+      },
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
+
+    const now = new Date();
+
+    const gymnasts = await prisma.gymnast.findMany({
+      where: { guardians: { some: { id: req.params.userId } }, clubId: req.user.clubId },
+      include: { consents: true },
+    });
+
+    const gymnastsWithCount = await Promise.all(gymnasts.map(async (g) => {
+      const pastSessionCount = await prisma.bookingLine.count({
+        where: {
+          gymnastId: g.id,
+          booking: { status: 'CONFIRMED', sessionInstance: { date: { lte: now } } },
+        },
+      });
+      return { ...g, pastSessionCount };
+    }));
+
+    const credits = await prisma.credit.findMany({
+      where: { userId: req.params.userId, usedAt: null, expiresAt: { gt: now } },
+      orderBy: { expiresAt: 'asc' },
+    });
+
+    res.json({ ...user, gymnasts: gymnastsWithCount, credits });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.put('/:userId/email', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   try {
     const { userId } = req.params;
@@ -369,7 +416,7 @@ router.put('/:userId/profile', auth, requireRole(['CLUB_ADMIN']), async (req, re
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { firstName, lastName, email } = value;
+    const { firstName, lastName, email, phone } = value;
 
     // Prevent self-profile changes (should use regular profile endpoint)
     if (userId === req.user.id) {
@@ -407,11 +454,13 @@ router.put('/:userId/profile', auth, requireRole(['CLUB_ADMIN']), async (req, re
       data: {
         firstName: firstName || targetUser.firstName,
         lastName: lastName || targetUser.lastName,
-        email: email || targetUser.email
+        email: email || targetUser.email,
+        ...(phone !== undefined && { phone: phone || null }),
       },
       select: {
         id: true,
         email: true,
+        phone: true,
         firstName: true,
         lastName: true,
         role: true,
