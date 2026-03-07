@@ -89,6 +89,9 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// Stripe webhook — must be registered before express.json() to receive raw body
+app.use('/api/booking/webhook', require('./routes/booking/webhook'));
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -162,6 +165,48 @@ app.use('/api/guardian-invites', guardianInviteRoutes);
 app.use('/api/user-custom-fields', userCustomFieldRoutes);
 app.use('/api/system-admin', systemAdminRoutes);
 app.use('/api/super-admin', require('./routes/superAdmin'));
+
+// Booking routes
+app.use('/api/booking/sessions', require('./routes/booking/sessions'));
+app.use('/api/booking/bookings', require('./routes/booking/bookings'));
+app.use('/api/booking/credits', require('./routes/booking/credits'));
+app.use('/api/booking/closures', require('./routes/booking/closures'));
+app.use('/api/booking/memberships', require('./routes/booking/memberships'));
+
+// Booking: daily session generation cron
+const cron = require('node-cron');
+const { generateRollingInstances } = require('./services/sessionGenerator');
+
+// Run at 02:00 every day
+cron.schedule('0 2 * * *', async () => {
+  console.log('Running daily session generation...');
+  try {
+    const clubs = await prisma.club.findMany({
+      where: { isArchived: false },
+      select: { id: true },
+    });
+    for (const club of clubs) {
+      await generateRollingInstances(club.id);
+    }
+  } catch (err) {
+    console.error('Session generation cron error:', err);
+  }
+});
+
+// Also run on startup to ensure instances exist immediately after deploy
+(async () => {
+  try {
+    const clubs = await prisma.club.findMany({
+      where: { isArchived: false },
+      select: { id: true },
+    });
+    for (const club of clubs) {
+      await generateRollingInstances(club.id);
+    }
+  } catch (err) {
+    console.error('Startup session generation error:', err);
+  }
+})();
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
@@ -250,9 +295,11 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {

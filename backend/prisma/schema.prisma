@@ -44,6 +44,8 @@ model User {
   club                          Club?             @relation(fields: [clubId], references: [id])
   guardedGymnasts               Gymnast[]         @relation("GuardianGymnasts")
   archivedClubs                 Club[]            @relation("ArchivedClubs")
+  bookings                      Booking[]
+  credits                       Credit[]
 
   @@map("users")
 }
@@ -115,6 +117,9 @@ model Club {
   userCustomFields      UserCustomField[]
   levels                Level[]
   archivedBy            User?                 @relation("ArchivedClubs", fields: [archivedById], references: [id])
+  sessionTemplates      SessionTemplate[]
+  memberships           Membership[]
+  closurePeriods        ClosurePeriod[]
 
   @@map("clubs")
 }
@@ -142,6 +147,8 @@ model Gymnast {
   routineProgress  RoutineProgress[]
   skillProgress    SkillProgress[]
   guardians        User[]            @relation("GuardianGymnasts")
+  bookingLines     BookingLine[]
+  memberships      Membership[]
 
   @@map("gymnasts")
 }
@@ -425,6 +432,112 @@ model Certificate {
   @@map("certificates")
 }
 
+model SessionTemplate {
+  id          String            @id @default(cuid())
+  clubId      String
+  dayOfWeek   Int               // 0=Sun, 1=Mon, ... 2=Tue, 3=Wed, 4=Thu
+  startTime   String            // "17:00"
+  endTime     String            // "18:00"
+  openSlots   Int               @default(12)
+  minAge      Int?              // null = no restriction, 16 = 16+ only
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  club        Club              @relation(fields: [clubId], references: [id])
+  instances   SessionInstance[]
+
+  @@map("session_templates")
+}
+
+model SessionInstance {
+  id                 String           @id @default(cuid())
+  templateId         String
+  date               DateTime         @db.Date
+  openSlotsOverride  Int?
+  cancelledAt        DateTime?
+  cancellationReason String?
+  createdAt          DateTime         @default(now())
+  template           SessionTemplate  @relation(fields: [templateId], references: [id])
+  bookings           Booking[]
+
+  @@unique([templateId, date])
+  @@map("session_instances")
+}
+
+model Booking {
+  id                   String          @id @default(cuid())
+  userId               String
+  sessionInstanceId    String
+  stripePaymentIntentId String?
+  status               BookingStatus   @default(PENDING)
+  totalAmount          Int             // in pence
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  user                 User            @relation(fields: [userId], references: [id])
+  sessionInstance      SessionInstance @relation(fields: [sessionInstanceId], references: [id])
+  lines                BookingLine[]
+  generatedCredits     Credit[]        @relation("SourceBooking")
+  usedCredits          Credit[]        @relation("UsedOnBooking")
+
+  @@map("bookings")
+}
+
+model BookingLine {
+  id         String   @id @default(cuid())
+  bookingId  String
+  gymnastId  String
+  amount     Int      // in pence (600 = £6.00)
+  createdAt  DateTime @default(now())
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  gymnast    Gymnast  @relation(fields: [gymnastId], references: [id])
+
+  @@map("booking_lines")
+}
+
+model Credit {
+  id              String    @id @default(cuid())
+  userId          String
+  amount          Int       // in pence
+  expiresAt       DateTime
+  usedAt          DateTime?
+  usedOnBookingId String?
+  sourceBookingId String
+  createdAt       DateTime  @default(now())
+  user            User      @relation(fields: [userId], references: [id])
+  usedOnBooking   Booking?  @relation("UsedOnBooking", fields: [usedOnBookingId], references: [id])
+  sourceBooking   Booking   @relation("SourceBooking", fields: [sourceBookingId], references: [id])
+
+  @@map("credits")
+}
+
+model Membership {
+  id                   String           @id @default(cuid())
+  gymnastId            String
+  clubId               String
+  monthlyAmount        Int              // in pence
+  stripeSubscriptionId String?
+  status               MembershipStatus @default(ACTIVE)
+  startDate            DateTime
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  gymnast              Gymnast          @relation(fields: [gymnastId], references: [id])
+  club                 Club             @relation(fields: [clubId], references: [id])
+
+  @@map("memberships")
+}
+
+model ClosurePeriod {
+  id        String   @id @default(cuid())
+  clubId    String
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  reason    String
+  createdAt DateTime @default(now())
+  club      Club     @relation(fields: [clubId], references: [id])
+
+  @@map("closure_periods")
+}
+
 enum UserRole {
   CLUB_ADMIN
   COACH
@@ -489,4 +602,16 @@ enum CustomFieldType {
   DROPDOWN
   MULTI_SELECT
   TEXTAREA
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  CANCELLED
+  PAUSED
 }
