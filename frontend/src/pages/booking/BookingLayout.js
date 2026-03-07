@@ -14,6 +14,7 @@ export default function BookingLayout() {
           <NavLink to="/booking" end>Calendar</NavLink>
           <NavLink to="/booking/my-bookings">My Bookings</NavLink>
           <NavLink to="/booking/my-credits">Credits</NavLink>
+          <NavLink to="/booking/my-account">My Account</NavLink>
           {isAdmin && <NavLink to="/booking/admin">Admin</NavLink>}
           {isAdmin && <NavLink to="/booking/admin/closures">Closures</NavLink>}
           {isAdmin && <NavLink to="/booking/admin/memberships">Members</NavLink>}

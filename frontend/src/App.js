@@ -45,6 +45,7 @@ import Checkout from './pages/booking/Checkout';
 import BookingConfirmation from './pages/booking/BookingConfirmation';
 import MyBookings from './pages/booking/MyBookings';
 import MyCredits from './pages/booking/MyCredits';
+import MyChildren from './pages/booking/MyChildren';
 import BookingAdmin from './pages/booking/admin/BookingAdmin';
 import AdminClosures from './pages/booking/admin/AdminClosures';
 import AdminMemberships from './pages/booking/admin/AdminMemberships';
@@ -140,6 +141,7 @@ function AppContent() {
           <Route path="confirmation/:bookingId" element={<BookingConfirmation />} />
           <Route path="my-bookings" element={<MyBookings />} />
           <Route path="my-credits" element={<MyCredits />} />
+          <Route path="my-account" element={<MyChildren />} />
           <Route path="admin" element={<BookingAdmin />} />
           <Route path="admin/closures" element={<AdminClosures />} />
           <Route path="admin/memberships" element={<AdminMemberships />} />
