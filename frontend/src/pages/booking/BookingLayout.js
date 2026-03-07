@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import './BookingLayout.css';
 
 export default function BookingLayout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
 
   return (
@@ -19,6 +19,7 @@ export default function BookingLayout() {
           {isAdmin && <NavLink to="/booking/admin/closures">Closures</NavLink>}
           {isAdmin && <NavLink to="/booking/admin/memberships">Members</NavLink>}
         </div>
+        <button className="booking-layout__logout" onClick={logout}>Log out</button>
       </nav>
       <main className="booking-layout__main">
         <Outlet />
