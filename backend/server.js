@@ -89,6 +89,9 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// Stripe webhook — must be registered before express.json() to receive raw body
+app.use('/api/booking/webhook', require('./routes/booking/webhook'));
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -165,6 +168,8 @@ app.use('/api/super-admin', require('./routes/superAdmin'));
 
 // Booking routes
 app.use('/api/booking/sessions', require('./routes/booking/sessions'));
+app.use('/api/booking/bookings', require('./routes/booking/bookings'));
+app.use('/api/booking/credits', require('./routes/booking/credits'));
 
 // Booking: daily session generation cron
 const cron = require('node-cron');
