@@ -147,16 +147,32 @@ export default function SessionDetail() {
           <div className="session-detail__gymnasts">
             <h3>Who's coming?</h3>
 
-            {eligibleGymnasts.map(g => (
-              <label key={g.id} className="session-detail__gymnast-option">
-                <input
-                  type="checkbox"
-                  checked={selectedGymnastIds.includes(g.id)}
-                  onChange={() => toggleGymnast(g.id)}
-                />
-                {g.firstName} {g.lastName}{g.isSelf ? ' (me)' : ''}
-              </label>
-            ))}
+            {eligibleGymnasts.map(g => {
+              const selected = selectedGymnastIds.includes(g.id);
+              const atCapacity = !selected && selectedGymnastIds.length >= session.availableSlots;
+              return (
+                <label
+                  key={g.id}
+                  className={[
+                    'session-detail__gymnast-option',
+                    selected ? 'session-detail__gymnast-option--selected' : '',
+                    atCapacity ? 'session-detail__gymnast-option--disabled' : '',
+                  ].join(' ')}
+                  onClick={atCapacity ? undefined : () => toggleGymnast(g.id)}
+                >
+                  <input type="checkbox" checked={selected} readOnly />
+                  <span className="session-detail__option-check">
+                    {selected && '✓'}
+                  </span>
+                  <span>{g.firstName} {g.lastName}{g.isSelf ? ' (me)' : ''}</span>
+                </label>
+              );
+            })}
+            {selectedGymnastIds.length >= session.availableSlots && eligibleGymnasts.length > selectedGymnastIds.length && (
+              <p className="session-detail__slots-warning">
+                Only {session.availableSlots} slot{session.availableSlots !== 1 ? 's' : ''} available — deselect someone to change your selection.
+              </p>
+            )}
 
             {session.minAge && myGymnasts.length > eligibleGymnasts.length && (
               <p style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>
@@ -211,16 +227,22 @@ export default function SessionDetail() {
           {credits.length > 0 && (
             <div className="session-detail__credits">
               <h3>Apply credits</h3>
-              {credits.map(c => (
-                <label key={c.id} className="session-detail__credit-option">
-                  <input
-                    type="checkbox"
-                    checked={selectedCreditIds.includes(c.id)}
-                    onChange={() => toggleCredit(c.id)}
-                  />
-                  £{(c.amount / 100).toFixed(2)} — expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}
-                </label>
-              ))}
+              {credits.map(c => {
+                const selected = selectedCreditIds.includes(c.id);
+                return (
+                  <label
+                    key={c.id}
+                    className={`session-detail__credit-option${selected ? ' session-detail__credit-option--selected' : ''}`}
+                    onClick={() => toggleCredit(c.id)}
+                  >
+                    <input type="checkbox" checked={selected} readOnly />
+                    <span className="session-detail__option-check">
+                      {selected && '✓'}
+                    </span>
+                    <span>£{(c.amount / 100).toFixed(2)} — expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
+                  </label>
+                );
+              })}
             </div>
           )}
 

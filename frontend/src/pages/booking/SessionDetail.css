@@ -58,19 +58,61 @@
 .session-detail__credit-option {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border: 1px solid var(--booking-border);
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 2px solid var(--booking-border);
   border-radius: var(--booking-radius);
   margin-bottom: 0.5rem;
   cursor: pointer;
   background: var(--booking-bg-white);
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
 }
 
 .session-detail__gymnast-option:hover,
 .session-detail__credit-option:hover {
   border-color: var(--booking-accent);
+}
+
+.session-detail__gymnast-option--selected,
+.session-detail__credit-option--selected {
+  border-color: var(--booking-accent);
+  background: rgba(124, 53, 232, 0.08);
+}
+
+.session-detail__gymnast-option input[type="checkbox"],
+.session-detail__credit-option input[type="checkbox"] {
+  display: none;
+}
+
+.session-detail__option-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--booking-border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.session-detail__gymnast-option--selected .session-detail__option-check,
+.session-detail__credit-option--selected .session-detail__option-check {
+  background: var(--booking-accent);
+  border-color: var(--booking-accent);
+  color: white;
+}
+
+.session-detail__gymnast-option--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.session-detail__slots-warning {
+  font-size: 0.85rem;
+  color: var(--booking-danger);
+  margin: 0.25rem 0 0.75rem;
 }
 
 .session-detail__summary {
