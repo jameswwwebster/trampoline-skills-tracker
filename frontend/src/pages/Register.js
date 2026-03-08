@@ -8,6 +8,7 @@ const Register = () => {
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '',
   });
+  const [policiesAccepted, setPoliciesAccepted] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const { register, isAuthenticated, error } = useAuth();
@@ -33,6 +34,7 @@ const Register = () => {
     if (!formData.password) errors.password = 'Required';
     else if (formData.password.length < 6) errors.password = 'At least 6 characters';
     if (formData.password !== formData.confirmPassword) errors.confirmPassword = 'Passwords do not match';
+    if (!policiesAccepted) errors.policies = 'You must read and accept the club policies';
     return errors;
   };
 
@@ -98,6 +100,22 @@ const Register = () => {
               className={`auth-input${validationErrors.confirmPassword ? ' auth-input--error' : ''}`} required />
             {validationErrors.confirmPassword && <span className="auth-field-error">{validationErrors.confirmPassword}</span>}
           </label>
+
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', fontSize: '0.9rem', lineHeight: 1.4 }}>
+            <input
+              type="checkbox"
+              checked={policiesAccepted}
+              onChange={e => { setPoliciesAccepted(e.target.checked); if (validationErrors.policies) setValidationErrors(v => ({ ...v, policies: '' })); }}
+              style={{ marginTop: '0.2rem', flexShrink: 0 }}
+            />
+            <span>
+              I have read and agree to the{' '}
+              <a href="https://www.trampoline.life/club-policies" target="_blank" rel="noopener noreferrer" className="auth-link">
+                club policies
+              </a>
+            </span>
+          </label>
+          {validationErrors.policies && <span className="auth-field-error">{validationErrors.policies}</span>}
 
           <button type="submit" disabled={isLoading} className="auth-btn auth-btn--primary">
             {isLoading ? 'Creating account…' : 'Create account'}
