@@ -61,6 +61,9 @@ export const bookingApi = {
   updateMemberProfile: (userId, data) =>
     axios.put(`${API_URL}/users/${userId}/profile`, data, { headers: getHeaders() }),
 
+  changeRole: (userId, role) =>
+    axios.put(`${API_URL}/users/${userId}/role`, { role }, { headers: getHeaders() }),
+
   adminAddToSession: (data) =>
     axios.post(`${API_URL}/booking/bookings/admin-add`, data, { headers: getHeaders() }),
 

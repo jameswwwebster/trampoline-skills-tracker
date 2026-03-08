@@ -109,6 +109,83 @@ function EditProfileForm({ member, onDone }) {
   );
 }
 
+const ASSIGNABLE_ROLES = [
+  { value: 'CLUB_ADMIN', label: 'Admin' },
+  { value: 'COACH', label: 'Coach' },
+  { value: 'PARENT', label: 'Parent' },
+  { value: 'GYMNAST', label: 'Gymnast' },
+];
+
+function RoleSelector({ member, onDone }) {
+  const [role, setRole] = useState(member.role);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [confirming, setConfirming] = useState(false);
+
+  const handleSave = async () => {
+    if (role === member.role) { onDone(); return; }
+    if (role === 'CLUB_ADMIN' && !confirming) {
+      setConfirming(true);
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await bookingApi.changeRole(member.id, role);
+      onDone();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to change role.');
+      setSaving(false);
+      setConfirming(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: '0.75rem' }}>
+      {confirming ? (
+        <div>
+          <p className="bk-error" style={{ marginBottom: '0.5rem' }}>
+            This gives full admin access. Are you sure?
+          </p>
+          <div className="bk-row">
+            <button className="bk-btn bk-btn--primary bk-btn--sm" disabled={saving} onClick={handleSave}>
+              {saving ? 'Saving...' : 'Yes, make admin'}
+            </button>
+            <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
+              onClick={() => { setConfirming(false); setRole(member.role); }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <label className="bk-label" style={{ fontWeight: 'normal' }}>
+            Role
+            <select className="bk-select" value={role}
+              onChange={e => setRole(e.target.value)}
+              style={{ marginTop: '0.25rem' }}>
+              {ASSIGNABLE_ROLES.map(r => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </label>
+          {error && <p className="bk-error">{error}</p>}
+          <div className="bk-row" style={{ marginTop: '0.5rem' }}>
+            <button className="bk-btn bk-btn--primary bk-btn--sm" disabled={saving || role === member.role}
+              onClick={handleSave}>
+              {saving ? 'Saving...' : 'Save role'}
+            </button>
+            <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
+              onClick={onDone}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const STATUS_STYLES = {
   ACTIVE:    { color: 'var(--booking-success)', bg: 'rgba(39,174,96,0.12)' },
   PAUSED:    { color: '#e67e22', bg: 'rgba(230,126,34,0.12)' },
@@ -230,6 +307,7 @@ function MemberDetail({ userId, onRemoved }) {
   const [memberships, setMemberships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [editingRole, setEditingRole] = useState(false);
   const [assigningCredit, setAssigningCredit] = useState(false);
   const [confirmRemoveMember, setConfirmRemoveMember] = useState(false);
   const [confirmRemoveGymnast, setConfirmRemoveGymnast] = useState(null); // gymnast id
@@ -361,17 +439,35 @@ function MemberDetail({ userId, onRemoved }) {
         {editingProfile ? (
           <EditProfileForm member={member} onDone={() => { setEditingProfile(false); load(); }} />
         ) : (
-          <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.4rem 1rem' }}>
-            <span className="bk-muted">Name</span><span>{member.firstName} {member.lastName}</span>
-            <span className="bk-muted">Email</span><span>{member.email}</span>
-            <span className="bk-muted">Phone</span>
-            <span>
-              {member.phone
-                ? <a href={`tel:${member.phone}`} style={{ color: 'var(--booking-accent)' }}>{member.phone}</a>
-                : <span style={{ color: 'var(--booking-danger)' }}>No phone number</span>}
-            </span>
-            <span className="bk-muted">Role</span><span>{ROLE_LABELS[member.role] ?? member.role}</span>
-          </div>
+          <>
+            <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.4rem 1rem' }}>
+              <span className="bk-muted">Name</span><span>{member.firstName} {member.lastName}</span>
+              <span className="bk-muted">Email</span><span>{member.email}</span>
+              <span className="bk-muted">Phone</span>
+              <span>
+                {member.phone
+                  ? <a href={`tel:${member.phone}`} style={{ color: 'var(--booking-accent)' }}>{member.phone}</a>
+                  : <span style={{ color: 'var(--booking-danger)' }}>No phone number</span>}
+              </span>
+              <span className="bk-muted">Role</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {ROLE_LABELS[member.role] ?? member.role}
+                {!editingProfile && (
+                  <button className="bk-btn bk-btn--sm"
+                    style={{ fontSize: '0.75rem', padding: '0.1rem 0.4rem', border: '1px solid var(--booking-border)' }}
+                    onClick={() => setEditingRole(v => !v)}>
+                    Change
+                  </button>
+                )}
+              </span>
+            </div>
+            {editingRole && (
+              <RoleSelector
+                member={member}
+                onDone={() => { setEditingRole(false); load(); }}
+              />
+            )}
+          </>
         )}
       </div>
 
