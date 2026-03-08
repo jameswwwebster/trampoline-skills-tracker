@@ -107,3 +107,19 @@ export const getAuditLog = (params) =>
 
 export const getAuditStaff = () =>
   axios.get(`${API_URL}/booking/admin/audit-log/staff`, { headers: getHeaders() });
+
+// Session templates (admin)
+export const getTemplates = () =>
+  axios.get(`${API_URL}/booking/templates`, { headers: getHeaders() });
+
+export const createTemplate = (data) =>
+  axios.post(`${API_URL}/booking/templates`, data, { headers: getHeaders() });
+
+export const updateTemplate = (id, data) =>
+  axios.put(`${API_URL}/booking/templates/${id}`, data, { headers: getHeaders() });
+
+export const toggleTemplate = (id, applyToFutureInstances) =>
+  axios.patch(`${API_URL}/booking/templates/${id}/toggle`, { applyToFutureInstances }, { headers: getHeaders() });
+
+export const deleteTemplate = (id, applyToFutureInstances) =>
+  axios.delete(`${API_URL}/booking/templates/${id}`, { data: { applyToFutureInstances }, headers: getHeaders() });
