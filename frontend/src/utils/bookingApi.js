@@ -16,6 +16,9 @@ export const bookingApi = {
   addChild: (data) =>
     axios.post(`${API_URL}/gymnasts/add-child`, data, { headers: getHeaders() }),
 
+  updateGymnast: (gymnastId, data) =>
+    axios.put(`${API_URL}/gymnasts/${gymnastId}`, data, { headers: getHeaders() }),
+
   updateEmergencyContact: (gymnastId, data) =>
     axios.patch(`${API_URL}/gymnasts/${gymnastId}/emergency-contact`, data, { headers: getHeaders() }),
 

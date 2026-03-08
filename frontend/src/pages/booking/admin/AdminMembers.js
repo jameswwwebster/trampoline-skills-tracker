@@ -192,6 +192,167 @@ const STATUS_STYLES = {
   CANCELLED: { color: 'var(--booking-danger)', bg: 'rgba(231,76,60,0.1)' },
 };
 
+function GymnastRow({ g, memberships, onUpdated }) {
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState(null);
+  const [editingDob, setEditingDob] = useState(false);
+  const [dobValue, setDobValue] = useState('');
+  const [dobSaving, setDobSaving] = useState(false);
+  const [dobError, setDobError] = useState(null);
+
+  const handleRemove = async () => {
+    setRemoving(true);
+    setRemoveError(null);
+    try {
+      await bookingApi.deleteGymnast(g.id);
+      onUpdated();
+    } catch (err) {
+      setRemoveError(err.response?.data?.error || 'Failed to remove gymnast.');
+      setRemoving(false);
+    }
+  };
+
+  const handleSaveDob = async () => {
+    if (!dobValue) return;
+    setDobSaving(true);
+    setDobError(null);
+    try {
+      await bookingApi.updateGymnast(g.id, {
+        firstName: g.firstName,
+        lastName: g.lastName,
+        dateOfBirth: dobValue,
+      });
+      setEditingDob(false);
+      onUpdated();
+    } catch (err) {
+      setDobError(err.response?.data?.error || 'Failed to save.');
+      setDobSaving(false);
+    }
+  };
+
+  const membership = memberships.find(m => m.gymnastId === g.id && m.status !== 'CANCELLED') ?? null;
+
+  return (
+    <div style={{ paddingBottom: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--booking-bg-light)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <strong>{g.firstName} {g.lastName}{g.isSelf ? ' (self)' : ''}</strong>
+        <span className="bk-muted" style={{ fontSize: '0.8rem' }}>{g.pastSessionCount} session{g.pastSessionCount !== 1 ? 's' : ''}</span>
+      </div>
+
+      {/* DOB — show and allow editing */}
+      <div style={{ margin: '0.25rem 0 0', fontSize: '0.82rem' }}>
+        {editingDob ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <input
+              type="date"
+              className="bk-input"
+              style={{ fontSize: '0.82rem', padding: '0.2rem 0.4rem', width: 'auto' }}
+              value={dobValue}
+              onChange={e => setDobValue(e.target.value)}
+              autoFocus
+            />
+            <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={dobSaving || !dobValue} onClick={handleSaveDob} style={{ fontSize: '0.78rem', padding: '0.2rem 0.5rem' }}>
+              {dobSaving ? 'Saving…' : 'Save'}
+            </button>
+            <button className="bk-btn bk-btn--sm" onClick={() => { setEditingDob(false); setDobError(null); }} style={{ fontSize: '0.78rem', padding: '0.2rem 0.5rem', border: '1px solid var(--booking-border)' }}>
+              Cancel
+            </button>
+            {dobError && <span style={{ color: 'var(--booking-danger)', fontSize: '0.78rem' }}>{dobError}</span>}
+          </div>
+        ) : g.dateOfBirth ? (
+          <span style={{ color: 'var(--booking-text-muted)' }}>
+            DOB: {new Date(g.dateOfBirth).toLocaleDateString('en-GB')}
+            {' '}
+            <button onClick={() => { setEditingDob(true); setDobValue(new Date(g.dateOfBirth).toISOString().slice(0, 10)); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--booking-accent)', fontSize: '0.78rem', padding: 0 }}>
+              Edit
+            </button>
+          </span>
+        ) : (
+          <span style={{ color: 'var(--booking-danger)' }}>
+            DOB missing{' '}
+            <button onClick={() => { setEditingDob(true); setDobValue(''); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--booking-accent)', fontSize: '0.78rem', padding: 0, fontWeight: 600 }}>
+              Set DOB
+            </button>
+          </span>
+        )}
+      </div>
+
+      {g.emergencyContactName ? (
+        <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
+          Emergency: <strong style={{ color: 'var(--booking-text-on-light)' }}>{g.emergencyContactName}</strong>
+          {g.emergencyContactRelationship && ` (${g.emergencyContactRelationship})`}
+          {' · '}
+          <a href={`tel:${g.emergencyContactPhone}`} style={{ color: 'var(--booking-accent)' }}>{g.emergencyContactPhone}</a>
+        </p>
+      ) : g.isSelf ? (
+        <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>No emergency contact</p>
+      ) : null}
+
+      <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
+        <span className="bk-muted" style={{ display: 'block', marginBottom: '0.2rem' }}>Health notes</span>
+        <span style={{ color: g.healthNotes === 'none' ? 'var(--booking-text-muted)' : 'inherit' }}>
+          {g.healthNotes === 'none'
+            ? 'No known health issues or learning differences'
+            : g.healthNotes || <em style={{ color: 'var(--booking-text-muted)' }}>Not recorded</em>}
+        </span>
+      </div>
+
+      <div style={{ marginTop: '0.4rem', display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+        {Object.entries(CONSENT_LABELS).map(([type, label]) => {
+          const granted = g.consents?.find(c => c.type === type)?.granted;
+          return (
+            <span key={type} style={{
+              padding: '1px 7px', borderRadius: 4, fontSize: '0.75rem',
+              background: granted ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.1)',
+              color: granted ? 'var(--booking-success)' : 'var(--booking-danger)',
+            }}>
+              {granted ? '✓' : '✗'} {label}
+            </span>
+          );
+        })}
+        {g.pastSessionCount >= 2 && (
+          <span style={{
+            padding: '1px 7px', borderRadius: 4, fontSize: '0.75rem',
+            background: g.bgInsuranceConfirmed ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.1)',
+            color: g.bgInsuranceConfirmed ? 'var(--booking-success)' : 'var(--booking-danger)',
+          }}>
+            {g.bgInsuranceConfirmed ? '✓' : '✗'} BG insurance
+          </span>
+        )}
+      </div>
+
+      <GymnastMembership gymnast={g} membership={membership} onRefresh={onUpdated} />
+
+      {!g.isSelf && (
+        <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--booking-bg-light)' }}>
+          {confirmRemove ? (
+            <div style={{ background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.3)', borderRadius: 'var(--booking-radius)', padding: '0.5rem 0.75rem' }}>
+              <p style={{ margin: '0 0 0.4rem', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>
+                Remove {g.firstName} {g.lastName}? This will delete all their booking history.
+              </p>
+              {removeError && <p className="bk-error" style={{ marginBottom: '0.4rem' }}>{removeError}</p>}
+              <div className="bk-row" style={{ gap: '0.4rem' }}>
+                <button className="bk-btn bk-btn--sm" disabled={removing}
+                  style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+                  onClick={handleRemove}>{removing ? 'Removing...' : 'Confirm remove'}</button>
+                <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
+                  onClick={() => { setConfirmRemove(false); setRemoveError(null); }}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <button className="bk-btn bk-btn--sm"
+              style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)', fontSize: '0.78rem' }}
+              onClick={() => setConfirmRemove(true)}>Remove child</button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GymnastMembership({ gymnast, membership, onRefresh }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ monthlyAmount: '', startDate: new Date().toISOString().slice(0, 10) });
@@ -310,7 +471,6 @@ function MemberDetail({ userId, onRemoved }) {
   const [editingRole, setEditingRole] = useState(false);
   const [assigningCredit, setAssigningCredit] = useState(false);
   const [confirmRemoveMember, setConfirmRemoveMember] = useState(false);
-  const [confirmRemoveGymnast, setConfirmRemoveGymnast] = useState(null); // gymnast id
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState(null);
   const [showAddChild, setShowAddChild] = useState(false);
@@ -333,19 +493,6 @@ function MemberDetail({ userId, onRemoved }) {
     }
   };
 
-  const handleRemoveGymnast = async (gymnastId) => {
-    setRemoving(true);
-    setRemoveError(null);
-    try {
-      await bookingApi.deleteGymnast(gymnastId);
-      setConfirmRemoveGymnast(null);
-      load();
-    } catch (err) {
-      setRemoveError(err.response?.data?.error || 'Failed to remove gymnast.');
-    } finally {
-      setRemoving(false);
-    }
-  };
 
   const handleRemoveMember = async () => {
     setRemoving(true);
@@ -559,93 +706,8 @@ function MemberDetail({ userId, onRemoved }) {
         )}
 
         {member.gymnasts.map(g => (
-            <div key={g.id} style={{ paddingBottom: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--booking-bg-light)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <strong>{g.firstName} {g.lastName}{g.isSelf ? ' (self)' : ''}</strong>
-                <span className="bk-muted" style={{ fontSize: '0.8rem' }}>{g.pastSessionCount} session{g.pastSessionCount !== 1 ? 's' : ''}</span>
-              </div>
-
-              {g.dateOfBirth && (
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
-                  DOB: {new Date(g.dateOfBirth).toLocaleDateString('en-GB')}
-                </p>
-              )}
-
-              {g.emergencyContactName ? (
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
-                  Emergency: <strong style={{ color: 'var(--booking-text-on-light)' }}>{g.emergencyContactName}</strong>
-                  {g.emergencyContactRelationship && ` (${g.emergencyContactRelationship})`}
-                  {' · '}
-                  <a href={`tel:${g.emergencyContactPhone}`} style={{ color: 'var(--booking-accent)' }}>{g.emergencyContactPhone}</a>
-                </p>
-              ) : g.isSelf ? (
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>No emergency contact</p>
-              ) : null}
-
-              <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
-                <span className="bk-muted" style={{ display: 'block', marginBottom: '0.2rem' }}>Health notes</span>
-                <span style={{ color: g.healthNotes === 'none' ? 'var(--booking-text-muted)' : 'inherit' }}>
-                  {g.healthNotes === 'none'
-                    ? 'No known health issues or learning differences'
-                    : g.healthNotes || <em style={{ color: 'var(--booking-text-muted)' }}>Not recorded</em>}
-                </span>
-              </div>
-
-              <div style={{ marginTop: '0.4rem', display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                {Object.entries(CONSENT_LABELS).map(([type, label]) => {
-                  const granted = g.consents?.find(c => c.type === type)?.granted;
-                  return (
-                    <span key={type} style={{
-                      padding: '1px 7px', borderRadius: 4, fontSize: '0.75rem',
-                      background: granted ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.1)',
-                      color: granted ? 'var(--booking-success)' : 'var(--booking-danger)',
-                    }}>
-                      {granted ? '✓' : '✗'} {label}
-                    </span>
-                  );
-                })}
-                {g.pastSessionCount >= 2 && (
-                  <span style={{
-                    padding: '1px 7px', borderRadius: 4, fontSize: '0.75rem',
-                    background: g.bgInsuranceConfirmed ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.1)',
-                    color: g.bgInsuranceConfirmed ? 'var(--booking-success)' : 'var(--booking-danger)',
-                  }}>
-                    {g.bgInsuranceConfirmed ? '✓' : '✗'} BG insurance
-                  </span>
-                )}
-              </div>
-
-              <GymnastMembership
-                gymnast={g}
-                membership={memberships.find(m => m.gymnastId === g.id && m.status !== 'CANCELLED') ?? null}
-                onRefresh={load}
-              />
-
-              {!g.isSelf && (
-                <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--booking-bg-light)' }}>
-                  {confirmRemoveGymnast === g.id ? (
-                    <div style={{ background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.3)', borderRadius: 'var(--booking-radius)', padding: '0.5rem 0.75rem' }}>
-                      <p style={{ margin: '0 0 0.4rem', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>
-                        Remove {g.firstName} {g.lastName}? This will delete all their booking history.
-                      </p>
-                      {removeError && <p className="bk-error" style={{ marginBottom: '0.4rem' }}>{removeError}</p>}
-                      <div className="bk-row" style={{ gap: '0.4rem' }}>
-                        <button className="bk-btn bk-btn--sm" disabled={removing}
-                          style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
-                          onClick={() => handleRemoveGymnast(g.id)}>{removing ? 'Removing...' : 'Confirm remove'}</button>
-                        <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
-                          onClick={() => { setConfirmRemoveGymnast(null); setRemoveError(null); }}>Cancel</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button className="bk-btn bk-btn--sm"
-                      style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)', fontSize: '0.78rem' }}
-                      onClick={() => setConfirmRemoveGymnast(g.id)}>Remove child</button>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+          <GymnastRow key={g.id} g={g} memberships={memberships} onUpdated={load} />
+        ))}
 
         {showAddChild && (
           <form onSubmit={handleAddChild} style={{ marginTop: member.gymnasts.length > 0 ? '0.75rem' : 0, paddingTop: member.gymnasts.length > 0 ? '0.75rem' : 0, borderTop: member.gymnasts.length > 0 ? '1px solid var(--booking-bg-light)' : 'none' }}>
