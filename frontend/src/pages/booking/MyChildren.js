@@ -3,9 +3,13 @@ import axios from 'axios';
 import { bookingApi } from '../../utils/bookingApi';
 import { useAuth } from '../../contexts/AuthContext';
 import './booking-shared.css';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 const API_URL = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api`;
 const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+
+const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
 const CONSENT_LABELS = {
   photo_coaching: 'Photography & video for coaching purposes',
@@ -322,6 +326,105 @@ function InsuranceSection({ gymnast, onUpdated }) {
   );
 }
 
+function MembershipPaymentForm({ membership, onDone }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [error, setError] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setProcessing(true);
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: `${window.location.origin}/booking/my-account` },
+      redirect: 'if_required',
+    });
+    if (error) {
+      setError(error.message);
+      setProcessing(false);
+    } else {
+      setDone(true);
+      onDone();
+    }
+  };
+
+  if (done) return <p style={{ color: 'var(--booking-success)', fontSize: '0.875rem' }}>Payment submitted — your membership will activate shortly.</p>;
+
+  return (
+    <form onSubmit={handleSubmit} style={{ marginTop: '0.75rem' }}>
+      <PaymentElement />
+      {error && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{error}</p>}
+      <button type="submit" disabled={!stripe || processing} className="bk-btn bk-btn--primary" style={{ marginTop: '0.75rem', width: '100%' }}>
+        {processing ? 'Processing...' : `Set up payment — £${(membership.monthlyAmount / 100).toFixed(2)}/month`}
+      </button>
+    </form>
+  );
+}
+
+function MembershipCard({ membership, onUpdated }) {
+  const [clientSecret, setClientSecret] = useState(null);
+  const [loadingSecret, setLoadingSecret] = useState(false);
+
+  const loadClientSecret = async () => {
+    setLoadingSecret(true);
+    try {
+      const res = await bookingApi.getMembershipClientSecret(membership.id);
+      setClientSecret(res.data.clientSecret);
+    } catch {
+      // already paid or error
+    } finally {
+      setLoadingSecret(false);
+    }
+  };
+
+  const STATUS_DISPLAY = {
+    PENDING_PAYMENT: { label: 'Payment setup required', color: 'var(--booking-danger)' },
+    ACTIVE: { label: 'Active', color: 'var(--booking-success)' },
+    PAUSED: { label: 'Paused', color: 'var(--booking-text-muted)' },
+  };
+  const s = STATUS_DISPLAY[membership.status] || { label: membership.status, color: 'inherit' };
+
+  return (
+    <div className="bk-card" style={{ marginBottom: '0.75rem' }}>
+      <div className="bk-row bk-row--between" style={{ marginBottom: '0.5rem' }}>
+        <strong>{membership.gymnast.firstName} {membership.gymnast.lastName}</strong>
+        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: s.color }}>{s.label}</span>
+      </div>
+      <div style={{ fontSize: '0.875rem', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.25rem 0.75rem', color: 'var(--booking-text-muted)' }}>
+        <span>Monthly</span><span style={{ color: 'var(--booking-text-on-light)', fontWeight: 600 }}>£{(membership.monthlyAmount / 100).toFixed(2)}</span>
+        <span>Sessions/week</span><span style={{ color: 'var(--booking-text-on-light)' }}>{membership.sessionAllowancePerWeek}</span>
+        <span>Start date</span><span style={{ color: 'var(--booking-text-on-light)' }}>{new Date(membership.startDate).toLocaleDateString('en-GB')}</span>
+      </div>
+
+      {membership.status === 'PENDING_PAYMENT' && !clientSecret && (
+        <button
+          className="bk-btn bk-btn--primary"
+          style={{ marginTop: '0.75rem', width: '100%' }}
+          disabled={loadingSecret}
+          onClick={loadClientSecret}
+        >
+          {loadingSecret ? 'Loading...' : 'Set up payment'}
+        </button>
+      )}
+
+      {membership.status === 'PENDING_PAYMENT' && clientSecret && (
+        <Elements stripe={stripePromise} options={{ clientSecret }}>
+          <MembershipPaymentForm membership={membership} onDone={onUpdated} />
+        </Elements>
+      )}
+
+      {membership.status === 'PAUSED' && (
+        <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>
+          Your membership is currently paused. Contact the club to resume.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function MyChildren() {
   const { user, updateUser } = useAuth();
   const [gymnasts, setGymnasts] = useState([]);
@@ -331,6 +434,7 @@ export default function MyChildren() {
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [credits, setCredits] = useState([]);
+  const [memberships, setMemberships] = useState([]);
 
   const refreshUser = async () => {
     try {
@@ -349,6 +453,7 @@ export default function MyChildren() {
   useEffect(() => {
     load();
     bookingApi.getMyCredits().then(r => setCredits(r.data)).catch(() => {});
+    bookingApi.getMyMemberships().then(r => setMemberships(r.data)).catch(() => {});
   }, []);
 
   const handleSelf = async () => {
@@ -413,6 +518,17 @@ export default function MyChildren() {
             ))}
           </div>
         </div>
+      )}
+
+      {memberships.length > 0 && (
+        <section style={{ marginBottom: '2rem' }}>
+          <h3>Memberships</h3>
+          {memberships.map(m => (
+            <MembershipCard key={m.id} membership={m} onUpdated={() =>
+              bookingApi.getMyMemberships().then(r => setMemberships(r.data)).catch(() => {})
+            } />
+          ))}
+        </section>
       )}
 
       <section style={{ marginBottom: '2rem' }}>
