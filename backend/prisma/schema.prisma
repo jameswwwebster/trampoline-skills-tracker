@@ -48,6 +48,7 @@ model User {
   bookings                      Booking[]
   credits                       Credit[]
   waitlistEntries               WaitlistEntry[]
+  auditLogs                     AuditLog[]
 
   @@map("users")
 }
@@ -122,6 +123,7 @@ model Club {
   sessionTemplates      SessionTemplate[]
   memberships           Membership[]
   closurePeriods        ClosurePeriod[]
+  auditLogs             AuditLog[]
 
   @@map("clubs")
 }
@@ -658,4 +660,21 @@ enum WaitlistStatus {
   OFFERED
   CLAIMED
   EXPIRED
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  clubId     String
+  club       Club     @relation(fields: [clubId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@index([clubId, createdAt])
+  @@index([userId])
+  @@map("audit_logs")
 }
