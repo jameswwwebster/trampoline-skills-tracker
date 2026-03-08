@@ -23,6 +23,9 @@ const Gymnasts = () => {
   const [sessionTimestamps, setSessionTimestamps] = useState(new Map()); // Track when gymnasts were added to session
   const [showSessionOnly, setShowSessionOnly] = useState(false);
   const [sortBy, setSortBy] = useState('name'); // 'name', 'level', 'recent', 'age'
+  const [letterFilter, setLetterFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 25;
   const { canManageGymnasts, isClubAdmin } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -113,6 +116,8 @@ const Gymnasts = () => {
   useEffect(() => {
     localStorage.setItem('gymnastSearchTerm', searchTerm);
   }, [searchTerm]);
+
+  useEffect(() => { setPage(1); }, [searchTerm, letterFilter, showSessionOnly]);
 
   // Helper function to determine the gymnast's current working level number
   const getCurrentLevel = (gymnast, levels) => {
@@ -375,6 +380,14 @@ const Gymnasts = () => {
   // Separate active and archived gymnasts, then sort them
   const activeGymnasts = sortGymnasts(filteredGymnasts.filter(g => !g.isArchived));
   const archivedGymnasts = sortGymnasts(filteredGymnasts.filter(g => g.isArchived));
+
+  const letterFilteredActive = !letterFilter
+    ? activeGymnasts
+    : activeGymnasts.filter(g => (g.lastName || g.firstName || '').toUpperCase().startsWith(letterFilter));
+
+  const totalPages = Math.max(1, Math.ceil(letterFilteredActive.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedActive = letterFilteredActive.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   if (loading) {
     return (
@@ -709,6 +722,30 @@ const Gymnasts = () => {
         </div>
       </div>
 
+      {/* A–Z filter */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', margin: '0.5rem 0' }}>
+        <button
+          style={{ fontWeight: letterFilter === '' ? 700 : 400, padding: '0.2rem 0.5rem', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', background: letterFilter === '' ? '#7c35e8' : '#fff', color: letterFilter === '' ? '#fff' : undefined }}
+          onClick={() => setLetterFilter('')}
+        >All</button>
+        {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
+          <button
+            key={letter}
+            style={{
+              fontWeight: letterFilter === letter ? 700 : 400,
+              padding: '0.2rem 0.5rem',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              background: letterFilter === letter ? '#7c35e8' : '#fff',
+              color: letterFilter === letter ? '#fff' : undefined,
+              minWidth: '2rem',
+            }}
+            onClick={() => setLetterFilter(l => l === letter ? '' : letter)}
+          >{letter}</button>
+        ))}
+      </div>
+
       {/* Active Gymnasts */}
       {activeGymnasts.length === 0 && !showArchived ? (
         <div className="card">
@@ -768,9 +805,9 @@ const Gymnasts = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {activeGymnasts.map(gymnast => (
-                    <tr 
-                      key={gymnast.id} 
+                  {paginatedActive.map(gymnast => (
+                    <tr
+                      key={gymnast.id}
                       onClick={() => handleRowClick(gymnast)}
                       style={{ cursor: 'pointer' }}
                       title="Click to view progress"
@@ -822,7 +859,7 @@ const Gymnasts = () => {
 
               {/* Mobile Cards */}
               <div className="mobile-table-cards">
-                {activeGymnasts.map(gymnast => {
+                {paginatedActive.map(gymnast => {
                   const isInSession = sessionGymnasts.has(gymnast.id);
                   return (
                     <div 
@@ -945,6 +982,21 @@ const Gymnasts = () => {
                   )}
                 </div>
               )}
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginTop: '1rem', fontSize: '0.875rem' }}>
+                <button
+                  style={{ padding: '0.3rem 0.75rem', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
+                  disabled={safePage <= 1}
+                  onClick={() => setPage(p => p - 1)}
+                >← Prev</button>
+                <span style={{ color: '#666' }}>Page {safePage} of {totalPages}</span>
+                <button
+                  style={{ padding: '0.3rem 0.75rem', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
+                  disabled={safePage >= totalPages}
+                  onClick={() => setPage(p => p + 1)}
+                >Next →</button>
+              </div>
+            )}
             </div>
           )}
 
