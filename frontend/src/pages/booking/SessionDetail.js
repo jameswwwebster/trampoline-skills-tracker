@@ -56,6 +56,9 @@ export default function SessionDetail() {
       })
     : myGymnasts;
 
+  const bookableGymnasts = eligibleGymnasts.filter(g => !g.hasMembership);
+  const memberGymnasts = eligibleGymnasts.filter(g => g.hasMembership);
+
   const hasSelf = myGymnasts.some(g => g.isSelf);
 
   const toggleGymnast = (id) => {
@@ -212,7 +215,7 @@ export default function SessionDetail() {
           <div className="session-detail__gymnasts">
             <h3>Who's coming?</h3>
 
-            {eligibleGymnasts.map(g => {
+            {bookableGymnasts.map(g => {
               const selected = selectedGymnastIds.includes(g.id);
               const needsInsurance = g.pastSessionCount >= 2 && !g.bgInsuranceConfirmed;
               const atCapacity = !selected && selectedGymnastIds.length >= session.availableSlots;
@@ -243,7 +246,12 @@ export default function SessionDetail() {
                 </div>
               );
             })}
-            {selectedGymnastIds.length >= session.availableSlots && eligibleGymnasts.length > selectedGymnastIds.length && (
+            {memberGymnasts.map(g => (
+              <div key={g.id} style={{ padding: '0.5rem 0.75rem', marginBottom: '0.25rem', background: 'rgba(39,174,96,0.08)', borderRadius: 'var(--booking-radius)', fontSize: '0.875rem', color: 'var(--booking-success)' }}>
+                ✓ {g.firstName} {g.lastName} — monthly member, no booking needed
+              </div>
+            ))}
+            {selectedGymnastIds.length >= session.availableSlots && bookableGymnasts.length > selectedGymnastIds.length && (
               <p className="session-detail__slots-warning">
                 Only {session.availableSlots} slot{session.availableSlots !== 1 ? 's' : ''} available — deselect someone to change your selection.
               </p>

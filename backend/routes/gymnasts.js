@@ -29,7 +29,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
     const [selfGymnast, linked] = await Promise.all([
       prisma.gymnast.findFirst({
         where: { userId: req.user.id, isArchived: false },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgInsuranceConfirmed: true, bgInsuranceConfirmedAt: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgInsuranceConfirmed: true, bgInsuranceConfirmedAt: true },
       }),
       prisma.gymnast.findMany({
         where: {
@@ -40,7 +40,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
             { userId: { not: req.user.id } },
           ],
         },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgInsuranceConfirmed: true, bgInsuranceConfirmedAt: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgInsuranceConfirmed: true, bgInsuranceConfirmedAt: true },
       }),
     ]);
     const allGymnasts = selfGymnast
@@ -62,7 +62,21 @@ router.get('/bookable-for-me', auth, async (req, res) => {
       return { ...g, pastSessionCount: pastSessions };
     }));
 
-    res.json(withCounts);
+    // Check for active memberships
+    const activeMembershipGymnastIds = await prisma.membership.findMany({
+      where: {
+        gymnastId: { in: allGymnasts.map(g => g.id) },
+        status: { in: ['ACTIVE', 'PAUSED'] },
+      },
+      select: { gymnastId: true },
+    }).then(ms => new Set(ms.map(m => m.gymnastId)));
+
+    const withMembership = withCounts.map(g => ({
+      ...g,
+      hasMembership: activeMembershipGymnastIds.has(g.id),
+    }));
+
+    res.json(withMembership);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
