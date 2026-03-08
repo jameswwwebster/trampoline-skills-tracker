@@ -99,6 +99,7 @@ router.post('/add-child', auth, async (req, res) => {
       firstName: Joi.string().min(1).max(50).required(),
       lastName: Joi.string().min(1).max(50).required(),
       dateOfBirth: Joi.date().required(),
+      healthNotes: Joi.string().min(1).required(),
     }).validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
@@ -107,6 +108,7 @@ router.post('/add-child', auth, async (req, res) => {
         firstName: value.firstName,
         lastName: value.lastName,
         dateOfBirth: value.dateOfBirth,
+        healthNotes: value.healthNotes,
         clubId: req.user.clubId,
         guardians: { connect: { id: req.user.id } },
       },
@@ -127,6 +129,7 @@ router.post('/admin-add-child', auth, requireRole(['CLUB_ADMIN', 'COACH']), asyn
       firstName: Joi.string().min(1).max(50).required(),
       lastName: Joi.string().min(1).max(50).required(),
       dateOfBirth: Joi.date().required(),
+      healthNotes: Joi.string().min(1).required(),
     }).validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
@@ -139,6 +142,7 @@ router.post('/admin-add-child', auth, requireRole(['CLUB_ADMIN', 'COACH']), asyn
         firstName: value.firstName,
         lastName: value.lastName,
         dateOfBirth: value.dateOfBirth,
+        healthNotes: value.healthNotes,
         clubId: req.user.clubId,
         guardians: { connect: { id: value.userId } },
       },
