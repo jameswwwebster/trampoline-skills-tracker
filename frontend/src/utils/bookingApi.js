@@ -100,3 +100,10 @@ export const bookingApi = {
   deleteMember: (userId) =>
     axios.delete(`${API_URL}/booking/admin/members/${userId}`, { headers: getHeaders() }),
 };
+
+// Audit log
+export const getAuditLog = (params) =>
+  axios.get(`${API_URL}/booking/admin/audit-log`, { params, headers: getHeaders() });
+
+export const getAuditStaff = () =>
+  axios.get(`${API_URL}/booking/admin/audit-log/staff`, { headers: getHeaders() });
