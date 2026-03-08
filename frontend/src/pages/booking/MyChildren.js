@@ -244,6 +244,15 @@ function GymnastCard({ gymnast, onUpdated }) {
         />
       )}
 
+      <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
+        <span className="bk-muted" style={{ display: 'block', marginBottom: '0.2rem' }}>Health notes</span>
+        <span style={{ color: gymnast.healthNotes === 'none' ? 'var(--booking-text-muted)' : 'inherit' }}>
+          {gymnast.healthNotes === 'none'
+            ? 'No known health issues or learning differences'
+            : gymnast.healthNotes || <em style={{ color: 'var(--booking-text-muted)' }}>Not recorded</em>}
+        </span>
+      </div>
+
       <ConsentToggles gymnast={gymnast} onUpdated={onUpdated} />
 
       <InsuranceSection gymnast={gymnast} onUpdated={onUpdated} />

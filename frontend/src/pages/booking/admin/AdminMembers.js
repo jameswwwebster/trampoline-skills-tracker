@@ -548,6 +548,15 @@ function MemberDetail({ userId, onRemoved }) {
                 <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>No emergency contact</p>
               ) : null}
 
+              <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
+                <span className="bk-muted" style={{ display: 'block', marginBottom: '0.2rem' }}>Health notes</span>
+                <span style={{ color: g.healthNotes === 'none' ? 'var(--booking-text-muted)' : 'inherit' }}>
+                  {g.healthNotes === 'none'
+                    ? 'No known health issues or learning differences'
+                    : g.healthNotes || <em style={{ color: 'var(--booking-text-muted)' }}>Not recorded</em>}
+                </span>
+              </div>
+
               <div style={{ marginTop: '0.4rem', display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
                 {Object.entries(CONSENT_LABELS).map(([type, label]) => {
                   const granted = g.consents?.find(c => c.type === type)?.granted;
