@@ -1,1 +1,1 @@
-ALTER TABLE "gymnasts" ADD COLUMN "health_notes" TEXT;
+ALTER TABLE "gymnasts" ADD COLUMN "healthNotes" TEXT;
