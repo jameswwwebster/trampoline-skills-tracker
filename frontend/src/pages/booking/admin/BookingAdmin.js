@@ -373,78 +373,122 @@ export default function BookingAdmin() {
         <button className="bk-btn" onClick={() => month === 12 ? (setMonth(1), setYear(y => y + 1)) : setMonth(m => m + 1)}>&rsaquo;</button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-        {sessions.length === 0 && <p className="bk-muted">No sessions this month.</p>}
-        {sessions.map(s => {
-          const isSelected = selectedSession === s.id;
-          const full = s.availableSlots === 0;
-          return (
-            <div key={s.id}>
-              <button
-                onClick={() => handleSelect(s.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  border: `2px solid ${isSelected ? 'var(--booking-accent)' : 'var(--booking-border)'}`,
-                  borderRadius: isSelected && sessionDetail ? 'var(--booking-radius) var(--booking-radius) 0 0' : 'var(--booking-radius)',
-                  background: isSelected ? 'rgba(124,53,232,0.06)' : 'var(--booking-bg-white)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  font: 'inherit',
-                  transition: 'border-color 0.15s, background 0.15s',
-                  borderBottom: isSelected && sessionDetail ? 'none' : undefined,
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: s.cancelledAt ? 'var(--booking-text-muted)' : 'var(--booking-text-on-light)' }}>
-                    {new Date(s.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-                    {s.cancelledAt && <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--booking-danger)' }}>Cancelled</span>}
-                  </div>
-                  <div style={{ fontSize: '0.82rem', color: 'var(--booking-text-muted)', marginTop: '0.1rem' }}>
-                    {s.startTime}–{s.endTime}{s.minAge ? ` · ${s.minAge}+` : ''}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0, marginLeft: '0.75rem' }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, fontSize: '1rem', color: full ? 'var(--booking-danger)' : 'var(--booking-accent)' }}>
-                      {s.bookedCount}/{s.bookedCount + s.availableSlots}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--booking-text-muted)' }}>
-                      {full ? 'Full' : `${s.availableSlots} left`}
-                    </div>
-                  </div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)', transition: 'transform 0.2s', display: 'inline-block', transform: isSelected ? 'rotate(180deg)' : 'none' }}>▾</span>
-                </div>
-              </button>
+      {/* Calendar grid */}
+      {(() => {
+        const firstDay = new Date(year, month - 1, 1);
+        const daysInMonth = new Date(year, month, 0).getDate();
+        // Monday-first: Monday=0 ... Sunday=6
+        const startOffset = (firstDay.getDay() + 6) % 7;
+        const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
 
-              {isSelected && sessionDetail && (
-                <div style={{
-                  border: `2px solid var(--booking-accent)`,
-                  borderTop: 'none',
-                  borderRadius: '0 0 var(--booking-radius) var(--booking-radius)',
-                  background: 'var(--booking-bg-white)',
-                  padding: '1rem',
-                }}>
-                  <SessionDetailPanel
-                    sessionDetail={sessionDetail}
-                    selectedSession={selectedSession}
-                    showManualAdd={showManualAdd}
-                    setShowManualAdd={setShowManualAdd}
-                    onAdded={() => {
-                      setShowManualAdd(false);
-                      loadDetail(selectedSession);
-                      loadSessions();
-                    }}
-                  />
-                </div>
-              )}
+        // Group sessions by date string
+        const byDate = {};
+        sessions.forEach(s => {
+          const d = new Date(s.date).toISOString().slice(0, 10);
+          if (!byDate[d]) byDate[d] = [];
+          byDate[d].push(s);
+        });
+
+        const todayStr = new Date().toISOString().slice(0, 10);
+
+        const DAY_HEADERS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+        return (
+          <div>
+            {/* Day headers */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '2px' }}>
+              {DAY_HEADERS.map(d => (
+                <div key={d} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: 600, color: 'var(--booking-text-muted)', padding: '0.3rem 0' }}>{d}</div>
+              ))}
             </div>
-          );
-        })}
-      </div>
+
+            {/* Day cells */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+              {Array.from({ length: totalCells }).map((_, i) => {
+                const dayNum = i - startOffset + 1;
+                if (dayNum < 1 || dayNum > daysInMonth) {
+                  return <div key={i} style={{ minHeight: '5rem', background: 'var(--booking-bg-light)', borderRadius: 'var(--booking-radius)', opacity: 0.3 }} />;
+                }
+                const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+                const daySessions = byDate[dateStr] || [];
+                const isToday = dateStr === todayStr;
+                return (
+                  <div key={i} style={{
+                    minHeight: '5rem',
+                    padding: '0.35rem',
+                    background: 'var(--booking-bg-white)',
+                    borderRadius: 'var(--booking-radius)',
+                    border: isToday ? '2px solid var(--booking-accent)' : '1px solid var(--booking-border)',
+                  }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: isToday ? 700 : 400, color: isToday ? 'var(--booking-accent)' : 'var(--booking-text-muted)', marginBottom: '0.3rem' }}>
+                      {dayNum}
+                    </div>
+                    {daySessions.map(s => {
+                      const isSelected = selectedSession === s.id;
+                      const isFull = s.availableSlots === 0;
+                      const isCancelled = !!s.cancelledAt;
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => handleSelect(s.id)}
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            marginBottom: '0.2rem',
+                            padding: '0.2rem 0.35rem',
+                            borderRadius: '4px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            font: 'inherit',
+                            fontSize: '0.72rem',
+                            lineHeight: 1.3,
+                            background: isSelected
+                              ? 'var(--booking-accent)'
+                              : isCancelled
+                              ? 'rgba(0,0,0,0.06)'
+                              : isFull
+                              ? 'rgba(231,76,60,0.12)'
+                              : 'rgba(124,53,232,0.08)',
+                            color: isSelected
+                              ? '#fff'
+                              : isCancelled
+                              ? 'var(--booking-text-muted)'
+                              : isFull
+                              ? 'var(--booking-danger)'
+                              : 'var(--booking-accent)',
+                            textDecoration: isCancelled ? 'line-through' : 'none',
+                          }}
+                        >
+                          <div style={{ fontWeight: 600 }}>{s.startTime}–{s.endTime}</div>
+                          <div style={{ opacity: 0.8 }}>{s.bookedCount}/{s.bookedCount + s.availableSlots}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Selected session detail below calendar */}
+            {selectedSession && sessionDetail && (
+              <div style={{ marginTop: '1.5rem' }}>
+                <SessionDetailPanel
+                  sessionDetail={sessionDetail}
+                  selectedSession={selectedSession}
+                  showManualAdd={showManualAdd}
+                  setShowManualAdd={setShowManualAdd}
+                  onAdded={() => {
+                    setShowManualAdd(false);
+                    loadDetail(selectedSession);
+                    loadSessions();
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
