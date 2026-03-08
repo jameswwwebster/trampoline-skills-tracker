@@ -317,7 +317,7 @@ export default function MyChildren() {
   const { user, updateUser } = useAuth();
   const [gymnasts, setGymnasts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ firstName: '', lastName: '', dateOfBirth: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', dateOfBirth: '', healthNotes: '', healthNotesNone: false });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -350,11 +350,21 @@ export default function MyChildren() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.healthNotesNone && !form.healthNotes.trim()) {
+      setError('Please describe any health issues or learning differences, or confirm there are none.');
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
-      await bookingApi.addChild(form);
-      setForm({ firstName: '', lastName: '', dateOfBirth: '' });
+      const payload = {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        dateOfBirth: form.dateOfBirth,
+        healthNotes: form.healthNotesNone ? 'none' : form.healthNotes.trim(),
+      };
+      await bookingApi.addChild(payload);
+      setForm({ firstName: '', lastName: '', dateOfBirth: '', healthNotes: '', healthNotesNone: false });
       setShowForm(false);
       load();
     } catch (err) {
@@ -414,6 +424,28 @@ export default function MyChildren() {
             <label className="bk-label">Date of birth
               <input type="date" className="bk-input" value={form.dateOfBirth} onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))} required style={{ marginTop: '0.25rem' }} />
             </label>
+            <fieldset style={{ border: 'none', padding: 0, margin: '0.75rem 0 0' }}>
+              <label className="bk-label" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={form.healthNotesNone}
+                  onChange={e => setForm(f => ({ ...f, healthNotesNone: e.target.checked }))}
+                  style={{ marginTop: '0.2rem' }}
+                />
+                No known health issues or learning differences
+              </label>
+              <label className="bk-label">Health issues or learning differences
+                <textarea
+                  className="bk-input"
+                  value={form.healthNotes}
+                  disabled={form.healthNotesNone}
+                  onChange={e => setForm(f => ({ ...f, healthNotes: e.target.value }))}
+                  rows={3}
+                  placeholder="Describe any health conditions, learning differences, or anything coaches should know"
+                  style={{ marginTop: '0.25rem', opacity: form.healthNotesNone ? 0.5 : 1 }}
+                />
+              </label>
+            </fieldset>
             {error && <p className="bk-error">{error}</p>}
             <button type="submit" disabled={submitting} className="bk-btn bk-btn--primary">
               {submitting ? 'Saving...' : 'Save child'}
