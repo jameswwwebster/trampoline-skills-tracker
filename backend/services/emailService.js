@@ -465,7 +465,8 @@ class EmailService {
         const info = await this.transporter.sendMail(mailOptions);
         return { success: true, messageId: info.messageId };
       } else {
-        return { success: false, error: 'Email not configured' };
+        console.log('📧 Test email (DEV MODE):', { to, subject });
+        return { success: true, dev: true };
       }
     } catch (error) {
       console.error('❌ Failed to send email:', error);
@@ -477,7 +478,7 @@ class EmailService {
     const amount = `£${(amountPence / 100).toFixed(2)}`;
     const nextDate = new Date(nextBillingDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     const mailOptions = {
-      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      from: process.env.EMAIL_FROM || 'noreply@trampolinetracker.com',
       to: email,
       subject: `Membership payment received — ${gymnast.firstName} ${gymnast.lastName}`,
       html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
@@ -506,7 +507,7 @@ class EmailService {
   async sendMembershipPaymentFailedEmail(email, userName, gymnast, amountPence) {
     const amount = `£${(amountPence / 100).toFixed(2)}`;
     const mailOptions = {
-      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      from: process.env.EMAIL_FROM || 'noreply@trampolinetracker.com',
       to: email,
       subject: `Membership payment failed — ${gymnast.firstName} ${gymnast.lastName}`,
       html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
