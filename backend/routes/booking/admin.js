@@ -82,6 +82,70 @@ router.delete('/members/:userId', auth, requireRole(['CLUB_ADMIN']), async (req,
   }
 });
 
+// GET /admin/audit-log/staff — list staff for filter dropdown (CLUB_ADMIN only)
+router.get('/audit-log/staff', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const staff = await prisma.user.findMany({
+      where: {
+        clubId: req.user.clubId,
+        role: { in: ['CLUB_ADMIN', 'COACH'] },
+      },
+      select: { id: true, firstName: true, lastName: true },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+    });
+    res.json(staff);
+  } catch (err) {
+    console.error('Fetch audit staff error:', err);
+    res.status(500).json({ error: 'Failed to fetch staff' });
+  }
+});
+
+// GET /admin/audit-log — paginated, filtered audit log (CLUB_ADMIN only)
+router.get('/audit-log', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { page = '1', staffId, action, from, to } = req.query;
+    const pageNum = Math.max(1, parseInt(page));
+    const pageSize = 25;
+    const skip = (pageNum - 1) * pageSize;
+
+    const where = {
+      clubId: req.user.clubId,
+      ...(staffId && { userId: staffId }),
+      ...(action && { action }),
+      ...((from || to) && {
+        createdAt: {
+          ...(from && { gte: new Date(from) }),
+          ...(to && { lte: new Date(to) }),
+        },
+      }),
+    };
+
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true } },
+        },
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
+
+    res.json({
+      logs,
+      total,
+      page: pageNum,
+      pageSize,
+      hasMore: skip + logs.length < total,
+    });
+  } catch (err) {
+    console.error('Audit log fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch audit log' });
+  }
+});
+
 async function deleteGymnast(gymnastId) {
   // Cancel active bookings and remove lines
   const bookings = await prisma.booking.findMany({
