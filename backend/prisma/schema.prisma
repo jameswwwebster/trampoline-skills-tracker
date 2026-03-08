@@ -464,6 +464,7 @@ model SessionTemplate {
   endTime     String            // "18:00"
   openSlots   Int               @default(12)
   minAge      Int?              // null = no restriction, 16 = 16+ only
+  information String?
   isActive    Boolean           @default(true)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
