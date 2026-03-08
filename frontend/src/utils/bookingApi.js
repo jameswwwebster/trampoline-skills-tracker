@@ -94,6 +94,15 @@ export const bookingApi = {
   updateMembership: (id, data) =>
     axios.patch(`${API_URL}/booking/memberships/${id}`, data, { headers: getHeaders() }),
 
+  deleteMembership: (id) =>
+    axios.delete(`${API_URL}/booking/memberships/${id}`, { headers: getHeaders() }),
+
+  getMyMemberships: () =>
+    axios.get(`${API_URL}/booking/memberships/my`, { headers: getHeaders() }),
+
+  getMembershipClientSecret: (membershipId) =>
+    axios.get(`${API_URL}/booking/memberships/${membershipId}/client-secret`, { headers: getHeaders() }),
+
   joinWaitlist: (instanceId) =>
     axios.post(`${API_URL}/booking/waitlist/${instanceId}`, {}, { headers: getHeaders() }),
 
@@ -111,6 +120,9 @@ export const bookingApi = {
 
   deleteMember: (userId) =>
     axios.delete(`${API_URL}/booking/admin/members/${userId}`, { headers: getHeaders() }),
+
+  testEmail: (email) =>
+    axios.post(`${API_URL}/users/test-email`, { email }, { headers: getHeaders() }),
 };
 
 // Audit log
