@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 // DELETE /api/booking/admin/gymnasts/:id
 // Remove a gymnast (child) — cleans up all booking data
-router.delete('/gymnasts/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+router.delete('/gymnasts/:id', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   try {
     const gymnast = await prisma.gymnast.findUnique({
       where: { id: req.params.id },
@@ -27,7 +27,7 @@ router.delete('/gymnasts/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async
 
 // DELETE /api/booking/admin/members/:userId
 // Remove a member and all their gymnasts — cleans up all booking data
-router.delete('/members/:userId', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+router.delete('/members/:userId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   try {
     if (req.params.userId === req.user.id) {
       return res.status(400).json({ error: 'You cannot remove yourself.' });

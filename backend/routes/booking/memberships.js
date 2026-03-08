@@ -36,7 +36,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // POST /api/booking/memberships — admin only
-router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
     const { error, value } = createMembershipSchema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
@@ -78,7 +78,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
 });
 
 // PATCH /api/booking/memberships/:id — admin only (cancel/pause/update amount)
-router.patch('/:id', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
     const membership = await prisma.membership.findUnique({ where: { id: req.params.id } });
     if (!membership) return res.status(404).json({ error: 'Membership not found' });
