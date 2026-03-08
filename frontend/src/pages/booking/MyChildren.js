@@ -460,7 +460,7 @@ export default function MyChildren() {
                   type="checkbox"
                   checked={form.healthNotesNone}
                   onChange={e => setForm(f => ({ ...f, healthNotesNone: e.target.checked }))}
-                  style={{ marginTop: '0.2rem' }}
+                  style={{ display: 'block', marginTop: '0.2rem', width: '1rem', height: '1rem', flexShrink: 0 }}
                 />
                 No known health issues or learning differences
               </label>

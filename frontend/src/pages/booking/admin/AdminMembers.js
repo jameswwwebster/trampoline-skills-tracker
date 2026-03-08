@@ -735,7 +735,7 @@ function MemberDetail({ userId, onRemoved }) {
                   type="checkbox"
                   checked={addChildForm.healthNotesNone}
                   onChange={e => setAddChildForm(f => ({ ...f, healthNotesNone: e.target.checked }))}
-                  style={{ marginTop: '0.2rem' }}
+                  style={{ display: 'block', marginTop: '0.2rem', width: '1rem', height: '1rem', flexShrink: 0 }}
                 />
                 No known health issues or learning differences
               </label>
