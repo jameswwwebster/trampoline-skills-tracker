@@ -106,7 +106,7 @@ const Register = () => {
               type="checkbox"
               checked={policiesAccepted}
               onChange={e => { setPoliciesAccepted(e.target.checked); if (validationErrors.policies) setValidationErrors(v => ({ ...v, policies: '' })); }}
-              style={{ display: 'block', marginTop: '0.2rem', flexShrink: 0, width: '1rem', height: '1rem' }}
+              className="auth-checkbox"
             />
             <span>
               I have read and agree to the{' '}

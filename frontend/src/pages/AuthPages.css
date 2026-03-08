@@ -187,3 +187,11 @@
     grid-template-columns: 1fr;
   }
 }
+
+.auth-checkbox {
+  display: block !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  flex-shrink: 0;
+  cursor: pointer;
+}

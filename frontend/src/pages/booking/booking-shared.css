@@ -1,5 +1,15 @@
 @import './bookingVars.css';
 
+/* Override global display:none on checkboxes within booking pages */
+.bk-checkbox {
+  display: block !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--booking-accent);
+}
+
 /* Shared booking page styles */
 
 .bk-page {

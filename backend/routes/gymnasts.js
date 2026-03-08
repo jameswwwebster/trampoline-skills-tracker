@@ -34,8 +34,11 @@ router.get('/bookable-for-me', auth, async (req, res) => {
       prisma.gymnast.findMany({
         where: {
           isArchived: false,
-          userId: { not: req.user.id },
           guardians: { some: { id: req.user.id } },
+          OR: [
+            { userId: null },
+            { userId: { not: req.user.id } },
+          ],
         },
         select: { id: true, firstName: true, lastName: true, dateOfBirth: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgInsuranceConfirmed: true, bgInsuranceConfirmedAt: true },
       }),
