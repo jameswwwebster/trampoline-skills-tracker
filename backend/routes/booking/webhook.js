@@ -45,6 +45,76 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
     }
   }
 
+  if (event.type === 'invoice.paid') {
+    const invoice = event.data.object;
+    if (invoice.subscription) {
+      const membership = await prisma.membership.findFirst({
+        where: { stripeSubscriptionId: invoice.subscription },
+        include: { gymnast: true, club: true },
+      });
+      if (membership) {
+        if (membership.status !== 'ACTIVE') {
+          await prisma.membership.update({ where: { id: membership.id }, data: { status: 'ACTIVE' } });
+        }
+        if (membership.club.emailEnabled && invoice.amount_paid > 0) {
+          const guardian = await prisma.user.findFirst({
+            where: { guardedGymnasts: { some: { id: membership.gymnastId } } },
+            select: { email: true, firstName: true, lastName: true },
+            orderBy: { createdAt: 'asc' },
+          });
+          if (guardian?.email) {
+            const emailService = require('../../services/emailService');
+            const nextBillingDate = new Date(invoice.period_end * 1000);
+            await emailService.sendMembershipPaymentSuccessEmail(
+              guardian.email,
+              `${guardian.firstName} ${guardian.lastName}`,
+              membership.gymnast,
+              invoice.amount_paid,
+              nextBillingDate,
+            );
+          }
+        }
+      }
+      console.log(`Membership ${membership?.id} activated via invoice ${invoice.id}`);
+    }
+  }
+
+  if (event.type === 'invoice.payment_failed') {
+    const invoice = event.data.object;
+    if (invoice.subscription) {
+      const membership = await prisma.membership.findFirst({
+        where: { stripeSubscriptionId: invoice.subscription },
+        include: { gymnast: true, club: true },
+      });
+      if (membership?.club.emailEnabled) {
+        const guardian = await prisma.user.findFirst({
+          where: { guardedGymnasts: { some: { id: membership.gymnastId } } },
+          select: { email: true, firstName: true, lastName: true },
+          orderBy: { createdAt: 'asc' },
+        });
+        if (guardian?.email) {
+          const emailService = require('../../services/emailService');
+          await emailService.sendMembershipPaymentFailedEmail(
+            guardian.email,
+            `${guardian.firstName} ${guardian.lastName}`,
+            membership.gymnast,
+            invoice.amount_due,
+          );
+        }
+      }
+      console.log(`Membership payment failed for subscription ${invoice.subscription}`);
+    }
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    const subscription = event.data.object;
+    await prisma.membership.updateMany({
+      where: { stripeSubscriptionId: subscription.id, status: { not: 'CANCELLED' } },
+      data: { status: 'CANCELLED' },
+    });
+    console.log(`Membership cancelled via subscription deletion ${subscription.id}`);
+  }
+
   res.json({ received: true });
 });
 
