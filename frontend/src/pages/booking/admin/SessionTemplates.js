@@ -68,7 +68,7 @@ function RichTextEditor({ value, onChange }) {
 }
 
 // Modal for confirming future instance changes
-function ConfirmModal({ message, onYes, onNo, onCancel }) {
+function ConfirmModal({ message, onYes, onNo, onCancel, yesLabel = 'Yes', noLabel = 'No', cancelLabel = 'Cancel' }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000,
@@ -77,9 +77,9 @@ function ConfirmModal({ message, onYes, onNo, onCancel }) {
       <div style={{ background: 'var(--booking-bg-white)', borderRadius: 'var(--booking-radius-lg)', padding: '1.5rem', maxWidth: '420px', width: '100%', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
         <p style={{ margin: '0 0 1.25rem', color: 'var(--booking-text-on-light)', lineHeight: 1.5 }}>{message}</p>
         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-          {onCancel && <button className="bk-btn bk-btn--ghost" onClick={onCancel}>Cancel</button>}
-          {onNo && <button className="bk-btn bk-btn--ghost" onClick={onNo}>No</button>}
-          <button className="bk-btn bk-btn--primary" onClick={onYes}>Yes</button>
+          {onCancel && <button className="bk-btn bk-btn--ghost" onClick={onCancel}>{cancelLabel}</button>}
+          {onNo && <button className="bk-btn bk-btn--ghost" onClick={onNo}>{noLabel}</button>}
+          <button className="bk-btn bk-btn--primary" onClick={onYes}>{yesLabel}</button>
         </div>
       </div>
     </div>
@@ -305,6 +305,8 @@ export default function SessionTemplates() {
           onYes={() => executeToggle(modal.templateId, true)}
           onNo={() => executeToggle(modal.templateId, false)}
           onCancel={() => setModal(null)}
+          yesLabel="Yes, cancel future sessions"
+          noLabel="No, keep future sessions"
         />
       )}
       {modal?.type === 'delete' && (
@@ -313,6 +315,8 @@ export default function SessionTemplates() {
           onYes={() => executeDelete(modal.templateId, true)}
           onNo={() => executeDelete(modal.templateId, false)}
           onCancel={() => setModal(null)}
+          yesLabel="Yes, delete and cancel future sessions"
+          noLabel="Yes, delete only"
         />
       )}
     </div>
