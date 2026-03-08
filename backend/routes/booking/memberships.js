@@ -74,7 +74,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
       action: 'membership.create', entityType: 'Membership', entityId: membership.id,
-      metadata: { memberId: req.body.userId, type: membership.membershipType },
+      metadata: { gymnastId: value.gymnastId, status: membership.status },
     });
 
     res.status(201).json(membership);
@@ -127,7 +127,7 @@ router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
       action: 'membership.delete', entityType: 'Membership', entityId: membership.id,
-      metadata: { memberId: membership.userId, type: membership.membershipType },
+      metadata: { gymnastId: membership.gymnastId, status: membership.status },
     });
 
     res.json({ success: true });

@@ -1,6 +1,7 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
+const { audit } = require('../../services/auditLogService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -116,7 +117,6 @@ router.get('/:instanceId', auth, async (req, res) => {
 
 // PATCH /sessions/:instanceId/cancel — cancel a session instance (staff only)
 router.patch('/:instanceId/cancel', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
-  const { audit } = require('../../services/auditLogService');
   try {
     const instance = await prisma.sessionInstance.findUnique({
       where: { id: req.params.instanceId },

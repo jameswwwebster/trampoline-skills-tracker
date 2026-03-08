@@ -569,6 +569,12 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       }
     });
 
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'member.create', entityType: 'Gymnast', entityId: gymnast.id,
+      metadata: { name: `${gymnast.firstName} ${gymnast.lastName}` },
+    });
+
     res.status(201).json(gymnast);
   } catch (error) {
     console.error('Create gymnast error:', error);

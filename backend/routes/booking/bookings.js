@@ -244,7 +244,7 @@ router.post('/admin-add', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
       action: 'booking.create', entityType: 'Booking', entityId: booking.id,
-      metadata: { memberId: booking.userId, instanceId: req.body.instanceId },
+      metadata: { memberId: booking.userId, instanceId: value.sessionInstanceId },
     });
 
     res.status(201).json(booking);
