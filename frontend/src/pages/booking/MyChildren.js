@@ -330,6 +330,7 @@ export default function MyChildren() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [credits, setCredits] = useState([]);
 
   const refreshUser = async () => {
     try {
@@ -345,7 +346,10 @@ export default function MyChildren() {
       .then(r => setGymnasts(r.data))
       .finally(() => setLoading(false));
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    bookingApi.getMyCredits().then(r => setCredits(r.data)).catch(() => {});
+  }, []);
 
   const handleSelf = async () => {
     setError(null);
@@ -393,6 +397,23 @@ export default function MyChildren() {
       <h2>My Account</h2>
 
       {user && <ContactDetailsSection user={user} onSaved={refreshUser} />}
+
+      {credits.length > 0 && (
+        <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
+          <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>Session credits</p>
+          <p style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 700, color: 'var(--booking-accent)' }}>
+            £{(credits.reduce((s, c) => s + c.amount, 0) / 100).toFixed(2)} available
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            {credits.map(c => (
+              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span>£{(c.amount / 100).toFixed(2)}</span>
+                <span className="bk-muted">Expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <section style={{ marginBottom: '2rem' }}>
         <h3>Myself</h3>

@@ -342,6 +342,7 @@ export default function BookingAdmin() {
   const [selectedSession, setSelectedSession] = useState(null);
   const [sessionDetail, setSessionDetail] = useState(null);
   const [showManualAdd, setShowManualAdd] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
 
   const loadSessions = () =>
     bookingApi.getSessions(year, month).then(res => setSessions(res.data));
@@ -364,8 +365,6 @@ export default function BookingAdmin() {
   return (
     <div className="bk-page bk-page--xl">
       <h2 style={{ marginBottom: '1.25rem' }}>Booking Admin</h2>
-
-      <SessionTemplates />
 
       <div className="bk-row" style={{ marginBottom: '0.75rem' }}>
         <button className="bk-btn" onClick={() => month === 1 ? (setMonth(12), setYear(y => y - 1)) : setMonth(m => m - 1)}>&lsaquo;</button>
@@ -470,25 +469,82 @@ export default function BookingAdmin() {
               })}
             </div>
 
-            {/* Selected session detail below calendar */}
-            {selectedSession && sessionDetail && (
-              <div style={{ marginTop: '1.5rem' }}>
-                <SessionDetailPanel
-                  sessionDetail={sessionDetail}
-                  selectedSession={selectedSession}
-                  showManualAdd={showManualAdd}
-                  setShowManualAdd={setShowManualAdd}
-                  onAdded={() => {
-                    setShowManualAdd(false);
-                    loadDetail(selectedSession);
-                    loadSessions();
-                  }}
-                />
-              </div>
-            )}
           </div>
         );
       })()}
+
+      {/* Session detail overlay */}
+      {selectedSession && sessionDetail && (
+        <div
+          onClick={() => { setSelectedSession(null); setShowManualAdd(false); }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 500,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            padding: '2rem 1rem',
+            overflowY: 'auto',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--booking-bg-white)',
+              borderRadius: 'var(--booking-radius-lg)',
+              width: '100%',
+              maxWidth: '560px',
+              boxShadow: '0 16px 60px rgba(0,0,0,0.25)',
+              position: 'relative',
+            }}
+          >
+            <button
+              onClick={() => { setSelectedSession(null); setShowManualAdd(false); }}
+              style={{
+                position: 'absolute', top: '0.75rem', right: '0.75rem', zIndex: 1,
+                background: 'var(--booking-bg-light)', border: '1px solid var(--booking-border)', borderRadius: '50%',
+                width: '2rem', height: '2rem', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1rem', color: 'var(--booking-text-muted)', fontWeight: 700, lineHeight: 1,
+              }}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <div style={{ padding: '1.25rem' }}>
+              <SessionDetailPanel
+                sessionDetail={sessionDetail}
+                selectedSession={selectedSession}
+                showManualAdd={showManualAdd}
+                setShowManualAdd={setShowManualAdd}
+                onAdded={() => {
+                  setShowManualAdd(false);
+                  loadDetail(selectedSession);
+                  loadSessions();
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Session Templates — collapsible, bottom of page */}
+      <div style={{ marginTop: '2.5rem', borderTop: '1px solid var(--booking-border)', paddingTop: '1.25rem' }}>
+        <button
+          onClick={() => setTemplatesOpen(v => !v)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            fontSize: '1rem', fontWeight: 700, color: 'var(--booking-text-on-light)',
+          }}
+        >
+          <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', transition: 'transform 0.2s', display: 'inline-block', transform: templatesOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+          Session Templates
+        </button>
+        {templatesOpen && (
+          <div style={{ marginTop: '1rem' }}>
+            <SessionTemplates />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

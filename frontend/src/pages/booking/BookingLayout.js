@@ -27,7 +27,6 @@ export default function BookingLayout() {
         <div className="booking-layout__links">
           <NavLink to="/booking" end>Calendar</NavLink>
           <NavLink to="/booking/my-bookings">My Bookings</NavLink>
-          <NavLink to="/booking/my-credits">Credits</NavLink>
           <NavLink to="/booking/my-account">My Account</NavLink>
           {isAdmin && (
             <>
