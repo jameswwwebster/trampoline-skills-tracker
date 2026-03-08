@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
+import SessionTemplates from './SessionTemplates';
 import '../booking-shared.css';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -363,6 +364,8 @@ export default function BookingAdmin() {
   return (
     <div className="bk-page bk-page--xl">
       <h2 style={{ marginBottom: '1.25rem' }}>Booking Admin</h2>
+
+      <SessionTemplates />
 
       <div className="bk-row" style={{ marginBottom: '0.75rem' }}>
         <button className="bk-btn" onClick={() => month === 1 ? (setMonth(12), setYear(y => y - 1)) : setMonth(m => m - 1)}>&lsaquo;</button>
