@@ -263,7 +263,7 @@ export default function SessionDetail() {
               )}
             </div>
 
-            {myGymnasts.length === 0 && (
+            {!myGymnasts.some(g => !g.isSelf) && (
               <p style={{ fontSize: '0.875rem', color: 'var(--booking-text-muted)', marginTop: '0.5rem' }}>
                 No children added yet.{' '}
                 <Link to="/booking/my-account" style={{ color: 'var(--booking-accent)', fontWeight: 600 }}>
