@@ -322,4 +322,32 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
   }
 });
 
+// POST /bookings/:bookingId/refund — issue a Stripe refund (staff only)
+router.post('/:bookingId/refund', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  const { audit } = require('../../services/auditLogService');
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: req.params.bookingId },
+      include: { user: true },
+    });
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.user.clubId !== req.user.clubId) return res.status(403).json({ error: 'Forbidden' });
+    if (!booking.stripePaymentIntentId) return res.status(400).json({ error: 'No payment to refund' });
+
+    const refund = await stripe.refunds.create({ payment_intent: booking.stripePaymentIntentId });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'refund.issue', entityType: 'Booking', entityId: booking.id,
+      metadata: { memberId: booking.userId, stripeRefundId: refund.id, amount: refund.amount },
+    });
+
+    res.json({ success: true, refundId: refund.id });
+  } catch (err) {
+    console.error('Refund error:', err);
+    res.status(500).json({ error: err.message || 'Failed to issue refund' });
+  }
+});
+
 module.exports = router;

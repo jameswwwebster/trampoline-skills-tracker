@@ -1,6 +1,6 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
-const { auth } = require('../../middleware/auth');
+const { auth, requireRole } = require('../../middleware/auth');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -111,6 +111,35 @@ router.get('/:instanceId', auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /sessions/:instanceId/cancel — cancel a session instance (staff only)
+router.patch('/:instanceId/cancel', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  const { audit } = require('../../services/auditLogService');
+  try {
+    const instance = await prisma.sessionInstance.findUnique({
+      where: { id: req.params.instanceId },
+      include: { template: true },
+    });
+    if (!instance) return res.status(404).json({ error: 'Session not found' });
+    if (instance.template.clubId !== req.user.clubId) return res.status(403).json({ error: 'Forbidden' });
+
+    await prisma.sessionInstance.update({
+      where: { id: instance.id },
+      data: { cancelledAt: new Date() },
+    });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'session.cancel', entityType: 'SessionInstance', entityId: instance.id,
+      metadata: { date: instance.date, templateId: instance.templateId },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Cancel session error:', err);
+    res.status(500).json({ error: 'Failed to cancel session' });
   }
 });
 

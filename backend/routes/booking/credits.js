@@ -89,4 +89,28 @@ router.post('/assign', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
   }
 });
 
+// DELETE /credits/:id — remove a credit (staff only)
+router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  const { audit } = require('../../services/auditLogService');
+  try {
+    const credit = await prisma.credit.findUnique({ where: { id: req.params.id } });
+    if (!credit) return res.status(404).json({ error: 'Credit not found' });
+    if (credit.clubId !== req.user.clubId) return res.status(403).json({ error: 'Forbidden' });
+    if (credit.usedOnBookingId) return res.status(400).json({ error: 'Cannot delete a credit that has been used on a booking' });
+
+    await prisma.credit.delete({ where: { id: credit.id } });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'credit.delete', entityType: 'Credit', entityId: credit.id,
+      metadata: { userId: credit.userId, sessionTemplateId: credit.sessionTemplateId },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete credit error:', err);
+    res.status(500).json({ error: 'Failed to delete credit' });
+  }
+});
+
 module.exports = router;

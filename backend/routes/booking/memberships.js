@@ -101,4 +101,27 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
   }
 });
 
+// DELETE /memberships/:id — cancel a membership (soft delete via status update)
+router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  const { audit } = require('../../services/auditLogService');
+  try {
+    const membership = await prisma.membership.findUnique({ where: { id: req.params.id } });
+    if (!membership) return res.status(404).json({ error: 'Membership not found' });
+    if (membership.clubId !== req.user.clubId) return res.status(403).json({ error: 'Forbidden' });
+
+    await prisma.membership.update({ where: { id: membership.id }, data: { status: 'CANCELLED' } });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'membership.delete', entityType: 'Membership', entityId: membership.id,
+      metadata: { memberId: membership.userId, type: membership.membershipType },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Cancel membership error:', err);
+    res.status(500).json({ error: 'Failed to cancel membership' });
+  }
+});
+
 module.exports = router;
