@@ -452,6 +452,86 @@ class EmailService {
     }
   }
 
+  async sendEmail({ to, subject, html, text }) {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to,
+      subject,
+      html,
+      text,
+    };
+    try {
+      if (this.isConfigured && this.transporter) {
+        const info = await this.transporter.sendMail(mailOptions);
+        return { success: true, messageId: info.messageId };
+      } else {
+        return { success: false, error: 'Email not configured' };
+      }
+    } catch (error) {
+      console.error('❌ Failed to send email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async sendMembershipPaymentSuccessEmail(email, userName, gymnast, amountPence, nextBillingDate) {
+    const amount = `£${(amountPence / 100).toFixed(2)}`;
+    const nextDate = new Date(nextBillingDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject: `Membership payment received — ${gymnast.firstName} ${gymnast.lastName}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+      <h2>Payment received</h2>
+      <p>Hi ${userName},</p>
+      <p>We've received your membership payment of <strong>${amount}</strong> for <strong>${gymnast.firstName} ${gymnast.lastName}</strong>.</p>
+      <p>Your next payment of ${amount} will be taken on <strong>${nextDate}</strong>.</p>
+      <p>Thanks for being a member of Trampoline Life!</p>
+    </div>`,
+      text: `Hi ${userName},\n\nWe've received your membership payment of ${amount} for ${gymnast.firstName} ${gymnast.lastName}.\n\nYour next payment of ${amount} will be taken on ${nextDate}.\n\nThanks for being a member of Trampoline Life!`,
+    };
+    try {
+      if (this.isConfigured && this.transporter) {
+        const info = await this.transporter.sendMail(mailOptions);
+        return { success: true, messageId: info.messageId };
+      } else {
+        console.log('📧 Membership payment success email (DEV MODE):', { to: email, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount });
+        return { success: true, dev: true };
+      }
+    } catch (error) {
+      console.error('❌ Failed to send membership payment success email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async sendMembershipPaymentFailedEmail(email, userName, gymnast, amountPence) {
+    const amount = `£${(amountPence / 100).toFixed(2)}`;
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject: `Membership payment failed — ${gymnast.firstName} ${gymnast.lastName}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+      <h2>Payment failed</h2>
+      <p>Hi ${userName},</p>
+      <p>We were unable to collect your membership payment of <strong>${amount}</strong> for <strong>${gymnast.firstName} ${gymnast.lastName}</strong>.</p>
+      <p>Please log in to your account and update your payment details to avoid any interruption to your membership.</p>
+      <p>If you have any questions, please contact us.</p>
+    </div>`,
+      text: `Hi ${userName},\n\nWe were unable to collect your membership payment of ${amount} for ${gymnast.firstName} ${gymnast.lastName}.\n\nPlease log in to your account and update your payment details.\n\nIf you have any questions, please contact us.`,
+    };
+    try {
+      if (this.isConfigured && this.transporter) {
+        const info = await this.transporter.sendMail(mailOptions);
+        return { success: true, messageId: info.messageId };
+      } else {
+        console.log('📧 Membership payment failed email (DEV MODE):', { to: email, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount });
+        return { success: true, dev: true };
+      }
+    } catch (error) {
+      console.error('❌ Failed to send membership payment failed email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   async sendGuardianConnectionNotification(guardianEmail, guardianName, gymnastName, clubName, relationship) {
     const mailOptions = {
       from: process.env.EMAIL_FROM || 'noreply@trampolinetracker.com',
