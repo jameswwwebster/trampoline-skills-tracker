@@ -679,6 +679,11 @@ export default function AdminMembers() {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState('');
+  const [letterFilter, setLetterFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 25;
+
+  useEffect(() => { setPage(1); }, [search, letterFilter]);
 
   const load = () =>
     bookingApi.getMembers()
@@ -703,9 +708,15 @@ export default function AdminMembers() {
   useEffect(() => { load(); }, []);
 
   const q = search.toLowerCase();
-  const filtered = members.filter(u =>
-    `${u.firstName} ${u.lastName} ${u.email} ${childrenByUser[u.id] || ''}`.toLowerCase().includes(q)
-  );
+  const filtered = members.filter(u => {
+    const matchesSearch = `${u.firstName} ${u.lastName} ${u.email} ${childrenByUser[u.id] || ''}`.toLowerCase().includes(q);
+    const matchesLetter = !letterFilter || (u.lastName || u.firstName || '').toUpperCase().startsWith(letterFilter);
+    return matchesSearch && matchesLetter;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   if (loading) return <p className="bk-center">Loading...</p>;
 
@@ -721,9 +732,32 @@ export default function AdminMembers() {
         style={{ marginBottom: '0.75rem' }}
       />
 
+      {/* A–Z filter */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', margin: '0.5rem 0' }}>
+        <button
+          className="bk-btn bk-btn--sm"
+          style={{ fontWeight: letterFilter === '' ? 700 : 400, border: '1px solid var(--booking-border)', minWidth: '2rem' }}
+          onClick={() => setLetterFilter('')}
+        >All</button>
+        {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
+          <button
+            key={letter}
+            className="bk-btn bk-btn--sm"
+            style={{
+              fontWeight: letterFilter === letter ? 700 : 400,
+              border: '1px solid var(--booking-border)',
+              background: letterFilter === letter ? 'var(--booking-accent)' : undefined,
+              color: letterFilter === letter ? '#fff' : undefined,
+              minWidth: '2rem',
+            }}
+            onClick={() => setLetterFilter(l => l === letter ? '' : letter)}
+          >{letter}</button>
+        ))}
+      </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
         {filtered.length === 0 && <p className="bk-muted">No members found.</p>}
-        {filtered.map(u => {
+        {paginated.map(u => {
           const isSelected = selectedId === u.id;
           return (
             <div key={u.id}>
@@ -775,6 +809,24 @@ export default function AdminMembers() {
           );
         })}
       </div>
+
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginTop: '1rem', fontSize: '0.875rem' }}>
+          <button
+            className="bk-btn bk-btn--sm"
+            style={{ border: '1px solid var(--booking-border)' }}
+            disabled={safePage <= 1}
+            onClick={() => setPage(p => p - 1)}
+          >← Prev</button>
+          <span style={{ color: 'var(--booking-text-muted)' }}>Page {safePage} of {totalPages}</span>
+          <button
+            className="bk-btn bk-btn--sm"
+            style={{ border: '1px solid var(--booking-border)' }}
+            disabled={safePage >= totalPages}
+            onClick={() => setPage(p => p + 1)}
+          >Next →</button>
+        </div>
+      )}
     </div>
   );
 }
