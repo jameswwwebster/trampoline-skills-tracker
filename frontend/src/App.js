@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { BrandingProvider } from './contexts/BrandingContext';
 import { RateLimitProvider, useRateLimit } from './contexts/RateLimitContext';
@@ -54,6 +54,46 @@ import AdminMembers from './pages/booking/admin/AdminMembers';
 import AuditLog from './pages/booking/admin/AuditLog';
 import './App.css';
 
+function PageMeta() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const favicon = document.getElementById('favicon');
+    if (pathname.startsWith('/cheatsheets')) {
+      document.title = '2026 BG Rules Cheatsheets - Trampoline & DMT | British Gymnastics';
+      if (favicon) favicon.href = '/favicon.png';
+    } else if (pathname.startsWith('/booking')) {
+      document.title = 'Booking | Trampoline Life';
+      if (favicon) favicon.href = '/tl-favicon.png';
+    } else if (
+      pathname === '/' ||
+      pathname.startsWith('/gymnasts') ||
+      pathname.startsWith('/levels') ||
+      pathname.startsWith('/competitions') ||
+      pathname.startsWith('/progress') ||
+      pathname.startsWith('/my-progress') ||
+      pathname.startsWith('/certificates') ||
+      pathname.startsWith('/my-certificates') ||
+      pathname.startsWith('/users') ||
+      pathname.startsWith('/profile') ||
+      pathname.startsWith('/invites') ||
+      pathname.startsWith('/import') ||
+      pathname.startsWith('/club-settings') ||
+      pathname.startsWith('/branding') ||
+      pathname.startsWith('/custom-fields') ||
+      pathname.startsWith('/parent-requests')
+    ) {
+      document.title = 'Tracker | Trampoline Life';
+      if (favicon) favicon.href = '/tl-favicon.png';
+    } else {
+      document.title = 'Trampoline Life';
+      if (favicon) favicon.href = '/tl-favicon.png';
+    }
+  }, [pathname]);
+
+  return null;
+}
+
 // Inner component to access rate limit context
 function AppContent() {
   const rateLimitContext = useRateLimit();
@@ -92,6 +132,7 @@ function AppContent() {
 
   return (
     <div className="App">
+      <PageMeta />
       <RateLimitBanner />
       <Routes>
         <Route path="/login" element={<Login />} />
