@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { bookingApi } from '../../utils/bookingApi';
 import { useAuth } from '../../contexts/AuthContext';
 import './SessionDetail.css';
@@ -18,12 +18,6 @@ export default function SessionDetail() {
   const [error, setError] = useState(null);
   const [waitlistEntry, setWaitlistEntry] = useState(null);
   const [waitlistBusy, setWaitlistBusy] = useState(false);
-
-  // Add-child form state
-  const [showAddChild, setShowAddChild] = useState(false);
-  const [childForm, setChildForm] = useState({ firstName: '', lastName: '', dateOfBirth: '' });
-  const [addingChild, setAddingChild] = useState(false);
-  const [addChildError, setAddChildError] = useState(null);
 
   const loadGymnasts = () =>
     bookingApi.getBookableGymnasts().then(r => setMyGymnasts(r.data)).catch(() => setMyGymnasts([]));
@@ -50,23 +44,6 @@ export default function SessionDetail() {
       setSelectedGymnastIds(ids => ids.includes(res.data.id) ? ids : [...ids, res.data.id]);
     } catch (err) {
       setError('Could not create self-booking record. Please try again.');
-    }
-  };
-
-  const handleAddChild = async (e) => {
-    e.preventDefault();
-    setAddingChild(true);
-    setAddChildError(null);
-    try {
-      const res = await bookingApi.addChild(childForm);
-      await loadGymnasts();
-      setSelectedGymnastIds(ids => [...ids, res.data.id]);
-      setChildForm({ firstName: '', lastName: '', dateOfBirth: '' });
-      setShowAddChild(false);
-    } catch (err) {
-      setAddChildError(err.response?.data?.error || 'Failed to add child.');
-    } finally {
-      setAddingChild(false);
     }
   };
 
@@ -284,41 +261,16 @@ export default function SessionDetail() {
                   + Book for myself
                 </button>
               )}
-              <button className="session-detail__add-btn" onClick={() => setShowAddChild(v => !v)}>
-                {showAddChild ? 'Cancel' : '+ Add a child'}
-              </button>
             </div>
 
-            {showAddChild && (
-              <form className="session-detail__add-child-form" onSubmit={handleAddChild}>
-                <div className="session-detail__add-child-row">
-                  <input
-                    placeholder="First name"
-                    value={childForm.firstName}
-                    onChange={e => setChildForm(f => ({ ...f, firstName: e.target.value }))}
-                    required
-                    className="session-detail__add-child-input"
-                  />
-                  <input
-                    placeholder="Last name"
-                    value={childForm.lastName}
-                    onChange={e => setChildForm(f => ({ ...f, lastName: e.target.value }))}
-                    required
-                    className="session-detail__add-child-input"
-                  />
-                  <input
-                    type="date"
-                    value={childForm.dateOfBirth}
-                    onChange={e => setChildForm(f => ({ ...f, dateOfBirth: e.target.value }))}
-                    className="session-detail__add-child-input"
-                    required
-                  />
-                </div>
-                {addChildError && <p className="session-detail__error">{addChildError}</p>}
-                <button type="submit" disabled={addingChild} className="session-detail__add-child-submit">
-                  {addingChild ? 'Adding...' : 'Add child'}
-                </button>
-              </form>
+            {myGymnasts.length === 0 && (
+              <p style={{ fontSize: '0.875rem', color: 'var(--booking-text-muted)', marginTop: '0.5rem' }}>
+                No children added yet.{' '}
+                <Link to="/booking/my-account" style={{ color: 'var(--booking-accent)', fontWeight: 600 }}>
+                  Add a child in My Account
+                </Link>
+                {' '}to book for them.
+              </p>
             )}
           </div>
 
