@@ -56,6 +56,17 @@ router.get('/:id/client-secret', auth, async (req, res) => {
   try {
     const membership = await prisma.membership.findUnique({ where: { id: req.params.id } });
     if (!membership) return res.status(404).json({ error: 'Not found' });
+
+    // Authorization: must belong to caller's club, and non-admin must be a guardian of the gymnast
+    if (membership.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
+    if (!['CLUB_ADMIN', 'COACH'].includes(req.user.role)) {
+      const isGuardian = await prisma.gymnast.findFirst({
+        where: { id: membership.gymnastId, guardians: { some: { id: req.user.id } } },
+        select: { id: true },
+      });
+      if (!isGuardian) return res.status(403).json({ error: 'Access denied' });
+    }
+
     if (!membership.stripeSubscriptionId) return res.status(400).json({ error: 'No subscription' });
 
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -184,7 +195,11 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
     const { status, monthlyAmount } = req.body;
     const data = {};
 
-    if (monthlyAmount !== undefined) data.monthlyAmount = monthlyAmount;
+    if (monthlyAmount !== undefined) {
+      const { error: amtErr, value: amtVal } = Joi.number().integer().min(1).validate(monthlyAmount);
+      if (amtErr) return res.status(400).json({ error: 'monthlyAmount must be a positive integer (pence)' });
+      data.monthlyAmount = amtVal;
+    }
 
     if (status === 'PAUSED' && membership.status === 'ACTIVE') {
       if (membership.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
@@ -198,10 +213,14 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
       if (membership.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
         const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
         await stripe.subscriptions.update(membership.stripeSubscriptionId, {
-          pause_collection: '',
+          pause_collection: null,
         });
       }
       data.status = 'ACTIVE';
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
     }
 
     const updated = await prisma.membership.update({
@@ -213,7 +232,7 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
       action: 'membership.update', entityType: 'Membership', entityId: req.params.id,
-      metadata: req.body,
+      metadata: { status: data.status, monthlyAmount: data.monthlyAmount },
     });
 
     res.json(updated);
