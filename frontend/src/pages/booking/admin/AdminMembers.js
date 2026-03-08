@@ -314,7 +314,7 @@ function MemberDetail({ userId, onRemoved }) {
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState(null);
   const [showAddChild, setShowAddChild] = useState(false);
-  const [addChildForm, setAddChildForm] = useState({ firstName: '', lastName: '', dateOfBirth: '' });
+  const [addChildForm, setAddChildForm] = useState({ firstName: '', lastName: '', dateOfBirth: '', healthNotes: '', healthNotesNone: false });
   const [addingChild, setAddingChild] = useState(false);
   const [addChildError, setAddChildError] = useState(null);
 
@@ -346,12 +346,23 @@ function MemberDetail({ userId, onRemoved }) {
 
   const handleAddChild = async (e) => {
     e.preventDefault();
+    if (!addChildForm.healthNotesNone && !addChildForm.healthNotes.trim()) {
+      setAddChildError('Please describe any health issues or learning differences, or confirm there are none.');
+      return;
+    }
     setAddingChild(true);
     setAddChildError(null);
     try {
-      await bookingApi.adminAddChild({ userId, ...addChildForm });
+      const payload = {
+        userId,
+        firstName: addChildForm.firstName,
+        lastName: addChildForm.lastName,
+        dateOfBirth: addChildForm.dateOfBirth,
+        healthNotes: addChildForm.healthNotesNone ? 'none' : addChildForm.healthNotes.trim(),
+      };
+      await bookingApi.adminAddChild(payload);
       setShowAddChild(false);
-      setAddChildForm({ firstName: '', lastName: '', dateOfBirth: '' });
+      setAddChildForm({ firstName: '', lastName: '', dateOfBirth: '', healthNotes: '', healthNotesNone: false });
       load();
     } catch (err) {
       setAddChildError(err.response?.data?.error || 'Failed to add child.');
@@ -613,13 +624,36 @@ function MemberDetail({ userId, onRemoved }) {
                 onChange={e => setAddChildForm(f => ({ ...f, dateOfBirth: e.target.value }))}
                 required style={{ marginTop: '0.2rem' }} />
             </label>
+            <fieldset style={{ border: 'none', padding: 0, margin: '0.5rem 0 0' }}>
+              <label className="bk-label" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.4rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 'normal' }}>
+                <input
+                  type="checkbox"
+                  checked={addChildForm.healthNotesNone}
+                  onChange={e => setAddChildForm(f => ({ ...f, healthNotesNone: e.target.checked }))}
+                  style={{ marginTop: '0.2rem' }}
+                />
+                No known health issues or learning differences
+              </label>
+              <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem' }}>
+                Health issues or learning differences
+                <textarea
+                  className="bk-input"
+                  value={addChildForm.healthNotes}
+                  disabled={addChildForm.healthNotesNone}
+                  onChange={e => setAddChildForm(f => ({ ...f, healthNotes: e.target.value }))}
+                  rows={2}
+                  placeholder="Describe any conditions or confirm none above"
+                  style={{ marginTop: '0.2rem', opacity: addChildForm.healthNotesNone ? 0.5 : 1 }}
+                />
+              </label>
+            </fieldset>
             {addChildError && <p className="bk-error">{addChildError}</p>}
             <div className="bk-row" style={{ gap: '0.4rem' }}>
               <button type="submit" disabled={addingChild} className="bk-btn bk-btn--sm bk-btn--primary">
                 {addingChild ? 'Adding...' : 'Add child'}
               </button>
               <button type="button" className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
-                onClick={() => { setShowAddChild(false); setAddChildForm({ firstName: '', lastName: '', dateOfBirth: '' }); setAddChildError(null); }}>
+                onClick={() => { setShowAddChild(false); setAddChildForm({ firstName: '', lastName: '', dateOfBirth: '', healthNotes: '', healthNotesNone: false }); setAddChildError(null); }}>
                 Cancel
               </button>
             </div>
