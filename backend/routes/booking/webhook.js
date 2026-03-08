@@ -1,5 +1,6 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
+const emailService = require('../../services/emailService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -63,19 +64,22 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
             orderBy: { createdAt: 'asc' },
           });
           if (guardian?.email) {
-            const emailService = require('../../services/emailService');
-            const nextBillingDate = new Date(invoice.period_end * 1000);
-            await emailService.sendMembershipPaymentSuccessEmail(
-              guardian.email,
-              `${guardian.firstName} ${guardian.lastName}`,
-              membership.gymnast,
-              invoice.amount_paid,
-              nextBillingDate,
-            );
+            try {
+              const nextBillingDate = new Date(invoice.period_end * 1000);
+              await emailService.sendMembershipPaymentSuccessEmail(
+                guardian.email,
+                `${guardian.firstName} ${guardian.lastName}`,
+                membership.gymnast,
+                invoice.amount_paid,
+                nextBillingDate,
+              );
+            } catch (emailErr) {
+              console.error('Failed to send membership payment success email:', emailErr.message);
+            }
           }
         }
       }
-      console.log(`Membership ${membership?.id} activated via invoice ${invoice.id}`);
+      console.log(`Membership ${membership?.id} invoice.paid processed (invoice ${invoice.id})`);
     }
   }
 
@@ -93,13 +97,16 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
           orderBy: { createdAt: 'asc' },
         });
         if (guardian?.email) {
-          const emailService = require('../../services/emailService');
-          await emailService.sendMembershipPaymentFailedEmail(
-            guardian.email,
-            `${guardian.firstName} ${guardian.lastName}`,
-            membership.gymnast,
-            invoice.amount_due,
-          );
+          try {
+            await emailService.sendMembershipPaymentFailedEmail(
+              guardian.email,
+              `${guardian.firstName} ${guardian.lastName}`,
+              membership.gymnast,
+              invoice.amount_due,
+            );
+          } catch (emailErr) {
+            console.error('Failed to send membership payment failed email:', emailErr.message);
+          }
         }
       }
       console.log(`Membership payment failed for subscription ${invoice.subscription}`);
