@@ -106,7 +106,7 @@ const Register = () => {
               type="checkbox"
               checked={policiesAccepted}
               onChange={e => { setPoliciesAccepted(e.target.checked); if (validationErrors.policies) setValidationErrors(v => ({ ...v, policies: '' })); }}
-              style={{ marginTop: '0.2rem', flexShrink: 0 }}
+              style={{ display: 'block', marginTop: '0.2rem', flexShrink: 0, width: '1rem', height: '1rem' }}
             />
             <span>
               I have read and agree to the{' '}
@@ -122,8 +122,9 @@ const Register = () => {
           </button>
         </form>
 
-        <div className="auth-links">
-          Already have an account? <Link to="/login" className="auth-link">Sign in</Link>
+        <div className="auth-links" style={{ flexDirection: 'column', gap: '0.2rem' }}>
+          <span>Already have an account?</span>
+          <Link to="/login" className="auth-link">Sign in</Link>
         </div>
       </div>
     </div>
