@@ -140,6 +140,7 @@ export default function SessionTemplates() {
   const handleSave = async (applyToFutureInstances) => {
     setSaving(true);
     setModal(null);
+    setError(null);
     try {
       if (editingId === 'new') {
         await createTemplate(buildPayload());
@@ -175,6 +176,7 @@ export default function SessionTemplates() {
 
   const executeToggle = async (templateId, applyToFutureInstances) => {
     setModal(null);
+    setError(null);
     try {
       await toggleTemplate(templateId, applyToFutureInstances);
       await load();
@@ -189,6 +191,7 @@ export default function SessionTemplates() {
 
   const executeDelete = async (templateId, applyToFutureInstances) => {
     setModal(null);
+    setError(null);
     try {
       await deleteTemplate(templateId, applyToFutureInstances);
       await load();
