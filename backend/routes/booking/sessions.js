@@ -103,6 +103,7 @@ router.get('/:instanceId', auth, async (req, res) => {
       startTime: instance.template.startTime,
       endTime: instance.template.endTime,
       minAge: instance.template.minAge,
+      information: instance.template.information || null,
       capacity,
       bookedCount,
       availableSlots: Math.max(0, capacity - bookedCount),
