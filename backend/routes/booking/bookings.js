@@ -4,6 +4,7 @@ const { auth, requireRole } = require('../../middleware/auth');
 const Joi = require('joi');
 const getStripe = () => require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { processWaitlist } = require('../../services/waitlistService');
+const { audit } = require('../../services/auditLogService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -240,6 +241,12 @@ router.post('/admin-add', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req
       include: { lines: true },
     });
 
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'booking.create', entityType: 'Booking', entityId: booking.id,
+      metadata: { memberId: booking.userId, instanceId: req.body.instanceId },
+    });
+
     res.status(201).json(booking);
   } catch (err) {
     console.error(err);
@@ -311,6 +318,12 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
     // Free slot — offer to next person on waitlist
     await processWaitlist(booking.sessionInstanceId);
 
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'booking.cancel', entityType: 'Booking', entityId: booking.id,
+      metadata: { memberId: booking.userId, issueCredit: req.body.issueCredit || false },
+    });
+
     const creditMsg = issueCredit
       ? `Booking cancelled. ${booking.lines.length} credit(s) issued.`
       : 'Booking cancelled. No credit issued.';
@@ -325,7 +338,6 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
 // POST /bookings/:bookingId/refund — issue a Stripe refund (staff only)
 router.post('/:bookingId/refund', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-  const { audit } = require('../../services/auditLogService');
   try {
     const booking = await prisma.booking.findUnique({
       where: { id: req.params.bookingId },

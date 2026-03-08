@@ -2,6 +2,7 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const Joi = require('joi');
+const { audit } = require('../../services/auditLogService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -82,6 +83,12 @@ router.post('/assign', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
       data: { userId: value.userId, amount: value.amount, expiresAt },
     });
 
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'credit.create', entityType: 'Credit', entityId: credit.id,
+      metadata: { memberId: req.body.userId, note: req.body.note },
+    });
+
     res.status(201).json(credit);
   } catch (err) {
     console.error(err);
@@ -91,7 +98,6 @@ router.post('/assign', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
 
 // DELETE /credits/:id — remove a credit (staff only)
 router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
-  const { audit } = require('../../services/auditLogService');
   try {
     const credit = await prisma.credit.findUnique({ where: { id: req.params.id } });
     if (!credit) return res.status(404).json({ error: 'Credit not found' });

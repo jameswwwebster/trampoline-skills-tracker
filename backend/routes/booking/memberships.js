@@ -2,6 +2,7 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const Joi = require('joi');
+const { audit } = require('../../services/auditLogService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -70,6 +71,12 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       include: { gymnast: true },
     });
 
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'membership.create', entityType: 'Membership', entityId: membership.id,
+      metadata: { memberId: req.body.userId, type: membership.membershipType },
+    });
+
     res.status(201).json(membership);
   } catch (err) {
     console.error(err);
@@ -95,6 +102,13 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
       data,
       include: { gymnast: true },
     });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'membership.update', entityType: 'Membership', entityId: req.params.id,
+      metadata: req.body,
+    });
+
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -103,7 +117,6 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
 
 // DELETE /memberships/:id — cancel a membership (soft delete via status update)
 router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
-  const { audit } = require('../../services/auditLogService');
   try {
     const membership = await prisma.membership.findUnique({ where: { id: req.params.id } });
     if (!membership) return res.status(404).json({ error: 'Membership not found' });

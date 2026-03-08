@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const Joi = require('joi');
 const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
+const { audit } = require('../services/auditLogService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -466,6 +467,12 @@ router.put('/:userId/profile', auth, requireRole(['CLUB_ADMIN']), async (req, re
         role: true,
         createdAt: true
       }
+    });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'member.edit', entityType: 'User', entityId: req.params.userId,
+      metadata: { fields: Object.keys(req.body) },
     });
 
     res.json({

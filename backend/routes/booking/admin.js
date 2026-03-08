@@ -1,6 +1,7 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
+const { audit } = require('../../services/auditLogService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -17,6 +18,12 @@ router.delete('/gymnasts/:id', auth, requireRole(['CLUB_ADMIN']), async (req, re
     if (gymnast.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
 
     await deleteGymnast(gymnast.id);
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'member.delete', entityType: 'Gymnast', entityId: gymnast.id,
+      metadata: { name: `${gymnast.firstName} ${gymnast.lastName}` },
+    });
 
     res.json({ message: 'Gymnast removed.' });
   } catch (err) {
@@ -61,6 +68,12 @@ router.delete('/members/:userId', auth, requireRole(['CLUB_ADMIN']), async (req,
 
     // Delete the user
     await prisma.user.delete({ where: { id: req.params.userId } });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'member.delete', entityType: 'User', entityId: req.params.userId,
+      metadata: { email: user.email, name: `${user.firstName} ${user.lastName}` },
+    });
 
     res.json({ message: 'Member and their gymnasts removed.' });
   } catch (err) {

@@ -2,6 +2,7 @@ const express = require('express');
 const Joi = require('joi');
 const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
+const { audit } = require('../services/auditLogService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -142,6 +143,13 @@ router.post('/admin-add-child', auth, requireRole(['CLUB_ADMIN', 'COACH']), asyn
         guardians: { connect: { id: value.userId } },
       },
     });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'member.create', entityType: 'Gymnast', entityId: gymnast.id,
+      metadata: { name: `${gymnast.firstName} ${gymnast.lastName}`, parentId: req.body.userId },
+    });
+
     res.status(201).json(gymnast);
   } catch (err) {
     console.error(err);
