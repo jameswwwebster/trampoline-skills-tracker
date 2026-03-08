@@ -23,7 +23,7 @@ const changePasswordSchema = Joi.object({
 });
 
 const updateUserRoleSchema = Joi.object({
-  role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'PARENT').required()
+  role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'PARENT', 'GYMNAST').required()
 });
 
 const updateOtherUserProfileSchema = Joi.object({
@@ -396,6 +396,15 @@ router.put('/:userId/role', auth, requireRole(['CLUB_ADMIN']), async (req, res) 
         role: true,
         createdAt: true
       }
+    });
+
+    await audit({
+      userId: req.user.id,
+      clubId: req.user.clubId,
+      action: 'user.role_change',
+      entityType: 'User',
+      entityId: userId,
+      metadata: { from: targetUser.role, to: role },
     });
 
     res.json({
