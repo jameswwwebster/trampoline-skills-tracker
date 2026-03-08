@@ -769,6 +769,15 @@ function MemberDetail({ userId, onRemoved }) {
   );
 }
 
+const ASSIGNABLE_ROLES_CREATE = [
+  { value: 'PARENT', label: 'Parent' },
+  { value: 'COACH', label: 'Coach' },
+  { value: 'GYMNAST', label: 'Gymnast' },
+  { value: 'CLUB_ADMIN', label: 'Admin' },
+];
+
+const EMPTY_CREATE = { firstName: '', lastName: '', email: '', phone: '', role: 'PARENT' };
+
 export default function AdminMembers() {
   const [members, setMembers] = useState([]);
   const [childrenByUser, setChildrenByUser] = useState({}); // userId → "First Last, ..."
@@ -778,6 +787,11 @@ export default function AdminMembers() {
   const [letterFilter, setLetterFilter] = useState('');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 25;
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState(EMPTY_CREATE);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState(null);
+  const [createSuccess, setCreateSuccess] = useState(null);
 
   useEffect(() => { setPage(1); }, [search, letterFilter]);
 
@@ -803,6 +817,27 @@ export default function AdminMembers() {
 
   useEffect(() => { load(); }, []);
 
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setCreating(true);
+    setCreateError(null);
+    setCreateSuccess(null);
+    try {
+      const res = await bookingApi.createUser(createForm);
+      setCreateSuccess(
+        res.data.emailSent
+          ? `Account created and password reset email sent to ${res.data.user.email}.`
+          : `Account created for ${res.data.user.firstName} ${res.data.user.lastName}. Use "Send password reset" to email them a login link.`
+      );
+      setCreateForm(EMPTY_CREATE);
+      load();
+    } catch (err) {
+      setCreateError(err.response?.data?.error || 'Failed to create user.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const q = search.toLowerCase();
   const filtered = members.filter(u => {
     const matchesSearch = `${u.firstName} ${u.lastName} ${u.email} ${childrenByUser[u.id] || ''}`.toLowerCase().includes(q);
@@ -818,7 +853,42 @@ export default function AdminMembers() {
 
   return (
     <div className="bk-page bk-page--xl">
-      <h2 style={{ marginBottom: '1.25rem' }}>Members</h2>
+      <div className="bk-row bk-row--between" style={{ marginBottom: '1.25rem' }}>
+        <h2 style={{ margin: 0 }}>Members</h2>
+        <button className="bk-btn bk-btn--primary" onClick={() => { setShowCreate(v => !v); setCreateError(null); setCreateSuccess(null); }}>
+          {showCreate ? 'Cancel' : '+ Create user'}
+        </button>
+      </div>
+
+      {showCreate && (
+        <form onSubmit={handleCreate} className="bk-form-card" style={{ marginBottom: '1.25rem' }}>
+          <h3 style={{ margin: '0 0 1rem', fontSize: '0.95rem', fontWeight: 700 }}>New user</h3>
+          <div className="bk-grid-2" style={{ marginBottom: '0.75rem' }}>
+            <label className="bk-label">First name
+              <input className="bk-input" value={createForm.firstName} onChange={e => setCreateForm(f => ({ ...f, firstName: e.target.value }))} required style={{ marginTop: '0.25rem' }} />
+            </label>
+            <label className="bk-label">Last name
+              <input className="bk-input" value={createForm.lastName} onChange={e => setCreateForm(f => ({ ...f, lastName: e.target.value }))} required style={{ marginTop: '0.25rem' }} />
+            </label>
+          </div>
+          <label className="bk-label" style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>Email
+            <input type="email" className="bk-input" value={createForm.email} onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))} required />
+          </label>
+          <label className="bk-label" style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>Phone (optional)
+            <input type="tel" className="bk-input" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} />
+          </label>
+          <label className="bk-label" style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>Role
+            <select className="bk-select" value={createForm.role} onChange={e => setCreateForm(f => ({ ...f, role: e.target.value }))}>
+              {ASSIGNABLE_ROLES_CREATE.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+            </select>
+          </label>
+          {createError && <p className="bk-error" style={{ marginBottom: '0.5rem' }}>{createError}</p>}
+          {createSuccess && <p style={{ color: 'var(--booking-success)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{createSuccess}</p>}
+          <button type="submit" disabled={creating} className="bk-btn bk-btn--primary">
+            {creating ? 'Creating…' : 'Create user'}
+          </button>
+        </form>
+      )}
 
       <input
         className="bk-input"

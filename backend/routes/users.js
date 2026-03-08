@@ -670,6 +670,66 @@ router.put('/gymnast/:gymnastId/profile', auth, requireRole(['CLUB_ADMIN']), asy
   }
 });
 
+// Create a new user in the club (club admins only)
+router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const schema = Joi.object({
+      firstName: Joi.string().min(1).max(50).required(),
+      lastName: Joi.string().min(1).max(50).required(),
+      email: Joi.string().email().required(),
+      phone: Joi.string().allow('').optional(),
+      role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'PARENT', 'GYMNAST').default('PARENT'),
+    });
+    const { error, value } = schema.validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    const existing = await prisma.user.findUnique({ where: { email: value.email } });
+    if (existing) return res.status(400).json({ error: 'An account with this email already exists' });
+
+    const crypto = require('crypto');
+    const tempPassword = crypto.randomBytes(16).toString('hex');
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        firstName: value.firstName,
+        lastName: value.lastName,
+        email: value.email,
+        phone: value.phone || null,
+        password: hashedPassword,
+        role: value.role,
+        clubId: req.user.clubId,
+      },
+      select: { id: true, firstName: true, lastName: true, email: true, phone: true, role: true, createdAt: true },
+    });
+
+    await audit({ userId: req.user.id, clubId: req.user.clubId, action: 'user.created', metadata: { targetUserId: user.id, email: user.email, role: user.role } });
+
+    // Attempt to send password reset email so user can set their own password
+    let emailSent = false;
+    try {
+      const club = await prisma.club.findUnique({ where: { id: req.user.clubId } });
+      if (club?.emailEnabled) {
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { passwordResetToken: resetToken, passwordResetTokenExpiresAt: new Date(Date.now() + 3600000) },
+        });
+        const emailService = require('../services/emailService');
+        const result = await emailService.sendPasswordResetEmail(user.email, resetToken, `${user.firstName} ${user.lastName}`);
+        emailSent = result.success && !result.skipped;
+      }
+    } catch (emailErr) {
+      console.error('Failed to send welcome email:', emailErr);
+    }
+
+    res.status(201).json({ user, emailSent });
+  } catch (err) {
+    console.error('Create user error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Reset another user's password (club admins only)
 router.post('/:userId/reset-password', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   try {

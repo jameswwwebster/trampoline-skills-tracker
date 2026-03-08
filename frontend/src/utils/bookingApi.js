@@ -64,6 +64,9 @@ export const bookingApi = {
   updateMemberProfile: (userId, data) =>
     axios.put(`${API_URL}/users/${userId}/profile`, data, { headers: getHeaders() }),
 
+  createUser: (data) =>
+    axios.post(`${API_URL}/users`, data, { headers: getHeaders() }),
+
   changeRole: (userId, role) =>
     axios.put(`${API_URL}/users/${userId}/role`, { role }, { headers: getHeaders() }),
 
