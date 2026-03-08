@@ -317,6 +317,21 @@ function MemberDetail({ userId, onRemoved }) {
   const [addChildForm, setAddChildForm] = useState({ firstName: '', lastName: '', dateOfBirth: '', healthNotes: '', healthNotesNone: false });
   const [addingChild, setAddingChild] = useState(false);
   const [addChildError, setAddChildError] = useState(null);
+  const [sendingReset, setSendingReset] = useState(false);
+  const [resetMessage, setResetMessage] = useState(null);
+
+  const handlePasswordReset = async () => {
+    setSendingReset(true);
+    setResetMessage(null);
+    try {
+      const res = await bookingApi.resetPassword(userId);
+      setResetMessage({ type: 'success', text: res.data.message || 'Password reset email sent.' });
+    } catch (err) {
+      setResetMessage({ type: 'error', text: err.response?.data?.error || 'Failed to send reset email.' });
+    } finally {
+      setSendingReset(false);
+    }
+  };
 
   const handleRemoveGymnast = async (gymnastId) => {
     setRemoving(true);
@@ -478,6 +493,25 @@ function MemberDetail({ userId, onRemoved }) {
                 onDone={() => { setEditingRole(false); load(); }}
               />
             )}
+            <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--booking-bg-light)' }}>
+              <button
+                className="bk-btn bk-btn--sm"
+                style={{ border: '1px solid var(--booking-border)' }}
+                disabled={sendingReset}
+                onClick={handlePasswordReset}
+              >
+                {sendingReset ? 'Sending…' : 'Send password reset'}
+              </button>
+              {resetMessage && (
+                <p style={{
+                  margin: '0.4rem 0 0',
+                  fontSize: '0.8rem',
+                  color: resetMessage.type === 'success' ? 'var(--booking-success)' : 'var(--booking-danger)',
+                }}>
+                  {resetMessage.text}
+                </p>
+              )}
+            </div>
           </>
         )}
       </div>

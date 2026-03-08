@@ -64,6 +64,9 @@ export const bookingApi = {
   changeRole: (userId, role) =>
     axios.put(`${API_URL}/users/${userId}/role`, { role }, { headers: getHeaders() }),
 
+  resetPassword: (userId) =>
+    axios.post(`${API_URL}/users/${userId}/reset-password`, {}, { headers: getHeaders() }),
+
   adminAddToSession: (data) =>
     axios.post(`${API_URL}/booking/bookings/admin-add`, data, { headers: getHeaders() }),
 
