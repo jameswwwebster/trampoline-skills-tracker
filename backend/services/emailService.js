@@ -9,21 +9,21 @@ const BASE_URL = () => process.env.FRONTEND_URL || 'http://localhost:3000';
 function brandedHtml(subtitle, bodyHtml) {
   const base = BASE_URL();
   return `<div style="font-family:'Exo 2',Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #d4d4d8">
-    <div style="background:linear-gradient(135deg,#6a1fd4,#9b4dca);padding:28px 32px">
+    <div style="background-color:#6a1fd4;padding:28px 32px">
       <h1 style="margin:0;color:#ffffff;font-size:1.4rem;font-weight:800;letter-spacing:0.01em">Trampoline Life</h1>
-      <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:0.9rem">${subtitle}</p>
+      <p style="margin:6px 0 0;color:#e0d0f8;font-size:0.9rem">${subtitle}</p>
     </div>
     <div style="padding:28px 32px;color:#1a1a1a;font-size:0.95rem;line-height:1.6">
       ${bodyHtml}
     </div>
-    <div style="background:#eaeaec;padding:16px 32px;text-align:center">
+    <div style="background-color:#eaeaec;padding:16px 32px;text-align:center">
       <p style="margin:0;font-size:0.78rem;color:#888888">Trampoline Life &middot; <a href="${base}/booking" style="color:#7c35e8;text-decoration:none">Log in</a></p>
     </div>
   </div>`;
 }
 
 function ctaButton(url, label) {
-  return `<div style="text-align:center;margin:28px 0"><a href="${url}" style="background:linear-gradient(135deg,#6a1fd4,#9b4dca);color:#ffffff;padding:13px 32px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:700;font-size:0.95rem">${label}</a></div>`;
+  return `<div style="text-align:center;margin:28px 0"><a href="${url}" style="background-color:#6a1fd4;color:#ffffff;padding:13px 32px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:700;font-size:0.95rem">${label}</a></div>`;
 }
 
 function h3(text) {

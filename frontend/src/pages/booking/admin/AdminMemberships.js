@@ -16,6 +16,8 @@ export default function AdminMemberships() {
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState(null);
   const [error, setError] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editAmount, setEditAmount] = useState('');
 
   const load = () => {
     bookingApi.getMemberships().then(res => setMemberships(res.data));
@@ -56,6 +58,19 @@ export default function AdminMemberships() {
       load();
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to update membership.');
+    }
+  };
+
+  const handleEditAmount = async (id) => {
+    const pence = Math.round(parseFloat(editAmount) * 100);
+    if (!pence || pence < 1) return alert('Enter a valid amount.');
+    try {
+      await bookingApi.updateMembership(id, { monthlyAmount: pence });
+      setEditingId(null);
+      setEditAmount('');
+      load();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to update amount.');
     }
   };
 
@@ -113,7 +128,31 @@ export default function AdminMemberships() {
               return (
                 <tr key={m.id}>
                   <td>{m.gymnast.firstName} {m.gymnast.lastName}</td>
-                  <td style={{ textAlign: 'right' }}>£{(m.monthlyAmount / 100).toFixed(2)}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    {editingId === m.id ? (
+                      <div className="bk-row" style={{ justifyContent: 'flex-end' }}>
+                        <span style={{ marginRight: '0.25rem' }}>£</span>
+                        <input
+                          type="number" step="0.01" min="0.01"
+                          value={editAmount}
+                          onChange={e => setEditAmount(e.target.value)}
+                          className="bk-input"
+                          style={{ width: '5rem', padding: '0.2rem 0.4rem', fontSize: '0.875rem' }}
+                          autoFocus
+                        />
+                        <button onClick={() => handleEditAmount(m.id)} className="bk-btn bk-btn--sm bk-btn--primary">Save</button>
+                        <button onClick={() => { setEditingId(null); setEditAmount(''); }} className="bk-btn bk-btn--sm">✕</button>
+                      </div>
+                    ) : (
+                      <span
+                        style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}
+                        title="Click to edit"
+                        onClick={() => { setEditingId(m.id); setEditAmount((m.monthlyAmount / 100).toFixed(2)); }}
+                      >
+                        £{(m.monthlyAmount / 100).toFixed(2)}
+                      </span>
+                    )}
+                  </td>
                   <td><span style={{ color: s.color, fontWeight: 600, fontSize: '0.85rem' }}>{s.label}</span></td>
                   <td>
                     <div className="bk-row">

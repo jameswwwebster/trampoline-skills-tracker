@@ -391,6 +391,17 @@ function MembershipCard({ membership, onUpdated }) {
   };
   const s = STATUS_DISPLAY[membership.status] || { label: membership.status, color: 'inherit' };
 
+  const firstMonthAmount = (() => {
+    const start = new Date(membership.startDate);
+    const year = start.getFullYear();
+    const month = start.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysRemaining = daysInMonth - start.getDate() + 1;
+    return Math.round((daysRemaining / daysInMonth) * membership.monthlyAmount);
+  })();
+  const startDate = new Date(membership.startDate);
+  const firstOfNextMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+
   return (
     <div className="bk-card" style={{ marginBottom: '0.75rem' }}>
       <div className="bk-row bk-row--between" style={{ marginBottom: '0.5rem' }}>
@@ -398,9 +409,17 @@ function MembershipCard({ membership, onUpdated }) {
         <span style={{ fontSize: '0.8rem', fontWeight: 600, color: s.color }}>{s.label}</span>
       </div>
       <div style={{ fontSize: '0.875rem', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.25rem 0.75rem', color: 'var(--booking-text-muted)' }}>
-        <span>Monthly</span><span style={{ color: 'var(--booking-text-on-light)', fontWeight: 600 }}>£{(membership.monthlyAmount / 100).toFixed(2)}</span>
-        <span>Start date</span><span style={{ color: 'var(--booking-text-on-light)' }}>{new Date(membership.startDate).toLocaleDateString('en-GB')}</span>
+        <span>Monthly (from {firstOfNextMonth.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })})</span>
+        <span style={{ color: 'var(--booking-text-on-light)', fontWeight: 600 }}>£{(membership.monthlyAmount / 100).toFixed(2)}</span>
+        <span>Start date</span><span style={{ color: 'var(--booking-text-on-light)' }}>{startDate.toLocaleDateString('en-GB')}</span>
       </div>
+
+      {membership.status === 'PENDING_PAYMENT' && (
+        <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.85rem', background: 'var(--booking-bg-light)', borderRadius: 'var(--booking-radius)', fontSize: '0.85rem' }}>
+          <strong style={{ color: 'var(--booking-text-on-light)' }}>First payment: £{(firstMonthAmount / 100).toFixed(2)}</strong>
+          <span style={{ color: 'var(--booking-text-muted)' }}> — covering the rest of {startDate.toLocaleDateString('en-GB', { month: 'long' })} (pro-rated). From {firstOfNextMonth.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} you'll be charged £{(membership.monthlyAmount / 100).toFixed(2)}/month.</span>
+        </div>
+      )}
 
       {membership.status === 'PENDING_PAYMENT' && !hostedUrl && (
         <>
@@ -441,12 +460,8 @@ function MembershipCard({ membership, onUpdated }) {
 
       <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--booking-border)', fontSize: '0.85rem', color: 'var(--booking-text-muted)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <p style={{ margin: 0 }}>
-          <strong style={{ color: 'var(--booking-text-on-light)' }}>Your first payment</strong><br />
-          Your first payment will be a pro-rated amount covering the remainder of the current month. From the 1st of next month you'll be charged the full monthly amount.
-        </p>
-        <p style={{ margin: 0 }}>
           <strong style={{ color: 'var(--booking-text-on-light)' }}>How your fee is calculated</strong><br />
-          Your monthly fee is based on a training year of 46 weeks, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.
+          Your monthly fee is based on a training year of 46 weeks. We divide the total annual cost by 12 to give you a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.
         </p>
         <p style={{ margin: 0 }}>
           <strong style={{ color: 'var(--booking-text-on-light)' }}>Flexibility</strong><br />

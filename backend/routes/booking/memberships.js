@@ -222,7 +222,52 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       });
 
       stripeSubscriptionId = subscription.id;
-      clientSecret = subscription.latest_invoice?.payment_intent?.client_secret;
+      const latestInvoice = subscription.latest_invoice;
+      clientSecret = latestInvoice?.payment_intent?.client_secret;
+
+      // Auto-apply any existing guardian credits to the pending first invoice
+      const availableCredits = await prisma.credit.findMany({
+        where: { userId: guardian.id, usedAt: null, expiresAt: { gt: new Date() } },
+        orderBy: { expiresAt: 'asc' },
+      });
+
+      if (availableCredits.length > 0 && latestInvoice?.id) {
+        const invoiceAmount = latestInvoice.amount_due ?? 0;
+        let remaining = invoiceAmount;
+
+        for (const credit of availableCredits) {
+          if (remaining <= 0) break;
+          const consume = Math.min(credit.amount, remaining);
+          remaining -= consume;
+
+          // Apply to the specific pending invoice (not the next one)
+          await stripe.invoiceItems.create({
+            customer: stripeCustomerId,
+            amount: -consume,
+            currency: 'gbp',
+            description: 'Session credit applied to membership',
+            invoice: latestInvoice.id,
+          });
+
+          await prisma.credit.update({
+            where: { id: credit.id },
+            data: { amount: consume, usedAt: new Date() },
+          });
+
+          if (credit.amount - consume > 0) {
+            await prisma.credit.create({
+              data: { userId: guardian.id, amount: credit.amount - consume, expiresAt: credit.expiresAt },
+            });
+          }
+        }
+
+        // If credits fully covered the invoice, finalize and pay it so the subscription activates
+        if (remaining <= 0) {
+          await stripe.invoices.finalizeInvoice(latestInvoice.id);
+          await stripe.invoices.pay(latestInvoice.id, { paid_out_of_band: true });
+          clientSecret = null; // No payment needed from the member
+        }
+      }
     }
 
     const membership = await prisma.membership.create({
@@ -278,6 +323,26 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
       const { error: amtErr, value: amtVal } = Joi.number().integer().min(1).validate(monthlyAmount);
       if (amtErr) return res.status(400).json({ error: 'monthlyAmount must be a positive integer (pence)' });
       data.monthlyAmount = amtVal;
+
+      // Update Stripe subscription price if one exists
+      if (membership.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        const sub = await stripe.subscriptions.retrieve(membership.stripeSubscriptionId);
+        const item = sub.items.data[0];
+        if (item) {
+          await stripe.subscriptions.update(membership.stripeSubscriptionId, {
+            items: [{
+              id: item.id,
+              price_data: {
+                currency: 'gbp',
+                product: typeof item.price.product === 'string' ? item.price.product : item.price.product.id,
+                unit_amount: amtVal,
+                recurring: { interval: 'month' },
+              },
+            }],
+          });
+        }
+      }
     }
 
     if (status === 'PAUSED' && membership.status === 'ACTIVE') {
