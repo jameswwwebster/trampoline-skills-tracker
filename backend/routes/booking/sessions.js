@@ -22,7 +22,7 @@ router.get('/', auth, async (req, res) => {
     const instances = await prisma.sessionInstance.findMany({
       where: {
         date: { gte: startDate, lte: endDate },
-        template: { clubId },
+        template: { is: { clubId } },
       },
       include: {
         template: true,

@@ -133,6 +133,18 @@ router.get('/:id/client-secret', auth, async (req, res) => {
       expand: ['latest_invoice.payment_intent', 'pending_setup_intent'],
     });
 
+    console.log('Stripe subscription debug:', JSON.stringify({
+      status: subscription.status,
+      pendingSetupIntentId: subscription.pending_setup_intent?.id,
+      pendingSetupIntentStatus: subscription.pending_setup_intent?.status,
+      hasPendingSetupSecret: !!subscription.pending_setup_intent?.client_secret,
+      invoiceStatus: subscription.latest_invoice?.status,
+      invoiceAmountDue: subscription.latest_invoice?.amount_due,
+      paymentIntentId: subscription.latest_invoice?.payment_intent?.id,
+      paymentIntentStatus: subscription.latest_invoice?.payment_intent?.status,
+      hasPaymentIntentSecret: !!subscription.latest_invoice?.payment_intent?.client_secret,
+    }));
+
     // New Stripe API: when no payment method is on file, Stripe creates a pending_setup_intent
     // on the subscription instead of a payment_intent on the invoice.
     const clientSecret =

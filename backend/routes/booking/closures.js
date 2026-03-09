@@ -46,7 +46,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
       where: {
         date: { gte: start, lte: end },
         cancelledAt: null,
-        template: { clubId },
+        template: { is: { clubId } },
       },
       include: {
         bookings: {

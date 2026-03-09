@@ -962,6 +962,34 @@ router.patch('/:userId/restore', auth, requireRole(['CLUB_ADMIN']), async (req, 
   }
 });
 
+// Send a test email (club admins only)
+router.post('/test-email', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  const { email } = req.body;
+  if (!email || !/\S+@\S+\.\S+/.test(email)) {
+    return res.status(400).json({ error: 'Valid email address is required' });
+  }
+  try {
+    const emailService = require('../services/emailService');
+    if (!emailService.isConfigured) {
+      return res.status(503).json({ error: 'Email is not configured on this server. Set EMAIL_USER and EMAIL_PASS environment variables.' });
+    }
+    const result = await emailService.sendEmail({
+      to: email,
+      subject: 'Test email from Trampoline Life',
+      html: '<p>This is a test email sent from the Trampoline Life admin panel.</p><p>If you received this, email is working correctly.</p>',
+      text: 'This is a test email sent from the Trampoline Life admin panel. If you received this, email is working correctly.',
+    });
+    if (result.success) {
+      res.json({ message: `Test email sent to ${email}` });
+    } else {
+      res.status(500).json({ error: result.error || 'Failed to send email' });
+    }
+  } catch (err) {
+    console.error('Test email error:', err);
+    res.status(500).json({ error: err.message || 'Failed to send email' });
+  }
+});
+
 // Delete user (club admins only)
 router.delete('/:userId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   try {
