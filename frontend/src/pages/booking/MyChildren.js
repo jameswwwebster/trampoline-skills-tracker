@@ -366,20 +366,18 @@ function MembershipPaymentForm({ membership, intentType, onDone }) {
 }
 
 function MembershipCard({ membership, onUpdated }) {
-  const [clientSecret, setClientSecret] = useState(null);
-  const [intentType, setIntentType] = useState('payment');
+  const [hostedUrl, setHostedUrl] = useState(null);
   const [loadingSecret, setLoadingSecret] = useState(false);
   const [secretError, setSecretError] = useState(null);
 
-  const loadClientSecret = async () => {
+  const loadPaymentLink = async () => {
     setLoadingSecret(true);
     setSecretError(null);
     try {
       const res = await bookingApi.getMembershipClientSecret(membership.id);
-      setClientSecret(res.data.clientSecret);
-      setIntentType(res.data.intentType || 'payment');
+      setHostedUrl(res.data.hostedUrl);
     } catch (err) {
-      setSecretError(err.response?.data?.error || 'Failed to load payment form. Please try again.');
+      setSecretError(err.response?.data?.error || 'Failed to load payment link. Please try again.');
     } finally {
       setLoadingSecret(false);
     }
@@ -403,13 +401,13 @@ function MembershipCard({ membership, onUpdated }) {
         <span>Start date</span><span style={{ color: 'var(--booking-text-on-light)' }}>{new Date(membership.startDate).toLocaleDateString('en-GB')}</span>
       </div>
 
-      {membership.status === 'PENDING_PAYMENT' && !clientSecret && (
+      {membership.status === 'PENDING_PAYMENT' && !hostedUrl && (
         <>
           <button
             className="bk-btn bk-btn--primary"
             style={{ marginTop: '0.75rem', width: '100%' }}
             disabled={loadingSecret}
-            onClick={loadClientSecret}
+            onClick={loadPaymentLink}
           >
             {loadingSecret ? 'Loading...' : 'Set up payment'}
           </button>
@@ -417,10 +415,21 @@ function MembershipCard({ membership, onUpdated }) {
         </>
       )}
 
-      {membership.status === 'PENDING_PAYMENT' && clientSecret && (
-        <Elements stripe={stripePromise} options={{ clientSecret }}>
-          <MembershipPaymentForm membership={membership} intentType={intentType} onDone={onUpdated} />
-        </Elements>
+      {membership.status === 'PENDING_PAYMENT' && hostedUrl && (
+        <div style={{ marginTop: '0.75rem' }}>
+          <a
+            href={hostedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bk-btn bk-btn--primary"
+            style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
+          >
+            Complete payment on Stripe →
+          </a>
+          <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--booking-text-muted)', textAlign: 'center' }}>
+            Opens in a new tab. Return here and refresh once payment is complete.
+          </p>
+        </div>
       )}
 
       {membership.status === 'PAUSED' && (

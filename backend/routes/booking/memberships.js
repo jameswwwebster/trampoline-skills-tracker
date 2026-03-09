@@ -133,37 +133,11 @@ router.get('/:id/client-secret', auth, async (req, res) => {
       expand: ['latest_invoice', 'pending_setup_intent'],
     });
 
-    const inv = subscription.latest_invoice;
-    console.log('Stripe debug v3:', JSON.stringify({
-      status: subscription.status,
-      invoiceKeys: inv ? Object.keys(inv) : null,
-      paymentType: typeof inv?.payment,
-      paymentKeys: inv?.payment ? Object.keys(inv.payment) : null,
-      confirmationSecret: inv?.confirmation_secret,
-      pendingSetupIntentNull: subscription.pending_setup_intent === null,
-    }));
-
-    // Try pending_setup_intent first (used when no payment method is on file)
-    let clientSecret = subscription.pending_setup_intent?.client_secret;
-    let intentType = 'setup';
-
-    if (!clientSecret) {
-      // Fall back to payment_intent on the latest invoice.
-      // In Stripe API 2026-02-25.clover, expand of latest_invoice.payment_intent doesn't
-      // always return the full object — retrieve the payment intent directly by ID instead.
-      const piIdOrObj = subscription.latest_invoice?.payment_intent;
-      if (piIdOrObj) {
-        const piId = typeof piIdOrObj === 'string' ? piIdOrObj : piIdOrObj.id;
-        if (piId) {
-          const pi = await stripe.paymentIntents.retrieve(piId);
-          clientSecret = pi.client_secret;
-          intentType = 'payment';
-        }
-      }
-    }
-
-    if (!clientSecret) return res.status(400).json({ error: 'No pending payment found for this membership' });
-    res.json({ clientSecret, intentType });
+    // Stripe API 2026-02-25.clover: invoices no longer have payment_intent.
+    // Use the hosted_invoice_url instead to collect payment.
+    const hostedUrl = subscription.latest_invoice?.hosted_invoice_url;
+    if (!hostedUrl) return res.status(400).json({ error: 'No pending payment found for this membership' });
+    res.json({ hostedUrl });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
