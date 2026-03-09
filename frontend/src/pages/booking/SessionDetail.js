@@ -146,13 +146,12 @@ export default function SessionDetail() {
           className="bk-session-info"
           dangerouslySetInnerHTML={{ __html: session.information }}
           style={{
-            marginTop: '1rem',
-            padding: '0.75rem 1rem',
-            background: 'var(--booking-bg-light)',
-            borderRadius: 'var(--booking-radius)',
-            fontSize: '0.9rem',
-            color: 'var(--booking-text-on-light)',
-            lineHeight: 1.6,
+            marginTop: '0.75rem',
+            padding: '0.5rem 0.75rem',
+            borderLeft: '3px solid var(--booking-border)',
+            fontSize: '0.8rem',
+            color: 'var(--booking-text-muted)',
+            lineHeight: 1.5,
           }}
         />
       )}
