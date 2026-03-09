@@ -47,7 +47,6 @@ import MyBookings from './pages/booking/MyBookings';
 import MyChildren from './pages/booking/MyChildren';
 import BookingAdmin from './pages/booking/admin/BookingAdmin';
 import AdminClosures from './pages/booking/admin/AdminClosures';
-import AdminDelinquent from './pages/booking/admin/AdminDelinquent';
 import AdminMembers from './pages/booking/admin/AdminMembers';
 import AuditLog from './pages/booking/admin/AuditLog';
 import './App.css';
@@ -185,7 +184,6 @@ function AppContent() {
           <Route path="my-account" element={<MyChildren />} />
           <Route path="admin" element={<BookingAdmin />} />
           <Route path="admin/closures" element={<AdminClosures />} />
-          <Route path="admin/delinquent" element={<AdminDelinquent />} />
           <Route path="admin/members" element={<AdminMembers />} />
           <Route path="admin/audit-log" element={<AuditLog />} />
         </Route>
