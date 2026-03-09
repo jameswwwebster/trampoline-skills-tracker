@@ -428,6 +428,10 @@ function MembershipCard({ membership, onUpdated }) {
 
       <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--booking-border)', fontSize: '0.85rem', color: 'var(--booking-text-muted)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <p style={{ margin: 0 }}>
+          <strong style={{ color: 'var(--booking-text-on-light)' }}>Your first payment</strong><br />
+          Your first payment will be a pro-rated amount covering the remainder of the current month. From the 1st of next month you'll be charged the full monthly amount.
+        </p>
+        <p style={{ margin: 0 }}>
           <strong style={{ color: 'var(--booking-text-on-light)' }}>How your fee is calculated</strong><br />
           Your monthly fee is based on a training year of 46 weeks, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.
         </p>
