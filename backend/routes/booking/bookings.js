@@ -129,6 +129,21 @@ router.post('/', auth, async (req, res) => {
     const totalAmount = PRICE_PER_GYMNAST_PENCE * gymnastIds.length;
     const chargeAmount = Math.max(0, totalAmount - creditsApplied);
 
+    // Cancel any stale PENDING bookings from this user for this session
+    // (happens when a user abandons checkout and re-initiates)
+    const stalePending = await prisma.booking.findMany({
+      where: { userId: req.user.id, sessionInstanceId, status: 'PENDING' },
+      include: { lines: true },
+    });
+    for (const stale of stalePending) {
+      // Release any credits held against the stale booking
+      await prisma.credit.updateMany({
+        where: { usedOnBookingId: stale.id },
+        data: { usedAt: null, usedOnBookingId: null },
+      });
+      await prisma.booking.update({ where: { id: stale.id }, data: { status: 'CANCELLED' } });
+    }
+
     // Create Stripe Payment Intent if there's a balance to charge
     let paymentIntentId = null;
     let clientSecret = null;
