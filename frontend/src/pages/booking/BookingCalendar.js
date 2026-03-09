@@ -47,8 +47,13 @@ export default function BookingCalendar() {
   };
 
   const sessionsForDate = (date) => {
-    const dateStr = date.toISOString().slice(0, 10);
-    return sessions.filter(s => new Date(s.date).toISOString().slice(0, 10) === dateStr);
+    const y = date.getFullYear();
+    const m = date.getMonth();
+    const d = date.getDate();
+    return sessions.filter(s => {
+      const sd = new Date(s.date);
+      return sd.getUTCFullYear() === y && sd.getUTCMonth() === m && sd.getUTCDate() === d;
+    });
   };
 
   // Build calendar grid
