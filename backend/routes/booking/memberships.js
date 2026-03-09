@@ -3,6 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const Joi = require('joi');
 const { audit } = require('../../services/auditLogService');
+const emailService = require('../../services/emailService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -180,6 +181,20 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       action: 'membership.create', entityType: 'Membership', entityId: membership.id,
       metadata: { gymnastId: value.gymnastId, monthlyAmount: value.monthlyAmount },
     });
+
+    const guardian = gymnast.guardians[0];
+    if (guardian) {
+      try {
+        await emailService.sendMembershipCreatedEmail(
+          guardian.email,
+          guardian.firstName,
+          gymnast,
+          value.monthlyAmount,
+        );
+      } catch (emailErr) {
+        console.error('Failed to send membership created email:', emailErr);
+      }
+    }
 
     res.status(201).json({ membership, clientSecret });
   } catch (err) {

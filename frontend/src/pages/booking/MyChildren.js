@@ -420,6 +420,17 @@ function MembershipCard({ membership, onUpdated }) {
           Your membership is currently paused. Contact the club to resume.
         </p>
       )}
+
+      <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--booking-border)', fontSize: '0.85rem', color: 'var(--booking-text-muted)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <p style={{ margin: 0 }}>
+          <strong style={{ color: 'var(--booking-text-on-light)' }}>How your fee is calculated</strong><br />
+          Your monthly fee is based on a training year of 46 weeks, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.
+        </p>
+        <p style={{ margin: 0 }}>
+          <strong style={{ color: 'var(--booking-text-on-light)' }}>Flexibility</strong><br />
+          You have flexibility in how you use your sessions. If you normally train on a Tuesday but a Thursday works better one week, that's absolutely fine — just attend the session you need. As a member, you no longer need to sign up to individual sessions in advance.
+        </p>
+      </div>
     </div>
   );
 }

@@ -534,6 +534,46 @@ class EmailService {
     }
   }
 
+  async sendMembershipCreatedEmail(email, guardianName, gymnast, amountPence) {
+    const amount = `£${(amountPence / 100).toFixed(2)}`;
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking/my-account`;
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'noreply@trampolinetracker.com',
+      to: email,
+      subject: `Membership set up for ${gymnast.firstName} ${gymnast.lastName} — action required`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+        <h2 style="color:#2c3e50">Membership set up</h2>
+        <p>Hi ${guardianName},</p>
+        <p>A monthly membership of <strong>${amount}/month</strong> has been set up for <strong>${gymnast.firstName} ${gymnast.lastName}</strong>.</p>
+        <h3 style="color:#2c3e50">How your fee is calculated</h3>
+        <p>Your monthly fee is based on a training year of <strong>46 weeks</strong>, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.</p>
+        <h3 style="color:#2c3e50">Flexibility</h3>
+        <p>Your membership covers your agreed number of sessions each week, but you have flexibility in how you use them. If you normally train on a Tuesday but a Thursday works better one week, that's absolutely fine — just attend the session you need. As a member, you no longer need to sign up to individual sessions in advance.</p>
+        <h3 style="color:#2c3e50">Getting started</h3>
+        <p>To activate your membership, please log in to your account and complete the payment setup.</p>
+        <div style="text-align:center;margin:30px 0">
+          <a href="${loginUrl}" style="background-color:#3498db;color:white;padding:12px 30px;text-decoration:none;border-radius:5px;display:inline-block;font-weight:bold">
+            Set up payment
+          </a>
+        </div>
+        <p style="font-size:14px;color:#666">If you have any questions, please contact the club.</p>
+      </div>`,
+      text: `Hi ${guardianName},\n\nA monthly membership of ${amount}/month has been set up for ${gymnast.firstName} ${gymnast.lastName}.\n\nHOW YOUR FEE IS CALCULATED\nYour monthly fee is based on a training year of 46 weeks, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.\n\nFLEXIBILITY\nYour membership covers your agreed number of sessions each week, but you have flexibility in how you use them. If you normally train on a Tuesday but a Thursday works better one week, that's absolutely fine — just attend the session you need. As a member, you no longer need to sign up to individual sessions in advance.\n\nGETTING STARTED\nTo activate your membership, please log in and complete the payment setup:\n${loginUrl}\n\nIf you have any questions, please contact the club.`,
+    };
+    try {
+      if (this.isConfigured && this.transporter) {
+        const info = await this.transporter.sendMail(mailOptions);
+        return { success: true, messageId: info.messageId };
+      } else {
+        console.log('📧 Membership created email (DEV MODE):', { to: email, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount, loginUrl });
+        return { success: true, dev: true };
+      }
+    } catch (error) {
+      console.error('❌ Failed to send membership created email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   async sendGuardianConnectionNotification(guardianEmail, guardianName, gymnastName, clubName, relationship) {
     const mailOptions = {
       from: process.env.EMAIL_FROM || 'noreply@trampolinetracker.com',
