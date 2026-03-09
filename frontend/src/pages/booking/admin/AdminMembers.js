@@ -237,7 +237,8 @@ function GymnastRow({ g, memberships, onUpdated }) {
   return (
     <div style={{ paddingBottom: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--booking-bg-light)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <strong>{g.firstName} {g.lastName}{g.isSelf ? ' (self)' : ''}</strong>
+        <strong>{g.firstName} {g.lastName}</strong>
+        {g.isSelf && <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', color: 'var(--booking-text-muted)', fontWeight: 400 }}>Adult participant</span>}
         <span className="bk-muted" style={{ fontSize: '0.8rem' }}>{g.pastSessionCount} session{g.pastSessionCount !== 1 ? 's' : ''}</span>
       </div>
 
@@ -837,7 +838,7 @@ function MemberDetail({ userId, onRemoved }) {
       {/* Gymnasts */}
       <div className="bk-card">
         <div className="bk-row bk-row--between" style={{ marginBottom: '0.75rem' }}>
-          <h4 style={{ margin: 0, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--booking-text-muted)' }}>Gymnasts</h4>
+          <h4 style={{ margin: 0, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--booking-text-muted)' }}>Participants</h4>
           {!showAddChild && (
             <button className="bk-btn bk-btn--sm bk-btn--primary" onClick={() => setShowAddChild(true)}>+ Add child</button>
           )}
@@ -847,7 +848,7 @@ function MemberDetail({ userId, onRemoved }) {
           <p className="bk-muted" style={{ margin: '0 0 0.5rem' }}>No gymnasts linked.</p>
         )}
 
-        {member.gymnasts.map(g => (
+        {[...member.gymnasts].sort((a, b) => (b.isSelf ? 1 : 0) - (a.isSelf ? 1 : 0)).map(g => (
           <GymnastRow key={g.id} g={g} memberships={memberships} onUpdated={load} />
         ))}
 
