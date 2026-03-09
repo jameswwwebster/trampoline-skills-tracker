@@ -28,7 +28,7 @@ router.get('/', auth, async (req, res) => {
         template: true,
         bookings: {
           where: { status: 'CONFIRMED' },
-          select: { userId: true, lines: true },
+          select: { userId: true, lines: { select: { id: true } } },
         },
       },
       orderBy: [{ date: 'asc' }, { template: { startTime: 'asc' } }],
@@ -48,7 +48,7 @@ router.get('/', auth, async (req, res) => {
         bookedCount,
         availableSlots: Math.max(0, capacity - bookedCount),
         cancelledAt: instance.cancelledAt,
-        isBooked: instance.bookings.some(b => b.userId === req.user.id),
+        isBooked: confirmedBookings.some(b => b.userId === req.user.id),
       };
     });
 
