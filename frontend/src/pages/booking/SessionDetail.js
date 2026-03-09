@@ -17,6 +17,7 @@ export default function SessionDetail() {
   const [error, setError] = useState(null);
   const [waitlistEntry, setWaitlistEntry] = useState(null);
   const [waitlistBusy, setWaitlistBusy] = useState(false);
+  const [pendingMemberId, setPendingMemberId] = useState(null); // gymnast awaiting member confirmation
 
   const loadGymnasts = () =>
     bookingApi.getBookableGymnasts().then(r => setMyGymnasts(r.data)).catch(() => setMyGymnasts([]));
@@ -235,11 +236,55 @@ export default function SessionDetail() {
                 </div>
               );
             })}
-            {memberGymnasts.map(g => (
-              <div key={g.id} style={{ padding: '0.5rem 0.75rem', marginBottom: '0.25rem', background: 'rgba(39,174,96,0.08)', borderRadius: 'var(--booking-radius)', fontSize: '0.875rem', color: 'var(--booking-success)' }}>
-                ✓ {g.firstName} {g.lastName} — monthly member, no booking needed
-              </div>
-            ))}
+            {memberGymnasts.map(g => {
+              const selected = selectedGymnastIds.includes(g.id);
+              const isPending = pendingMemberId === g.id;
+              const atCapacity = !selected && selectedGymnastIds.length >= session.availableSlots;
+              return (
+                <div key={g.id} style={{ marginBottom: '0.25rem' }}>
+                  <div
+                    role="checkbox"
+                    aria-checked={selected}
+                    className={[
+                      'session-detail__gymnast-option',
+                      selected ? 'session-detail__gymnast-option--selected' : '',
+                      atCapacity && !selected ? 'session-detail__gymnast-option--disabled' : '',
+                    ].join(' ')}
+                    onClick={() => {
+                      if (selected) {
+                        toggleGymnast(g.id);
+                        setPendingMemberId(null);
+                      } else if (!atCapacity) {
+                        setPendingMemberId(g.id);
+                      }
+                    }}
+                  >
+                    <span className="session-detail__option-check">{selected && '✓'}</span>
+                    <span>{g.firstName} {g.lastName}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--booking-success)', fontWeight: 600 }}>Member</span>
+                  </div>
+                  {isPending && (
+                    <div style={{ margin: '0.25rem 0 0.5rem', padding: '0.6rem 0.75rem', background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.3)', borderRadius: 'var(--booking-radius)', fontSize: '0.85rem' }}>
+                      <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>Book an extra session?</p>
+                      <p style={{ margin: '0 0 0.5rem', color: 'var(--booking-text-muted)' }}>
+                        {g.firstName} has a monthly membership and doesn't normally need to book. This will use one of the open slots and cost £6.00.
+                      </p>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button
+                          className="bk-btn bk-btn--sm bk-btn--primary"
+                          onClick={e => { e.stopPropagation(); toggleGymnast(g.id); setPendingMemberId(null); }}
+                        >Yes, book the extra session</button>
+                        <button
+                          className="bk-btn bk-btn--sm"
+                          style={{ border: '1px solid var(--booking-border)' }}
+                          onClick={e => { e.stopPropagation(); setPendingMemberId(null); }}
+                        >Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {selectedGymnastIds.length >= session.availableSlots && bookableGymnasts.length > selectedGymnastIds.length && (
               <p className="session-detail__slots-warning">
                 Only {session.availableSlots} slot{session.availableSlots !== 1 ? 's' : ''} available — deselect someone to change your selection.
