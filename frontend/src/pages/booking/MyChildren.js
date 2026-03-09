@@ -367,14 +367,16 @@ function MembershipPaymentForm({ membership, onDone }) {
 function MembershipCard({ membership, onUpdated }) {
   const [clientSecret, setClientSecret] = useState(null);
   const [loadingSecret, setLoadingSecret] = useState(false);
+  const [secretError, setSecretError] = useState(null);
 
   const loadClientSecret = async () => {
     setLoadingSecret(true);
+    setSecretError(null);
     try {
       const res = await bookingApi.getMembershipClientSecret(membership.id);
       setClientSecret(res.data.clientSecret);
-    } catch {
-      // already paid or error
+    } catch (err) {
+      setSecretError(err.response?.data?.error || 'Failed to load payment form. Please try again.');
     } finally {
       setLoadingSecret(false);
     }
@@ -399,14 +401,17 @@ function MembershipCard({ membership, onUpdated }) {
       </div>
 
       {membership.status === 'PENDING_PAYMENT' && !clientSecret && (
-        <button
-          className="bk-btn bk-btn--primary"
-          style={{ marginTop: '0.75rem', width: '100%' }}
-          disabled={loadingSecret}
-          onClick={loadClientSecret}
-        >
-          {loadingSecret ? 'Loading...' : 'Set up payment'}
-        </button>
+        <>
+          <button
+            className="bk-btn bk-btn--primary"
+            style={{ marginTop: '0.75rem', width: '100%' }}
+            disabled={loadingSecret}
+            onClick={loadClientSecret}
+          >
+            {loadingSecret ? 'Loading...' : 'Set up payment'}
+          </button>
+          {secretError && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{secretError}</p>}
+        </>
       )}
 
       {membership.status === 'PENDING_PAYMENT' && clientSecret && (
