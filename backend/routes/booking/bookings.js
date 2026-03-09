@@ -109,9 +109,11 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
-    // Apply credits (oldest non-expired first)
-    let creditsApplied = 0;
-    let creditsUsed = [];
+    const totalAmount = PRICE_PER_GYMNAST_PENCE * gymnastIds.length;
+
+    // Apply credits greedily — only consume what's needed from each credit
+    let remaining = totalAmount;
+    let creditsToUse = []; // { id, consume, remainder, expiresAt }
     if (creditIds.length > 0) {
       const credits = await prisma.credit.findMany({
         where: {
@@ -122,12 +124,15 @@ router.post('/', auth, async (req, res) => {
         },
         orderBy: { createdAt: 'asc' },
       });
-      creditsApplied = credits.reduce((sum, c) => sum + c.amount, 0);
-      creditsUsed = credits;
+      for (const credit of credits) {
+        if (remaining <= 0) break;
+        const consume = Math.min(credit.amount, remaining);
+        remaining -= consume;
+        creditsToUse.push({ id: credit.id, consume, remainder: credit.amount - consume, expiresAt: credit.expiresAt });
+      }
     }
 
-    const totalAmount = PRICE_PER_GYMNAST_PENCE * gymnastIds.length;
-    const chargeAmount = Math.max(0, totalAmount - creditsApplied);
+    const chargeAmount = Math.max(0, remaining);
 
     // Cancel any stale PENDING bookings from this user for this session
     // (happens when a user abandons checkout and re-initiates)
@@ -180,12 +185,17 @@ router.post('/', auth, async (req, res) => {
       include: { lines: true },
     });
 
-    // Mark credits as used
-    if (creditsUsed.length > 0) {
-      await prisma.credit.updateMany({
-        where: { id: { in: creditsUsed.map(c => c.id) } },
-        data: { usedAt: new Date(), usedOnBookingId: booking.id },
+    // Mark credits as used — set amount to what was consumed, create remainder credit if any
+    for (const c of creditsToUse) {
+      await prisma.credit.update({
+        where: { id: c.id },
+        data: { amount: c.consume, usedAt: new Date(), usedOnBookingId: booking.id },
       });
+      if (c.remainder > 0) {
+        await prisma.credit.create({
+          data: { userId: req.user.id, amount: c.remainder, expiresAt: c.expiresAt },
+        });
+      }
     }
 
     res.json({ booking, clientSecret });
