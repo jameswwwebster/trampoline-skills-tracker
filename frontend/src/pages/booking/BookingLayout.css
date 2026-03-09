@@ -115,6 +115,31 @@
   opacity: 1;
 }
 
+.booking-layout__payment-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  background: #c0392b;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  text-align: center;
+  flex-wrap: wrap;
+}
+
+.booking-layout__payment-banner:hover {
+  background: #a93226;
+}
+
+.booking-layout__payment-banner-cta {
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: underline;
+}
+
 .booking-layout__main {
   flex: 1;
   padding: 1rem;

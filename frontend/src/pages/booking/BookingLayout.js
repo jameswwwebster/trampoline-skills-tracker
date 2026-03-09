@@ -1,11 +1,20 @@
-import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { bookingApi } from '../../utils/bookingApi';
 import './BookingLayout.css';
 
 export default function BookingLayout() {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
+  const [needsPaymentMethod, setNeedsPaymentMethod] = useState(false);
+
+  useEffect(() => {
+    if (!user || isAdmin) return;
+    bookingApi.getMyMemberships()
+      .then(r => setNeedsPaymentMethod(r.data.some(m => m.needsPaymentMethod)))
+      .catch(() => {});
+  }, [user, isAdmin]);
 
   return (
     <div className="booking-layout">
@@ -40,6 +49,14 @@ export default function BookingLayout() {
           )}
         </div>
       </nav>
+
+      {needsPaymentMethod && (
+        <Link to="/booking/my-account" className="booking-layout__payment-banner">
+          <span>⚠ Payment method required — your membership won't renew without a card on file.</span>
+          <span className="booking-layout__payment-banner-cta">Add now →</span>
+        </Link>
+      )}
+
       <main className="booking-layout__main">
         <Outlet />
       </main>
