@@ -74,7 +74,16 @@ router.get('/:id/client-secret', auth, async (req, res) => {
     const subscription = await stripe.subscriptions.retrieve(membership.stripeSubscriptionId, {
       expand: ['latest_invoice.payment_intent'],
     });
-    const clientSecret = subscription.latest_invoice?.payment_intent?.client_secret;
+    const invoice = subscription.latest_invoice;
+    console.log('Membership client-secret debug:', JSON.stringify({
+      subscriptionStatus: subscription.status,
+      invoiceStatus: invoice?.status,
+      invoiceAmountDue: invoice?.amount_due,
+      paymentIntentStatus: invoice?.payment_intent?.status,
+      paymentIntentId: invoice?.payment_intent?.id,
+      hasClientSecret: !!invoice?.payment_intent?.client_secret,
+    }));
+    const clientSecret = invoice?.payment_intent?.client_secret;
     if (!clientSecret) return res.status(400).json({ error: 'Payment already complete' });
     res.json({ clientSecret });
   } catch (err) {
