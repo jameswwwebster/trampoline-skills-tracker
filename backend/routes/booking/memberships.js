@@ -72,20 +72,18 @@ router.get('/:id/client-secret', auth, async (req, res) => {
 
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const subscription = await stripe.subscriptions.retrieve(membership.stripeSubscriptionId, {
-      expand: ['latest_invoice.payment_intent'],
+      expand: ['latest_invoice.payment_intent', 'pending_setup_intent'],
     });
-    const invoice = subscription.latest_invoice;
-    console.log('Membership client-secret debug:', JSON.stringify({
-      subscriptionStatus: subscription.status,
-      invoiceStatus: invoice?.status,
-      invoiceAmountDue: invoice?.amount_due,
-      paymentIntentStatus: invoice?.payment_intent?.status,
-      paymentIntentId: invoice?.payment_intent?.id,
-      hasClientSecret: !!invoice?.payment_intent?.client_secret,
-    }));
-    const clientSecret = invoice?.payment_intent?.client_secret;
-    if (!clientSecret) return res.status(400).json({ error: 'Payment already complete' });
-    res.json({ clientSecret });
+
+    // New Stripe API: when no payment method is on file, Stripe creates a pending_setup_intent
+    // on the subscription instead of a payment_intent on the invoice.
+    const clientSecret =
+      subscription.latest_invoice?.payment_intent?.client_secret ||
+      subscription.pending_setup_intent?.client_secret;
+    const intentType = subscription.pending_setup_intent?.client_secret ? 'setup' : 'payment';
+
+    if (!clientSecret) return res.status(400).json({ error: 'No pending payment found for this membership' });
+    res.json({ clientSecret, intentType });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

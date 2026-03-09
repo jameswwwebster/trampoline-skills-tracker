@@ -326,7 +326,7 @@ function InsuranceSection({ gymnast, onUpdated }) {
   );
 }
 
-function MembershipPaymentForm({ membership, onDone }) {
+function MembershipPaymentForm({ membership, intentType, onDone }) {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState(null);
@@ -337,7 +337,8 @@ function MembershipPaymentForm({ membership, onDone }) {
     e.preventDefault();
     if (!stripe || !elements) return;
     setProcessing(true);
-    const { error } = await stripe.confirmPayment({
+    const confirmFn = intentType === 'setup' ? stripe.confirmSetup : stripe.confirmPayment;
+    const { error } = await confirmFn({
       elements,
       confirmParams: { return_url: `${window.location.origin}/booking/my-account` },
       redirect: 'if_required',
@@ -366,6 +367,7 @@ function MembershipPaymentForm({ membership, onDone }) {
 
 function MembershipCard({ membership, onUpdated }) {
   const [clientSecret, setClientSecret] = useState(null);
+  const [intentType, setIntentType] = useState('payment');
   const [loadingSecret, setLoadingSecret] = useState(false);
   const [secretError, setSecretError] = useState(null);
 
@@ -375,6 +377,7 @@ function MembershipCard({ membership, onUpdated }) {
     try {
       const res = await bookingApi.getMembershipClientSecret(membership.id);
       setClientSecret(res.data.clientSecret);
+      setIntentType(res.data.intentType || 'payment');
     } catch (err) {
       setSecretError(err.response?.data?.error || 'Failed to load payment form. Please try again.');
     } finally {
@@ -416,7 +419,7 @@ function MembershipCard({ membership, onUpdated }) {
 
       {membership.status === 'PENDING_PAYMENT' && clientSecret && (
         <Elements stripe={stripePromise} options={{ clientSecret }}>
-          <MembershipPaymentForm membership={membership} onDone={onUpdated} />
+          <MembershipPaymentForm membership={membership} intentType={intentType} onDone={onUpdated} />
         </Elements>
       )}
 
