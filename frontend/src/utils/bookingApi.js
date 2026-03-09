@@ -103,6 +103,12 @@ export const bookingApi = {
   getMembershipClientSecret: (membershipId) =>
     axios.get(`${API_URL}/booking/memberships/${membershipId}/client-secret`, { headers: getHeaders() }),
 
+  getDelinquentMemberships: () =>
+    axios.get(`${API_URL}/booking/memberships/delinquent`, { headers: getHeaders() }),
+
+  sendMembershipReminder: (id) =>
+    axios.post(`${API_URL}/booking/memberships/${id}/remind`, {}, { headers: getHeaders() }),
+
   joinWaitlist: (instanceId) =>
     axios.post(`${API_URL}/booking/waitlist/${instanceId}`, {}, { headers: getHeaders() }),
 

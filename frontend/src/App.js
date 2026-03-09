@@ -49,6 +49,7 @@ import MyChildren from './pages/booking/MyChildren';
 import BookingAdmin from './pages/booking/admin/BookingAdmin';
 import AdminClosures from './pages/booking/admin/AdminClosures';
 import AdminMemberships from './pages/booking/admin/AdminMemberships';
+import AdminDelinquent from './pages/booking/admin/AdminDelinquent';
 import AdminCredits from './pages/booking/admin/AdminCredits';
 import AdminMembers from './pages/booking/admin/AdminMembers';
 import AuditLog from './pages/booking/admin/AuditLog';
@@ -189,6 +190,7 @@ function AppContent() {
           <Route path="admin" element={<BookingAdmin />} />
           <Route path="admin/closures" element={<AdminClosures />} />
           <Route path="admin/memberships" element={<AdminMemberships />} />
+          <Route path="admin/delinquent" element={<AdminDelinquent />} />
           <Route path="admin/credits" element={<AdminCredits />} />
           <Route path="admin/members" element={<AdminMembers />} />
           <Route path="admin/audit-log" element={<AuditLog />} />

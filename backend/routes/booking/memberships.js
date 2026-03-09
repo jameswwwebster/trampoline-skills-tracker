@@ -52,6 +52,64 @@ router.get('/my', auth, async (req, res) => {
   }
 });
 
+// GET /api/booking/memberships/delinquent — admin: memberships awaiting payment setup
+router.get('/delinquent', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const memberships = await prisma.membership.findMany({
+      where: { clubId: req.user.clubId, status: 'PENDING_PAYMENT' },
+      include: {
+        gymnast: {
+          include: { guardians: { orderBy: { createdAt: 'asc' }, take: 1 } },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    const now = new Date();
+    const result = memberships.map(m => ({
+      ...m,
+      daysPending: Math.floor((now - new Date(m.createdAt)) / (1000 * 60 * 60 * 24)),
+      guardian: m.gymnast.guardians[0] || null,
+    }));
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/booking/memberships/:id/remind — resend payment setup email to guardian
+router.post('/:id/remind', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const membership = await prisma.membership.findUnique({
+      where: { id: req.params.id },
+      include: {
+        gymnast: {
+          include: { guardians: { orderBy: { createdAt: 'asc' }, take: 1 } },
+        },
+      },
+    });
+    if (!membership || membership.clubId !== req.user.clubId) {
+      return res.status(404).json({ error: 'Membership not found' });
+    }
+    if (membership.status !== 'PENDING_PAYMENT') {
+      return res.status(400).json({ error: 'Membership is not awaiting payment' });
+    }
+    const guardian = membership.gymnast.guardians[0];
+    if (!guardian) return res.status(400).json({ error: 'No guardian found' });
+
+    await emailService.sendMembershipCreatedEmail(
+      guardian.email,
+      guardian.firstName,
+      membership.gymnast,
+      membership.monthlyAmount,
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/booking/memberships/:id/client-secret — get clientSecret to re-show payment form
 router.get('/:id/client-secret', auth, async (req, res) => {
   try {
