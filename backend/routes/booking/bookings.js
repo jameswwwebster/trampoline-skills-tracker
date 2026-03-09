@@ -149,6 +149,7 @@ router.post('/', auth, async (req, res) => {
       const paymentIntent = await getStripe().paymentIntents.create({
         amount: chargeAmount,
         currency: 'gbp',
+        automatic_payment_methods: { enabled: true },
         metadata: {
           sessionInstanceId,
           userId: req.user.id,

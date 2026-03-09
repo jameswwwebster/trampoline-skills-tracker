@@ -177,6 +177,7 @@ router.post('/:id/setup-intent', auth, async (req, res) => {
     const setupIntent = await stripe.setupIntents.create({
       customer: guardian.stripeCustomerId,
       usage: 'off_session',
+      automatic_payment_methods: { enabled: true },
       metadata: { membershipId: membership.id, subscriptionId: membership.stripeSubscriptionId || '' },
     });
 
