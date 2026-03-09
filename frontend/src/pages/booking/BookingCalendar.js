@@ -111,7 +111,7 @@ export default function BookingCalendar() {
     const d = date.getDate();
     return sessions.filter(s => {
       const sd = new Date(s.date);
-      return sd.getUTCFullYear() === y && sd.getUTCMonth() === m && sd.getUTCDate() === d;
+      return sd.getFullYear() === y && sd.getMonth() === m && sd.getDate() === d;
     });
   };
 
@@ -250,11 +250,7 @@ export default function BookingCalendar() {
             if (isPast) cls += ' booking-calendar__week-day--past';
 
             // Up to 3 dots per day
-            const dots = closed ? [] : ds.slice(0, 3).map(s => {
-              if (s.isBooked) return 'booked';
-              if (s.availableSlots > 0 && !s.cancelledAt) return 'open';
-              return 'full';
-            });
+            const dots = closed ? [] : ds.slice(0, 3).map(s => sessionClass(s, isPast));
 
             return (
               <div key={d.toISOString()} className={cls} onClick={() => setSelectedDate(new Date(d))}>
