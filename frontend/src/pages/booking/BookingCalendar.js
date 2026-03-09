@@ -7,6 +7,8 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAYS_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const MONTHS = ['January','February','March','April','May','June',
                 'July','August','September','October','November','December'];
+const DAY_NAMES_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const MONTH_NAMES_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export default function BookingCalendar() {
   const navigate = useNavigate();
@@ -23,34 +25,37 @@ export default function BookingCalendar() {
   const [pickerYear, setPickerYear] = useState(today.getFullYear());
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      bookingApi.getSessions(year, month),
-      bookingApi.getClosures(),
-    ]).then(([sessRes, closRes]) => {
-      setSessions(sessRes.data);
-      setClosures(closRes.data);
-    }).catch(console.error).finally(() => setLoading(false));
-  }, [year, month]);
-
-  // Keep year/month in sync with selectedDate (triggers data re-fetch when crossing month boundary)
-  useEffect(() => {
     const y = selectedDate.getFullYear();
     const m = selectedDate.getMonth() + 1;
-    if (y !== year || m !== month) {
-      setYear(y);
-      setMonth(m);
+    setYear(y);
+    setMonth(m);
+
+    // Check if current week spans a month boundary — if so, fetch both months
+    setLoading(true);
+    const ws = new Date(selectedDate);
+    ws.setDate(ws.getDate() - ws.getDay());
+    ws.setHours(0, 0, 0, 0);
+    const we = new Date(ws);
+    we.setDate(we.getDate() + 6);
+
+    const fetchMonths = [{ y, m }];
+    if (we.getMonth() + 1 !== m || we.getFullYear() !== y) {
+      fetchMonths.push({ y: we.getFullYear(), m: we.getMonth() + 1 });
     }
+
+    Promise.all([
+      ...fetchMonths.map(({ y: fy, m: fm }) => bookingApi.getSessions(fy, fm)),
+      bookingApi.getClosures(),
+    ]).then((results) => {
+      const closRes = results[results.length - 1];
+      const allSessions = results.slice(0, -1).flatMap(r => r.data);
+      setSessions(allSessions);
+      setClosures(closRes.data);
+    }).catch(console.error).finally(() => setLoading(false));
   }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const prevMonth = () => {
-    if (month === 1) { setMonth(12); setYear(y => y - 1); }
-    else setMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 12) { setMonth(1); setYear(y => y + 1); }
-    else setMonth(m => m + 1);
-  };
+  const prevMonth = () => setSelectedDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  const nextMonth = () => setSelectedDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
 
   // Returns the Sunday that starts the week containing `date`
   const weekStart = (date) => {
@@ -62,17 +67,17 @@ export default function BookingCalendar() {
 
   const prevWeek = () => {
     setSelectedDate(d => {
-      const ws = weekStart(d);
-      ws.setDate(ws.getDate() - 7);
-      return ws;
+      const prev = new Date(d);
+      prev.setDate(prev.getDate() - 7);
+      return prev;
     });
   };
 
   const nextWeek = () => {
     setSelectedDate(d => {
-      const ws = weekStart(d);
-      ws.setDate(ws.getDate() + 7);
-      return ws;
+      const next = new Date(d);
+      next.setDate(next.getDate() + 7);
+      return next;
     });
   };
 
@@ -118,9 +123,9 @@ export default function BookingCalendar() {
   };
 
   const sessionClass = (s, isPast) => {
-    if (s.isBooked) return 'booking-calendar__session--booked';
-    if (s.availableSlots > 0 && !s.cancelledAt && !isPast) return 'booking-calendar__session--open';
-    return 'booking-calendar__session--full';
+    if (s.isBooked) return 'booked';
+    if (s.availableSlots > 0 && !s.cancelledAt && !isPast) return 'open';
+    return 'full';
   };
 
   // Build calendar grid
@@ -136,9 +141,6 @@ export default function BookingCalendar() {
   const daySessions = sessionsForDate(selectedDate);
   const dayIsClosed = isInClosure(selectedDate);
   const dayIsPast = selectedMidnight < todayMidnight;
-
-  const DAY_NAMES_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-  const MONTH_NAMES_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   return (
     <div className="booking-calendar">
@@ -178,7 +180,7 @@ export default function BookingCalendar() {
                 {!closed && daySessions.map(s => (
                   <button
                     key={s.id}
-                    className={`booking-calendar__session ${sessionClass(s, isPast)}`}
+                    className={`booking-calendar__session booking-calendar__session--${sessionClass(s, isPast)}`}
                     disabled={(!s.isBooked && s.availableSlots === 0) || !!s.cancelledAt || isPast}
                     onClick={() => navigate(`/booking/session/${s.id}`)}
                   >
@@ -289,7 +291,7 @@ export default function BookingCalendar() {
           {!dayIsClosed && daySessions.map(s => (
             <button
               key={s.id}
-              className={`booking-calendar__day-session booking-calendar__day-session--${sessionClass(s, dayIsPast).split('--')[1]}`}
+              className={`booking-calendar__day-session booking-calendar__day-session--${sessionClass(s, dayIsPast)}`}
               disabled={(!s.isBooked && s.availableSlots === 0) || !!s.cancelledAt || dayIsPast}
               onClick={() => navigate(`/booking/session/${s.id}`)}
             >
