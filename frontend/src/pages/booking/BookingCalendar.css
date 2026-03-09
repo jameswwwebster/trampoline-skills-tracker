@@ -214,7 +214,6 @@
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 3px;
-    margin-bottom: 0.75rem;
   }
 
   .booking-calendar__week-day {
@@ -280,59 +279,88 @@
     background: var(--booking-border);
   }
 
-  /* ── Day detail ── */
+  /* ── Day detail — arrow anchored to selected date column ── */
   .booking-calendar__day-detail {
+    position: relative;
     background: var(--booking-bg-white);
     border: 1px solid var(--booking-border);
     border-radius: var(--booking-radius-lg);
-    padding: 0.75rem;
-    min-height: 80px;
+    padding: 0.65rem 0.75rem 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Outer border triangle */
+  .booking-calendar__day-detail::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: var(--detail-arrow);
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-top: none;
+    border-bottom-color: var(--booking-border);
+  }
+
+  /* Inner white fill triangle */
+  .booking-calendar__day-detail::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: var(--detail-arrow);
+    transform: translateX(-50%);
+    border: 7px solid transparent;
+    border-top: none;
+    border-bottom-color: var(--booking-bg-white);
   }
 
   .booking-calendar__day-detail-heading {
-    font-size: 0.85rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem;
-    color: var(--booking-text-on-light);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin: 0 0 0.45rem;
+    color: var(--booking-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   .booking-calendar__day-session {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.55rem 0.75rem;
+    padding: 0.35rem 0.6rem;
     border-radius: var(--booking-radius);
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.3rem;
     cursor: pointer;
-    border: none;
+    background: transparent;
+    border: 1px solid var(--booking-border);
+    border-left-width: 3px;
     width: 100%;
     text-align: left;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
+    color: var(--booking-text-on-light);
   }
 
   .booking-calendar__day-session--open {
-    background: var(--booking-accent-gradient);
-    color: var(--booking-text-on-dark);
+    border-left-color: var(--booking-accent);
   }
 
   .booking-calendar__day-session--booked {
-    background: var(--booking-booked);
-    color: #fff;
+    border-left-color: var(--booking-booked);
+    color: var(--booking-booked);
   }
 
   .booking-calendar__day-session--full {
-    background: var(--booking-bg-light);
+    border-left-color: var(--booking-border);
     color: var(--booking-text-muted);
     cursor: default;
   }
 
   .booking-calendar__day-session-time {
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .booking-calendar__day-session-status {
-    font-size: 0.78rem;
-    opacity: 0.85;
+    font-size: 0.72rem;
+    color: var(--booking-text-muted);
   }
 
   .booking-calendar__day-closed {

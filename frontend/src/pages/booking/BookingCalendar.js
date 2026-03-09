@@ -273,8 +273,11 @@ export default function BookingCalendar() {
           })}
         </div>
 
-        {/* Day detail */}
-        <div className="booking-calendar__day-detail">
+        {/* Day detail — arrow points at the selected column */}
+        <div
+          className="booking-calendar__day-detail"
+          style={{ '--detail-arrow': `${(selectedDate.getDay() + 0.5) / 7 * 100}%` }}
+        >
           <p className="booking-calendar__day-detail-heading">
             {selectedDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
