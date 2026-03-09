@@ -171,6 +171,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     if (existing) return res.status(400).json({ error: 'Gymnast already has an active membership' });
 
     let stripeSubscriptionId = null;
+    let membershipStatus = 'PENDING_PAYMENT';
 
     if (process.env.STRIPE_SECRET_KEY) {
       const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -190,6 +191,23 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
         await prisma.user.update({
           where: { id: guardian.id },
           data: { stripeCustomerId },
+        });
+      }
+
+      // Apply available credits as Stripe customer balance BEFORE creating the subscription.
+      // Stripe automatically deducts this balance from the first invoice, avoiding the
+      // invoice_not_editable error that occurs when trying to add items after creation.
+      const availableCredits = await prisma.credit.findMany({
+        where: { userId: guardian.id, usedAt: null, expiresAt: { gt: new Date() } },
+        orderBy: { expiresAt: 'asc' },
+      });
+      const totalCreditAmount = availableCredits.reduce((sum, c) => sum + c.amount, 0);
+
+      if (totalCreditAmount > 0) {
+        await stripe.customers.createBalanceTransaction(stripeCustomerId, {
+          amount: -totalCreditAmount,
+          currency: 'gbp',
+          description: 'Session credits applied to first membership payment',
         });
       }
 
@@ -216,11 +234,56 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
         proration_behavior: 'create_prorations',
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
-        expand: ['latest_invoice.payment_intent'],
+        expand: ['latest_invoice'],
         metadata: { clubId: req.user.clubId, gymnastId: value.gymnastId },
       });
 
       stripeSubscriptionId = subscription.id;
+
+      // Calculate how much credit Stripe actually consumed against the first invoice.
+      // total = invoice amount before balance; amount_due = what remains after balance applied.
+      const firstInvoice = subscription.latest_invoice;
+      const invoiceTotal = firstInvoice?.total ?? 0;
+      const invoiceAmountDue = firstInvoice?.amount_due ?? 0;
+      const creditsConsumed = Math.max(0, invoiceTotal - invoiceAmountDue);
+
+      // Mark the consumed credits as used (oldest first, split if needed)
+      if (creditsConsumed > 0) {
+        let remaining = creditsConsumed;
+        for (const credit of availableCredits) {
+          if (remaining <= 0) break;
+          if (credit.amount <= remaining) {
+            await prisma.credit.update({ where: { id: credit.id }, data: { usedAt: new Date() } });
+            remaining -= credit.amount;
+          } else {
+            // Partial consumption — split the credit record
+            await prisma.credit.update({ where: { id: credit.id }, data: { amount: remaining, usedAt: new Date() } });
+            await prisma.credit.create({
+              data: {
+                userId: guardian.id,
+                amount: credit.amount - remaining,
+                expiresAt: credit.expiresAt,
+                sourceBookingId: credit.sourceBookingId,
+              },
+            });
+            remaining = 0;
+          }
+        }
+      }
+
+      // If credits didn't fully cover unused balance we added, restore the remainder
+      // by adding back a positive balance transaction so we don't over-credit the customer
+      if (totalCreditAmount > creditsConsumed) {
+        const unused = totalCreditAmount - creditsConsumed;
+        await stripe.customers.createBalanceTransaction(stripeCustomerId, {
+          amount: unused,
+          currency: 'gbp',
+          description: 'Unused session credit balance restored',
+        });
+      }
+
+      // If the first invoice is fully covered, the subscription can go straight to active
+      membershipStatus = invoiceAmountDue === 0 ? 'ACTIVE' : 'PENDING_PAYMENT';
     }
 
     const membership = await prisma.membership.create({
@@ -229,7 +292,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
         clubId: req.user.clubId,
         monthlyAmount: value.monthlyAmount,
         stripeSubscriptionId,
-        status: 'PENDING_PAYMENT',
+        status: membershipStatus,
         startDate: new Date(value.startDate),
       },
       include: { gymnast: true },
