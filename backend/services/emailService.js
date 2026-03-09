@@ -21,6 +21,7 @@ class EmailService {
       };
 
       // If no email credentials are provided, use a test account
+      console.log(`📧 Email env: EMAIL_USER="${process.env.EMAIL_USER || '(not set)'}", EMAIL_PASS length=${process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0}`);
       if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
         console.log('⚠️  No email credentials found. Using development mode - emails will be logged instead of sent.');
         this.isConfigured = false;
