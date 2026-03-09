@@ -343,6 +343,10 @@ export default function BookingAdmin() {
   const [sessionDetail, setSessionDetail] = useState(null);
   const [showManualAdd, setShowManualAdd] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [testEmailOpen, setTestEmailOpen] = useState(false);
+  const [testEmailAddr, setTestEmailAddr] = useState('');
+  const [testEmailSending, setTestEmailSending] = useState(false);
+  const [testEmailResult, setTestEmailResult] = useState(null);
 
   const loadSessions = () =>
     bookingApi.getSessions(year, month).then(res => setSessions(res.data));
@@ -542,6 +546,61 @@ export default function BookingAdmin() {
         {templatesOpen && (
           <div style={{ marginTop: '1rem' }}>
             <SessionTemplates />
+          </div>
+        )}
+      </div>
+
+      {/* Test Email — collapsible, bottom of page */}
+      <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--booking-border)', paddingTop: '1.25rem' }}>
+        <button
+          onClick={() => { setTestEmailOpen(v => !v); setTestEmailResult(null); }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            fontSize: '1rem', fontWeight: 700, color: 'var(--booking-text-on-light)',
+          }}
+        >
+          <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', transition: 'transform 0.2s', display: 'inline-block', transform: testEmailOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+          Test Email
+        </button>
+        {testEmailOpen && (
+          <div style={{ marginTop: '1rem', maxWidth: 400 }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--booking-text-muted)', marginBottom: '0.75rem' }}>
+              Send a test email to verify your email settings are working.
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                className="bk-input"
+                type="email"
+                placeholder="Enter email address"
+                value={testEmailAddr}
+                onChange={e => { setTestEmailAddr(e.target.value); setTestEmailResult(null); }}
+                style={{ flex: 1 }}
+              />
+              <button
+                className="bk-btn bk-btn--primary"
+                disabled={testEmailSending || !testEmailAddr.trim()}
+                onClick={async () => {
+                  setTestEmailSending(true);
+                  setTestEmailResult(null);
+                  try {
+                    await bookingApi.testEmail(testEmailAddr.trim());
+                    setTestEmailResult({ ok: true, msg: `Test email sent to ${testEmailAddr.trim()}` });
+                  } catch (err) {
+                    setTestEmailResult({ ok: false, msg: err.response?.data?.error || 'Failed to send email' });
+                  } finally {
+                    setTestEmailSending(false);
+                  }
+                }}
+              >
+                {testEmailSending ? 'Sending...' : 'Send'}
+              </button>
+            </div>
+            {testEmailResult && (
+              <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: testEmailResult.ok ? 'var(--booking-success)' : 'var(--booking-danger)' }}>
+                {testEmailResult.msg}
+              </p>
+            )}
           </div>
         )}
       </div>
