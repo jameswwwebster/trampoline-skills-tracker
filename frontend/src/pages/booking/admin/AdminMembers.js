@@ -357,6 +357,8 @@ function GymnastRow({ g, memberships, onUpdated }) {
 
 function GymnastMembership({ gymnast, membership, onRefresh }) {
   const [showForm, setShowForm] = useState(false);
+  const [showEditAmount, setShowEditAmount] = useState(false);
+  const [editAmount, setEditAmount] = useState('');
   const [form, setForm] = useState({ monthlyAmount: '', startDate: new Date().toISOString().slice(0, 10) });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -395,6 +397,21 @@ function GymnastMembership({ gymnast, membership, onRefresh }) {
     }
   };
 
+  const handleEditAmount = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      await bookingApi.updateMembership(membership.id, { monthlyAmount: Math.round(parseFloat(editAmount) * 100) });
+      setShowEditAmount(false);
+      onRefresh();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to update amount.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const style = membership ? STATUS_STYLES[membership.status] : null;
 
   return (
@@ -427,6 +444,11 @@ function GymnastMembership({ gymnast, membership, onRefresh }) {
               onClick={() => handleStatus('ACTIVE')}>Resume</button>
           )}
           <button className="bk-btn bk-btn--sm" disabled={saving}
+            style={{ border: '1px solid var(--booking-border)' }}
+            onClick={() => { setEditAmount((membership.monthlyAmount / 100).toFixed(2)); setShowEditAmount(v => !v); }}>
+            Edit amount
+          </button>
+          <button className="bk-btn bk-btn--sm" disabled={saving}
             style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
             onClick={async () => {
               if (!window.confirm('Cancel this membership? This will stop Stripe billing immediately.')) return;
@@ -435,6 +457,19 @@ function GymnastMembership({ gymnast, membership, onRefresh }) {
               catch (err) { setError(err.response?.data?.error || 'Failed to cancel.'); setSaving(false); }
             }}>Cancel membership</button>
         </div>
+      )}
+
+      {membership && showEditAmount && (
+        <form onSubmit={handleEditAmount} style={{ marginTop: '0.5rem', display: 'flex', gap: '0.4rem', alignItems: 'flex-end' }}>
+          <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem', flex: 1 }}>New monthly amount (£)
+            <input type="number" step="0.01" min="0.01" className="bk-input"
+              value={editAmount} onChange={e => setEditAmount(e.target.value)}
+              required style={{ marginTop: '0.2rem' }} />
+          </label>
+          <button type="submit" className="bk-btn bk-btn--sm bk-btn--primary" disabled={saving}>Save</button>
+          <button type="button" className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
+            onClick={() => setShowEditAmount(false)}>Cancel</button>
+        </form>
       )}
 
       {!membership && !showForm && (
