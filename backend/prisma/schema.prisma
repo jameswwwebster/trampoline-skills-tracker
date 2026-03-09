@@ -543,7 +543,6 @@ model Membership {
   gymnastId              String
   clubId                 String
   monthlyAmount          Int              // in pence
-  sessionAllowancePerWeek Int
   stripeSubscriptionId   String?
   status                 MembershipStatus @default(PENDING_PAYMENT)
   startDate              DateTime

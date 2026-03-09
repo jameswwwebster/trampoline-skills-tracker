@@ -395,7 +395,6 @@ function MembershipCard({ membership, onUpdated }) {
       </div>
       <div style={{ fontSize: '0.875rem', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.25rem 0.75rem', color: 'var(--booking-text-muted)' }}>
         <span>Monthly</span><span style={{ color: 'var(--booking-text-on-light)', fontWeight: 600 }}>£{(membership.monthlyAmount / 100).toFixed(2)}</span>
-        <span>Sessions/week</span><span style={{ color: 'var(--booking-text-on-light)' }}>{membership.sessionAllowancePerWeek}</span>
         <span>Start date</span><span style={{ color: 'var(--booking-text-on-light)' }}>{new Date(membership.startDate).toLocaleDateString('en-GB')}</span>
       </div>
 

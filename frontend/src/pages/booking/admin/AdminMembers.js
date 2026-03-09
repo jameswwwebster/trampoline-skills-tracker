@@ -355,7 +355,7 @@ function GymnastRow({ g, memberships, onUpdated }) {
 
 function GymnastMembership({ gymnast, membership, onRefresh }) {
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ monthlyAmount: '', sessionAllowancePerWeek: '', startDate: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState({ monthlyAmount: '', startDate: new Date().toISOString().slice(0, 10) });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -367,11 +367,11 @@ function GymnastMembership({ gymnast, membership, onRefresh }) {
       await bookingApi.createMembership({
         gymnastId: gymnast.id,
         monthlyAmount: Math.round(parseFloat(form.monthlyAmount) * 100),
-        sessionAllowancePerWeek: parseInt(form.sessionAllowancePerWeek),
+
         startDate: form.startDate,
       });
       setShowForm(false);
-      setForm({ monthlyAmount: '', sessionAllowancePerWeek: '', startDate: new Date().toISOString().slice(0, 10) });
+      setForm({ monthlyAmount: '', startDate: new Date().toISOString().slice(0, 10) });
       onRefresh();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create membership.');
@@ -448,12 +448,6 @@ function GymnastMembership({ gymnast, membership, onRefresh }) {
                 value={form.monthlyAmount}
                 onChange={e => setForm(f => ({ ...f, monthlyAmount: e.target.value }))}
                 required style={{ marginTop: '0.2rem' }} />
-            </label>
-            <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem' }}>Sessions/week
-              <input type="number" min="1" max="14" className="bk-input"
-                value={form.sessionAllowancePerWeek}
-                onChange={e => setForm(f => ({ ...f, sessionAllowancePerWeek: e.target.value }))}
-                required placeholder="e.g. 2" style={{ marginTop: '0.2rem' }} />
             </label>
             <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem' }}>Start date
               <input type="date" className="bk-input"

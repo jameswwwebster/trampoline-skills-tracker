@@ -12,7 +12,7 @@ const STATUS_LABELS = {
 export default function AdminMemberships() {
   const [memberships, setMemberships] = useState([]);
   const [gymnasts, setGymnasts] = useState([]);
-  const [form, setForm] = useState({ gymnastId: '', monthlyAmount: '', sessionAllowancePerWeek: '', startDate: '' });
+  const [form, setForm] = useState({ gymnastId: '', monthlyAmount: '', startDate: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState(null);
   const [error, setError] = useState(null);
@@ -35,10 +35,10 @@ export default function AdminMemberships() {
       const res = await bookingApi.createMembership({
         gymnastId: form.gymnastId,
         monthlyAmount: Math.round(parseFloat(form.monthlyAmount) * 100),
-        sessionAllowancePerWeek: parseInt(form.sessionAllowancePerWeek),
+
         startDate: form.startDate,
       });
-      setForm({ gymnastId: '', monthlyAmount: '', sessionAllowancePerWeek: '', startDate: '' });
+      setForm({ gymnastId: '', monthlyAmount: '', startDate: '' });
       setSubmitMsg(res.data.clientSecret
         ? 'Membership created. The member will see a payment setup prompt in their account.'
         : 'Membership created.');
@@ -86,14 +86,9 @@ export default function AdminMemberships() {
             <input type="number" step="0.01" min="0" value={form.monthlyAmount} onChange={e => setForm(f => ({ ...f, monthlyAmount: e.target.value }))} required placeholder="e.g. 40.00" className="bk-input" style={{ marginTop: '0.25rem' }} />
           </label>
         </div>
-        <div className="bk-grid-2">
-          <label className="bk-label">Sessions per week
-            <input type="number" min="1" max="14" value={form.sessionAllowancePerWeek} onChange={e => setForm(f => ({ ...f, sessionAllowancePerWeek: e.target.value }))} required placeholder="e.g. 2" className="bk-input" style={{ marginTop: '0.25rem' }} />
-          </label>
-          <label className="bk-label">Start date
-            <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} required className="bk-input" style={{ marginTop: '0.25rem' }} />
-          </label>
-        </div>
+        <label className="bk-label">Start date
+          <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} required className="bk-input" style={{ marginTop: '0.25rem' }} />
+        </label>
         {error && <p className="bk-error">{error}</p>}
         {submitMsg && <p style={{ color: 'var(--booking-success)', fontSize: '0.875rem' }}>{submitMsg}</p>}
         <button type="submit" disabled={submitting} className="bk-btn bk-btn--primary">
@@ -108,7 +103,6 @@ export default function AdminMemberships() {
             <tr>
               <th>Gymnast</th>
               <th style={{ textAlign: 'right' }}>Monthly</th>
-              <th>Sessions/wk</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -120,7 +114,6 @@ export default function AdminMemberships() {
                 <tr key={m.id}>
                   <td>{m.gymnast.firstName} {m.gymnast.lastName}</td>
                   <td style={{ textAlign: 'right' }}>£{(m.monthlyAmount / 100).toFixed(2)}</td>
-                  <td style={{ textAlign: 'center' }}>{m.sessionAllowancePerWeek}</td>
                   <td><span style={{ color: s.color, fontWeight: 600, fontSize: '0.85rem' }}>{s.label}</span></td>
                   <td>
                     <div className="bk-row">

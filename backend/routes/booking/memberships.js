@@ -88,7 +88,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     const { error, value } = Joi.object({
       gymnastId: Joi.string().required(),
       monthlyAmount: Joi.number().integer().min(1).required(),
-      sessionAllowancePerWeek: Joi.number().integer().min(1).required(),
+
       startDate: Joi.date().required(),
     }).validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
@@ -164,7 +164,6 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
         gymnastId: value.gymnastId,
         clubId: req.user.clubId,
         monthlyAmount: value.monthlyAmount,
-        sessionAllowancePerWeek: value.sessionAllowancePerWeek,
         stripeSubscriptionId,
         status: 'PENDING_PAYMENT',
         startDate: new Date(value.startDate),
@@ -175,7 +174,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
       action: 'membership.create', entityType: 'Membership', entityId: membership.id,
-      metadata: { gymnastId: value.gymnastId, monthlyAmount: value.monthlyAmount, sessionAllowancePerWeek: value.sessionAllowancePerWeek },
+      metadata: { gymnastId: value.gymnastId, monthlyAmount: value.monthlyAmount },
     });
 
     res.status(201).json({ membership, clientSecret });
