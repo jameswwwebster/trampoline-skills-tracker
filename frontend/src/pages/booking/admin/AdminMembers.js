@@ -470,6 +470,165 @@ function GymnastMembership({ gymnast, membership, onRefresh }) {
   );
 }
 
+const MEMBERSHIP_STATUS_LABELS = {
+  PENDING_PAYMENT: { label: 'Awaiting payment setup', color: '#e67e22' },
+  ACTIVE:          { label: 'Active', color: 'var(--booking-success)' },
+  PAUSED:          { label: 'Paused', color: 'var(--booking-text-muted)' },
+  CANCELLED:       { label: 'Cancelled', color: 'var(--booking-danger)' },
+};
+
+function MembershipsPanel() {
+  const [memberships, setMemberships] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState({});
+  const [error, setError] = useState(null);
+
+  const load = () => {
+    setLoading(true);
+    bookingApi.getMemberships()
+      .then(res => setMemberships(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+  useEffect(load, []);
+
+  const handleStatus = async (id, status) => {
+    setSaving(s => ({ ...s, [id]: true }));
+    setError(null);
+    try {
+      await bookingApi.updateMembership(id, { status });
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to update.');
+    } finally {
+      setSaving(s => ({ ...s, [id]: false }));
+    }
+  };
+
+  const handleCancel = async (id) => {
+    if (!window.confirm('Cancel this membership? This will stop Stripe billing immediately.')) return;
+    setSaving(s => ({ ...s, [id]: true }));
+    try {
+      await bookingApi.deleteMembership(id);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to cancel.');
+      setSaving(s => ({ ...s, [id]: false }));
+    }
+  };
+
+  if (loading) return <p className="bk-muted">Loading...</p>;
+  if (memberships.length === 0) return <p className="bk-muted">No memberships yet.</p>;
+
+  return (
+    <>
+      {error && <p className="bk-error">{error}</p>}
+      <table className="bk-table">
+        <thead>
+          <tr>
+            <th>Gymnast</th>
+            <th style={{ textAlign: 'right' }}>Monthly</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {memberships.map(m => {
+            const s = MEMBERSHIP_STATUS_LABELS[m.status] || { label: m.status, color: 'inherit' };
+            return (
+              <tr key={m.id}>
+                <td>{m.gymnast.firstName} {m.gymnast.lastName}</td>
+                <td style={{ textAlign: 'right' }}>£{(m.monthlyAmount / 100).toFixed(2)}</td>
+                <td><span style={{ color: s.color, fontWeight: 600, fontSize: '0.85rem' }}>{s.label}</span></td>
+                <td>
+                  <div className="bk-row">
+                    {m.status === 'ACTIVE' && (
+                      <button onClick={() => handleStatus(m.id, 'PAUSED')} disabled={saving[m.id]} className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}>Pause</button>
+                    )}
+                    {m.status === 'PAUSED' && (
+                      <button onClick={() => handleStatus(m.id, 'ACTIVE')} disabled={saving[m.id]} className="bk-btn bk-btn--sm bk-btn--primary">Resume</button>
+                    )}
+                    {m.status !== 'CANCELLED' && (
+                      <button onClick={() => handleCancel(m.id)} disabled={saving[m.id]} className="bk-btn bk-btn--sm" style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}>Cancel</button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </>
+  );
+}
+
+function CreditsPanel() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState('');
+
+  const load = () => {
+    setLoading(true);
+    bookingApi.getAllCredits()
+      .then(r => setUsers(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+  useEffect(load, []);
+
+  const filtered = users.filter(u =>
+    `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (loading) return <p className="bk-muted">Loading...</p>;
+
+  return (
+    <>
+      {selected && (
+        <div className="bk-form-card" style={{ marginBottom: '1rem' }}>
+          <h4 style={{ margin: '0 0 0.75rem' }}>Assign credit to {selected.firstName} {selected.lastName}</h4>
+          <AssignCreditForm userId={selected.id} onDone={() => { setSelected(null); load(); }} />
+        </div>
+      )}
+      <input
+        className="bk-input"
+        placeholder="Search by name or email..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        style={{ marginBottom: '0.75rem' }}
+      />
+      <table className="bk-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th style={{ textAlign: 'right' }}>Credits</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map(u => (
+            <tr key={u.id}>
+              <td>{u.firstName} {u.lastName}</td>
+              <td className="bk-muted" style={{ fontSize: '0.85rem' }}>{u.email}</td>
+              <td style={{ textAlign: 'right' }}>
+                {u.totalCredits > 0
+                  ? <strong style={{ color: 'var(--booking-accent)' }}>£{(u.totalCredits / 100).toFixed(2)}</strong>
+                  : <span className="bk-muted">—</span>}
+              </td>
+              <td>
+                <button className="bk-btn bk-btn--sm bk-btn--primary" onClick={() => setSelected(u)}>Assign credit</button>
+              </td>
+            </tr>
+          ))}
+          {filtered.length === 0 && <tr><td colSpan={4} className="bk-center">No users found.</td></tr>}
+        </tbody>
+      </table>
+    </>
+  );
+}
+
 function MemberDetail({ userId, onRemoved }) {
   const [member, setMember] = useState(null);
   const [memberships, setMemberships] = useState([]);
@@ -799,6 +958,8 @@ export default function AdminMembers() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(null);
   const [createSuccess, setCreateSuccess] = useState(null);
+  const [showMemberships, setShowMemberships] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
 
   useEffect(() => { setPage(1); }, [search, letterFilter]);
 
@@ -1000,6 +1161,23 @@ export default function AdminMembers() {
           >Next →</button>
         </div>
       )}
+
+      {[
+        { key: 'memberships', label: 'Memberships', show: showMemberships, setShow: setShowMemberships, Panel: MembershipsPanel },
+        { key: 'credits', label: 'Credits', show: showCredits, setShow: setShowCredits, Panel: CreditsPanel },
+      ].map(({ key, label, show, setShow, Panel }) => (
+        <div key={key} style={{ marginTop: '1.5rem', borderTop: '1px solid var(--booking-border)', paddingTop: '1rem' }}>
+          <button
+            className="bk-btn bk-btn--sm"
+            style={{ border: '1px solid var(--booking-border)', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            onClick={() => setShow(v => !v)}
+          >
+            <span>{label}</span>
+            <span style={{ display: 'inline-block', transition: 'transform 0.2s', transform: show ? 'rotate(180deg)' : 'none' }}>▾</span>
+          </button>
+          {show && <div style={{ marginTop: '1rem' }}><Panel /></div>}
+        </div>
+      ))}
     </div>
   );
 }
