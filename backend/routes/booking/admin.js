@@ -17,6 +17,10 @@ router.delete('/gymnasts/:id', auth, requireRole(['CLUB_ADMIN']), async (req, re
     if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
     if (gymnast.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
 
+    if (await hasActiveMembership(gymnast.id)) {
+      return res.status(400).json({ error: 'This gymnast has an active membership. Cancel it in Stripe before removing them.' });
+    }
+
     await deleteGymnast(gymnast.id);
 
     await audit({
@@ -46,6 +50,13 @@ router.delete('/members/:userId', auth, requireRole(['CLUB_ADMIN']), async (req,
     });
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (user.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
+
+    // Block if any gymnast has an active membership
+    for (const g of user.guardedGymnasts) {
+      if (await hasActiveMembership(g.id)) {
+        return res.status(400).json({ error: 'This member has a gymnast with an active membership. Cancel it in Stripe before removing them.' });
+      }
+    }
 
     // Delete each gymnast and their booking data
     for (const g of user.guardedGymnasts) {
@@ -145,6 +156,13 @@ router.get('/audit-log', auth, requireRole(['CLUB_ADMIN']), async (req, res) => 
     res.status(500).json({ error: 'Failed to fetch audit log' });
   }
 });
+
+async function hasActiveMembership(gymnastId) {
+  const m = await prisma.membership.findFirst({
+    where: { gymnastId, status: { in: ['ACTIVE', 'PENDING_PAYMENT', 'PAUSED'] } },
+  });
+  return !!m;
+}
 
 async function deleteGymnast(gymnastId) {
   // Cancel active bookings and remove lines
