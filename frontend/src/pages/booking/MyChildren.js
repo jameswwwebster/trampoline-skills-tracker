@@ -366,12 +366,10 @@ function SetupPaymentMethodForm({ membershipId, onDone }) {
   );
 }
 
-function MembershipCard({ membership, onUpdated }) {
+function MembershipCard({ membership }) {
   const [hostedUrl, setHostedUrl] = useState(null);
   const [loadingSecret, setLoadingSecret] = useState(false);
   const [secretError, setSecretError] = useState(null);
-  const [setupClientSecret, setSetupClientSecret] = useState(null);
-  const [loadingSetup, setLoadingSetup] = useState(false);
 
   const loadPaymentLink = async () => {
     setLoadingSecret(true);
@@ -383,19 +381,6 @@ function MembershipCard({ membership, onUpdated }) {
       setSecretError(err.response?.data?.error || 'Failed to load payment link. Please try again.');
     } finally {
       setLoadingSecret(false);
-    }
-  };
-
-  const loadSetupIntent = async () => {
-    setLoadingSetup(true);
-    setSecretError(null);
-    try {
-      const res = await bookingApi.getMembershipSetupIntent(membership.id);
-      setSetupClientSecret(res.data.clientSecret);
-    } catch (err) {
-      setSecretError(err.response?.data?.error || 'Failed to load. Please try again.');
-    } finally {
-      setLoadingSetup(false);
     }
   };
 
@@ -467,32 +452,6 @@ function MembershipCard({ membership, onUpdated }) {
         </div>
       )}
 
-      {membership.status === 'ACTIVE' && membership.needsPaymentMethod && !setupClientSecret && (
-        <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.85rem', background: 'rgba(231,76,60,0.06)', border: '1px solid rgba(231,76,60,0.2)', borderRadius: 'var(--booking-radius)', fontSize: '0.85rem' }}>
-          <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>Payment method needed for renewal</p>
-          <p style={{ margin: '0 0 0.75rem', color: 'var(--booking-text-muted)' }}>
-            Your first payment was covered by credits. Please add a card to ensure future monthly payments go through.
-          </p>
-          <button
-            className="bk-btn bk-btn--primary bk-btn--sm"
-            onClick={loadSetupIntent}
-            disabled={loadingSetup}
-          >
-            {loadingSetup ? 'Loading...' : 'Add payment method'}
-          </button>
-          {secretError && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{secretError}</p>}
-        </div>
-      )}
-
-      {membership.status === 'ACTIVE' && membership.needsPaymentMethod && setupClientSecret && (
-        <Elements stripe={stripePromise} options={{ clientSecret: setupClientSecret }}>
-          <SetupPaymentMethodForm
-            membershipId={membership.id}
-            onDone={() => { setSetupClientSecret(null); onUpdated(); }}
-          />
-        </Elements>
-      )}
-
       {membership.status === 'PAUSED' && (
         <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>
           Your membership is currently paused. Contact the club to resume.
@@ -514,6 +473,9 @@ export default function MyChildren() {
   const [selfDob, setSelfDob] = useState('');
   const [credits, setCredits] = useState([]);
   const [memberships, setMemberships] = useState([]);
+  const [setupClientSecret, setSetupClientSecret] = useState(null);
+  const [loadingSetup, setLoadingSetup] = useState(false);
+  const [setupError, setSetupError] = useState(null);
 
   const refreshUser = async () => {
     try {
@@ -575,6 +537,25 @@ export default function MyChildren() {
     }
   };
 
+  const refreshMemberships = () =>
+    bookingApi.getMyMemberships().then(r => setMemberships(r.data)).catch(() => {});
+
+  const membershipsNeedingPayment = memberships.filter(m => m.needsPaymentMethod);
+
+  const loadSetupIntent = async () => {
+    if (membershipsNeedingPayment.length === 0) return;
+    setLoadingSetup(true);
+    setSetupError(null);
+    try {
+      const res = await bookingApi.getMembershipSetupIntent(membershipsNeedingPayment[0].id);
+      setSetupClientSecret(res.data.clientSecret);
+    } catch (err) {
+      setSetupError(err.response?.data?.error || 'Failed to load. Please try again.');
+    } finally {
+      setLoadingSetup(false);
+    }
+  };
+
   const hasSelf = gymnasts.some(g => g.isSelf);
   const children = gymnasts.filter(g => !g.isSelf);
 
@@ -607,11 +588,42 @@ export default function MyChildren() {
       {memberships.length > 0 && (
         <section style={{ marginBottom: '2rem' }}>
           <h3>Memberships</h3>
+
+          {membershipsNeedingPayment.length > 0 && (
+            <div className="bk-card" style={{ marginBottom: '0.75rem', borderLeft: '3px solid var(--booking-danger)' }}>
+              <p style={{ margin: '0 0 0.35rem', fontWeight: 600 }}>Payment method needed</p>
+              <p style={{ margin: '0 0 0.75rem', fontSize: '0.875rem', color: 'var(--booking-text-muted)' }}>
+                {membershipsNeedingPayment.length === 1
+                  ? `${membershipsNeedingPayment[0].gymnast.firstName}'s first payment was covered by credits. Add a card to ensure future monthly payments go through.`
+                  : `${membershipsNeedingPayment.map(m => m.gymnast.firstName).join(' and ')}'s first payments were covered by credits. Add a card once to cover all memberships.`
+                }
+              </p>
+              {!setupClientSecret ? (
+                <>
+                  <button
+                    className="bk-btn bk-btn--primary"
+                    onClick={loadSetupIntent}
+                    disabled={loadingSetup}
+                  >
+                    {loadingSetup ? 'Loading...' : 'Add payment method'}
+                  </button>
+                  {setupError && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{setupError}</p>}
+                </>
+              ) : (
+                <Elements stripe={stripePromise} options={{ clientSecret: setupClientSecret }}>
+                  <SetupPaymentMethodForm
+                    membershipId={membershipsNeedingPayment[0].id}
+                    onDone={() => { setSetupClientSecret(null); refreshMemberships(); }}
+                  />
+                </Elements>
+              )}
+            </div>
+          )}
+
           {memberships.map(m => (
-            <MembershipCard key={m.id} membership={m} onUpdated={() =>
-              bookingApi.getMyMemberships().then(r => setMemberships(r.data)).catch(() => {})
-            } />
+            <MembershipCard key={m.id} membership={m} />
           ))}
+
           <div className="bk-card" style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <p style={{ margin: 0 }}>
               <strong style={{ color: 'var(--booking-text-on-light)' }}>How fees are calculated</strong><br />

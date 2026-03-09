@@ -188,12 +188,16 @@ router.post('/:id/setup-intent', auth, async (req, res) => {
 });
 
 // POST /api/booking/memberships/:id/confirm-payment-method — attach collected payment method to subscription
+// Sets the PM as default on the Stripe customer and clears needsPaymentMethod on ALL of this guardian's memberships
 router.post('/:id/confirm-payment-method', auth, async (req, res) => {
   try {
     const { paymentMethodId } = req.body;
     if (!paymentMethodId) return res.status(400).json({ error: 'paymentMethodId required' });
 
-    const membership = await prisma.membership.findUnique({ where: { id: req.params.id } });
+    const membership = await prisma.membership.findUnique({
+      where: { id: req.params.id },
+      include: { gymnast: { include: { guardians: { orderBy: { createdAt: 'asc' }, take: 1 } } } },
+    });
     if (!membership || membership.clubId !== req.user.clubId) {
       return res.status(404).json({ error: 'Not found' });
     }
@@ -206,16 +210,42 @@ router.post('/:id/confirm-payment-method', auth, async (req, res) => {
     }
 
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const guardian = membership.gymnast.guardians[0];
+
+    // Set as default on the Stripe customer so it covers all their subscriptions
+    if (guardian?.stripeCustomerId) {
+      await stripe.customers.update(guardian.stripeCustomerId, {
+        invoice_settings: { default_payment_method: paymentMethodId },
+      });
+    }
+
+    // Also set explicitly on this subscription in case it has its own override
     if (membership.stripeSubscriptionId) {
       await stripe.subscriptions.update(membership.stripeSubscriptionId, {
         default_payment_method: paymentMethodId,
       });
     }
 
-    await prisma.membership.update({
-      where: { id: membership.id },
-      data: { needsPaymentMethod: false },
-    });
+    // Clear needsPaymentMethod on ALL of this guardian's memberships
+    if (guardian) {
+      const guardianGymnasts = await prisma.gymnast.findMany({
+        where: { guardians: { some: { id: guardian.id } } },
+        select: { id: true },
+      });
+      await prisma.membership.updateMany({
+        where: {
+          gymnastId: { in: guardianGymnasts.map(g => g.id) },
+          clubId: req.user.clubId,
+          needsPaymentMethod: true,
+        },
+        data: { needsPaymentMethod: false },
+      });
+    } else {
+      await prisma.membership.update({
+        where: { id: membership.id },
+        data: { needsPaymentMethod: false },
+      });
+    }
 
     res.json({ ok: true });
   } catch (err) {
