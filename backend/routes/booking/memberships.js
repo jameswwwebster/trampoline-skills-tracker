@@ -137,12 +137,16 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       const firstOfNextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
       const billingCycleAnchor = Math.floor(firstOfNextMonth.getTime() / 1000);
 
+      const stripeProduct = await stripe.products.create({
+        name: `Trampoline Life Membership — ${gymnast.firstName} ${gymnast.lastName}`,
+      });
+
       const subscription = await stripe.subscriptions.create({
         customer: stripeCustomerId,
         items: [{
           price_data: {
             currency: 'gbp',
-            product: `Trampoline Life Membership — ${gymnast.firstName} ${gymnast.lastName}`,
+            product: stripeProduct.id,
             unit_amount: value.monthlyAmount,
             recurring: { interval: 'month' },
           },
