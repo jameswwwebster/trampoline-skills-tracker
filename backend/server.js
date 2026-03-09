@@ -60,6 +60,7 @@ const corsOptions = {
   origin: [
     'http://localhost:3000',
     'https://trampoline-frontend.onrender.com',
+    'https://booking.trampoline.life',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true

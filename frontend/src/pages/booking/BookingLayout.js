@@ -7,12 +7,19 @@ import './BookingLayout.css';
 export default function BookingLayout() {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
-  const [needsPaymentMethod, setNeedsPaymentMethod] = useState(false);
+  const [paymentBanner, setPaymentBanner] = useState(null); // null | 'pending' | 'needs_method'
 
   useEffect(() => {
     if (!user || isAdmin) return;
     bookingApi.getMyMemberships()
-      .then(r => setNeedsPaymentMethod(r.data.some(m => m.needsPaymentMethod)))
+      .then(r => {
+        const memberships = r.data;
+        if (memberships.some(m => m.status === 'PENDING_PAYMENT')) {
+          setPaymentBanner('pending');
+        } else if (memberships.some(m => m.needsPaymentMethod)) {
+          setPaymentBanner('needs_method');
+        }
+      })
       .catch(() => {});
   }, [user, isAdmin]);
 
@@ -50,10 +57,19 @@ export default function BookingLayout() {
         </div>
       </nav>
 
-      {needsPaymentMethod && (
+      {paymentBanner && (
         <Link to="/booking/my-account" className="booking-layout__payment-banner">
-          <span>⚠ Payment method required — your membership won't renew without a card on file.</span>
-          <span className="booking-layout__payment-banner-cta">Add now →</span>
+          {paymentBanner === 'pending' ? (
+            <>
+              <span>⚠ Membership payment required — your membership is not yet active.</span>
+              <span className="booking-layout__payment-banner-cta">Set up payment →</span>
+            </>
+          ) : (
+            <>
+              <span>⚠ Payment method required — your membership won't renew without a card on file.</span>
+              <span className="booking-layout__payment-banner-cta">Add now →</span>
+            </>
+          )}
         </Link>
       )}
 
