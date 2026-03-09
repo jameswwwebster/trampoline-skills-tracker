@@ -1019,8 +1019,8 @@ export default function AdminMembers() {
           <label className="bk-label" style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>Email
             <input type="email" className="bk-input" value={createForm.email} onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))} required />
           </label>
-          <label className="bk-label" style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>Phone (optional)
-            <input type="tel" className="bk-input" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} />
+          <label className="bk-label" style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>Phone{createForm.role === 'PARENT' ? '' : ' (optional)'}
+            <input type="tel" className="bk-input" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} required={createForm.role === 'PARENT'} />
           </label>
           <label className="bk-label" style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>Role
             <select className="bk-select" value={createForm.role} onChange={e => setCreateForm(f => ({ ...f, role: e.target.value }))}>

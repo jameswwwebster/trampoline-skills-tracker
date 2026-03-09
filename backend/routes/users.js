@@ -677,7 +677,11 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
       firstName: Joi.string().min(1).max(50).required(),
       lastName: Joi.string().min(1).max(50).required(),
       email: Joi.string().email().required(),
-      phone: Joi.string().allow('').optional(),
+      phone: Joi.string().when('role', {
+        is: 'PARENT',
+        then: Joi.string().min(1).required(),
+        otherwise: Joi.string().allow('').optional(),
+      }),
       role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'PARENT', 'GYMNAST').default('PARENT'),
     });
     const { error, value } = schema.validate(req.body);
