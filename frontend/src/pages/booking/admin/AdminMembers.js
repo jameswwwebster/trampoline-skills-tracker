@@ -517,8 +517,10 @@ function MembershipsPanel() {
     }
   };
 
+  const visible = memberships.filter(m => m.status !== 'CANCELLED');
+
   if (loading) return <p className="bk-muted">Loading...</p>;
-  if (memberships.length === 0) return <p className="bk-muted">No memberships yet.</p>;
+  if (visible.length === 0) return <p className="bk-muted">No active memberships.</p>;
 
   return (
     <>
@@ -533,7 +535,7 @@ function MembershipsPanel() {
           </tr>
         </thead>
         <tbody>
-          {memberships.map(m => {
+          {visible.map(m => {
             const s = MEMBERSHIP_STATUS_LABELS[m.status] || { label: m.status, color: 'inherit' };
             return (
               <tr key={m.id}>
@@ -565,67 +567,41 @@ function MembershipsPanel() {
 function CreditsPanel() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
-  const [search, setSearch] = useState('');
 
-  const load = () => {
+  useEffect(() => {
     setLoading(true);
     bookingApi.getAllCredits()
       .then(r => setUsers(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));
-  };
-  useEffect(load, []);
+  }, []);
 
-  const filtered = users.filter(u =>
-    `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const withCredits = users.filter(u => u.totalCredits > 0);
 
   if (loading) return <p className="bk-muted">Loading...</p>;
+  if (withCredits.length === 0) return <p className="bk-muted">No active credits.</p>;
 
   return (
-    <>
-      {selected && (
-        <div className="bk-form-card" style={{ marginBottom: '1rem' }}>
-          <h4 style={{ margin: '0 0 0.75rem' }}>Assign credit to {selected.firstName} {selected.lastName}</h4>
-          <AssignCreditForm userId={selected.id} onDone={() => { setSelected(null); load(); }} />
-        </div>
-      )}
-      <input
-        className="bk-input"
-        placeholder="Search by name or email..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        style={{ marginBottom: '0.75rem' }}
-      />
-      <table className="bk-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th style={{ textAlign: 'right' }}>Credits</th>
-            <th></th>
+    <table className="bk-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th style={{ textAlign: 'right' }}>Credits</th>
+        </tr>
+      </thead>
+      <tbody>
+        {withCredits.map(u => (
+          <tr key={u.id}>
+            <td>{u.firstName} {u.lastName}</td>
+            <td className="bk-muted" style={{ fontSize: '0.85rem' }}>{u.email}</td>
+            <td style={{ textAlign: 'right' }}>
+              <strong style={{ color: 'var(--booking-accent)' }}>£{(u.totalCredits / 100).toFixed(2)}</strong>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {filtered.map(u => (
-            <tr key={u.id}>
-              <td>{u.firstName} {u.lastName}</td>
-              <td className="bk-muted" style={{ fontSize: '0.85rem' }}>{u.email}</td>
-              <td style={{ textAlign: 'right' }}>
-                {u.totalCredits > 0
-                  ? <strong style={{ color: 'var(--booking-accent)' }}>£{(u.totalCredits / 100).toFixed(2)}</strong>
-                  : <span className="bk-muted">—</span>}
-              </td>
-              <td>
-                <button className="bk-btn bk-btn--sm bk-btn--primary" onClick={() => setSelected(u)}>Assign credit</button>
-              </td>
-            </tr>
-          ))}
-          {filtered.length === 0 && <tr><td colSpan={4} className="bk-center">No users found.</td></tr>}
-        </tbody>
-      </table>
-    </>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
