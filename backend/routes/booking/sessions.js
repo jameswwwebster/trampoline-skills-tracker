@@ -28,14 +28,14 @@ router.get('/', auth, async (req, res) => {
         template: true,
         bookings: {
           where: { status: 'CONFIRMED' },
-          include: { lines: true },
+          select: { userId: true, lines: true },
         },
       },
       orderBy: [{ date: 'asc' }, { template: { startTime: 'asc' } }],
     });
 
     const result = instances.map(instance => {
-      const confirmedBookings = instance.bookings.filter(b => b.status === 'CONFIRMED');
+      const confirmedBookings = instance.bookings;
       const bookedCount = confirmedBookings.reduce((sum, b) => sum + b.lines.length, 0);
       const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
       return {
@@ -48,6 +48,7 @@ router.get('/', auth, async (req, res) => {
         bookedCount,
         availableSlots: Math.max(0, capacity - bookedCount),
         cancelledAt: instance.cancelledAt,
+        isBooked: instance.bookings.some(b => b.userId === req.user.id),
       };
     });
 
