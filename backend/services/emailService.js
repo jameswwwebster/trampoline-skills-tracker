@@ -109,6 +109,24 @@ class EmailService {
     }, { to: email, resetUrl });
   }
 
+  async sendAccountCreatedEmail(email, resetToken, userName) {
+    const setPasswordUrl = `${BASE_URL()}/reset-password?token=${resetToken}`;
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject: 'Your Trampoline Life account has been created',
+      html: brandedHtml('Account created', `
+        <p style="margin-top:0">Hi ${userName},</p>
+        <p>An account has been created for you on Trampoline Life by your club administrator. Please set your password to get started.</p>
+        ${ctaButton(setPasswordUrl, 'Set my password')}
+        <p style="font-size:0.85rem;color:#888888">Or copy and paste this link into your browser:<br>
+        <a href="${setPasswordUrl}" style="color:#7c35e8;word-break:break-all">${setPasswordUrl}</a></p>
+        ${muted('This link will expire in 1 hour. If you have any problems, please contact your club administrator.')}
+      `),
+      text: `Hi ${userName},\n\nAn account has been created for you on Trampoline Life by your club administrator.\n\nPlease set your password by visiting: ${setPasswordUrl}\n\nThis link will expire in 1 hour.`,
+    }, { to: email, setPasswordUrl });
+  }
+
   async sendWelcomeEmail(email, userName, tempPassword) {
     const loginUrl = `${BASE_URL()}/login`;
     return this._send({

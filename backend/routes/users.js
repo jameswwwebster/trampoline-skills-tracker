@@ -720,7 +720,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
           data: { passwordResetToken: resetToken, passwordResetTokenExpiresAt: new Date(Date.now() + 3600000) },
         });
         const emailService = require('../services/emailService');
-        const result = await emailService.sendPasswordResetEmail(user.email, resetToken, `${user.firstName} ${user.lastName}`);
+        const result = await emailService.sendAccountCreatedEmail(user.email, resetToken, `${user.firstName} ${user.lastName}`);
         emailSent = result.success && !result.skipped;
       }
     } catch (emailErr) {
