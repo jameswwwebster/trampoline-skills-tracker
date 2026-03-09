@@ -130,27 +130,27 @@ router.get('/:id/client-secret', auth, async (req, res) => {
 
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const subscription = await stripe.subscriptions.retrieve(membership.stripeSubscriptionId, {
-      expand: ['latest_invoice.payment_intent', 'pending_setup_intent'],
+      expand: ['latest_invoice', 'pending_setup_intent'],
     });
 
-    console.log('Stripe subscription debug:', JSON.stringify({
-      status: subscription.status,
-      pendingSetupIntentId: subscription.pending_setup_intent?.id,
-      pendingSetupIntentStatus: subscription.pending_setup_intent?.status,
-      hasPendingSetupSecret: !!subscription.pending_setup_intent?.client_secret,
-      invoiceStatus: subscription.latest_invoice?.status,
-      invoiceAmountDue: subscription.latest_invoice?.amount_due,
-      paymentIntentId: subscription.latest_invoice?.payment_intent?.id,
-      paymentIntentStatus: subscription.latest_invoice?.payment_intent?.status,
-      hasPaymentIntentSecret: !!subscription.latest_invoice?.payment_intent?.client_secret,
-    }));
+    // Try pending_setup_intent first (used when no payment method is on file)
+    let clientSecret = subscription.pending_setup_intent?.client_secret;
+    let intentType = 'setup';
 
-    // New Stripe API: when no payment method is on file, Stripe creates a pending_setup_intent
-    // on the subscription instead of a payment_intent on the invoice.
-    const clientSecret =
-      subscription.latest_invoice?.payment_intent?.client_secret ||
-      subscription.pending_setup_intent?.client_secret;
-    const intentType = subscription.pending_setup_intent?.client_secret ? 'setup' : 'payment';
+    if (!clientSecret) {
+      // Fall back to payment_intent on the latest invoice.
+      // In Stripe API 2026-02-25.clover, expand of latest_invoice.payment_intent doesn't
+      // always return the full object — retrieve the payment intent directly by ID instead.
+      const piIdOrObj = subscription.latest_invoice?.payment_intent;
+      if (piIdOrObj) {
+        const piId = typeof piIdOrObj === 'string' ? piIdOrObj : piIdOrObj.id;
+        if (piId) {
+          const pi = await stripe.paymentIntents.retrieve(piId);
+          clientSecret = pi.client_secret;
+          intentType = 'payment';
+        }
+      }
+    }
 
     if (!clientSecret) return res.status(400).json({ error: 'No pending payment found for this membership' });
     res.json({ clientSecret, intentType });
