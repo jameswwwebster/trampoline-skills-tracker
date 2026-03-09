@@ -187,6 +187,7 @@ function RoleSelector({ member, onDone }) {
 }
 
 const STATUS_STYLES = {
+  PENDING_PAYMENT: { color: '#e67e22', bg: 'rgba(230,126,34,0.12)' },
   ACTIVE:    { color: 'var(--booking-success)', bg: 'rgba(39,174,96,0.12)' },
   PAUSED:    { color: '#e67e22', bg: 'rgba(230,126,34,0.12)' },
   CANCELLED: { color: 'var(--booking-danger)', bg: 'rgba(231,76,60,0.1)' },
