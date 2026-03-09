@@ -142,7 +142,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
         items: [{
           price_data: {
             currency: 'gbp',
-            product: { name: `Trampoline Life Membership — ${gymnast.firstName} ${gymnast.lastName}` },
+            product: `Trampoline Life Membership — ${gymnast.firstName} ${gymnast.lastName}`,
             unit_amount: value.monthlyAmount,
             recurring: { interval: 'month' },
           },
