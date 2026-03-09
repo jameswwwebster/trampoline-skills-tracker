@@ -133,21 +133,14 @@ router.get('/:id/client-secret', auth, async (req, res) => {
       expand: ['latest_invoice', 'pending_setup_intent'],
     });
 
-    console.log('Stripe debug v2:', JSON.stringify({
+    const inv = subscription.latest_invoice;
+    console.log('Stripe debug v3:', JSON.stringify({
       status: subscription.status,
-      latestInvoiceType: typeof subscription.latest_invoice,
-      latestInvoiceId: typeof subscription.latest_invoice === 'string'
-        ? subscription.latest_invoice
-        : subscription.latest_invoice?.id,
-      latestInvoiceStatus: subscription.latest_invoice?.status,
-      paymentIntentType: typeof subscription.latest_invoice?.payment_intent,
-      paymentIntentValue: typeof subscription.latest_invoice?.payment_intent === 'string'
-        ? subscription.latest_invoice?.payment_intent
-        : subscription.latest_invoice?.payment_intent?.id,
-      pendingSetupIntentType: typeof subscription.pending_setup_intent,
-      pendingSetupIntentId: typeof subscription.pending_setup_intent === 'string'
-        ? subscription.pending_setup_intent
-        : subscription.pending_setup_intent?.id,
+      invoiceKeys: inv ? Object.keys(inv) : null,
+      paymentType: typeof inv?.payment,
+      paymentKeys: inv?.payment ? Object.keys(inv.payment) : null,
+      confirmationSecret: inv?.confirmation_secret,
+      pendingSetupIntentNull: subscription.pending_setup_intent === null,
     }));
 
     // Try pending_setup_intent first (used when no payment method is on file)
