@@ -371,7 +371,12 @@ function CreditRow({ credit, hasMembership, onApplied }) {
   const [error, setError] = useState(null);
 
   const handleApply = async () => {
-    if (!window.confirm(`Apply £${(credit.amount / 100).toFixed(2)} to your membership? This will reduce your next invoice.`)) return;
+    if (!window.confirm(
+      `Apply the full £${(credit.amount / 100).toFixed(2)} to your membership?\n\n` +
+      `The entire credit will be used at once and will automatically reduce your next monthly invoice. ` +
+      `Any remaining balance on the invoice will be charged as normal.\n\n` +
+      `This cannot be undone.`
+    )) return;
     setApplying(true);
     setError(null);
     try {
@@ -393,13 +398,18 @@ function CreditRow({ credit, hasMembership, onApplied }) {
         <span style={{ fontWeight: 600 }}>£{(credit.amount / 100).toFixed(2)}</span>
         <span className="bk-muted" style={{ marginLeft: '0.5rem' }}>Expires {new Date(credit.expiresAt).toLocaleDateString('en-GB')}</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
         {hasMembership && (
-          <button className="bk-btn bk-btn--sm" disabled={applying}
-            style={{ border: '1px solid var(--booking-border)', fontSize: '0.78rem' }}
-            onClick={handleApply}>
-            {applying ? 'Applying...' : 'Apply to membership'}
-          </button>
+          <>
+            <button className="bk-btn bk-btn--sm" disabled={applying}
+              style={{ border: '1px solid var(--booking-border)', fontSize: '0.78rem' }}
+              onClick={handleApply}>
+              {applying ? 'Applying...' : 'Apply to membership'}
+            </button>
+            <span style={{ fontSize: '0.72rem', color: 'var(--booking-text-muted)' }}>
+              Full amount · reduces next invoice
+            </span>
+          </>
         )}
         {error && <span style={{ color: 'var(--booking-danger)', fontSize: '0.78rem' }}>{error}</span>}
       </div>
