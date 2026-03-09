@@ -28,7 +28,7 @@ class EmailService {
         return;
       }
 
-      this.transporter = nodemailer.createTransporter(emailConfig);
+      this.transporter = nodemailer.createTransport(emailConfig);
       this.isConfigured = true;
       console.log('✅ Email service configured successfully');
     } catch (error) {
