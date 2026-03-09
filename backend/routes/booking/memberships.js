@@ -144,6 +144,86 @@ router.get('/:id/client-secret', auth, async (req, res) => {
   }
 });
 
+// POST /api/booking/memberships/:id/setup-intent — create a SetupIntent to add a payment method
+router.post('/:id/setup-intent', auth, async (req, res) => {
+  try {
+    const membership = await prisma.membership.findUnique({
+      where: { id: req.params.id },
+      include: { gymnast: { include: { guardians: { where: { id: req.user.id }, take: 1 } } } },
+    });
+    if (!membership || membership.clubId !== req.user.clubId) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    if (!['CLUB_ADMIN', 'COACH'].includes(req.user.role)) {
+      const isGuardian = await prisma.gymnast.findFirst({
+        where: { id: membership.gymnastId, guardians: { some: { id: req.user.id } } },
+        select: { id: true },
+      });
+      if (!isGuardian) return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+    // Get the guardian's Stripe customer ID
+    const gymnast = await prisma.gymnast.findUnique({
+      where: { id: membership.gymnastId },
+      include: { guardians: { orderBy: { createdAt: 'asc' }, take: 1 } },
+    });
+    const guardian = gymnast?.guardians[0];
+    if (!guardian?.stripeCustomerId) {
+      return res.status(400).json({ error: 'No Stripe customer for this membership' });
+    }
+
+    const setupIntent = await stripe.setupIntents.create({
+      customer: guardian.stripeCustomerId,
+      usage: 'off_session',
+      metadata: { membershipId: membership.id, subscriptionId: membership.stripeSubscriptionId || '' },
+    });
+
+    res.json({ clientSecret: setupIntent.client_secret });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/booking/memberships/:id/confirm-payment-method — attach collected payment method to subscription
+router.post('/:id/confirm-payment-method', auth, async (req, res) => {
+  try {
+    const { paymentMethodId } = req.body;
+    if (!paymentMethodId) return res.status(400).json({ error: 'paymentMethodId required' });
+
+    const membership = await prisma.membership.findUnique({ where: { id: req.params.id } });
+    if (!membership || membership.clubId !== req.user.clubId) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    if (!['CLUB_ADMIN', 'COACH'].includes(req.user.role)) {
+      const isGuardian = await prisma.gymnast.findFirst({
+        where: { id: membership.gymnastId, guardians: { some: { id: req.user.id } } },
+        select: { id: true },
+      });
+      if (!isGuardian) return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    if (membership.stripeSubscriptionId) {
+      await stripe.subscriptions.update(membership.stripeSubscriptionId, {
+        default_payment_method: paymentMethodId,
+      });
+    }
+
+    await prisma.membership.update({
+      where: { id: membership.id },
+      data: { needsPaymentMethod: false },
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST /api/booking/memberships — admin/coach only
 router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
@@ -283,6 +363,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       }
 
       // If the first invoice is fully covered, the subscription can go straight to active
+      // but still needs a payment method for future renewals
       membershipStatus = invoiceAmountDue === 0 ? 'ACTIVE' : 'PENDING_PAYMENT';
     }
 
@@ -293,6 +374,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
         monthlyAmount: value.monthlyAmount,
         stripeSubscriptionId,
         status: membershipStatus,
+        needsPaymentMethod: membershipStatus === 'ACTIVE',
         startDate: new Date(value.startDate),
       },
       include: { gymnast: true },

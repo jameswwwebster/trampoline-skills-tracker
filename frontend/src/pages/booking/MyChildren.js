@@ -326,50 +326,52 @@ function InsuranceSection({ gymnast, onUpdated }) {
   );
 }
 
-function MembershipPaymentForm({ membership, intentType, onDone }) {
+function SetupPaymentMethodForm({ membershipId, onDone }) {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
-  const [done, setDone] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!stripe || !elements) return;
     setProcessing(true);
-    const confirmFn = intentType === 'setup' ? stripe.confirmSetup : stripe.confirmPayment;
-    const { error } = await confirmFn({
+    const { error: confirmError, setupIntent } = await stripe.confirmSetup({
       elements,
       confirmParams: { return_url: `${window.location.origin}/booking/my-account` },
       redirect: 'if_required',
     });
-    if (error) {
-      setError(error.message);
+    if (confirmError) {
+      setError(confirmError.message);
       setProcessing(false);
-    } else {
-      setDone(true);
+      return;
+    }
+    try {
+      await bookingApi.confirmMembershipPaymentMethod(membershipId, setupIntent.payment_method);
       onDone();
+    } catch (err) {
+      setError('Card saved but failed to update membership. Please contact the club.');
+      setProcessing(false);
     }
   };
-
-  if (done) return <p style={{ color: 'var(--booking-success)', fontSize: '0.875rem' }}>Payment submitted — your membership will activate shortly.</p>;
 
   return (
     <form onSubmit={handleSubmit} style={{ marginTop: '0.75rem' }}>
       <PaymentElement />
       {error && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{error}</p>}
       <button type="submit" disabled={!stripe || processing} className="bk-btn bk-btn--primary" style={{ marginTop: '0.75rem', width: '100%' }}>
-        {processing ? 'Processing...' : `Set up payment — £${(membership.monthlyAmount / 100).toFixed(2)}/month`}
+        {processing ? 'Processing...' : 'Save payment method'}
       </button>
     </form>
   );
 }
 
-
 function MembershipCard({ membership, onUpdated }) {
   const [hostedUrl, setHostedUrl] = useState(null);
   const [loadingSecret, setLoadingSecret] = useState(false);
   const [secretError, setSecretError] = useState(null);
+  const [setupClientSecret, setSetupClientSecret] = useState(null);
+  const [loadingSetup, setLoadingSetup] = useState(false);
 
   const loadPaymentLink = async () => {
     setLoadingSecret(true);
@@ -381,6 +383,19 @@ function MembershipCard({ membership, onUpdated }) {
       setSecretError(err.response?.data?.error || 'Failed to load payment link. Please try again.');
     } finally {
       setLoadingSecret(false);
+    }
+  };
+
+  const loadSetupIntent = async () => {
+    setLoadingSetup(true);
+    setSecretError(null);
+    try {
+      const res = await bookingApi.getMembershipSetupIntent(membership.id);
+      setSetupClientSecret(res.data.clientSecret);
+    } catch (err) {
+      setSecretError(err.response?.data?.error || 'Failed to load. Please try again.');
+    } finally {
+      setLoadingSetup(false);
     }
   };
 
@@ -452,22 +467,37 @@ function MembershipCard({ membership, onUpdated }) {
         </div>
       )}
 
+      {membership.status === 'ACTIVE' && membership.needsPaymentMethod && !setupClientSecret && (
+        <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.85rem', background: 'rgba(231,76,60,0.06)', border: '1px solid rgba(231,76,60,0.2)', borderRadius: 'var(--booking-radius)', fontSize: '0.85rem' }}>
+          <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>Payment method needed for renewal</p>
+          <p style={{ margin: '0 0 0.75rem', color: 'var(--booking-text-muted)' }}>
+            Your first payment was covered by credits. Please add a card to ensure future monthly payments go through.
+          </p>
+          <button
+            className="bk-btn bk-btn--primary bk-btn--sm"
+            onClick={loadSetupIntent}
+            disabled={loadingSetup}
+          >
+            {loadingSetup ? 'Loading...' : 'Add payment method'}
+          </button>
+          {secretError && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{secretError}</p>}
+        </div>
+      )}
+
+      {membership.status === 'ACTIVE' && membership.needsPaymentMethod && setupClientSecret && (
+        <Elements stripe={stripePromise} options={{ clientSecret: setupClientSecret }}>
+          <SetupPaymentMethodForm
+            membershipId={membership.id}
+            onDone={() => { setSetupClientSecret(null); onUpdated(); }}
+          />
+        </Elements>
+      )}
+
       {membership.status === 'PAUSED' && (
         <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>
           Your membership is currently paused. Contact the club to resume.
         </p>
       )}
-
-      <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--booking-border)', fontSize: '0.85rem', color: 'var(--booking-text-muted)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <p style={{ margin: 0 }}>
-          <strong style={{ color: 'var(--booking-text-on-light)' }}>How your fee is calculated</strong><br />
-          Your monthly fee is based on a training year of 46 weeks. We divide the total annual cost by 12 to give you a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.
-        </p>
-        <p style={{ margin: 0 }}>
-          <strong style={{ color: 'var(--booking-text-on-light)' }}>Flexibility</strong><br />
-          You have flexibility in how you use your sessions. If you normally train on a Tuesday but a Thursday works better one week, that's absolutely fine — just attend the session you need. As a member, you no longer need to sign up to individual sessions in advance.
-        </p>
-      </div>
     </div>
   );
 }
@@ -582,6 +612,16 @@ export default function MyChildren() {
               bookingApi.getMyMemberships().then(r => setMemberships(r.data)).catch(() => {})
             } />
           ))}
+          <div className="bk-card" style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <p style={{ margin: 0 }}>
+              <strong style={{ color: 'var(--booking-text-on-light)' }}>How fees are calculated</strong><br />
+              Monthly fees are based on a training year of 46 weeks. We divide the total annual cost by 12 to give a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong style={{ color: 'var(--booking-text-on-light)' }}>Flexibility</strong><br />
+              Members have flexibility in how they use their sessions. If training on a Tuesday normally but a Thursday works better one week, that's absolutely fine — just attend the session needed. Members no longer need to sign up to individual sessions in advance.
+            </p>
+          </div>
         </section>
       )}
 

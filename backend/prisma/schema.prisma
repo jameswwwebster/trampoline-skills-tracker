@@ -545,6 +545,7 @@ model Membership {
   monthlyAmount          Int              // in pence
   stripeSubscriptionId   String?
   status                 MembershipStatus @default(PENDING_PAYMENT)
+  needsPaymentMethod     Boolean          @default(false)
   startDate              DateTime
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
