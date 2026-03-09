@@ -96,6 +96,52 @@ router.post('/assign', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
   }
 });
 
+// POST /api/booking/credits/:id/apply-to-membership
+// Member applies their own credit to their Stripe subscription balance
+router.post('/:id/apply-to-membership', auth, async (req, res) => {
+  try {
+    const credit = await prisma.credit.findUnique({
+      where: { id: req.params.id },
+      include: { user: { select: { id: true, stripeCustomerId: true } } },
+    });
+    if (!credit) return res.status(404).json({ error: 'Credit not found' });
+    if (credit.userId !== req.user.id) return res.status(403).json({ error: 'Access denied' });
+    if (credit.usedAt) return res.status(400).json({ error: 'Credit has already been used' });
+    if (new Date(credit.expiresAt) < new Date()) return res.status(400).json({ error: 'Credit has expired' });
+
+    const stripeCustomerId = credit.user.stripeCustomerId;
+    if (!stripeCustomerId) {
+      return res.status(400).json({ error: 'No membership payment set up — complete payment setup first' });
+    }
+
+    if (process.env.STRIPE_SECRET_KEY) {
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      // Negative amount = credit that reduces future invoices
+      await stripe.customers.createBalanceTransaction(stripeCustomerId, {
+        amount: -credit.amount,
+        currency: 'gbp',
+        description: 'Session credit applied to membership',
+      });
+    }
+
+    await prisma.credit.update({
+      where: { id: credit.id },
+      data: { usedAt: new Date() },
+    });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'credit.applied_to_membership', entityType: 'Credit', entityId: credit.id,
+      metadata: { amount: credit.amount },
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Apply credit to membership error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // DELETE /credits/:id — remove a credit (staff only)
 router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {

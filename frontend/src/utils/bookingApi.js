@@ -49,6 +49,9 @@ export const bookingApi = {
   getMyCredits: () =>
     axios.get(`${API_URL}/booking/credits/my`, { headers: getHeaders() }),
 
+  applyCreditToMembership: (creditId) =>
+    axios.post(`${API_URL}/booking/credits/${creditId}/apply-to-membership`, {}, { headers: getHeaders() }),
+
   getAllCredits: () =>
     axios.get(`${API_URL}/booking/credits/all`, { headers: getHeaders() }),
 
