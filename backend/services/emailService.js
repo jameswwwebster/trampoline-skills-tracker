@@ -541,25 +541,45 @@ class EmailService {
       from: process.env.EMAIL_FROM || 'noreply@trampolinetracker.com',
       to: email,
       subject: `Membership set up for ${gymnast.firstName} ${gymnast.lastName} — action required`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-        <h2 style="color:#2c3e50">Membership set up</h2>
-        <p>Hi ${guardianName},</p>
-        <p>A monthly membership of <strong>${amount}/month</strong> has been set up for <strong>${gymnast.firstName} ${gymnast.lastName}</strong>.</p>
-        <h3 style="color:#2c3e50">How your fee is calculated</h3>
-        <p>Your monthly fee is based on a training year of <strong>46 weeks</strong>, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.</p>
-        <h3 style="color:#2c3e50">Flexibility</h3>
-        <p>Your membership covers your agreed number of sessions each week, but you have flexibility in how you use them. If you normally train on a Tuesday but a Thursday works better one week, that's absolutely fine — just attend the session you need. As a member, you no longer need to sign up to individual sessions in advance.</p>
-        <h3 style="color:#2c3e50">Your first payment</h3>
-        <p>Your first payment will be a pro-rated amount covering the remainder of the current month. From the 1st of next month you'll be charged the full ${amount} each month.</p>
-        <h3 style="color:#2c3e50">Getting started</h3>
-        <p>To activate your membership, please log in to your account and complete the payment setup.</p>
-        <div style="text-align:center;margin:30px 0">
-          <a href="${loginUrl}" style="background-color:#3498db;color:white;padding:12px 30px;text-decoration:none;border-radius:5px;display:inline-block;font-weight:bold">
-            Set up payment
-          </a>
-        </div>
-        <p style="font-size:14px;color:#666">If you have any questions, please contact the club.</p>
-      </div>`,
+      html: `
+        <div style="font-family:'Exo 2',Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #d4d4d8">
+          <!-- Header -->
+          <div style="background:linear-gradient(135deg,#6a1fd4,#9b4dca);padding:28px 32px">
+            <h1 style="margin:0;color:#ffffff;font-size:1.4rem;font-weight:800;letter-spacing:0.01em">Trampoline Life</h1>
+            <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:0.9rem">Membership set up</p>
+          </div>
+
+          <!-- Body -->
+          <div style="padding:28px 32px;color:#1a1a1a;font-size:0.95rem;line-height:1.6">
+            <p style="margin-top:0">Hi ${guardianName},</p>
+            <p>A monthly membership of <strong style="color:#7c35e8">${amount}/month</strong> has been set up for <strong>${gymnast.firstName} ${gymnast.lastName}</strong>.</p>
+
+            <h3 style="color:#7c35e8;font-size:0.95rem;margin:1.5rem 0 0.4rem">How your fee is calculated</h3>
+            <p style="margin-top:0">Your monthly fee is based on a training year of <strong>46 weeks</strong>, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.</p>
+
+            <h3 style="color:#7c35e8;font-size:0.95rem;margin:1.5rem 0 0.4rem">Flexibility</h3>
+            <p style="margin-top:0">Your membership covers your agreed number of sessions each week, but you have flexibility in how you use them. If you normally train on a Tuesday but a Thursday works better one week, that's absolutely fine — just attend the session you need. As a member, you no longer need to sign up to individual sessions in advance.</p>
+
+            <h3 style="color:#7c35e8;font-size:0.95rem;margin:1.5rem 0 0.4rem">Your first payment</h3>
+            <p style="margin-top:0">Your first payment will be a pro-rated amount covering the remainder of the current month. From the 1st of next month you'll be charged the full ${amount} each month.</p>
+
+            <h3 style="color:#7c35e8;font-size:0.95rem;margin:1.5rem 0 0.4rem">Getting started</h3>
+            <p style="margin-top:0">To activate your membership, please log in to your account and complete the payment setup.</p>
+
+            <div style="text-align:center;margin:28px 0">
+              <a href="${loginUrl}" style="background:linear-gradient(135deg,#6a1fd4,#9b4dca);color:#ffffff;padding:13px 32px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:700;font-size:0.95rem">
+                Set up payment
+              </a>
+            </div>
+
+            <p style="margin-bottom:0;color:#888888;font-size:0.85rem">If you have any questions, please contact the club.</p>
+          </div>
+
+          <!-- Footer -->
+          <div style="background:#eaeaec;padding:16px 32px;text-align:center">
+            <p style="margin:0;font-size:0.78rem;color:#888888">Trampoline Life · <a href="${loginUrl}" style="color:#7c35e8;text-decoration:none">My Account</a></p>
+          </div>
+        </div>`,
       text: `Hi ${guardianName},\n\nA monthly membership of ${amount}/month has been set up for ${gymnast.firstName} ${gymnast.lastName}.\n\nHOW YOUR FEE IS CALCULATED\nYour monthly fee is based on a training year of 46 weeks, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.\n\nFLEXIBILITY\nYour membership covers your agreed number of sessions each week, but you have flexibility in how you use them. If you normally train on a Tuesday but a Thursday works better one week, that's absolutely fine — just attend the session you need. As a member, you no longer need to sign up to individual sessions in advance.\n\nYOUR FIRST PAYMENT\nYour first payment will be a pro-rated amount covering the remainder of the current month. From the 1st of next month you'll be charged the full ${amount} each month.\n\nGETTING STARTED\nTo activate your membership, please log in and complete the payment setup:\n${loginUrl}\n\nIf you have any questions, please contact the club.`,
     };
     try {
