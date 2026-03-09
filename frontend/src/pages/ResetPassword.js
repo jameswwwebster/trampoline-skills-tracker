@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import './booking/bookingVars.css';
+import './AuthPages.css';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    password: '',
-    confirmPassword: ''
-  });
+  const [formData, setFormData] = useState({ password: '', confirmPassword: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -23,127 +22,84 @@ const ResetPassword = () => {
     }
   }, [searchParams]);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const handleChange = (e) => setFormData(f => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     setMessage('');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setIsLoading(false);
-      return;
-    }
-
     try {
       const response = await axios.post('/api/auth/reset-password', {
         token,
-        password: formData.password
+        password: formData.password,
       });
-      
       if (response.data.success) {
-        setMessage('Password reset successfully! You can now log in with your new password.');
-        setTimeout(() => {
-          navigate('/login');
-        }, 3000);
+        setMessage('Password set successfully. Taking you to sign in…');
+        setTimeout(() => navigate('/login'), 2500);
       } else {
-        setError(response.data.error || 'Failed to reset password');
+        setError(response.data.error || 'Failed to set password.');
       }
-    } catch (error) {
-      console.error('Reset password error:', error);
-      if (error.response?.data?.error) {
-        setError(error.response.data.error);
-      } else {
-        setError('Failed to reset password. Please try again.');
-      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to set password. Please try again.');
     }
 
     setIsLoading(false);
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-page">
       <div className="auth-card">
-        <h2 className="auth-title">Set New Password</h2>
-        
-        <p style={{ textAlign: 'center', color: '#6c757d', marginBottom: '2rem' }}>
-          Enter your new password below.
-        </p>
+        <div className="auth-brand">Trampoline Life</div>
+        <h1 className="auth-heading">Set new password</h1>
 
-        {error && (
-          <div className="alert alert-error">
-            {error}
-          </div>
-        )}
+        {error && <p className="auth-error">{error}</p>}
+        {message && <p className="auth-success">{message}</p>}
 
-        {message && (
-          <div className="alert alert-success">
-            {message}
-          </div>
-        )}
-
-        {token && (
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="password" className="form-label">
-                New Password
-              </label>
+        {token && !message && (
+          <form onSubmit={handleSubmit} className="auth-form">
+            <label className="auth-label">New password
               <input
                 type="password"
-                id="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="form-control"
+                className="auth-input"
                 required
-                placeholder="Enter your new password"
                 minLength="6"
+                autoComplete="new-password"
               />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="confirmPassword" className="form-label">
-                Confirm New Password
-              </label>
+            </label>
+            <label className="auth-label">Confirm new password
               <input
                 type="password"
-                id="confirmPassword"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="form-control"
+                className="auth-input"
                 required
-                placeholder="Confirm your new password"
                 minLength="6"
+                autoComplete="new-password"
               />
-            </div>
-
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isLoading}
-              style={{ width: '100%' }}
-            >
-              {isLoading ? 'Resetting...' : 'Reset Password'}
+            </label>
+            <button type="submit" disabled={isLoading} className="auth-btn auth-btn--primary">
+              {isLoading ? 'Saving…' : 'Set password'}
             </button>
           </form>
         )}
 
-        <div className="auth-link">
-          <Link to="/login">Back to Login</Link>
+        <div className="auth-links">
+          <Link to="/login" className="auth-link">Back to sign in</Link>
         </div>
       </div>
     </div>

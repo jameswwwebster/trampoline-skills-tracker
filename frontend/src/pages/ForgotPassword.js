@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import './booking/bookingVars.css';
+import './AuthPages.css';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -16,74 +18,47 @@ const ForgotPassword = () => {
 
     try {
       const response = await axios.post('/api/auth/forgot-password', { email });
-      
       if (response.data.success) {
-        setMessage('Password reset email sent! Please check your inbox and follow the instructions to reset your password.');
+        setMessage("Check your inbox \u2014 we've sent a link to reset your password.");
       } else {
-        setError(response.data.error || 'Failed to send password reset email');
+        setError(response.data.error || 'Failed to send reset email.');
       }
-    } catch (error) {
-      console.error('Forgot password error:', error);
-      if (error.response?.data?.error) {
-        setError(error.response.data.error);
-      } else {
-        setError('Failed to send password reset email. Please try again.');
-      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to send reset email. Please try again.');
     }
 
     setIsLoading(false);
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-page">
       <div className="auth-card">
-        <h2 className="auth-title">Reset Your Password</h2>
-        
-        <p style={{ textAlign: 'center', color: '#6c757d', marginBottom: '2rem' }}>
-          Enter your email address and we'll send you a link to reset your password.
-        </p>
+        <div className="auth-brand">Trampoline Life</div>
+        <h1 className="auth-heading">Reset password</h1>
 
-        {error && (
-          <div className="alert alert-error">
-            {error}
-          </div>
-        )}
+        {error && <p className="auth-error">{error}</p>}
+        {message && <p className="auth-success">{message}</p>}
 
-        {message && (
-          <div className="alert alert-success">
-            {message}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email" className="form-label">
-              Email Address
+        {!message && (
+          <form onSubmit={handleSubmit} className="auth-form">
+            <label className="auth-label">Email address
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="auth-input"
+                required
+                autoComplete="email"
+              />
             </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="form-control"
-              required
-              placeholder="Enter your email address"
-            />
-          </div>
+            <button type="submit" disabled={isLoading} className="auth-btn auth-btn--primary">
+              {isLoading ? 'Sending…' : 'Send reset link'}
+            </button>
+          </form>
+        )}
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isLoading}
-            style={{ width: '100%' }}
-          >
-            {isLoading ? 'Sending...' : 'Send Reset Link'}
-          </button>
-        </form>
-
-        <div className="auth-link">
-          Remember your password? <Link to="/login">Back to Login</Link>
+        <div className="auth-links">
+          <Link to="/login" className="auth-link">Back to sign in</Link>
         </div>
       </div>
     </div>
