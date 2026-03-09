@@ -464,6 +464,8 @@ export default function MyChildren() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [showSelfForm, setShowSelfForm] = useState(false);
+  const [selfDob, setSelfDob] = useState('');
   const [credits, setCredits] = useState([]);
   const [memberships, setMemberships] = useState([]);
 
@@ -487,10 +489,14 @@ export default function MyChildren() {
     bookingApi.getMyMemberships().then(r => setMemberships(r.data)).catch(() => {});
   }, []);
 
-  const handleSelf = async () => {
+  const handleSelf = async (e) => {
+    e.preventDefault();
+    if (!selfDob) return;
     setError(null);
     try {
-      await bookingApi.createSelfGymnast();
+      await bookingApi.createSelfGymnast({ dateOfBirth: selfDob });
+      setShowSelfForm(false);
+      setSelfDob('');
       load();
     } catch (err) {
       setError('Could not create your gymnast profile.');
@@ -568,12 +574,25 @@ export default function MyChildren() {
           gymnasts.filter(g => g.isSelf).map(g => (
             <GymnastCard key={g.id} gymnast={g} onUpdated={load} />
           ))
+        ) : showSelfForm ? (
+          <form onSubmit={handleSelf} className="bk-form-card">
+            <label className="bk-label">Date of birth
+              <input type="date" className="bk-input" value={selfDob}
+                onChange={e => setSelfDob(e.target.value)}
+                required style={{ marginTop: '0.25rem' }} />
+            </label>
+            <div className="bk-row" style={{ marginTop: '0.75rem' }}>
+              <button type="submit" className="bk-btn bk-btn--primary" disabled={!selfDob}>Confirm</button>
+              <button type="button" className="bk-btn" style={{ border: '1px solid var(--booking-border)' }}
+                onClick={() => { setShowSelfForm(false); setSelfDob(''); }}>Cancel</button>
+            </div>
+          </form>
         ) : (
           <div>
             <p className="bk-muted" style={{ marginBottom: '0.5rem' }}>
               Add yourself to book sessions under your own name.
             </p>
-            <button className="bk-btn bk-btn--primary" onClick={handleSelf}>
+            <button className="bk-btn bk-btn--primary" onClick={() => setShowSelfForm(true)}>
               Add myself as a gymnast
             </button>
           </div>

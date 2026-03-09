@@ -87,6 +87,11 @@ router.get('/bookable-for-me', auth, async (req, res) => {
 // Gets or creates a gymnast record for the current user
 router.post('/self', auth, async (req, res) => {
   try {
+    const { error, value } = Joi.object({
+      dateOfBirth: Joi.date().required(),
+    }).validate(req.body);
+    if (error) return res.status(400).json({ error: 'Date of birth is required' });
+
     let gymnast = await prisma.gymnast.findFirst({
       where: { userId: req.user.id },
     });
@@ -95,6 +100,7 @@ router.post('/self', auth, async (req, res) => {
         data: {
           firstName: req.user.firstName,
           lastName: req.user.lastName,
+          dateOfBirth: new Date(value.dateOfBirth),
           clubId: req.user.clubId,
           userId: req.user.id,
           guardians: { connect: { id: req.user.id } },
