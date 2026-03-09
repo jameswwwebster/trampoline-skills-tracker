@@ -14,7 +14,6 @@ const PRICE_PER_GYMNAST_PENCE = 600; // £6.00
 const createBookingSchema = Joi.object({
   sessionInstanceId: Joi.string().required(),
   gymnastIds: Joi.array().items(Joi.string()).min(1).required(),
-  creditIds: Joi.array().items(Joi.string()).default([]),
 });
 
 // POST /api/booking/bookings
@@ -24,7 +23,7 @@ router.post('/', auth, async (req, res) => {
     const { error, value } = createBookingSchema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
-    const { sessionInstanceId, gymnastIds, creditIds } = value;
+    const { sessionInstanceId, gymnastIds } = value;
 
     // Load session instance
     const instance = await prisma.sessionInstance.findUnique({
@@ -111,25 +110,18 @@ router.post('/', auth, async (req, res) => {
 
     const totalAmount = PRICE_PER_GYMNAST_PENCE * gymnastIds.length;
 
-    // Apply credits greedily — only consume what's needed from each credit
+    // Auto-apply available credits (oldest first), only consuming what's needed
+    const availableCredits = await prisma.credit.findMany({
+      where: { userId: req.user.id, usedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { expiresAt: 'asc' },
+    });
     let remaining = totalAmount;
     let creditsToUse = []; // { id, consume, remainder, expiresAt }
-    if (creditIds.length > 0) {
-      const credits = await prisma.credit.findMany({
-        where: {
-          id: { in: creditIds },
-          userId: req.user.id,
-          usedAt: null,
-          expiresAt: { gt: new Date() },
-        },
-        orderBy: { createdAt: 'asc' },
-      });
-      for (const credit of credits) {
-        if (remaining <= 0) break;
-        const consume = Math.min(credit.amount, remaining);
-        remaining -= consume;
-        creditsToUse.push({ id: credit.id, consume, remainder: credit.amount - consume, expiresAt: credit.expiresAt });
-      }
+    for (const credit of availableCredits) {
+      if (remaining <= 0) break;
+      const consume = Math.min(credit.amount, remaining);
+      remaining -= consume;
+      creditsToUse.push({ id: credit.id, consume, remainder: credit.amount - consume, expiresAt: credit.expiresAt });
     }
 
     const chargeAmount = Math.max(0, remaining);

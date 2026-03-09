@@ -365,57 +365,6 @@ function MembershipPaymentForm({ membership, intentType, onDone }) {
   );
 }
 
-function CreditRow({ credit, hasMembership, onApplied }) {
-  const [applying, setApplying] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState(null);
-
-  const handleApply = async () => {
-    if (!window.confirm(
-      `Apply the full £${(credit.amount / 100).toFixed(2)} to your membership?\n\n` +
-      `The entire credit will be used at once and will automatically reduce your next monthly invoice. ` +
-      `Any remaining balance on the invoice will be charged as normal.\n\n` +
-      `This cannot be undone.`
-    )) return;
-    setApplying(true);
-    setError(null);
-    try {
-      await bookingApi.applyCreditToMembership(credit.id);
-      setDone(true);
-      onApplied();
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to apply credit.');
-    } finally {
-      setApplying(false);
-    }
-  };
-
-  if (done) return null;
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem', gap: '0.5rem', flexWrap: 'wrap' }}>
-      <div>
-        <span style={{ fontWeight: 600 }}>£{(credit.amount / 100).toFixed(2)}</span>
-        <span className="bk-muted" style={{ marginLeft: '0.5rem' }}>Expires {new Date(credit.expiresAt).toLocaleDateString('en-GB')}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
-        {hasMembership && (
-          <>
-            <button className="bk-btn bk-btn--sm" disabled={applying}
-              style={{ border: '1px solid var(--booking-border)', fontSize: '0.78rem' }}
-              onClick={handleApply}>
-              {applying ? 'Applying...' : 'Apply to membership'}
-            </button>
-            <span style={{ fontSize: '0.72rem', color: 'var(--booking-text-muted)' }}>
-              Full amount · reduces next invoice
-            </span>
-          </>
-        )}
-        {error && <span style={{ color: 'var(--booking-danger)', fontSize: '0.78rem' }}>{error}</span>}
-      </div>
-    </div>
-  );
-}
 
 function MembershipCard({ membership, onUpdated }) {
   const [hostedUrl, setHostedUrl] = useState(null);
@@ -594,20 +543,17 @@ export default function MyChildren() {
 
       {credits.length > 0 && (
         <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
-          <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>Session credits</p>
+          <p style={{ margin: '0 0 0.25rem', fontSize: '0.85rem', fontWeight: 600 }}>Session credits</p>
+          <p style={{ margin: '0 0 0.5rem', fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>Applied automatically when you book a session.</p>
           <p style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 700, color: 'var(--booking-accent)' }}>
             £{(credits.reduce((s, c) => s + c.amount, 0) / 100).toFixed(2)} available
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
             {credits.map(c => (
-              <CreditRow
-                key={c.id}
-                credit={c}
-                hasMembership={memberships.some(m => ['ACTIVE', 'PAUSED'].includes(m.status))}
-                onApplied={() => {
-                  bookingApi.getMyCredits().then(r => setCredits(r.data)).catch(() => {});
-                }}
-              />
+              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span>£{(c.amount / 100).toFixed(2)}</span>
+                <span className="bk-muted">Expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
+              </div>
             ))}
           </div>
         </div>

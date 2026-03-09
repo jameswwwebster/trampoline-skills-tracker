@@ -11,8 +11,7 @@ export default function SessionDetail() {
   const [session, setSession] = useState(null);
   const [myGymnasts, setMyGymnasts] = useState([]);
   const [selectedGymnastIds, setSelectedGymnastIds] = useState([]);
-  const [credits, setCredits] = useState([]);
-  const [selectedCreditIds, setSelectedCreditIds] = useState([]);
+  const [totalCreditsAvailable, setTotalCreditsAvailable] = useState(0);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState(null);
@@ -29,7 +28,7 @@ export default function SessionDetail() {
       bookingApi.getMyWaitlist().catch(() => ({ data: [] })),
     ]).then(([sessRes, credRes, waitRes]) => {
       setSession(sessRes.data);
-      setCredits(credRes.data);
+      setTotalCreditsAvailable(credRes.data.reduce((s, c) => s + c.amount, 0));
       const entry = waitRes.data.find(e => e.sessionInstanceId === instanceId);
       setWaitlistEntry(entry || null);
     }).catch(console.error).finally(() => setLoading(false));
@@ -67,17 +66,8 @@ export default function SessionDetail() {
     );
   };
 
-  const toggleCredit = (id) => {
-    setSelectedCreditIds(prev =>
-      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
-    );
-  };
-
   const totalAmount = selectedGymnastIds.length * 600;
-  const creditAmount = selectedCreditIds.reduce((sum, cid) => {
-    const credit = credits.find(c => c.id === cid);
-    return sum + (credit ? credit.amount : 0);
-  }, 0);
+  const creditAmount = Math.min(totalCreditsAvailable, totalAmount);
   const chargeAmount = Math.max(0, totalAmount - creditAmount);
 
   const handleBook = async () => {
@@ -88,7 +78,6 @@ export default function SessionDetail() {
       const res = await bookingApi.createBooking({
         sessionInstanceId: instanceId,
         gymnastIds: selectedGymnastIds,
-        creditIds: selectedCreditIds,
       });
 
       if (res.data.clientSecret) {
@@ -282,27 +271,10 @@ export default function SessionDetail() {
             )}
           </div>
 
-          {credits.length > 0 && (
-            <div className="session-detail__credits">
-              <h3>Apply credits</h3>
-              {credits.map(c => {
-                const selected = selectedCreditIds.includes(c.id);
-                return (
-                  <div
-                    key={c.id}
-                    role="checkbox"
-                    aria-checked={selected}
-                    className={`session-detail__credit-option${selected ? ' session-detail__credit-option--selected' : ''}`}
-                    onClick={() => toggleCredit(c.id)}
-                  >
-                    <span className="session-detail__option-check">
-                      {selected && '✓'}
-                    </span>
-                    <span>£{(c.amount / 100).toFixed(2)} — expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
-                  </div>
-                );
-              })}
-            </div>
+          {totalCreditsAvailable > 0 && (
+            <p className="session-detail__credit-notice">
+              £{(creditAmount / 100).toFixed(2)} credit will be applied automatically.
+            </p>
           )}
 
           {selectedGymnastIds.length > 0 && (

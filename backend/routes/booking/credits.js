@@ -115,12 +115,21 @@ router.post('/:id/apply-to-membership', auth, async (req, res) => {
     }
 
     if (process.env.STRIPE_SECRET_KEY) {
+      // Find the active subscription for this customer
       const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-      // Negative amount = credit that reduces future invoices
-      await stripe.customers.createBalanceTransaction(stripeCustomerId, {
+      const membership = await prisma.membership.findFirst({
+        where: { club: { users: { some: { id: req.user.id } } }, status: { in: ['ACTIVE', 'PAUSED'] }, stripeSubscriptionId: { not: null } },
+        select: { stripeSubscriptionId: true },
+      });
+      if (!membership) return res.status(400).json({ error: 'No active membership found' });
+
+      // Add a one-off negative invoice item — reduces the next invoice only
+      await stripe.invoiceItems.create({
+        customer: stripeCustomerId,
         amount: -credit.amount,
         currency: 'gbp',
-        description: 'Session credit applied to membership',
+        description: 'Session credit',
+        subscription: membership.stripeSubscriptionId,
       });
     }
 
