@@ -54,6 +54,31 @@ test('hasPendingBg is false when gymnast is INVALID not PENDING', async () => {
   expect(user.hasPendingBg).toBe(false);
 });
 
+test('hasPendingBg is true for adult participant gymnast linked via userId with PENDING status', async () => {
+  // An adult participant is a gymnast linked to a user via userId (not via guardians)
+  const adultUser = await createParent(club, { email: `adult-${Date.now()}@test.tl` });
+  await prisma.gymnast.create({
+    data: {
+      firstName: 'Adult',
+      lastName: 'Gymnast',
+      dateOfBirth: new Date('2000-01-01'),
+      clubId: club.id,
+      bgNumber: 'BG999',
+      bgNumberStatus: 'PENDING',
+      userId: adultUser.id,
+    },
+  });
+
+  const res = await request(app)
+    .get('/api/users')
+    .set('Authorization', `Bearer ${adminToken}`);
+
+  expect(res.status).toBe(200);
+  const user = res.body.find(u => u.id === adultUser.id);
+  expect(user).toBeDefined();
+  expect(user.hasPendingBg).toBe(true);
+});
+
 test('hasPendingBg requires CLUB_ADMIN auth', async () => {
   const res = await request(app)
     .get('/api/users')

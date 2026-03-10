@@ -144,6 +144,7 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
       guardianIds: gymnast.guardians.map(g => g.id),
       isGymnast: true,
       customFieldValues: gymnast.user?.customFieldValues || [],
+      hasPendingBg: false, // adult participant gymnasts linked via userId already appear in pendingBgGuardianIds on their user row
     }));
 
     // Add custom field values and booking counts to regular users
