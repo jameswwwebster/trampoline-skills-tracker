@@ -292,6 +292,49 @@ class EmailService {
     }, { to: email, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount, loginUrl });
   }
 
+  async sendSessionReminderEmail(email, firstName, sessionDate, startTime, endTime, availableSlots) {
+    const dateStr = new Date(sessionDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    const subject = `Spaces still available — ${dateStr}`;
+    return this.sendEmail({
+      to: email,
+      subject,
+      html: brandedHtml('Session reminder', `
+        <p style="margin-top:0">Hi ${firstName},</p>
+        <p>There are still <strong>${availableSlots} spaces</strong> available for tomorrow's session on <strong>${dateStr}</strong> (${startTime}–${endTime}).</p>
+        ${ctaButton(`${BASE_URL()}/booking`, 'Book now')}
+      `),
+    });
+  }
+
+  async sendMembershipPaymentReminderEmail(email, firstName, gymnast, amountPence, renewalDate) {
+    const dateStr = new Date(renewalDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const amount = `£${(amountPence / 100).toFixed(2)}`;
+    const subject = `Membership payment reminder — ${gymnast.firstName}`;
+    return this.sendEmail({
+      to: email,
+      subject,
+      html: brandedHtml('Membership payment reminder', `
+        <p style="margin-top:0">Hi ${firstName},</p>
+        <p>A membership payment of <strong>${amount}</strong> for <strong>${gymnast.firstName} ${gymnast.lastName}</strong> will be taken on <strong>${dateStr}</strong>.</p>
+        ${muted('If you have any questions, please contact the club.')}
+      `),
+    });
+  }
+
+  async sendInactivityWarningEmail(email, firstName) {
+    const loginUrl = `${BASE_URL()}/login`;
+    return this.sendEmail({
+      to: email,
+      subject: 'Your Trampoline Life account will be deleted in one week',
+      html: brandedHtml('Account inactivity notice', `
+        <p style="margin-top:0">Hi ${firstName},</p>
+        <p>Your account has been inactive for nearly 6 months. If we don't hear from you, your account will be <strong>permanently deleted in one week</strong>.</p>
+        <p>To keep your account, simply log in.</p>
+        ${ctaButton(loginUrl, 'Log in to keep my account')}
+      `),
+    });
+  }
+
   async sendGuardianConnectionNotification(guardianEmail, guardianName, gymnastName, clubName, relationship) {
     return this._send({
       from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',

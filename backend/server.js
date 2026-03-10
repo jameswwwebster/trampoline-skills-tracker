@@ -257,6 +257,147 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
+const { sendMessage } = require('./services/messageSender');
+const emailService = require('./services/emailService');
+const { deleteMember } = require('./services/memberLifecycle');
+
+// Send scheduled messages — runs every minute
+cron.schedule('* * * * *', async () => {
+  try {
+    const due = await prisma.message.findMany({
+      where: { status: 'SCHEDULED', scheduledAt: { lte: new Date() } },
+      select: { id: true },
+    });
+    for (const m of due) {
+      await sendMessage(m.id).catch(err => console.error(`Failed to send message ${m.id}:`, err));
+    }
+  } catch (err) {
+    console.error('Scheduled message cron error:', err);
+  }
+});
+
+// Session reminder — runs daily at 08:00
+cron.schedule('0 8 * * *', async () => {
+  try {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const dayAfter = new Date(tomorrow);
+    dayAfter.setDate(dayAfter.getDate() + 1);
+
+    const instances = await prisma.sessionInstance.findMany({
+      where: {
+        date: { gte: tomorrow, lt: dayAfter },
+        cancelledAt: null,
+        template: { is: { club: { is: { emailEnabled: true, sessionReminderEnabled: true } } } },
+      },
+      include: {
+        template: { include: { club: true } },
+        bookings: { where: { status: 'CONFIRMED' }, include: { lines: true } },
+      },
+    });
+
+    for (const instance of instances) {
+      const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+      const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
+      const availableSlots = Math.max(0, capacity - bookedCount);
+      if (availableSlots === 0) continue;
+
+      const members = await prisma.user.findMany({
+        where: { clubId: instance.template.clubId, isArchived: false, email: { not: null } },
+        select: { email: true, firstName: true },
+      });
+
+      for (const member of members) {
+        await emailService.sendSessionReminderEmail(
+          member.email, member.firstName, instance.date,
+          instance.template.startTime, instance.template.endTime, availableSlots
+        ).catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.error('Session reminder cron error:', err);
+  }
+});
+
+// Membership payment reminder — runs daily at 09:00
+cron.schedule('0 9 * * *', async () => {
+  try {
+    const in3Days = new Date();
+    in3Days.setDate(in3Days.getDate() + 3);
+    in3Days.setHours(23, 59, 59, 999);
+
+    const memberships = await prisma.membership.findMany({
+      where: {
+        status: 'ACTIVE',
+        club: { emailEnabled: true, membershipReminderEnabled: true },
+      },
+      include: {
+        gymnast: { include: { guardians: { select: { id: true, email: true, firstName: true } } } },
+        club: true,
+      },
+    });
+
+    for (const m of memberships) {
+      const billingDay = new Date(m.startDate).getDate();
+      if (in3Days.getDate() !== billingDay) continue;
+
+      for (const guardian of m.gymnast.guardians) {
+        if (!guardian.email) continue;
+        await emailService.sendMembershipPaymentReminderEmail(
+          guardian.email, guardian.firstName, m.gymnast, m.monthlyAmount, in3Days
+        ).catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.error('Membership reminder cron error:', err);
+  }
+});
+
+// Inactivity warning + deletion — runs daily at 02:30
+cron.schedule('30 2 * * *', async () => {
+  try {
+    const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
+    const WARNING_MS = SIX_MONTHS_MS - 7 * 24 * 60 * 60 * 1000; // 5 months 3 weeks
+    const now = new Date();
+
+    const allUsers = await prisma.user.findMany({
+      where: {
+        isArchived: false,
+        role: { notIn: ['CLUB_ADMIN', 'SUPER_ADMIN'] },
+        club: { emailEnabled: true, inactivityWarningEnabled: true },
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastLoginAt: true,
+        createdAt: true,
+        bookings: { select: { createdAt: true }, orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+    });
+
+    for (const user of allUsers) {
+      const lastActivity =
+        user.lastLoginAt ||
+        (user.bookings[0]?.createdAt) ||
+        user.createdAt;
+
+      const idleMs = now - new Date(lastActivity);
+
+      if (idleMs >= SIX_MONTHS_MS) {
+        await deleteMember(user.id, 'INACTIVITY', null).catch(err =>
+          console.error(`Failed to delete inactive user ${user.id}:`, err)
+        );
+      } else if (idleMs >= WARNING_MS && user.email) {
+        await emailService.sendInactivityWarningEmail(user.email, user.firstName).catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.error('Inactivity cron error:', err);
+  }
+});
+
 // Also run on startup to ensure instances exist immediately after deploy
 (async () => {
   try {
