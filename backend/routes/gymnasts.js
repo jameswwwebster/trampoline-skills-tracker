@@ -196,6 +196,7 @@ router.patch('/:id/bg-number/verify', auth, async (req, res) => {
       include: { guardians: { select: { id: true, email: true, firstName: true } }, club: true },
     });
     if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
+    if (gymnast.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
     if (!gymnast.bgNumber) return res.status(400).json({ error: 'No BG number to verify' });
 
     const { action } = req.body; // 'verify' | 'invalidate'
@@ -216,11 +217,13 @@ router.patch('/:id/bg-number/verify', auth, async (req, res) => {
     // Send email to parent if invalidated
     if (action === 'invalidate' && gymnast.club.emailEnabled) {
       const emailService = require('../services/emailService');
-      for (const guardian of gymnast.guardians) {
-        if (!guardian.email) continue;
-        await emailService.sendBgNumberInvalidEmail(
-          guardian.email, guardian.firstName, gymnast.firstName
-        ).catch(() => {});
+      if (typeof emailService.sendBgNumberInvalidEmail === 'function') {
+        for (const guardian of gymnast.guardians) {
+          if (!guardian.email) continue;
+          await emailService.sendBgNumberInvalidEmail(
+            guardian.email, guardian.firstName, gymnast.firstName
+          ).catch(() => {});
+        }
       }
     }
 
@@ -244,6 +247,7 @@ router.patch('/:id/bg-number', auth, async (req, res) => {
     const isGuardian = gymnast.guardians.some(g => g.id === req.user.id);
     const isStaff = ['CLUB_ADMIN', 'COACH'].includes(req.user.role);
     if (!isGuardian && !isStaff) return res.status(403).json({ error: 'Access denied' });
+    if (isStaff && gymnast.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
 
     const { bgNumber } = req.body;
     if (!bgNumber || typeof bgNumber !== 'string' || !bgNumber.trim()) {

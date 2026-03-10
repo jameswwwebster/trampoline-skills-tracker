@@ -72,3 +72,22 @@ test('parent cannot call verify endpoint', async () => {
     .send({ action: 'verify' });
   expect(res.status).toBe(403);
 });
+
+test('unauthenticated request to set number returns 401', async () => {
+  const res = await request(app)
+    .patch(`/api/gymnasts/${gymnast.id}/bg-number`)
+    .send({ bgNumber: 'BG123456' });
+  expect(res.status).toBe(401);
+});
+
+test('staff from different club cannot verify', async () => {
+  const otherClub = await createTestClub();
+  const otherCoach = await createParent(otherClub, { role: 'COACH', email: `other-${Date.now()}@test.tl` });
+  const otherToken = tokenFor(otherCoach);
+  await prisma.gymnast.update({ where: { id: gymnast.id }, data: { bgNumber: 'BG123456', bgNumberStatus: 'PENDING' } });
+  const res = await request(app)
+    .patch(`/api/gymnasts/${gymnast.id}/bg-number/verify`)
+    .set('Authorization', `Bearer ${otherToken}`)
+    .send({ action: 'verify' });
+  expect(res.status).toBe(403);
+});
