@@ -302,7 +302,7 @@ function BgNumberSection({ gymnast, onUpdated }) {
         Upgrade to <strong>Competitive</strong> for regional competitions or <strong>National</strong> for national competitions.
       </p>
       <p style={{ margin: 0 }}>
-        If you already have BG membership with another club, you don't need to purchase it again — just log in to GymNet and add <strong>Trampoline Life</strong> as a club so we can see your membership from our end.
+        If you already have BG membership with another club, you don't need to purchase it again — just log in to <a href="https://mybg.british-gymnastics.org/" target="_blank" rel="noreferrer">British Gymnastics</a> and add <strong>Trampoline Life</strong> as a club so we can see your membership from our end.
       </p>
     </div>
   );
@@ -341,7 +341,7 @@ function BgNumberSection({ gymnast, onUpdated }) {
 
       {isInvalid && (
         <div style={{ background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.3)', borderRadius: 'var(--booking-radius)', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--booking-danger)' }}>
-          Your BG number couldn't be confirmed. Please check it was entered correctly and make sure you've added Trampoline Life as a club on GymNet.
+          Your BG number couldn't be confirmed. Please check it was entered correctly and make sure you've added Trampoline Life as a club on <a href="https://mybg.british-gymnastics.org/" target="_blank" rel="noreferrer">British Gymnastics</a>.
         </div>
       )}
 
