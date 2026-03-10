@@ -1130,15 +1130,15 @@ export default function AdminMembers() {
                   opacity: u.isArchived ? 0.5 : 1,
                 }}
               >
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {u.firstName} {u.lastName}
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)', marginTop: '0.1rem' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)', marginTop: '0.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {u.email}
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', flexShrink: 0, marginLeft: '0.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', flexShrink: 0, marginLeft: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{
                       fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.04em',
@@ -1148,7 +1148,7 @@ export default function AdminMembers() {
                     </span>
                     <span style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)', display: 'inline-block', transition: 'transform 0.2s', transform: isSelected ? 'rotate(180deg)' : 'none' }}>▾</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.72rem', color: 'var(--booking-text-muted)' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem 0.75rem', justifyContent: 'flex-end', fontSize: '0.72rem', color: 'var(--booking-text-muted)' }}>
                     <span title="Confirmed bookings">{u.confirmedBookings ?? 0} booked</span>
                     <span title="Cancelled bookings">{u.cancelledBookings ?? 0} cancelled</span>
                     <span title="Last login">
