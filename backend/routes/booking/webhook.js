@@ -30,20 +30,21 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
 
   if (event.type === 'payment_intent.payment_failed' || event.type === 'payment_intent.canceled') {
     const paymentIntent = event.data.object;
-    const booking = await prisma.booking.findFirst({
+    // Release credits (may be attached to any of the batch bookings)
+    const pendingBookings = await prisma.booking.findMany({
       where: { stripePaymentIntentId: paymentIntent.id, status: 'PENDING' },
     });
-    if (booking) {
+    for (const booking of pendingBookings) {
       await prisma.credit.updateMany({
         where: { usedOnBookingId: booking.id },
         data: { usedAt: null, usedOnBookingId: null },
       });
-      await prisma.booking.update({
-        where: { id: booking.id },
-        data: { status: 'CANCELLED' },
-      });
-      console.log(`Booking cancelled and credits released for payment intent ${paymentIntent.id} (${event.type})`);
     }
+    await prisma.booking.updateMany({
+      where: { stripePaymentIntentId: paymentIntent.id, status: 'PENDING' },
+      data: { status: 'CANCELLED' },
+    });
+    console.log(`Bookings cancelled and credits released for payment intent ${paymentIntent.id} (${event.type})`);
   }
 
   if (event.type === 'invoice.paid') {
