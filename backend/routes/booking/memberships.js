@@ -261,7 +261,6 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     const { error, value } = Joi.object({
       gymnastId: Joi.string().required(),
       monthlyAmount: Joi.number().integer().min(1).required(),
-
       startDate: Joi.date().required(),
     }).validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
@@ -275,138 +274,29 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       return res.status(404).json({ error: 'Gymnast not found' });
     }
 
-    // Check no active/pending membership already exists
+    if (!gymnast.guardians[0]) {
+      return res.status(400).json({ error: 'Gymnast has no guardian account to bill' });
+    }
+
+    // Check no active/pending/scheduled membership already exists
     const existing = await prisma.membership.findFirst({
-      where: { gymnastId: value.gymnastId, status: { in: ['ACTIVE', 'PENDING_PAYMENT', 'PAUSED'] } },
+      where: { gymnastId: value.gymnastId, status: { in: ['ACTIVE', 'PENDING_PAYMENT', 'PAUSED', 'SCHEDULED'] } },
     });
     if (existing) return res.status(400).json({ error: 'Gymnast already has an active membership' });
 
-    let stripeSubscriptionId = null;
-    let membershipStatus = 'PENDING_PAYMENT';
+    const startDate = new Date(value.startDate);
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    const isFuture = startDate > todayMidnight;
 
-    if (process.env.STRIPE_SECRET_KEY) {
-      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-      const guardian = gymnast.guardians[0];
-
-      if (!guardian) return res.status(400).json({ error: 'Gymnast has no guardian account to bill' });
-
-      // Create or retrieve Stripe Customer for the guardian
-      let stripeCustomerId = guardian.stripeCustomerId;
-      if (!stripeCustomerId) {
-        const customer = await stripe.customers.create({
-          email: guardian.email,
-          name: `${guardian.firstName} ${guardian.lastName}`,
-          metadata: { userId: guardian.id },
-        });
-        stripeCustomerId = customer.id;
-        await prisma.user.update({
-          where: { id: guardian.id },
-          data: { stripeCustomerId },
-        });
-      }
-
-      // Apply available credits as Stripe customer balance BEFORE creating the subscription.
-      // Stripe automatically deducts this balance from the first invoice, avoiding the
-      // invoice_not_editable error that occurs when trying to add items after creation.
-      const availableCredits = await prisma.credit.findMany({
-        where: { userId: guardian.id, usedAt: null, expiresAt: { gt: new Date() } },
-        orderBy: { expiresAt: 'asc' },
-      });
-      const totalCreditAmount = availableCredits.reduce((sum, c) => sum + c.amount, 0);
-
-      if (totalCreditAmount > 0) {
-        await stripe.customers.createBalanceTransaction(stripeCustomerId, {
-          amount: -totalCreditAmount,
-          currency: 'gbp',
-          description: 'Session credits applied to first membership payment',
-        });
-      }
-
-      // billing_cycle_anchor = 1st of next calendar month (UTC)
-      const now = new Date();
-      const firstOfNextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-      const billingCycleAnchor = Math.floor(firstOfNextMonth.getTime() / 1000);
-
-      const stripeProduct = await stripe.products.create({
-        name: `Trampoline Life Membership — ${gymnast.firstName} ${gymnast.lastName}`,
-      });
-
-      const subscription = await stripe.subscriptions.create({
-        customer: stripeCustomerId,
-        items: [{
-          price_data: {
-            currency: 'gbp',
-            product: stripeProduct.id,
-            unit_amount: value.monthlyAmount,
-            recurring: { interval: 'month' },
-          },
-        }],
-        billing_cycle_anchor: billingCycleAnchor,
-        proration_behavior: 'create_prorations',
-        payment_behavior: 'default_incomplete',
-        payment_settings: { save_default_payment_method: 'on_subscription' },
-        expand: ['latest_invoice'],
-        metadata: { clubId: req.user.clubId, gymnastId: value.gymnastId },
-      });
-
-      stripeSubscriptionId = subscription.id;
-
-      // Calculate how much credit Stripe actually consumed against the first invoice.
-      // total = invoice amount before balance; amount_due = what remains after balance applied.
-      const firstInvoice = subscription.latest_invoice;
-      const invoiceTotal = firstInvoice?.total ?? 0;
-      const invoiceAmountDue = firstInvoice?.amount_due ?? 0;
-      const creditsConsumed = Math.max(0, invoiceTotal - invoiceAmountDue);
-
-      // Mark the consumed credits as used (oldest first, split if needed)
-      if (creditsConsumed > 0) {
-        let remaining = creditsConsumed;
-        for (const credit of availableCredits) {
-          if (remaining <= 0) break;
-          if (credit.amount <= remaining) {
-            await prisma.credit.update({ where: { id: credit.id }, data: { usedAt: new Date() } });
-            remaining -= credit.amount;
-          } else {
-            // Partial consumption — split the credit record
-            await prisma.credit.update({ where: { id: credit.id }, data: { amount: remaining, usedAt: new Date() } });
-            await prisma.credit.create({
-              data: {
-                userId: guardian.id,
-                amount: credit.amount - remaining,
-                expiresAt: credit.expiresAt,
-                sourceBookingId: credit.sourceBookingId,
-              },
-            });
-            remaining = 0;
-          }
-        }
-      }
-
-      // If credits didn't fully cover unused balance we added, restore the remainder
-      // by adding back a positive balance transaction so we don't over-credit the customer
-      if (totalCreditAmount > creditsConsumed) {
-        const unused = totalCreditAmount - creditsConsumed;
-        await stripe.customers.createBalanceTransaction(stripeCustomerId, {
-          amount: unused,
-          currency: 'gbp',
-          description: 'Unused session credit balance restored',
-        });
-      }
-
-      // If the first invoice is fully covered, the subscription can go straight to active
-      // but still needs a payment method for future renewals
-      membershipStatus = invoiceAmountDue === 0 ? 'ACTIVE' : 'PENDING_PAYMENT';
-    }
-
+    // Create the membership record — always start as SCHEDULED; activate immediately if start date is today or past
     const membership = await prisma.membership.create({
       data: {
         gymnastId: value.gymnastId,
         clubId: req.user.clubId,
         monthlyAmount: value.monthlyAmount,
-        stripeSubscriptionId,
-        status: membershipStatus,
-        needsPaymentMethod: membershipStatus === 'ACTIVE',
-        startDate: new Date(value.startDate),
+        status: 'SCHEDULED',
+        startDate,
       },
       include: { gymnast: true },
     });
@@ -414,24 +304,22 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
       action: 'membership.create', entityType: 'Membership', entityId: membership.id,
-      metadata: { gymnastId: value.gymnastId, monthlyAmount: value.monthlyAmount },
+      metadata: { gymnastId: value.gymnastId, monthlyAmount: value.monthlyAmount, startDate: startDate.toISOString() },
     });
 
-    const guardian = gymnast.guardians[0];
-    if (guardian) {
-      try {
-        await emailService.sendMembershipCreatedEmail(
-          guardian.email,
-          guardian.firstName,
-          gymnast,
-          value.monthlyAmount,
-        );
-      } catch (emailErr) {
-        console.error('Failed to send membership created email:', emailErr);
-      }
+    if (!isFuture) {
+      // Start date is today or in the past — activate immediately (creates Stripe sub, sends email)
+      const { activateMembership } = require('../../services/membershipActivationService');
+      await activateMembership(membership.id, prisma);
     }
 
-    res.status(201).json({ membership });
+    // Re-fetch to return up-to-date status
+    const updated = await prisma.membership.findUnique({
+      where: { id: membership.id },
+      include: { gymnast: true },
+    });
+
+    res.status(201).json({ membership: updated });
   } catch (err) {
     console.error('Create membership error:', err);
     res.status(500).json({ error: 'Server error' });
@@ -445,13 +333,16 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
     if (!membership) return res.status(404).json({ error: 'Membership not found' });
     if (membership.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
 
-    const { status, monthlyAmount } = req.body;
+    const { status, monthlyAmount, prorationBehavior } = req.body;
     const data = {};
 
     if (monthlyAmount !== undefined) {
       const { error: amtErr, value: amtVal } = Joi.number().integer().min(1).validate(monthlyAmount);
       if (amtErr) return res.status(400).json({ error: 'monthlyAmount must be a positive integer (pence)' });
       data.monthlyAmount = amtVal;
+
+      // prorationBehavior: 'create_prorations' (apply now, pro-rata) or 'none' (from next month)
+      const stripeProration = prorationBehavior === 'none' ? 'none' : 'create_prorations';
 
       // Update Stripe subscription price if one exists
       if (membership.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
@@ -469,6 +360,7 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
                 recurring: { interval: 'month' },
               },
             }],
+            proration_behavior: stripeProration,
           });
         }
       }

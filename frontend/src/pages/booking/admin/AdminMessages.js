@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
+import '../booking-shared.css';
 
 const STATUS_COLOURS = {
   DRAFT: 'var(--booking-text-muted)',
