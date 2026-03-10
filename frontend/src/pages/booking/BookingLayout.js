@@ -50,6 +50,7 @@ export default function BookingLayout() {
               <span className="booking-layout__admin-label">Admin</span>
               <NavLink to="/booking/admin" className="booking-layout__admin-link">Sessions</NavLink>
               <NavLink to="/booking/admin/members" className="booking-layout__admin-link">Members</NavLink>
+              <NavLink to="/booking/admin/messages" className="booking-layout__admin-link">Messages</NavLink>
               <NavLink to="/booking/admin/closures" className="booking-layout__admin-link">Closures</NavLink>
               <NavLink to="/booking/admin/audit-log" className="booking-layout__admin-link">Audit Log</NavLink>
             </>
