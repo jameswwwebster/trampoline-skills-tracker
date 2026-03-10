@@ -23,6 +23,7 @@ export default function BookingCalendar() {
   const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [cart, setCart] = useState(new Map()); // Map<sessionInstanceId, gymnast[]>
+  const navigate = useNavigate();
 
   useEffect(() => {
     setSelectedSessionId(null);
@@ -128,8 +129,6 @@ export default function BookingCalendar() {
   const cartEntries = Array.from(cart.entries()); // [[sessionId, gymnasts[]], ...]
   const cartTotalSlots = cartEntries.reduce((sum, [, g]) => sum + g.length, 0);
   const cartTotalAmount = cartTotalSlots * 600;
-
-  const navigate = useNavigate();
 
   const handleCartCheckout = () => {
     const cartItems = cartEntries.map(([sessionInstanceId, gymnasts]) => {
