@@ -1073,6 +1073,7 @@ const EMPTY_CREATE = { firstName: '', lastName: '', email: '', phone: '', role: 
 export default function AdminMembers() {
   const [members, setMembers] = useState([]);
   const [childrenByUser, setChildrenByUser] = useState({}); // userId → "First Last, ..."
+  const [gymnastsCountByUser, setGymnastsCountByUser] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState('');
@@ -1104,6 +1105,15 @@ export default function AdminMembers() {
             map[uid] = map[uid] ? `${map[uid]} ${g.firstName} ${g.lastName}` : `${g.firstName} ${g.lastName}`;
           });
         });
+
+        // Build gymnast count per guardian
+        const countMap = {};
+        gymnasts.forEach(g => {
+          (g.guardianIds || []).forEach(uid => {
+            countMap[uid] = (countMap[uid] || 0) + 1;
+          });
+        });
+        setGymnastsCountByUser(countMap);
 
         setMembers(users);
         setChildrenByUser(map);
@@ -1236,34 +1246,38 @@ export default function AdminMembers() {
                   opacity: u.isArchived ? 0.5 : 1,
                 }}
               >
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {u.firstName} {u.lastName}
-                  </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)', marginTop: '0.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {u.email}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', flexShrink: 0, marginLeft: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{u.firstName} {u.lastName}</span>
                     <span style={{
-                      fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.04em',
-                      textTransform: 'uppercase', color: 'var(--booking-text-muted)',
+                      fontSize: '0.7rem', fontWeight: 600, padding: '1px 7px', borderRadius: 4,
+                      background: 'rgba(124,53,232,0.1)', color: 'var(--booking-accent)',
                     }}>
                       {ROLE_LABELS[u.role] ?? u.role}
                     </span>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)', display: 'inline-block', transition: 'transform 0.2s', transform: isSelected ? 'rotate(180deg)' : 'none' }}>▾</span>
+                    {u.hasPendingBg && (
+                      <span style={{
+                        fontSize: '0.7rem', fontWeight: 600, padding: '1px 7px', borderRadius: 4,
+                        background: 'rgba(230,126,34,0.12)', color: '#e67e22',
+                      }}>
+                        ⚠ BG pending
+                      </span>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem 0.75rem', justifyContent: 'flex-end', fontSize: '0.72rem', color: 'var(--booking-text-muted)' }}>
-                    <span title="Confirmed bookings">{u.confirmedBookings ?? 0} booked</span>
-                    <span title="Cancelled bookings">{u.cancelledBookings ?? 0} cancelled</span>
-                    <span title="Last login">
-                      {u.lastLoginAt
-                        ? new Date(u.lastLoginAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                        : 'Never logged in'}
-                    </span>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--booking-text-muted)', marginTop: '0.1rem' }}>
+                    {(() => {
+                      const count = gymnastsCountByUser[u.id] || 0;
+                      return count === 1 ? '1 gymnast' : `${count} gymnasts`;
+                    })()}
                   </div>
                 </div>
+                <span style={{
+                  fontSize: '0.8rem', color: isSelected ? 'var(--booking-accent)' : 'var(--booking-text-muted)',
+                  display: 'inline-block', transition: 'transform 0.2s',
+                  flexShrink: 0, marginLeft: '0.75rem',
+                }}>
+                  {isSelected ? '▴' : '▾'}
+                </span>
               </button>
 
               {isSelected && (
