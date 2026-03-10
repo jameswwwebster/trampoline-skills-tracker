@@ -4,14 +4,21 @@ import { bookingApi } from '../../utils/bookingApi';
 import { useAuth } from '../../contexts/AuthContext';
 import './SessionDetail.css';
 
-export default function SessionDetail({ instanceId: propInstanceId, onClose }) {
+export default function SessionDetail({
+  instanceId: propInstanceId,
+  onClose,
+  cartMode = false,
+  cartGymnastIds = [],
+  onCartUpdate,
+}) {
   const { instanceId: paramInstanceId } = useParams();
   const instanceId = propInstanceId || paramInstanceId;
   const navigate = useNavigate();
   const { user } = useAuth();
   const [session, setSession] = useState(null);
   const [myGymnasts, setMyGymnasts] = useState([]);
-  const [selectedGymnastIds, setSelectedGymnastIds] = useState([]);
+  const [localSelectedGymnastIds, setLocalSelectedGymnastIds] = useState([]);
+  const selectedGymnastIds = cartMode ? cartGymnastIds : localSelectedGymnastIds;
   const [totalCreditsAvailable, setTotalCreditsAvailable] = useState(0);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
@@ -42,7 +49,7 @@ export default function SessionDetail({ instanceId: propInstanceId, onClose }) {
     try {
       const res = await bookingApi.createSelfGymnast();
       await loadGymnasts();
-      setSelectedGymnastIds(ids => ids.includes(res.data.id) ? ids : [...ids, res.data.id]);
+      setLocalSelectedGymnastIds(ids => ids.includes(res.data.id) ? ids : [...ids, res.data.id]);
     } catch (err) {
       setError('Could not create self-booking record. Please try again.');
     }
@@ -63,9 +70,19 @@ export default function SessionDetail({ instanceId: propInstanceId, onClose }) {
   const hasSelf = myGymnasts.some(g => g.isSelf);
 
   const toggleGymnast = (id) => {
-    setSelectedGymnastIds(prev =>
-      prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]
-    );
+    if (cartMode) {
+      const isSelected = cartGymnastIds.includes(id);
+      const gymnast = myGymnasts.find(g => g.id === id);
+      const currentSelected = myGymnasts.filter(g => cartGymnastIds.includes(g.id));
+      const newGymnasts = isSelected
+        ? currentSelected.filter(g => g.id !== id)
+        : [...currentSelected, gymnast];
+      onCartUpdate(instanceId, newGymnasts);
+    } else {
+      setLocalSelectedGymnastIds(prev =>
+        prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]
+      );
+    }
   };
 
   const totalAmount = selectedGymnastIds.length * 600;
@@ -316,29 +333,36 @@ export default function SessionDetail({ instanceId: propInstanceId, onClose }) {
             )}
           </div>
 
-          {totalCreditsAvailable > 0 && (
-            <p className="session-detail__credit-notice">
-              £{(creditAmount / 100).toFixed(2)} credit will be applied automatically.
-            </p>
+          {cartMode ? (
+            selectedGymnastIds.length > 0 && (
+              <p style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: 'var(--booking-success)', fontWeight: 600 }}>
+                {selectedGymnastIds.length} gymnast{selectedGymnastIds.length !== 1 ? 's' : ''} added to cart
+              </p>
+            )
+          ) : (
+            <>
+              {totalCreditsAvailable > 0 && (
+                <p className="session-detail__credit-notice">
+                  £{(creditAmount / 100).toFixed(2)} credit will be applied automatically.
+                </p>
+              )}
+              {selectedGymnastIds.length > 0 && (
+                <div className="session-detail__summary">
+                  <p>Gymnasts: {selectedGymnastIds.length} × £6.00 = £{(totalAmount / 100).toFixed(2)}</p>
+                  {creditAmount > 0 && <p>Credits applied: –£{(creditAmount / 100).toFixed(2)}</p>}
+                  <p><strong>Total: £{(chargeAmount / 100).toFixed(2)}</strong></p>
+                </div>
+              )}
+              {error && <p className="session-detail__error">{error}</p>}
+              <button
+                className="session-detail__book-btn"
+                disabled={selectedGymnastIds.length === 0 || booking}
+                onClick={handleBook}
+              >
+                {booking ? 'Processing...' : `Book${chargeAmount > 0 ? ` — £${(chargeAmount / 100).toFixed(2)}` : ' (Free)'}`}
+              </button>
+            </>
           )}
-
-          {selectedGymnastIds.length > 0 && (
-            <div className="session-detail__summary">
-              <p>Gymnasts: {selectedGymnastIds.length} × £6.00 = £{(totalAmount / 100).toFixed(2)}</p>
-              {creditAmount > 0 && <p>Credits applied: –£{(creditAmount / 100).toFixed(2)}</p>}
-              <p><strong>Total: £{(chargeAmount / 100).toFixed(2)}</strong></p>
-            </div>
-          )}
-
-          {error && <p className="session-detail__error">{error}</p>}
-
-          <button
-            className="session-detail__book-btn"
-            disabled={selectedGymnastIds.length === 0 || booking}
-            onClick={handleBook}
-          >
-            {booking ? 'Processing...' : `Book${chargeAmount > 0 ? ` — £${(chargeAmount / 100).toFixed(2)}` : ' (Free)'}`}
-          </button>
         </>
       )}
     </div>
