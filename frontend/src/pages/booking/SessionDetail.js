@@ -226,7 +226,7 @@ export default function SessionDetail({
               const selected = selectedGymnastIds.includes(g.id);
               const now = Date.now();
               const bgBlocked = (() => {
-                if (!g.bgNumber && g.pastSessionCount >= 2) return true;
+                if (!g.bgNumber && (g.pastSessionCount >= 2 || g.hasMembership)) return true;
                 if (g.bgNumberStatus === 'INVALID') return true;
                 if (g.bgNumberStatus === 'PENDING' && g.bgNumberEnteredAt && g.bgNumberGraceDays) {
                   const graceMs = g.bgNumberGraceDays * 24 * 60 * 60 * 1000;

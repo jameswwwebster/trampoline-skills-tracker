@@ -32,13 +32,14 @@ export default function CartCheckout() {
           gymnastIds: item.gymnasts.map(g => g.id),
         })),
       });
-      sessionStorage.removeItem('booking-cart');
-      window.dispatchEvent(new CustomEvent('booking-cart-update'));
       if (res.data.clientSecret) {
         navigate(`/booking/checkout/${res.data.bookings[0].id}`, {
           state: { clientSecret: res.data.clientSecret },
         });
       } else {
+        // Free booking — safe to clear cart immediately since booking is complete
+        sessionStorage.removeItem('booking-cart');
+        window.dispatchEvent(new CustomEvent('booking-cart-update'));
         navigate(`/booking/confirmation/${res.data.bookings[0].id}`);
       }
     } catch (err) {

@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
 import SessionTemplates from './SessionTemplates';
-import AdminMessages from './AdminMessages';
-import AdminRemovedMembers from './AdminRemovedMembers';
 import '../booking-shared.css';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -336,15 +334,8 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
   );
 }
 
-const ADMIN_TABS = [
-  { key: 'sessions', label: 'Sessions' },
-  { key: 'messages', label: 'Messages' },
-  { key: 'removed-members', label: 'Removed Members' },
-];
-
 export default function BookingAdmin() {
   const today = new Date();
-  const [activeTab, setActiveTab] = useState('sessions');
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [sessions, setSessions] = useState([]);
@@ -352,11 +343,6 @@ export default function BookingAdmin() {
   const [sessionDetail, setSessionDetail] = useState(null);
   const [showManualAdd, setShowManualAdd] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
-  const [testEmailOpen, setTestEmailOpen] = useState(false);
-  const [testEmailAddr, setTestEmailAddr] = useState('');
-  const [testEmailSending, setTestEmailSending] = useState(false);
-  const [testEmailResult, setTestEmailResult] = useState(null);
-
   const loadSessions = () =>
     bookingApi.getSessions(year, month).then(res => setSessions(res.data));
 
@@ -379,33 +365,7 @@ export default function BookingAdmin() {
     <div className="bk-page bk-page--xl">
       <h2 style={{ marginBottom: '1.25rem' }}>Booking Admin</h2>
 
-      {/* Tab bar */}
-      <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', borderBottom: '2px solid var(--booking-border)' }}>
-        {ADMIN_TABS.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === tab.key ? '2px solid var(--booking-accent)' : '2px solid transparent',
-              marginBottom: '-2px',
-              padding: '0.5rem 1rem',
-              cursor: 'pointer',
-              fontWeight: activeTab === tab.key ? 700 : 400,
-              color: activeTab === tab.key ? 'var(--booking-accent)' : 'var(--booking-text-muted)',
-              fontSize: '0.95rem',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === 'messages' && <AdminMessages />}
-      {activeTab === 'removed-members' && <AdminRemovedMembers />}
-
-      {activeTab === 'sessions' && <div>
+      <div>
       <div className="bk-row" style={{ marginBottom: '0.75rem' }}>
         <button className="bk-btn" onClick={() => month === 1 ? (setMonth(12), setYear(y => y - 1)) : setMonth(m => m - 1)}>&lsaquo;</button>
         <strong>{MONTHS[month - 1]} {year}</strong>
@@ -586,60 +546,6 @@ export default function BookingAdmin() {
         )}
       </div>
 
-      {/* Test Email — collapsible, bottom of page */}
-      <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--booking-border)', paddingTop: '1.25rem' }}>
-        <button
-          onClick={() => { setTestEmailOpen(v => !v); setTestEmailResult(null); }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '0.5rem',
-            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-            fontSize: '1rem', fontWeight: 700, color: 'var(--booking-text-on-light)',
-          }}
-        >
-          <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', transition: 'transform 0.2s', display: 'inline-block', transform: testEmailOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
-          Test Email
-        </button>
-        {testEmailOpen && (
-          <div style={{ marginTop: '1rem', maxWidth: 400 }}>
-            <p style={{ fontSize: '0.875rem', color: 'var(--booking-text-muted)', marginBottom: '0.75rem' }}>
-              Send a test email to verify your email settings are working.
-            </p>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input
-                className="bk-input"
-                type="email"
-                placeholder="Enter email address"
-                value={testEmailAddr}
-                onChange={e => { setTestEmailAddr(e.target.value); setTestEmailResult(null); }}
-                style={{ flex: 1 }}
-              />
-              <button
-                className="bk-btn bk-btn--primary"
-                disabled={testEmailSending || !testEmailAddr.trim()}
-                onClick={async () => {
-                  setTestEmailSending(true);
-                  setTestEmailResult(null);
-                  try {
-                    await bookingApi.testEmail(testEmailAddr.trim());
-                    setTestEmailResult({ ok: true, msg: `Test email sent to ${testEmailAddr.trim()}` });
-                  } catch (err) {
-                    setTestEmailResult({ ok: false, msg: err.response?.data?.error || 'Failed to send email' });
-                  } finally {
-                    setTestEmailSending(false);
-                  }
-                }}
-              >
-                {testEmailSending ? 'Sending...' : 'Send'}
-              </button>
-            </div>
-            {testEmailResult && (
-              <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: testEmailResult.ok ? 'var(--booking-success)' : 'var(--booking-danger)' }}>
-                {testEmailResult.msg}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
       </div>}
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
+import AdminRemovedMembers from './AdminRemovedMembers';
 import '../booking-shared.css';
 
 const ROLE_LABELS = { CLUB_ADMIN: 'Admin', COACH: 'Coach', PARENT: 'Parent', GYMNAST: 'Gymnast' };
@@ -1085,6 +1086,7 @@ export default function AdminMembers() {
   const [createSuccess, setCreateSuccess] = useState(null);
   const [showMemberships, setShowMemberships] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
+  const [showRemovedMembers, setShowRemovedMembers] = useState(false);
 
   useEffect(() => { setPage(1); }, [search, letterFilter]);
 
@@ -1314,6 +1316,18 @@ export default function AdminMembers() {
           {show && <div style={{ marginTop: '1rem' }}><Panel /></div>}
         </div>
       ))}
+
+      <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--booking-border)', paddingTop: '1rem' }}>
+        <button
+          className="bk-btn bk-btn--sm"
+          style={{ border: '1px solid var(--booking-border)', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          onClick={() => setShowRemovedMembers(v => !v)}
+        >
+          <span>Removed Members</span>
+          <span style={{ display: 'inline-block', transition: 'transform 0.2s', transform: showRemovedMembers ? 'rotate(180deg)' : 'none' }}>▾</span>
+        </button>
+        {showRemovedMembers && <div style={{ marginTop: '1rem' }}><AdminRemovedMembers inline /></div>}
+      </div>
     </div>
   );
 }

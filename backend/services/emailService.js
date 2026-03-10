@@ -346,7 +346,7 @@ class EmailService {
         ${infoBox(`<p style="margin:0"><strong>Please check:</strong></p>
           <ul style="margin:0.5rem 0 0;padding-left:1.2rem">
             <li>The number was entered correctly in your account</li>
-            <li>You have added <strong>Trampoline Life</strong> as a club on GymNet — if we can't see your membership from our end, we're unable to confirm it</li>
+            <li>You have added <strong>Trampoline Life</strong> as a club on the British Gymnastics portal — if we can't see your membership from our end, we're unable to confirm it</li>
           </ul>`)}
         <p>Once you've updated it, your booking access will be restored within the grace period.</p>
         ${ctaButton(BASE_URL() + '/booking/my-account', 'Update BG number')}`,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import './booking-shared.css';
 
@@ -6,6 +6,14 @@ export default function BookingConfirmation() {
   const { bookingId } = useParams();
   const [searchParams] = useSearchParams();
   const redirectStatus = searchParams.get('redirect_status');
+
+  useEffect(() => {
+    // Clear cart once payment succeeds (Stripe redirect back to this page)
+    if (redirectStatus === 'succeeded') {
+      sessionStorage.removeItem('booking-cart');
+      window.dispatchEvent(new CustomEvent('booking-cart-update'));
+    }
+  }, [redirectStatus]);
 
   // Payment failed or was cancelled
   if (redirectStatus && redirectStatus !== 'succeeded' && redirectStatus !== 'processing') {
