@@ -23,6 +23,7 @@ async function checkBgNumbers(gymnastIds, now) {
           bgNumberEnteredAt: true, bgNumberGraceDays: true,
         },
       });
+      if (!g) return null;
       const pastCount = await prisma.bookingLine.count({
         where: {
           gymnastId: gId,
