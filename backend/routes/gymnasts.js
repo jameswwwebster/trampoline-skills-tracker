@@ -495,7 +495,7 @@ router.get('/admin/bg-numbers', auth, requireRole(['CLUB_ADMIN', 'COACH']), asyn
       orderBy: { bgNumberEnteredAt: 'asc' },
     });
 
-    // Missing numbers (2+ sessions, no number)
+    // Missing numbers (no BG number + 2+ past confirmed booking lines)
     const allGymnasts = await prisma.gymnast.findMany({
       where: {
         clubId: req.user.clubId,
@@ -503,16 +503,20 @@ router.get('/admin/bg-numbers', auth, requireRole(['CLUB_ADMIN', 'COACH']), asyn
         isArchived: false,
       },
       include: {
-        guardians: { select: { id: true, firstName: true, lastName: true } },
-        bookingLines: {
-          where: { booking: { status: 'CONFIRMED', sessionInstance: { date: { lte: now } } } },
-          select: { id: true },
+        guardians: { select: { id: true, firstName: true, lastName: true, email: true } },
+        _count: {
+          select: {
+            bookingLines: {
+              where: { booking: { status: 'CONFIRMED', sessionInstance: { date: { lte: now } } } },
+            },
+          },
         },
       },
+      orderBy: { firstName: 'asc' },
     });
     const missingGymnasts = allGymnasts
-      .filter(g => g.bookingLines.length >= 2)
-      .map(({ bookingLines, ...g }) => ({ ...g, pastSessionCount: bookingLines.length }));
+      .filter(g => g._count.bookingLines >= 2)
+      .map(({ _count, ...g }) => ({ ...g, pastSessionCount: _count.bookingLines }));
 
     res.json({ pending: pendingGymnasts, missing: missingGymnasts });
   } catch (err) {

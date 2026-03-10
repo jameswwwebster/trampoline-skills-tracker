@@ -402,10 +402,10 @@ cron.schedule('30 2 * * *', async () => {
 cron.schedule('30 7 * * *', async () => {
   try {
     const pending = await prisma.gymnast.findMany({
-      where: { bgNumberStatus: 'PENDING', isArchived: false },
+      where: { bgNumberStatus: 'PENDING', isArchived: false, club: { emailEnabled: true } },
       include: {
         guardians: { select: { firstName: true, lastName: true } },
-        club: { select: { id: true, emailEnabled: true } },
+        club: { select: { id: true } },
       },
       orderBy: { bgNumberEnteredAt: 'asc' },
     });
@@ -415,7 +415,6 @@ cron.schedule('30 7 * * *', async () => {
     // Group by club
     const byClub = {};
     for (const g of pending) {
-      if (!g.club.emailEnabled) continue;
       if (!byClub[g.club.id]) byClub[g.club.id] = [];
       const guardian = g.guardians[0];
       byClub[g.club.id].push({
