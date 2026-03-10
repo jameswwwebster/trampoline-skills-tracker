@@ -97,6 +97,8 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
         lastName: true,
         userId: true,
         createdAt: true,
+        bgNumber: true,
+        bgNumberStatus: true,
         guardians: { select: { id: true } },
         user: {
           select: {
@@ -120,6 +122,16 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
       }
     });
 
+    // Build set of user IDs who have at least one gymnast with PENDING BG status.
+    // Covers both child gymnasts (linked via guardians) and adult participants (linked via userId).
+    const pendingBgGuardianIds = new Set();
+    gymnasts.forEach(g => {
+      if (g.bgNumberStatus === 'PENDING') {
+        g.guardians.forEach(guardian => pendingBgGuardianIds.add(guardian.id));
+        if (g.userId) pendingBgGuardianIds.add(g.userId); // adult participant
+      }
+    });
+
     // Transform gymnasts to match user format
     const gymnastsAsUsers = gymnasts.map(gymnast => ({
       id: gymnast.id,
@@ -140,7 +152,8 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
       confirmedBookings: user.bookings.filter(b => b.status === 'CONFIRMED').length,
       cancelledBookings: user.bookings.filter(b => b.status === 'CANCELLED').length,
       bookings: undefined,
-      customFieldValues: user.customFieldValues || []
+      customFieldValues: user.customFieldValues || [],
+      hasPendingBg: pendingBgGuardianIds.has(user.id),
     }));
 
     // Combine users and gymnasts
