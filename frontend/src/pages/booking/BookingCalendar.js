@@ -141,6 +141,7 @@ export default function BookingCalendar() {
         gymnasts,
       };
     });
+    setCart(new Map());
     navigate('/booking/cart-checkout', { state: { cart: cartItems } });
   };
 

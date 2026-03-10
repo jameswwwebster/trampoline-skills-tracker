@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { bookingApi } from '../../utils/bookingApi';
 import './booking-shared.css';
@@ -9,9 +9,18 @@ export default function CartCheckout() {
   const cartItems = location.state?.cart || [];
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const [creditsAvailable, setCreditsAvailable] = useState(0);
+
+  useEffect(() => {
+    bookingApi.getMyCredits()
+      .then(r => setCreditsAvailable(r.data.reduce((sum, c) => sum + c.amount, 0)))
+      .catch(() => {});
+  }, []);
 
   const totalSlots = cartItems.reduce((sum, item) => sum + item.gymnasts.length, 0);
   const totalAmount = totalSlots * 600;
+  const creditAmount = Math.min(creditsAvailable, totalAmount);
+  const chargeAmount = Math.max(0, totalAmount - creditAmount);
 
   const handleConfirm = async () => {
     setProcessing(true);
@@ -69,8 +78,15 @@ export default function CartCheckout() {
         ))}
       </div>
 
-      <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.5rem' }}>
-        Total: £{(totalAmount / 100).toFixed(2)}
+      <div style={{ marginBottom: '1.5rem' }}>
+        {creditAmount > 0 && (
+          <p style={{ fontSize: '0.875rem', color: 'var(--booking-text-muted)', marginBottom: '0.25rem' }}>
+            £{(creditAmount / 100).toFixed(2)} credit will be applied automatically.
+          </p>
+        )}
+        <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>
+          Total: £{(chargeAmount / 100).toFixed(2)}
+        </div>
       </div>
 
       {error && <p style={{ color: 'var(--booking-danger)', marginBottom: '1rem' }}>{error}</p>}
@@ -80,7 +96,7 @@ export default function CartCheckout() {
         disabled={processing}
         onClick={handleConfirm}
       >
-        {processing ? 'Processing...' : `Confirm — £${(totalAmount / 100).toFixed(2)}`}
+        {processing ? 'Processing...' : chargeAmount > 0 ? `Confirm — £${(chargeAmount / 100).toFixed(2)}` : 'Confirm (Free)'}
       </button>
     </div>
   );
