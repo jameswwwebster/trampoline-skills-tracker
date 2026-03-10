@@ -137,6 +137,12 @@ model Club {
   @@map("clubs")
 }
 
+enum BgNumberStatus {
+  PENDING
+  VERIFIED
+  INVALID
+}
+
 model Gymnast {
   id               String            @id @default(cuid())
   firstName        String
@@ -154,6 +160,13 @@ model Gymnast {
   bgInsuranceConfirmed         Boolean   @default(false)
   bgInsuranceConfirmedAt       DateTime?
   bgInsuranceConfirmedBy       String?
+  bgNumber              String?
+  bgNumberStatus        BgNumberStatus?
+  bgNumberGraceDays     Int?
+  bgNumberEnteredAt     DateTime?
+  bgNumberEnteredBy     String?
+  bgNumberVerifiedAt    DateTime?
+  bgNumberVerifiedBy    String?
   archivedAt                   DateTime?
   archivedById     String?
   archivedReason   String?
