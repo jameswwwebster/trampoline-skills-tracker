@@ -56,3 +56,4 @@ coverage/
 # Prisma
 prisma/migrations/dev.db*
 .worktrees/
+.superpowers/
