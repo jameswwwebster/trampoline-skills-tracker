@@ -266,7 +266,8 @@ Priority order as agreed:
 2. **Competition management** — entry management, heat sheets, results, possibly linked to the existing skills/levels system
 3. **Email / messaging system** — direct messaging and bulk emails from admin to members or groups (separate from transactional emails already in place)
 4. **Finance summary** — admin view of revenue: bookings, memberships, credits issued/used, outstanding balances
-5. **Move the rest of the website** — migrate existing Wix content (about, contact, etc.) into this app so everything lives under one roof
+5. **Coach invoicing** — coaches submit invoices through the system for sessions coached; admin reviews and approves
+6. **Move the rest of the website** — migrate existing Wix content (about, contact, etc.) into this app so everything lives under one roof
 
 ---
 
