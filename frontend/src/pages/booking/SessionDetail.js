@@ -9,7 +9,7 @@ export default function SessionDetail({
   onClose,
   cartMode = false,
   cartGymnastIds = [],
-  onCartUpdate,
+  onCartUpdate = () => {},
 }) {
   const { instanceId: paramInstanceId } = useParams();
   const instanceId = propInstanceId || paramInstanceId;
