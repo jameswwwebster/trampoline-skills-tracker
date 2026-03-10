@@ -259,69 +259,117 @@ function GymnastCard({ gymnast, onUpdated }) {
 
       <ConsentToggles gymnast={gymnast} onUpdated={onUpdated} />
 
-      <InsuranceSection gymnast={gymnast} onUpdated={onUpdated} />
+      <BgNumberSection gymnast={gymnast} onUpdated={onUpdated} />
     </div>
   );
 }
 
-function InsuranceSection({ gymnast, onUpdated }) {
-  const [confirming, setConfirming] = useState(false);
-  const [checked, setChecked] = useState(false);
+function BgNumberSection({ gymnast, onUpdated }) {
+  const [input, setInput] = useState(gymnast.bgNumber || '');
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [error, setError] = useState(null);
 
-  const needsInsurance = gymnast.pastSessionCount >= 2 && !gymnast.bgInsuranceConfirmed;
-  const isConfirmed = gymnast.bgInsuranceConfirmed;
+  const isInvalid = gymnast.bgNumberStatus === 'INVALID';
+  const hasNumber = !!gymnast.bgNumber;
+  const needs = gymnast.pastSessionCount >= 2 && !hasNumber;
 
-  if (gymnast.pastSessionCount < 2 && !isConfirmed) return null;
-
-  const handleConfirm = async () => {
-    if (!checked) return;
+  const handleSave = async () => {
+    if (!input.trim()) return;
     setSaving(true);
+    setError(null);
     try {
-      await bookingApi.confirmInsurance(gymnast.id, true);
+      await bookingApi.setBgNumber(gymnast.id, input.trim());
+      setEditing(false);
       onUpdated();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to save.');
     } finally {
       setSaving(false);
     }
   };
 
+  const guidance = (
+    <div style={{ fontSize: '0.82rem', color: 'var(--booking-text-muted)', marginTop: '0.5rem', lineHeight: 1.5 }}>
+      <p style={{ margin: '0 0 0.4rem' }}>
+        British Gymnastics membership provides <strong>personal accident insurance</strong> for all participants. It's required for everyone who trains with us.
+      </p>
+      <p style={{ margin: '0 0 0.4rem' }}>
+        Start with <strong>Community</strong> membership at{' '}
+        <a href="https://www.british-gymnastics.org/memberships" target="_blank" rel="noreferrer" style={{ color: 'var(--booking-accent)' }}>
+          british-gymnastics.org/memberships
+        </a>.
+        Upgrade to <strong>Competitive</strong> for regional competitions or <strong>National</strong> for national competitions.
+      </p>
+      <p style={{ margin: 0 }}>
+        If you already have BG membership with another club, you don't need to purchase it again — just log in to GymNet and add <strong>Trampoline Life</strong> as a club so we can see your membership from our end.
+      </p>
+    </div>
+  );
+
+  const inputRow = (
+    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+      <input
+        className="bk-input"
+        style={{ flex: 1, minWidth: 0 }}
+        placeholder="BG membership number"
+        value={input}
+        onChange={e => setInput(e.target.value)}
+      />
+      <button
+        className="bk-btn bk-btn--primary bk-btn--sm"
+        disabled={saving || !input.trim()}
+        onClick={handleSave}
+      >
+        {saving ? 'Saving…' : 'Save'}
+      </button>
+      {editing && (
+        <button
+          className="bk-btn bk-btn--sm"
+          style={{ border: '1px solid var(--booking-border)' }}
+          onClick={() => { setEditing(false); setInput(gymnast.bgNumber || ''); setError(null); }}
+        >
+          Cancel
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--booking-border)' }}>
-      <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>British Gymnastics Insurance</p>
-      {isConfirmed ? (
-        <p style={{ fontSize: '0.875rem', color: 'var(--booking-success)' }}>
-          ✓ Confirmed{gymnast.bgInsuranceConfirmedAt ? ` on ${new Date(gymnast.bgInsuranceConfirmedAt).toLocaleDateString('en-GB')}` : ''}
-        </p>
-      ) : needsInsurance ? (
-        <div>
-          <p style={{ fontSize: '0.875rem', color: 'var(--booking-danger)', marginBottom: '0.5rem' }}>
-            {gymnast.firstName} has attended 2 sessions and now requires British Gymnastics insurance to continue booking.
-          </p>
-          {!confirming ? (
-            <button className="bk-btn bk-btn--danger bk-btn--sm" onClick={() => setConfirming(true)}>
-              Confirm insurance
-            </button>
-          ) : (
-            <div>
-              <label style={{ display: 'flex', gap: '0.6rem', fontSize: '0.875rem', marginBottom: '0.75rem', cursor: 'pointer', alignItems: 'flex-start' }}>
-                <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} style={{ marginTop: 2 }} />
-                <span>
-                  I confirm that {gymnast.firstName} {gymnast.lastName} has an active British Gymnastics membership
-                  and has linked <strong>Trampoline Life</strong> as their club.
-                </span>
-              </label>
-              <div className="bk-row">
-                <button className="bk-btn bk-btn--primary bk-btn--sm" onClick={handleConfirm} disabled={!checked || saving}>
-                  {saving ? 'Saving...' : 'Confirm'}
-                </button>
-                <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => setConfirming(false)}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
+      <p style={{ margin: '0 0 0.4rem', fontSize: '0.85rem', fontWeight: 600 }}>British Gymnastics Membership</p>
+
+      {isInvalid && (
+        <div style={{ background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.3)', borderRadius: 'var(--booking-radius)', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--booking-danger)' }}>
+          Your BG number couldn't be confirmed. Please check it was entered correctly and make sure you've added Trampoline Life as a club on GymNet.
         </div>
-      ) : null}
+      )}
+
+      {!hasNumber || isInvalid || editing ? (
+        <>
+          {needs && !isInvalid && (
+            <p style={{ fontSize: '0.875rem', color: 'var(--booking-danger)', margin: '0 0 0.4rem' }}>
+              {gymnast.firstName} has attended 2 sessions and now requires a BG membership number to continue booking.
+            </p>
+          )}
+          {guidance}
+          {inputRow}
+          {error && <p style={{ fontSize: '0.8rem', color: 'var(--booking-danger)', marginTop: '0.3rem' }}>{error}</p>}
+        </>
+      ) : (
+        <>
+          <p style={{ margin: 0, fontSize: '0.875rem' }}>
+            <span style={{ fontFamily: 'monospace' }}>{gymnast.bgNumber}</span>{' '}
+            <button
+              onClick={() => setEditing(true)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--booking-accent)', fontSize: '0.78rem', padding: 0 }}
+            >
+              Update
+            </button>
+          </p>
+          {gymnast.pastSessionCount < 2 && guidance}
+        </>
+      )}
     </div>
   );
 }
