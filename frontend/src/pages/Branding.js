@@ -7,13 +7,13 @@ const Branding = () => {
   const { user } = useAuth();
   const { updateBranding } = useBranding();
   const [branding, setBranding] = useState({
-    primaryColor: '#2c3e50',
-    secondaryColor: '#3498db',
-    accentColor: '#d4af37',
-    backgroundColor: '#f8f9fa',
-    textColor: '#212529',
+    primaryColor: '#2d2d2d',
+    secondaryColor: '#7c35e8',
+    accentColor: '#9b4dca',
+    backgroundColor: '#eaeaec',
+    textColor: '#1a1a1a',
     logoUrl: '',
-    fontFamily: '',
+    fontFamily: "'Exo 2', Arial, sans-serif",
     website: '',
     description: ''
   });

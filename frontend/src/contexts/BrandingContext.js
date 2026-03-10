@@ -13,13 +13,13 @@ export const useBranding = () => {
 
 export const BrandingProvider = ({ children }) => {
   const [branding, setBranding] = useState({
-    primaryColor: '#2c3e50',
-    secondaryColor: '#3498db',
-    accentColor: '#d4af37',
-    backgroundColor: '#f8f9fa',
-    textColor: '#212529',
+    primaryColor: '#2d2d2d',
+    secondaryColor: '#7c35e8',
+    accentColor: '#9b4dca',
+    backgroundColor: '#eaeaec',
+    textColor: '#1a1a1a',
     logoUrl: '',
-    fontFamily: '',
+    fontFamily: "'Exo 2', Arial, sans-serif",
     website: '',
     description: ''
   });
@@ -50,16 +50,27 @@ export const BrandingProvider = ({ children }) => {
   useEffect(() => {
     const root = document.documentElement;
     
-    // Set CSS custom properties
+    // Set tracking system CSS custom properties
     root.style.setProperty('--primary-color', branding.primaryColor);
     root.style.setProperty('--secondary-color', branding.secondaryColor);
     root.style.setProperty('--accent-color', branding.accentColor);
     root.style.setProperty('--background-color', branding.backgroundColor);
     root.style.setProperty('--text-color', branding.textColor);
-    
-    // Set font family if specified
+
+    // Mirror into booking system vars so both systems stay in sync
+    root.style.setProperty('--booking-bg-dark', branding.primaryColor);
+    root.style.setProperty('--booking-accent', branding.secondaryColor);
+    root.style.setProperty('--booking-accent-light', branding.accentColor);
+    root.style.setProperty('--booking-accent-dark', branding.secondaryColor);
+    root.style.setProperty('--booking-bg-light', branding.backgroundColor);
+    root.style.setProperty('--booking-text-on-light', branding.textColor);
+    root.style.setProperty('--booking-accent-gradient',
+      `linear-gradient(135deg, ${branding.secondaryColor}, ${branding.accentColor})`);
+
+    // Font
     if (branding.fontFamily) {
       root.style.setProperty('--font-family', branding.fontFamily);
+      root.style.setProperty('--booking-font', branding.fontFamily);
     }
     
     // Set body background

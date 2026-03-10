@@ -5,14 +5,12 @@
 
 /* CSS Custom Properties for Branding */
 :root {
-  --primary-color: #2c3e50;
-  --secondary-color: #3498db;
-  --accent-color: #d4af37;
-  --background-color: #f8f9fa;
-  --text-color: #212529;
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  --primary-color: #2d2d2d;
+  --secondary-color: #7c35e8;
+  --accent-color: #9b4dca;
+  --background-color: #eaeaec;
+  --text-color: #1a1a1a;
+  --font-family: 'Exo 2', Arial, sans-serif;
 }
 
 .App {
