@@ -23,6 +23,10 @@ export default function BookingCalendar() {
   const [selectedSessionId, setSelectedSessionId] = useState(null);
 
   useEffect(() => {
+    setSelectedSessionId(null);
+  }, [selectedDate]);
+
+  useEffect(() => {
     const y = selectedDate.getFullYear();
     const m = selectedDate.getMonth() + 1;
     setYear(y);
