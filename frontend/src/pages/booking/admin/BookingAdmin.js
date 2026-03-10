@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
+import CalendarNav from '../CalendarNav';
 import SessionTemplates from './SessionTemplates';
 import '../booking-shared.css';
+import '../BookingCalendar.css';
 
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// ─── ManualAddForm (unchanged) ───────────────────────────────────────────────
 
 function ManualAddForm({ sessionId, onAdded }) {
   const [users, setUsers] = useState([]);
@@ -130,13 +132,15 @@ function ManualAddForm({ sessionId, onAdded }) {
   );
 }
 
+// ─── SessionDetailPanel (unchanged) ─────────────────────────────────────────
+
 const CONSENT_BADGES = [
   { type: 'photo_coaching', label: 'Coaching' },
   { type: 'photo_social_media', label: 'Social media' },
 ];
 
 function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, setShowManualAdd, onAdded }) {
-  const [confirmingRemove, setConfirmingRemove] = useState(null); // bookingId
+  const [confirmingRemove, setConfirmingRemove] = useState(null);
   const [removing, setRemoving] = useState(null);
   const [removeError, setRemoveError] = useState(null);
   const totalGymnasts = sessionDetail.bookings?.reduce((n, b) => n + b.lines.length, 0) ?? 0;
@@ -157,7 +161,6 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
 
   return (
     <div>
-      {/* Header */}
       <div style={{
         background: 'var(--booking-accent-gradient)',
         borderRadius: 'var(--booking-radius-lg)',
@@ -172,7 +175,6 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
           {sessionDetail.startTime} – {sessionDetail.endTime}
           {sessionDetail.minAge && <span style={{ fontSize: '0.9rem', fontWeight: 400, marginLeft: '0.6rem', opacity: 0.85 }}>{sessionDetail.minAge}+</span>}
         </p>
-        {/* Capacity bar */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem', opacity: 0.9 }}>
             <span>{totalGymnasts} booked</span>
@@ -194,21 +196,15 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
         )}
       </div>
 
-      {/* Attendees */}
       <div className="bk-card" style={{ marginBottom: '1rem' }}>
         <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--booking-text-muted)' }}>
           Attendees
         </h4>
-
         {totalGymnasts === 0 && <p className="bk-muted" style={{ margin: 0 }}>No bookings yet.</p>}
         {removeError && <p className="bk-error" style={{ margin: '0 0 0.5rem' }}>{removeError}</p>}
-
         {sessionDetail.bookings?.map(b =>
           b.lines.map(l => (
-            <div key={l.id} style={{
-              padding: '0.75rem 0',
-              borderBottom: '1px solid var(--booking-bg-light)',
-            }}>
+            <div key={l.id} style={{ padding: '0.75rem 0', borderBottom: '1px solid var(--booking-bg-light)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
                 <div>
                   <strong style={{ fontSize: '0.95rem' }}>{l.gymnast.firstName} {l.gymnast.lastName}</strong>
@@ -231,7 +227,6 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
                   })}
                 </div>
               </div>
-
               {confirmingRemove !== b.id && (
                 <button
                   className="bk-btn bk-btn--sm"
@@ -241,49 +236,29 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
                   Remove
                 </button>
               )}
-
               {confirmingRemove === b.id && (
                 <div style={{
-                  margin: '0.6rem 0 0.25rem',
-                  padding: '0.65rem 0.75rem',
-                  background: 'rgba(231,76,60,0.06)',
-                  border: '1px solid rgba(231,76,60,0.25)',
+                  margin: '0.6rem 0 0.25rem', padding: '0.65rem 0.75rem',
+                  background: 'rgba(231,76,60,0.06)', border: '1px solid rgba(231,76,60,0.25)',
                   borderRadius: 'var(--booking-radius)',
                 }}>
                   <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>
                     Remove {l.gymnast.firstName} from this session?
                   </p>
                   <div className="bk-row" style={{ gap: '0.4rem', flexWrap: 'wrap' }}>
-                    <button
-                      className="bk-btn bk-btn--sm"
-                      disabled={!!removing}
-                      onClick={() => handleRemove(b.id, true)}
-                      style={{ background: 'var(--booking-accent)', color: '#fff', border: 'none' }}
-                    >
+                    <button className="bk-btn bk-btn--sm" disabled={!!removing} onClick={() => handleRemove(b.id, true)} style={{ background: 'var(--booking-accent)', color: '#fff', border: 'none' }}>
                       {removing === b.id ? '…' : 'Remove + issue credit'}
                     </button>
-                    <button
-                      className="bk-btn bk-btn--sm"
-                      disabled={!!removing}
-                      onClick={() => handleRemove(b.id, false)}
-                      style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
-                    >
+                    <button className="bk-btn bk-btn--sm" disabled={!!removing} onClick={() => handleRemove(b.id, false)} style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}>
                       {removing === b.id ? '…' : 'Remove, no credit'}
                     </button>
-                    <button
-                      className="bk-btn bk-btn--sm"
-                      disabled={!!removing}
-                      onClick={() => setConfirmingRemove(null)}
-                      style={{ border: '1px solid var(--booking-border)' }}
-                    >
+                    <button className="bk-btn bk-btn--sm" disabled={!!removing} onClick={() => setConfirmingRemove(null)} style={{ border: '1px solid var(--booking-border)' }}>
                       Cancel
                     </button>
                   </div>
                 </div>
               )}
-
               {l.gymnast.userId !== b.user.id ? (
-                /* Child — show parent as emergency contact */
                 b.user.phone ? (
                   <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
                     Parent: <strong style={{ color: 'var(--booking-text-on-light)' }}>{b.user.firstName} {b.user.lastName}</strong>
@@ -296,7 +271,6 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
                   </p>
                 )
               ) : l.gymnast.emergencyContactName ? (
-                /* Self — show their own emergency contact */
                 <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
                   Emergency: <strong style={{ color: 'var(--booking-text-on-light)' }}>{l.gymnast.emergencyContactName}</strong>
                   {l.gymnast.emergencyContactRelationship && ` (${l.gymnast.emergencyContactRelationship})`}
@@ -315,7 +289,6 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
         )}
       </div>
 
-      {/* Add participant */}
       <button
         className="bk-btn bk-btn--primary"
         style={{ width: '100%' }}
@@ -325,35 +298,53 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
       </button>
 
       {showManualAdd && (
-        <ManualAddForm
-          sessionId={selectedSession}
-          onAdded={onAdded}
-        />
+        <ManualAddForm sessionId={selectedSession} onAdded={onAdded} />
       )}
     </div>
   );
 }
 
+// ─── BookingAdmin ─────────────────────────────────────────────────────────────
+
 export default function BookingAdmin() {
-  const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth() + 1);
+  const lastNavigatedDate = React.useRef(new Date());
   const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
   const [sessionDetail, setSessionDetail] = useState(null);
   const [showManualAdd, setShowManualAdd] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
-  const loadSessions = () =>
-    bookingApi.getSessions(year, month).then(res => setSessions(res.data));
 
   const loadDetail = (id) =>
     bookingApi.getSession(id).then(res => setSessionDetail(res.data));
 
-  useEffect(() => { loadSessions(); }, [year, month]);
-
   useEffect(() => {
     if (selectedSession) loadDetail(selectedSession);
   }, [selectedSession]);
+
+  const handleNavigate = (date) => {
+    lastNavigatedDate.current = date;
+    setSelectedSession(null);
+    setSessionDetail(null);
+    setShowManualAdd(false);
+    setLoading(true);
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    // Fetch both months if week spans a boundary
+    const ws = new Date(date);
+    ws.setDate(ws.getDate() - ws.getDay());
+    ws.setHours(0, 0, 0, 0);
+    const we = new Date(ws);
+    we.setDate(we.getDate() + 6);
+    const fetchMonths = [{ y, m }];
+    if (we.getMonth() + 1 !== m || we.getFullYear() !== y) {
+      fetchMonths.push({ y: we.getFullYear(), m: we.getMonth() + 1 });
+    }
+    Promise.all(fetchMonths.map(({ y: fy, m: fm }) => bookingApi.getSessions(fy, fm)))
+      .then(results => setSessions(results.flatMap(r => r.data)))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  };
 
   const handleSelect = (id) => {
     setSelectedSession(prev => prev === id ? null : id);
@@ -361,119 +352,65 @@ export default function BookingAdmin() {
     setShowManualAdd(false);
   };
 
+  const sessionDotClass = (s) =>
+    s.availableSlots === 0 || s.cancelledAt ? 'full' : 'open';
+
   return (
     <div className="bk-page bk-page--xl">
       <h2 style={{ marginBottom: '1.25rem' }}>Booking Admin</h2>
 
-      <div>
-      <div className="bk-row" style={{ marginBottom: '0.75rem' }}>
-        <button className="bk-btn" onClick={() => month === 1 ? (setMonth(12), setYear(y => y - 1)) : setMonth(m => m - 1)}>&lsaquo;</button>
-        <strong>{MONTHS[month - 1]} {year}</strong>
-        <button className="bk-btn" onClick={() => month === 12 ? (setMonth(1), setYear(y => y + 1)) : setMonth(m => m + 1)}>&rsaquo;</button>
-      </div>
+      <CalendarNav
+        sessions={sessions}
+        onNavigate={handleNavigate}
+        loading={loading}
+        renderDayDots={(date, daySessions, isPast, isClosed) => {
+          if (isClosed) return null;
+          return daySessions.slice(0, 3).map((s, i) => (
+            <span
+              key={i}
+              className={`booking-calendar__week-dot${sessionDotClass(s) === 'full' ? ' booking-calendar__week-dot--full' : ''}`}
+            />
+          ));
+        }}
+        renderDayPanel={(date, daySessions, isPast, isClosed) => (
+          <>
+            <p className="booking-calendar__day-detail-heading">
+              {date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+            {isClosed && <p className="booking-calendar__day-closed">Closed</p>}
+            {!isClosed && daySessions.length === 0 && (
+              <p className="booking-calendar__day-empty">No sessions</p>
+            )}
+            {!isClosed && daySessions.map(s => (
+              <button
+                key={s.id}
+                className={`booking-calendar__day-session booking-calendar__day-session--${sessionDotClass(s)}`}
+                style={{ textDecoration: s.cancelledAt ? 'line-through' : 'none' }}
+                onClick={() => handleSelect(s.id)}
+              >
+                <span className="booking-calendar__day-session-time">{s.startTime}–{s.endTime}</span>
+                <span className="booking-calendar__day-session-status">{s.bookedCount}/{s.bookedCount + s.availableSlots}</span>
+              </button>
+            ))}
+          </>
+        )}
+        renderMonthCell={(date, daySessions, isToday, isPast, isClosed) => (
+          <>
+            {isClosed && <span className="booking-calendar__closed-label">Closed</span>}
+            {!isClosed && daySessions.map(s => (
+              <div
+                key={s.id}
+                className={`booking-calendar__session booking-calendar__session--${sessionDotClass(s)}`}
+                style={{ textDecoration: s.cancelledAt ? 'line-through' : 'none' }}
+              >
+                {s.startTime}
+              </div>
+            ))}
+          </>
+        )}
+      />
 
-      {/* Calendar grid */}
-      {(() => {
-        const firstDay = new Date(year, month - 1, 1);
-        const daysInMonth = new Date(year, month, 0).getDate();
-        // Monday-first: Monday=0 ... Sunday=6
-        const startOffset = (firstDay.getDay() + 6) % 7;
-        const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
-
-        // Group sessions by date string
-        const byDate = {};
-        sessions.forEach(s => {
-          const d = new Date(s.date).toISOString().slice(0, 10);
-          if (!byDate[d]) byDate[d] = [];
-          byDate[d].push(s);
-        });
-
-        const todayStr = new Date().toISOString().slice(0, 10);
-
-        const DAY_HEADERS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-        return (
-          <div>
-            {/* Day headers */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '2px' }}>
-              {DAY_HEADERS.map(d => (
-                <div key={d} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: 600, color: 'var(--booking-text-muted)', padding: '0.3rem 0' }}>{d}</div>
-              ))}
-            </div>
-
-            {/* Day cells */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
-              {Array.from({ length: totalCells }).map((_, i) => {
-                const dayNum = i - startOffset + 1;
-                if (dayNum < 1 || dayNum > daysInMonth) {
-                  return <div key={i} style={{ minHeight: '5rem', background: 'var(--booking-bg-light)', borderRadius: 'var(--booking-radius)', opacity: 0.3 }} />;
-                }
-                const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
-                const daySessions = byDate[dateStr] || [];
-                const isToday = dateStr === todayStr;
-                return (
-                  <div key={i} style={{
-                    minHeight: '5rem',
-                    padding: '0.35rem',
-                    background: 'var(--booking-bg-white)',
-                    borderRadius: 'var(--booking-radius)',
-                    border: isToday ? '2px solid var(--booking-accent)' : '1px solid var(--booking-border)',
-                  }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: isToday ? 700 : 400, color: isToday ? 'var(--booking-accent)' : 'var(--booking-text-muted)', marginBottom: '0.3rem' }}>
-                      {dayNum}
-                    </div>
-                    {daySessions.map(s => {
-                      const isSelected = selectedSession === s.id;
-                      const isFull = s.availableSlots === 0;
-                      const isCancelled = !!s.cancelledAt;
-                      return (
-                        <button
-                          key={s.id}
-                          onClick={() => handleSelect(s.id)}
-                          style={{
-                            display: 'block',
-                            width: '100%',
-                            marginBottom: '0.2rem',
-                            padding: '0.2rem 0.35rem',
-                            borderRadius: '4px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            font: 'inherit',
-                            fontSize: '0.72rem',
-                            lineHeight: 1.3,
-                            background: isSelected
-                              ? 'var(--booking-accent)'
-                              : isCancelled
-                              ? 'rgba(0,0,0,0.06)'
-                              : isFull
-                              ? 'rgba(231,76,60,0.12)'
-                              : 'rgba(124,53,232,0.08)',
-                            color: isSelected
-                              ? '#fff'
-                              : isCancelled
-                              ? 'var(--booking-text-muted)'
-                              : isFull
-                              ? 'var(--booking-danger)'
-                              : 'var(--booking-accent)',
-                            textDecoration: isCancelled ? 'line-through' : 'none',
-                          }}
-                        >
-                          <div style={{ fontWeight: 600 }}>{s.startTime}–{s.endTime}</div>
-                          <div style={{ opacity: 0.8 }}>{s.bookedCount}/{s.bookedCount + s.availableSlots}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-
-          </div>
-        );
-      })()}
-
-      {/* Session detail overlay */}
+      {/* Session detail modal */}
       {selectedSession && sessionDetail && (
         <div
           onClick={() => { setSelectedSession(null); setShowManualAdd(false); }}
@@ -490,8 +427,7 @@ export default function BookingAdmin() {
             style={{
               background: 'var(--booking-bg-white)',
               borderRadius: 'var(--booking-radius-lg)',
-              width: '100%',
-              maxWidth: '560px',
+              width: '100%', maxWidth: '560px',
               boxShadow: '0 16px 60px rgba(0,0,0,0.25)',
               position: 'relative',
             }}
@@ -500,15 +436,13 @@ export default function BookingAdmin() {
               onClick={() => { setSelectedSession(null); setShowManualAdd(false); }}
               style={{
                 position: 'absolute', top: '0.75rem', right: '0.75rem', zIndex: 1,
-                background: 'var(--booking-bg-light)', border: '1px solid var(--booking-border)', borderRadius: '50%',
-                width: '2rem', height: '2rem', cursor: 'pointer',
+                background: 'var(--booking-bg-light)', border: '1px solid var(--booking-border)',
+                borderRadius: '50%', width: '2rem', height: '2rem', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '1rem', color: 'var(--booking-text-muted)', fontWeight: 700, lineHeight: 1,
               }}
               aria-label="Close"
-            >
-              ✕
-            </button>
+            >✕</button>
             <div style={{ padding: '1.25rem' }}>
               <SessionDetailPanel
                 sessionDetail={sessionDetail}
@@ -518,7 +452,7 @@ export default function BookingAdmin() {
                 onAdded={() => {
                   setShowManualAdd(false);
                   loadDetail(selectedSession);
-                  loadSessions();
+                  handleNavigate(lastNavigatedDate.current);
                 }}
               />
             </div>
@@ -526,7 +460,7 @@ export default function BookingAdmin() {
         </div>
       )}
 
-      {/* Session Templates — collapsible, bottom of page */}
+      {/* Session Templates */}
       <div style={{ marginTop: '2.5rem', borderTop: '1px solid var(--booking-border)', paddingTop: '1.25rem' }}>
         <button
           onClick={() => setTemplatesOpen(v => !v)}
@@ -545,8 +479,6 @@ export default function BookingAdmin() {
           </div>
         )}
       </div>
-
-      </div>}
     </div>
   );
 }
