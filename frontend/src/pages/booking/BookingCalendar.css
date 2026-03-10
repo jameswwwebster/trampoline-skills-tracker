@@ -222,6 +222,7 @@
 .booking-calendar__cell--closed  { background: var(--booking-bg-light); color: var(--booking-text-muted); cursor: default; }
 .booking-calendar__cell--past    { background: var(--booking-bg-light); color: var(--booking-border); cursor: default; }
 .booking-calendar__cell--available { border-color: var(--booking-accent); }
+.booking-calendar__cell--booked   { background: rgba(124,53,232,0.08); border-color: var(--booking-accent); }
 .booking-calendar__cell--full    { background: var(--booking-bg-light); }
 
 .booking-calendar__date {

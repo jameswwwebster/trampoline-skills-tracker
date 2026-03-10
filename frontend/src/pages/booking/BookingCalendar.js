@@ -157,6 +157,7 @@ export default function BookingCalendar() {
         getMonthCellClass={(date, daySessions, isPast, isClosed) => {
           if (isClosed) return 'booking-calendar__cell--closed';
           if (isPast) return 'booking-calendar__cell--past';
+          if (daySessions.some(s => s.isBooked)) return 'booking-calendar__cell--booked';
           const hasAvailable = daySessions.some(s => s.availableSlots > 0 && !s.cancelledAt);
           if (hasAvailable) return 'booking-calendar__cell--available';
           if (daySessions.length > 0) return 'booking-calendar__cell--full';

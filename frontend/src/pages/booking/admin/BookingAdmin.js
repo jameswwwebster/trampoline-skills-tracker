@@ -309,6 +309,7 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
 export default function BookingAdmin() {
   const lastNavigatedDate = React.useRef(new Date());
   const [sessions, setSessions] = useState([]);
+  const [closures, setClosures] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
   const [sessionDetail, setSessionDetail] = useState(null);
@@ -340,9 +341,13 @@ export default function BookingAdmin() {
     if (we.getMonth() + 1 !== m || we.getFullYear() !== y) {
       fetchMonths.push({ y: we.getFullYear(), m: we.getMonth() + 1 });
     }
-    Promise.all(fetchMonths.map(({ y: fy, m: fm }) => bookingApi.getSessions(fy, fm)))
-      .then(results => setSessions(results.flatMap(r => r.data)))
-      .catch(console.error)
+    Promise.all([
+      ...fetchMonths.map(({ y: fy, m: fm }) => bookingApi.getSessions(fy, fm)),
+      bookingApi.getClosures(),
+    ]).then(results => {
+      setSessions(results.slice(0, -1).flatMap(r => r.data));
+      setClosures(results[results.length - 1].data);
+    }).catch(console.error)
       .finally(() => setLoading(false));
   };
 
@@ -363,6 +368,7 @@ export default function BookingAdmin() {
         sessions={sessions}
         onNavigate={handleNavigate}
         loading={loading}
+        closures={closures}
         renderDayDots={(date, daySessions, isPast, isClosed) => {
           if (isClosed) return null;
           return daySessions.slice(0, 3).map((s, i) => (
