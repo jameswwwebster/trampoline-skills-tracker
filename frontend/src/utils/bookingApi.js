@@ -138,6 +138,24 @@ export const bookingApi = {
 
   testEmail: (email) =>
     axios.post(`${API_URL}/users/test-email`, { email }, { headers: getHeaders() }),
+
+  // Messages
+  getMessages: () =>
+    axios.get(`${API_URL}/messages`, { headers: getHeaders() }),
+  getMessage: (id) =>
+    axios.get(`${API_URL}/messages/${id}`, { headers: getHeaders() }),
+  previewRecipients: (recipientFilter) =>
+    axios.post(`${API_URL}/messages/preview-recipients`, { recipientFilter }, { headers: getHeaders() }),
+  createMessage: (data) =>
+    axios.post(`${API_URL}/messages`, data, { headers: getHeaders() }),
+  updateMessage: (id, data) =>
+    axios.patch(`${API_URL}/messages/${id}`, data, { headers: getHeaders() }),
+  sendMessage: (id) =>
+    axios.post(`${API_URL}/messages/${id}/send`, {}, { headers: getHeaders() }),
+  deleteMessage: (id) =>
+    axios.delete(`${API_URL}/messages/${id}`, { headers: getHeaders() }),
+  getArchivedMembers: () =>
+    axios.get(`${API_URL}/messages/archived-members`, { headers: getHeaders() }),
 };
 
 // Audit log
