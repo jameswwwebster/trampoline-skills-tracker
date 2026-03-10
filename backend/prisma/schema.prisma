@@ -51,6 +51,7 @@ model User {
   credits                       Credit[]
   waitlistEntries               WaitlistEntry[]
   auditLogs                     AuditLog[]
+  authoredMessages              Message[]
 
   @@map("users")
 }
@@ -112,7 +113,10 @@ model Club {
   secondaryColor        String?               @default("#2c3e50")
   textColor             String?               @default("#212529")
   website               String?
-  emailEnabled          Boolean               @default(false)
+  emailEnabled                Boolean               @default(false)
+  sessionReminderEnabled      Boolean               @default(true)
+  membershipReminderEnabled   Boolean               @default(true)
+  inactivityWarningEnabled    Boolean               @default(true)
   certificateTemplates  CertificateTemplate[]
   certificates          Certificate[]
   guardianRequests      GuardianRequest[]
@@ -126,6 +130,8 @@ model Club {
   memberships           Membership[]
   closurePeriods        ClosurePeriod[]
   auditLogs             AuditLog[]
+  messages              Message[]
+  archivedMemberSummaries ArchivedMemberSummary[]
 
   @@map("clubs")
 }
@@ -669,6 +675,25 @@ enum WaitlistStatus {
   EXPIRED
 }
 
+enum MessageStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  FAILED
+}
+
+enum MessageRecipientStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum DeletionReason {
+  INACTIVITY
+  MANUAL
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   userId     String
@@ -684,4 +709,52 @@ model AuditLog {
   @@index([clubId, createdAt])
   @@index([userId])
   @@map("audit_logs")
+}
+
+model Message {
+  id              String             @id @default(cuid())
+  clubId          String
+  authorId        String
+  subject         String
+  htmlBody        String
+  status          MessageStatus      @default(DRAFT)
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  recipientFilter Json
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  club            Club               @relation(fields: [clubId], references: [id])
+  author          User               @relation(fields: [authorId], references: [id])
+  recipients      MessageRecipient[]
+
+  @@map("messages")
+}
+
+model MessageRecipient {
+  id        String                 @id @default(cuid())
+  messageId String
+  userId    String
+  email     String
+  status    MessageRecipientStatus @default(PENDING)
+  error     String?
+  sentAt    DateTime?
+  message   Message                @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("message_recipients")
+}
+
+model ArchivedMemberSummary {
+  id               String         @id @default(cuid())
+  clubId           String
+  firstName        String
+  lastName         String
+  totalAmountPaid  Int
+  sessionsAttended Int
+  membershipCount  Int
+  deletionReason   DeletionReason
+  deletedBy        String?
+  deletedAt        DateTime       @default(now())
+  club             Club           @relation(fields: [clubId], references: [id])
+
+  @@map("archived_member_summaries")
 }
