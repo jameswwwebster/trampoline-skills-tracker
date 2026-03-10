@@ -26,6 +26,7 @@ const guardianRequestRoutes = require('./routes/guardianRequests');
 const guardianInviteRoutes = require('./routes/guardianInvites');
 const userCustomFieldRoutes = require('./routes/userCustomFields');
 const systemAdminRoutes = require('./routes/systemAdmin');
+const messageRoutes = require('./routes/messages');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -166,6 +167,7 @@ app.use('/api/guardian-invites', guardianInviteRoutes);
 app.use('/api/user-custom-fields', userCustomFieldRoutes);
 app.use('/api/system-admin', systemAdminRoutes);
 app.use('/api/super-admin', require('./routes/superAdmin'));
+app.use('/api/messages', messageRoutes);
 
 // Booking routes
 app.use('/api/booking/sessions', require('./routes/booking/sessions'));
@@ -181,6 +183,7 @@ app.use('/api/booking/templates', require('./routes/booking/templates'));
 const cron = require('node-cron');
 const { generateRollingInstances } = require('./services/sessionGenerator');
 const { expireStaleOffers } = require('./services/waitlistService');
+const { activateMembership } = require('./services/membershipActivationService');
 
 // Run at 02:00 every day
 cron.schedule('0 2 * * *', async () => {
@@ -204,6 +207,28 @@ cron.schedule('*/15 * * * *', async () => {
     await expireStaleOffers();
   } catch (err) {
     console.error('Waitlist expiry cron error:', err);
+  }
+});
+
+// Activate SCHEDULED memberships whose start date has arrived — runs at 01:00 daily
+cron.schedule('0 1 * * *', async () => {
+  try {
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+    const due = await prisma.membership.findMany({
+      where: { status: 'SCHEDULED', startDate: { lte: todayEnd } },
+      select: { id: true },
+    });
+    for (const m of due) {
+      try {
+        await activateMembership(m.id, prisma);
+      } catch (err) {
+        console.error(`Failed to activate membership ${m.id}:`, err);
+      }
+    }
+    if (due.length > 0) console.log(`Activated ${due.length} scheduled membership(s)`);
+  } catch (err) {
+    console.error('Membership activation cron error:', err);
   }
 });
 
@@ -244,6 +269,28 @@ cron.schedule('0 * * * *', async () => {
     }
   } catch (err) {
     console.error('Startup session generation error:', err);
+  }
+})();
+
+// Activate any SCHEDULED memberships that are due (catches up after downtime)
+(async () => {
+  try {
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+    const due = await prisma.membership.findMany({
+      where: { status: 'SCHEDULED', startDate: { lte: todayEnd } },
+      select: { id: true },
+    });
+    for (const m of due) {
+      try {
+        await activateMembership(m.id, prisma);
+      } catch (err) {
+        console.error(`Startup: failed to activate membership ${m.id}:`, err);
+      }
+    }
+    if (due.length > 0) console.log(`Startup: activated ${due.length} scheduled membership(s)`);
+  } catch (err) {
+    console.error('Startup membership activation error:', err);
   }
 })();
 
