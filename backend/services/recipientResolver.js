@@ -33,6 +33,7 @@ async function _resolve(filter, clubId) {
   if (filter.operator === 'AND' || filter.operator === 'OR') {
     const sets = await Promise.all(filter.filters.map(f => _resolve(f, clubId)));
     if (filter.operator === 'AND') {
+      if (sets.length === 0) return [];
       // Intersection: users present in all sets
       const idSets = sets.map(s => new Set(s.map(u => u.id)));
       return sets[0].filter(u => idSets.every(s => s.has(u.id)));
