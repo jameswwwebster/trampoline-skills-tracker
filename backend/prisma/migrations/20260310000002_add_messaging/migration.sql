@@ -28,7 +28,7 @@ CREATE TABLE "messages" (
 CREATE TABLE "message_recipients" (
   "id" TEXT NOT NULL,
   "messageId" TEXT NOT NULL,
-  "userId" TEXT NOT NULL,
+  "userId" TEXT,
   "email" TEXT NOT NULL,
   "status" "MessageRecipientStatus" NOT NULL DEFAULT 'PENDING',
   "error" TEXT,
@@ -55,4 +55,6 @@ CREATE TABLE "archived_member_summaries" (
 ALTER TABLE "messages" ADD CONSTRAINT "messages_clubId_fkey" FOREIGN KEY ("clubId") REFERENCES "clubs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "messages" ADD CONSTRAINT "messages_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "message_recipients" ADD CONSTRAINT "message_recipients_messageId_fkey" FOREIGN KEY ("messageId") REFERENCES "messages"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "message_recipients" ADD CONSTRAINT "message_recipients_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "archived_member_summaries" ADD CONSTRAINT "archived_member_summaries_clubId_fkey" FOREIGN KEY ("clubId") REFERENCES "clubs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+CREATE INDEX "message_recipients_messageId_idx" ON "message_recipients"("messageId");

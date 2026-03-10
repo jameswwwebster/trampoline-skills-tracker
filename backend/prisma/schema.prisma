@@ -52,6 +52,7 @@ model User {
   waitlistEntries               WaitlistEntry[]
   auditLogs                     AuditLog[]
   authoredMessages              Message[]
+  messageRecipients             MessageRecipient[]
 
   @@map("users")
 }
@@ -733,13 +734,15 @@ model Message {
 model MessageRecipient {
   id        String                 @id @default(cuid())
   messageId String
-  userId    String
+  userId    String?
   email     String
   status    MessageRecipientStatus @default(PENDING)
   error     String?
   sentAt    DateTime?
   message   Message                @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  @@index([messageId])
   @@map("message_recipients")
 }
 
