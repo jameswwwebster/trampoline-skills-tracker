@@ -57,20 +57,9 @@ export const BrandingProvider = ({ children }) => {
     root.style.setProperty('--background-color', branding.backgroundColor);
     root.style.setProperty('--text-color', branding.textColor);
 
-    // Mirror into booking system vars so both systems stay in sync
-    root.style.setProperty('--booking-bg-dark', branding.primaryColor);
-    root.style.setProperty('--booking-accent', branding.secondaryColor);
-    root.style.setProperty('--booking-accent-light', branding.accentColor);
-    root.style.setProperty('--booking-accent-dark', branding.secondaryColor);
-    root.style.setProperty('--booking-bg-light', branding.backgroundColor);
-    root.style.setProperty('--booking-text-on-light', branding.textColor);
-    root.style.setProperty('--booking-accent-gradient',
-      `linear-gradient(135deg, ${branding.secondaryColor}, ${branding.accentColor})`);
-
     // Font
     if (branding.fontFamily) {
       root.style.setProperty('--font-family', branding.fontFamily);
-      root.style.setProperty('--booking-font', branding.fontFamily);
     }
     
     // Set body background
