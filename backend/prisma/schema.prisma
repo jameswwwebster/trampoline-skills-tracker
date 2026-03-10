@@ -137,12 +137,6 @@ model Club {
   @@map("clubs")
 }
 
-enum BgNumberStatus {
-  PENDING
-  VERIFIED
-  INVALID
-}
-
 model Gymnast {
   id               String            @id @default(cuid())
   firstName        String
@@ -773,4 +767,10 @@ model ArchivedMemberSummary {
   club             Club           @relation(fields: [clubId], references: [id])
 
   @@map("archived_member_summaries")
+}
+
+enum BgNumberStatus {
+  PENDING
+  VERIFIED
+  INVALID
 }
