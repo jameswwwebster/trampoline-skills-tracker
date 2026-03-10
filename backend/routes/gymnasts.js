@@ -476,6 +476,51 @@ router.get('/my-children', auth, requireRole(['PARENT']), async (req, res) => {
   }
 });
 
+// GET /api/gymnasts/admin/bg-numbers
+// Staff only: returns gymnasts with PENDING status or no number + 2 sessions
+router.get('/admin/bg-numbers', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const now = new Date();
+
+    // Pending numbers
+    const pendingGymnasts = await prisma.gymnast.findMany({
+      where: {
+        clubId: req.user.clubId,
+        bgNumberStatus: 'PENDING',
+        isArchived: false,
+      },
+      include: {
+        guardians: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+      orderBy: { bgNumberEnteredAt: 'asc' },
+    });
+
+    // Missing numbers (2+ sessions, no number)
+    const allGymnasts = await prisma.gymnast.findMany({
+      where: {
+        clubId: req.user.clubId,
+        bgNumber: null,
+        isArchived: false,
+      },
+      include: {
+        guardians: { select: { id: true, firstName: true, lastName: true } },
+        bookingLines: {
+          where: { booking: { status: 'CONFIRMED', sessionInstance: { date: { lte: now } } } },
+          select: { id: true },
+        },
+      },
+    });
+    const missingGymnasts = allGymnasts
+      .filter(g => g.bookingLines.length >= 2)
+      .map(({ bookingLines, ...g }) => ({ ...g, pastSessionCount: bookingLines.length }));
+
+    res.json({ pending: pendingGymnasts, missing: missingGymnasts });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get all gymnasts in current user's club
 router.get('/', auth, async (req, res) => {
   try {

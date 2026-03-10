@@ -398,6 +398,52 @@ cron.schedule('30 2 * * *', async () => {
   }
 });
 
+// BG number pending digest — runs daily at 07:30
+cron.schedule('30 7 * * *', async () => {
+  try {
+    const pending = await prisma.gymnast.findMany({
+      where: { bgNumberStatus: 'PENDING', isArchived: false },
+      include: {
+        guardians: { select: { firstName: true, lastName: true } },
+        club: { select: { id: true, emailEnabled: true } },
+      },
+      orderBy: { bgNumberEnteredAt: 'asc' },
+    });
+
+    if (pending.length === 0) return;
+
+    // Group by club
+    const byClub = {};
+    for (const g of pending) {
+      if (!g.club.emailEnabled) continue;
+      if (!byClub[g.club.id]) byClub[g.club.id] = [];
+      const guardian = g.guardians[0];
+      byClub[g.club.id].push({
+        firstName: g.firstName,
+        lastName: g.lastName,
+        bgNumber: g.bgNumber,
+        bgNumberEnteredAt: g.bgNumberEnteredAt,
+        guardianName: guardian ? `${guardian.firstName} ${guardian.lastName}` : '—',
+      });
+    }
+
+    for (const [clubId, gymnasts] of Object.entries(byClub)) {
+      const coaches = await prisma.user.findMany({
+        where: { clubId, role: { in: ['CLUB_ADMIN', 'COACH'] }, isArchived: false, email: { not: null } },
+        select: { email: true, firstName: true },
+      });
+      const adminUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking/admin/bg-numbers`;
+      for (const coach of coaches) {
+        await emailService.sendBgNumberPendingDigestEmail(
+          coach.email, coach.firstName, gymnasts, adminUrl
+        ).catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.error('BG number digest cron error:', err);
+  }
+});
+
 // Also run on startup to ensure instances exist immediately after deploy
 (async () => {
   try {
