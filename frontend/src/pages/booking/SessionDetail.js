@@ -4,8 +4,9 @@ import { bookingApi } from '../../utils/bookingApi';
 import { useAuth } from '../../contexts/AuthContext';
 import './SessionDetail.css';
 
-export default function SessionDetail() {
-  const { instanceId } = useParams();
+export default function SessionDetail({ instanceId: propInstanceId, onClose }) {
+  const { instanceId: paramInstanceId } = useParams();
+  const instanceId = propInstanceId || paramInstanceId;
   const navigate = useNavigate();
   const { user } = useAuth();
   const [session, setSession] = useState(null);
@@ -127,7 +128,7 @@ export default function SessionDetail() {
 
   return (
     <div className="session-detail">
-      <button className="session-detail__back" onClick={() => navigate('/booking')}>
+      <button className="session-detail__back" onClick={() => onClose ? onClose() : navigate('/booking')}>
         &larr; Back to calendar
       </button>
 
