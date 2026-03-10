@@ -57,13 +57,13 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: 'Not enough slots available' });
     }
 
-    // Check BG insurance requirement (after 2 past sessions)
+    // Check BG number requirement (after 2 past sessions)
     const now = new Date();
     const insuranceChecks = await Promise.all(
       gymnastIds.map(async (gId) => {
         const g = await prisma.gymnast.findUnique({
           where: { id: gId },
-          select: { firstName: true, bgInsuranceConfirmed: true },
+          select: { firstName: true, bgNumberStatus: true },
         });
         const pastCount = await prisma.bookingLine.count({
           where: {
@@ -74,12 +74,12 @@ router.post('/', auth, async (req, res) => {
         return { ...g, pastCount };
       })
     );
-    const needsInsurance = insuranceChecks.filter(g => g.pastCount >= 2 && !g.bgInsuranceConfirmed);
+    const needsInsurance = insuranceChecks.filter(g => g.pastCount >= 2 && g.bgNumberStatus !== 'VERIFIED');
     if (needsInsurance.length > 0) {
       const names = needsInsurance.map(g => g.firstName).join(', ');
       return res.status(400).json({
-        error: `British Gymnastics insurance confirmation required for: ${names}. Please confirm in My Account before booking.`,
-        code: 'INSURANCE_REQUIRED',
+        error: `British Gymnastics number required for: ${names}. Please add your BG number in My Account before booking.`,
+        code: 'BG_NUMBER_REQUIRED',
       });
     }
 
@@ -237,21 +237,21 @@ router.post('/batch', auth, async (req, res) => {
         return res.status(400).json({ error: `Not enough slots available for session at ${instance.date} ${instance.template.startTime}` });
       }
 
-      // BG insurance check
+      // BG number check
       const insuranceChecks = await Promise.all(
         gymnastIds.map(async (gId) => {
-          const g = await prisma.gymnast.findUnique({ where: { id: gId }, select: { firstName: true, bgInsuranceConfirmed: true } });
+          const g = await prisma.gymnast.findUnique({ where: { id: gId }, select: { firstName: true, bgNumberStatus: true } });
           const pastCount = await prisma.bookingLine.count({
             where: { gymnastId: gId, booking: { status: 'CONFIRMED', sessionInstance: { date: { lte: now } } } },
           });
           return { ...g, pastCount };
         })
       );
-      const needsInsurance = insuranceChecks.filter(g => g.pastCount >= 2 && !g.bgInsuranceConfirmed);
+      const needsInsurance = insuranceChecks.filter(g => g.pastCount >= 2 && g.bgNumberStatus !== 'VERIFIED');
       if (needsInsurance.length > 0) {
         return res.status(400).json({
-          error: `British Gymnastics insurance confirmation required for: ${needsInsurance.map(g => g.firstName).join(', ')}. Please confirm in My Account before booking.`,
-          code: 'INSURANCE_REQUIRED',
+          error: `British Gymnastics number required for: ${needsInsurance.map(g => g.firstName).join(', ')}. Please add your BG number in My Account before booking.`,
+          code: 'BG_NUMBER_REQUIRED',
         });
       }
 

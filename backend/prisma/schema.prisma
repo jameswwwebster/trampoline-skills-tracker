@@ -151,9 +151,6 @@ model Gymnast {
   emergencyContactName         String?
   emergencyContactPhone        String?
   emergencyContactRelationship String?
-  bgInsuranceConfirmed         Boolean   @default(false)
-  bgInsuranceConfirmedAt       DateTime?
-  bgInsuranceConfirmedBy       String?
   bgNumber              String?
   bgNumberStatus        BgNumberStatus?
   bgNumberGraceDays     Int?

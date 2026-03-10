@@ -29,7 +29,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
     const [selfGymnast, linked] = await Promise.all([
       prisma.gymnast.findFirst({
         where: { userId: req.user.id, isArchived: false },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgInsuranceConfirmed: true, bgInsuranceConfirmedAt: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumberStatus: true, bgNumberEnteredAt: true },
       }),
       prisma.gymnast.findMany({
         where: {
@@ -40,7 +40,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
             { userId: { not: req.user.id } },
           ],
         },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgInsuranceConfirmed: true, bgInsuranceConfirmedAt: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumberStatus: true, bgNumberEnteredAt: true },
       }),
     ]);
     const allGymnasts = selfGymnast
@@ -204,9 +204,9 @@ router.patch('/:id/insurance', auth, async (req, res) => {
     const updated = await prisma.gymnast.update({
       where: { id: req.params.id },
       data: {
-        bgInsuranceConfirmed: confirmed,
-        bgInsuranceConfirmedAt: confirmed ? new Date() : null,
-        bgInsuranceConfirmedBy: confirmed ? req.user.id : null,
+        bgNumberStatus: confirmed ? 'VERIFIED' : null,
+        bgNumberVerifiedAt: confirmed ? new Date() : null,
+        bgNumberVerifiedBy: confirmed ? req.user.id : null,
       },
     });
     res.json(updated);
