@@ -282,7 +282,13 @@ router.get('/:userId', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
     const now = new Date();
 
     const gymnasts = await prisma.gymnast.findMany({
-      where: { guardians: { some: { id: req.params.userId } }, clubId: req.user.clubId },
+      where: {
+        clubId: req.user.clubId,
+        OR: [
+          { guardians: { some: { id: req.params.userId } } },
+          { userId: req.params.userId },
+        ],
+      },
       include: { consents: true },
     });
 
@@ -293,7 +299,7 @@ router.get('/:userId', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
           booking: { status: 'CONFIRMED', sessionInstance: { date: { lte: now } } },
         },
       });
-      return { ...g, pastSessionCount };
+      return { ...g, pastSessionCount, isSelf: g.userId === req.params.userId };
     }));
 
     const credits = await prisma.credit.findMany({

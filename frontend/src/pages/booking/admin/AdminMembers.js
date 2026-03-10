@@ -4,7 +4,6 @@ import AdminRemovedMembers from './AdminRemovedMembers';
 import '../booking-shared.css';
 
 const ROLE_LABELS = { CLUB_ADMIN: 'Admin', COACH: 'Coach', PARENT: 'Parent', GYMNAST: 'Gymnast' };
-const CONSENT_LABELS = { photo_coaching: 'Coaching photos', photo_social_media: 'Social media' };
 
 function AssignCreditForm({ userId, onDone }) {
   const [form, setForm] = useState({ amount: '', expiresInDays: 90 });
