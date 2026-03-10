@@ -118,6 +118,13 @@
   opacity: 1;
 }
 
+.booking-layout__cart-link {
+  background: var(--booking-accent) !important;
+  color: #fff !important;
+  font-weight: 700;
+  border-radius: var(--booking-radius);
+}
+
 .booking-layout__payment-banner {
   display: flex;
   align-items: center;

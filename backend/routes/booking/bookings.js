@@ -11,9 +11,13 @@ const prisma = new PrismaClient();
 
 /**
  * Returns gymnasts blocked from booking due to BG number requirements.
- * Blocked if: no number + 2+ past sessions, status=INVALID, or PENDING with expired grace.
+ * Blocked if: no number + 2+ past/pending sessions or active membership,
+ * status=INVALID, or PENDING with expired grace.
+ * @param {string[]} gymnastIds
+ * @param {Date} now
+ * @param {Object} pendingCounts - optional map of { [gId]: countInThisBatch }
  */
-async function checkBgNumbers(gymnastIds, now) {
+async function checkBgNumbers(gymnastIds, now, pendingCounts = {}) {
   return (await Promise.all(
     gymnastIds.map(async (gId) => {
       const g = await prisma.gymnast.findUnique({
@@ -24,19 +28,27 @@ async function checkBgNumbers(gymnastIds, now) {
         },
       });
       if (!g) return null;
-      const pastCount = await prisma.bookingLine.count({
-        where: {
-          gymnastId: gId,
-          booking: { status: 'CONFIRMED', sessionInstance: { date: { lte: now } } },
-        },
-      });
 
-      if (!g.bgNumber && pastCount >= 2) return g; // no number after 2 sessions
       if (g.bgNumberStatus === 'INVALID') return g; // explicitly rejected
       if (g.bgNumberStatus === 'PENDING' && g.bgNumberEnteredAt && g.bgNumberGraceDays) {
         const graceMs = g.bgNumberGraceDays * 24 * 60 * 60 * 1000;
         if (now - new Date(g.bgNumberEnteredAt) > graceMs) return g; // grace expired
       }
+
+      if (!g.bgNumber) {
+        const pastCount = await prisma.bookingLine.count({
+          where: {
+            gymnastId: gId,
+            booking: { status: 'CONFIRMED', sessionInstance: { date: { lte: now } } },
+          },
+        });
+        const pending = pendingCounts[gId] || 0;
+        const hasMembership = await prisma.membership.count({
+          where: { gymnastId: gId, status: { in: ['ACTIVE', 'PENDING_PAYMENT', 'PAUSED'] } },
+        }) > 0;
+        if (pastCount + pending >= 2 || hasMembership) return g;
+      }
+
       return null;
     })
   )).filter(Boolean);
@@ -232,6 +244,22 @@ router.post('/batch', auth, async (req, res) => {
     const { items } = value;
     const now = new Date();
 
+    // ── BG number check across all items at once ──
+    const allBatchGymnastIds = [...new Set(items.flatMap(i => i.gymnastIds))];
+    const pendingCounts = {};
+    for (const item of items) {
+      for (const gId of item.gymnastIds) {
+        pendingCounts[gId] = (pendingCounts[gId] || 0) + 1;
+      }
+    }
+    const blockedByBg = await checkBgNumbers(allBatchGymnastIds, now, pendingCounts);
+    if (blockedByBg.length > 0) {
+      return res.status(400).json({
+        error: `British Gymnastics membership number required for: ${blockedByBg.map(g => g.firstName).join(', ')}. Please add or update it in My Account.`,
+        code: 'BG_NUMBER_REQUIRED',
+      });
+    }
+
     // ── Validate all items before creating anything ──
     const validatedItems = [];
     for (const item of items) {
@@ -252,14 +280,6 @@ router.post('/batch', auth, async (req, res) => {
       const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
       if (bookedCount + gymnastIds.length > capacity) {
         return res.status(400).json({ error: `Not enough slots available for session at ${instance.date} ${instance.template.startTime}` });
-      }
-
-      const blockedByBg = await checkBgNumbers(gymnastIds, now);
-      if (blockedByBg.length > 0) {
-        return res.status(400).json({
-          error: `British Gymnastics membership number required for: ${blockedByBg.map(g => g.firstName).join(', ')}. Please add or update it in My Account.`,
-          code: 'BG_NUMBER_REQUIRED',
-        });
       }
 
       // Age restriction check

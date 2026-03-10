@@ -22,12 +22,22 @@ export default function BookingCalendar() {
   const [pickerYear, setPickerYear] = useState(today.getFullYear());
   const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
   const [selectedSessionId, setSelectedSessionId] = useState(null);
-  const [cart, setCart] = useState(new Map()); // Map<sessionInstanceId, gymnast[]>
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('booking-cart');
+      return saved ? new Map(JSON.parse(saved)) : new Map();
+    } catch { return new Map(); }
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
     setSelectedSessionId(null);
   }, [selectedDate]);
+
+  useEffect(() => {
+    sessionStorage.setItem('booking-cart', JSON.stringify([...cart]));
+    window.dispatchEvent(new CustomEvent('booking-cart-update'));
+  }, [cart]);
 
   useEffect(() => {
     const y = selectedDate.getFullYear();
@@ -141,7 +151,6 @@ export default function BookingCalendar() {
         gymnasts,
       };
     });
-    setCart(new Map());
     navigate('/booking/cart-checkout', { state: { cart: cartItems } });
   };
 
@@ -211,17 +220,6 @@ export default function BookingCalendar() {
   // ── Default: week view ──
   return (
     <div className="booking-calendar">
-      {cartTotalSlots > 0 && (
-        <div className="booking-calendar__cart-bar">
-          <span>
-            {cartTotalSlots} gymnast-slot{cartTotalSlots !== 1 ? 's' : ''} · £{(cartTotalAmount / 100).toFixed(2)}
-          </span>
-          <button className="booking-calendar__cart-checkout-btn" onClick={handleCartCheckout}>
-            Checkout →
-          </button>
-        </div>
-      )}
-
       <div className="booking-calendar__header">
         <button aria-label="Previous week" onClick={prevWeek}>&#8249;</button>
         <button
@@ -337,6 +335,35 @@ export default function BookingCalendar() {
       </div>
 
       {loading && <p className="booking-calendar__loading">Loading…</p>}
+
+      {cartTotalSlots > 0 && (
+        <div className="booking-calendar__cart-bar">
+          <div className="booking-calendar__cart-items">
+            {cartEntries.map(([sessionId, gymnasts]) => {
+              const session = sessions.find(s => s.id === sessionId);
+              return (
+                <div key={sessionId} className="booking-calendar__cart-item">
+                  <span>
+                    {session ? `${session.startTime}–${session.endTime}, ${new Date(session.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}` : sessionId}
+                    {' — '}{gymnasts.map(g => g.firstName).join(', ')}
+                  </span>
+                  <button
+                    className="booking-calendar__cart-remove"
+                    aria-label="Remove"
+                    onClick={() => handleCartUpdate(sessionId, [])}
+                  >×</button>
+                </div>
+              );
+            })}
+          </div>
+          <div className="booking-calendar__cart-summary">
+            <span>{cartTotalSlots} slot{cartTotalSlots !== 1 ? 's' : ''} · £{(cartTotalAmount / 100).toFixed(2)}</span>
+            <button className="booking-calendar__cart-checkout-btn" onClick={handleCartCheckout}>
+              Checkout →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

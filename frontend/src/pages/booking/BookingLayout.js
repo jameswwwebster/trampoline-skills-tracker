@@ -4,10 +4,24 @@ import { useAuth } from '../../contexts/AuthContext';
 import { bookingApi } from '../../utils/bookingApi';
 import './BookingLayout.css';
 
+function getCartSlotCount() {
+  try {
+    const saved = sessionStorage.getItem('booking-cart');
+    return saved ? JSON.parse(saved).reduce((s, [, g]) => s + g.length, 0) : 0;
+  } catch { return 0; }
+}
+
 export default function BookingLayout() {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
   const [paymentBanner, setPaymentBanner] = useState(null); // null | 'pending' | 'needs_method'
+  const [cartCount, setCartCount] = useState(getCartSlotCount);
+
+  useEffect(() => {
+    const handler = () => setCartCount(getCartSlotCount());
+    window.addEventListener('booking-cart-update', handler);
+    return () => window.removeEventListener('booking-cart-update', handler);
+  }, []);
 
   useEffect(() => {
     if (!user || isAdmin) return;
@@ -42,6 +56,11 @@ export default function BookingLayout() {
         {/* Bottom row: scrollable links */}
         <div className="booking-layout__links">
           <NavLink to="/booking" end>Calendar</NavLink>
+          {!isAdmin && cartCount > 0 && (
+            <NavLink to="/booking" end className="booking-layout__cart-link">
+              Cart ({cartCount})
+            </NavLink>
+          )}
           <NavLink to="/booking/my-bookings">My Bookings</NavLink>
           <NavLink to="/booking/my-account">My Account</NavLink>
           {isAdmin && (
