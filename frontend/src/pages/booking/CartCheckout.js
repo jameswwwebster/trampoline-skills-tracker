@@ -80,7 +80,7 @@ export default function CartCheckout() {
         disabled={processing}
         onClick={handleConfirm}
       >
-        {processing ? 'Processing...' : `Pay £${(totalAmount / 100).toFixed(2)}`}
+        {processing ? 'Processing...' : `Confirm — £${(totalAmount / 100).toFixed(2)}`}
       </button>
     </div>
   );
