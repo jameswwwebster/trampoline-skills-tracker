@@ -404,7 +404,7 @@ function GymnastRow({ g, memberships, onUpdated }) {
   };
 
   const detailsLabel = g.isSelf
-    ? 'Emergency contact, health notes, membership, remove'
+    ? 'Emergency contact, health notes, membership'
     : 'Health notes, membership, remove';
 
   return (
