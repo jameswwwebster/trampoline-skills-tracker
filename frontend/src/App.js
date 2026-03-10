@@ -40,6 +40,7 @@ import CheatsheetViewer from './pages/CheatsheetViewer';
 import WaveLength from './pages/WaveLength';
 import BookingLayout from './pages/booking/BookingLayout';
 import BookingCalendar from './pages/booking/BookingCalendar';
+import CartCheckout from './pages/booking/CartCheckout';
 import SessionDetail from './pages/booking/SessionDetail';
 import Checkout from './pages/booking/Checkout';
 import BookingConfirmation from './pages/booking/BookingConfirmation';
@@ -180,6 +181,7 @@ function AppContent() {
           <Route index element={<BookingCalendar />} />
           <Route path="session/:instanceId" element={<SessionDetail />} />
           <Route path="checkout/:bookingId" element={<Checkout />} />
+          <Route path="cart-checkout" element={<CartCheckout />} />
           <Route path="confirmation/:bookingId" element={<BookingConfirmation />} />
           <Route path="my-bookings" element={<MyBookings />} />
           <Route path="my-account" element={<MyChildren />} />
