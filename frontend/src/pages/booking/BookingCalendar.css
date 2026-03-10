@@ -321,3 +321,32 @@
   color: var(--booking-text-muted);
   margin-top: 1rem;
 }
+
+/* ── Cart bar ── */
+.booking-calendar__cart-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--booking-accent-gradient);
+  color: var(--booking-text-on-dark);
+  border-radius: var(--booking-radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.booking-calendar__cart-checkout-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: var(--booking-radius);
+  color: var(--booking-text-on-dark);
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.booking-calendar__cart-checkout-btn:hover {
+  background: rgba(255,255,255,0.25);
+}

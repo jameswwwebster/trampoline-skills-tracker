@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { bookingApi } from '../../utils/bookingApi';
 import SessionDetail from './SessionDetail';
 import './BookingCalendar.css';
@@ -122,6 +123,26 @@ export default function BookingCalendar() {
       }
       return next;
     });
+  };
+
+  const cartEntries = Array.from(cart.entries()); // [[sessionId, gymnasts[]], ...]
+  const cartTotalSlots = cartEntries.reduce((sum, [, g]) => sum + g.length, 0);
+  const cartTotalAmount = cartTotalSlots * 600;
+
+  const navigate = useNavigate();
+
+  const handleCartCheckout = () => {
+    const cartItems = cartEntries.map(([sessionInstanceId, gymnasts]) => {
+      const session = sessions.find(s => s.id === sessionInstanceId);
+      return {
+        sessionInstanceId,
+        date: session?.date,
+        startTime: session?.startTime,
+        endTime: session?.endTime,
+        gymnasts,
+      };
+    });
+    navigate('/booking/cart-checkout', { state: { cart: cartItems } });
   };
 
   const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -303,6 +324,17 @@ export default function BookingCalendar() {
           </>
         )}
       </div>
+
+      {cartTotalSlots > 0 && (
+        <div className="booking-calendar__cart-bar">
+          <span>
+            {cartTotalSlots} gymnast-slot{cartTotalSlots !== 1 ? 's' : ''} · £{(cartTotalAmount / 100).toFixed(2)}
+          </span>
+          <button className="booking-calendar__cart-checkout-btn" onClick={handleCartCheckout}>
+            Checkout →
+          </button>
+        </div>
+      )}
 
       {loading && <p className="booking-calendar__loading">Loading…</p>}
     </div>
