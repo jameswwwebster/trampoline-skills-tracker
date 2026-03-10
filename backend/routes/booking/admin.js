@@ -40,55 +40,18 @@ router.delete('/gymnasts/:id', auth, requireRole(['CLUB_ADMIN']), async (req, re
 // Remove a member and all their gymnasts — cleans up all booking data
 router.delete('/members/:userId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   try {
-    if (req.params.userId === req.user.id) {
-      return res.status(400).json({ error: 'You cannot remove yourself.' });
+    const { deleteMember } = require('../../services/memberLifecycle');
+    const user = await prisma.user.findUnique({ where: { id: req.params.userId } });
+    if (!user || user.clubId !== req.user.clubId) {
+      return res.status(404).json({ error: 'User not found' });
     }
-
-    const user = await prisma.user.findUnique({
-      where: { id: req.params.userId },
-      include: { guardedGymnasts: { select: { id: true } } },
-    });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    if (user.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
-
-    // Block if any gymnast has an active membership
-    for (const g of user.guardedGymnasts) {
-      if (await hasActiveMembership(g.id)) {
-        return res.status(400).json({ error: 'This member has a gymnast with an active membership. Cancel it in Stripe before removing them.' });
-      }
+    if (['CLUB_ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+      return res.status(400).json({ error: 'Cannot delete admin accounts' });
     }
-
-    // Delete each gymnast and their booking data
-    for (const g of user.guardedGymnasts) {
-      await deleteGymnast(g.id);
-    }
-
-    // Delete user's own booking data
-    await prisma.waitlistEntry.deleteMany({ where: { userId: req.params.userId } });
-    await prisma.credit.deleteMany({ where: { userId: req.params.userId } });
-
-    // Cancel bookings (keep records for history but remove association)
-    const bookings = await prisma.booking.findMany({
-      where: { userId: req.params.userId },
-      include: { lines: true },
-    });
-    for (const b of bookings) {
-      await prisma.bookingLine.deleteMany({ where: { bookingId: b.id } });
-    }
-    await prisma.booking.deleteMany({ where: { userId: req.params.userId } });
-
-    // Delete the user
-    await prisma.user.delete({ where: { id: req.params.userId } });
-
-    await audit({
-      userId: req.user.id, clubId: req.user.clubId,
-      action: 'member.delete', entityType: 'User', entityId: req.params.userId,
-      metadata: { email: user.email, name: `${user.firstName} ${user.lastName}` },
-    });
-
-    res.json({ message: 'Member and their gymnasts removed.' });
+    await deleteMember(user.id, 'MANUAL', req.user.id);
+    res.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error('Delete member error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
