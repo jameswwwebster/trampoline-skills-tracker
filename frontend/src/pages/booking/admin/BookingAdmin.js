@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
 import SessionTemplates from './SessionTemplates';
+import AdminMessages from './AdminMessages';
+import AdminRemovedMembers from './AdminRemovedMembers';
 import '../booking-shared.css';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -334,8 +336,15 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
   );
 }
 
+const ADMIN_TABS = [
+  { key: 'sessions', label: 'Sessions' },
+  { key: 'messages', label: 'Messages' },
+  { key: 'removed-members', label: 'Removed Members' },
+];
+
 export default function BookingAdmin() {
   const today = new Date();
+  const [activeTab, setActiveTab] = useState('sessions');
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [sessions, setSessions] = useState([]);
@@ -370,6 +379,33 @@ export default function BookingAdmin() {
     <div className="bk-page bk-page--xl">
       <h2 style={{ marginBottom: '1.25rem' }}>Booking Admin</h2>
 
+      {/* Tab bar */}
+      <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', borderBottom: '2px solid var(--booking-border)' }}>
+        {ADMIN_TABS.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === tab.key ? '2px solid var(--booking-accent)' : '2px solid transparent',
+              marginBottom: '-2px',
+              padding: '0.5rem 1rem',
+              cursor: 'pointer',
+              fontWeight: activeTab === tab.key ? 700 : 400,
+              color: activeTab === tab.key ? 'var(--booking-accent)' : 'var(--booking-text-muted)',
+              fontSize: '0.95rem',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'messages' && <AdminMessages />}
+      {activeTab === 'removed-members' && <AdminRemovedMembers />}
+
+      {activeTab === 'sessions' && <div>
       <div className="bk-row" style={{ marginBottom: '0.75rem' }}>
         <button className="bk-btn" onClick={() => month === 1 ? (setMonth(12), setYear(y => y - 1)) : setMonth(m => m - 1)}>&lsaquo;</button>
         <strong>{MONTHS[month - 1]} {year}</strong>
@@ -604,6 +640,7 @@ export default function BookingAdmin() {
           </div>
         )}
       </div>
+      </div>}
     </div>
   );
 }
