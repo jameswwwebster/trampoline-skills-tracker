@@ -224,9 +224,18 @@ export default function SessionDetail({
 
             {bookableGymnasts.map(g => {
               const selected = selectedGymnastIds.includes(g.id);
-              const needsInsurance = g.pastSessionCount >= 2 && !g.bgInsuranceConfirmed;
+              const now = Date.now();
+              const bgBlocked = (() => {
+                if (!g.bgNumber && g.pastSessionCount >= 2) return true;
+                if (g.bgNumberStatus === 'INVALID') return true;
+                if (g.bgNumberStatus === 'PENDING' && g.bgNumberEnteredAt && g.bgNumberGraceDays) {
+                  const graceMs = g.bgNumberGraceDays * 24 * 60 * 60 * 1000;
+                  if (now - new Date(g.bgNumberEnteredAt) > graceMs) return true;
+                }
+                return false;
+              })();
               const atCapacity = !selected && selectedGymnastIds.length >= session.availableSlots;
-              const blocked = needsInsurance;
+              const blocked = bgBlocked;
               return (
                 <div key={g.id}>
                   <div
@@ -244,10 +253,10 @@ export default function SessionDetail({
                     </span>
                     <span>{g.firstName} {g.lastName}{g.isSelf ? ' (me)' : ''}</span>
                   </div>
-                  {needsInsurance && (
+                  {bgBlocked && (
                     <p style={{ fontSize: '0.8rem', color: 'var(--booking-danger)', margin: '-0.25rem 0 0.5rem 0.5rem' }}>
-                      Insurance confirmation required —{' '}
-                      <a href="/booking/my-account" style={{ color: 'var(--booking-danger)' }}>confirm in My Account</a>
+                      BG membership number required —{' '}
+                      <a href="/booking/my-account" style={{ color: 'var(--booking-danger)' }}>update in My Account</a>
                     </p>
                   )}
                 </div>
