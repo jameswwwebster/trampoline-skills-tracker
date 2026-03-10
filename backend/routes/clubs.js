@@ -575,4 +575,31 @@ router.put('/:clubId/theme', async (req, res) => {
   }
 });
 
-module.exports = router; 
+// PATCH /api/clubs/:clubId/settings — Update automation and email settings (club admin only)
+router.patch('/:clubId/settings', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { clubId } = req.params;
+
+    if (req.user.clubId !== clubId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const data = {};
+    if (req.body.emailEnabled !== undefined) data.emailEnabled = !!req.body.emailEnabled;
+    if (req.body.sessionReminderEnabled !== undefined) data.sessionReminderEnabled = !!req.body.sessionReminderEnabled;
+    if (req.body.membershipReminderEnabled !== undefined) data.membershipReminderEnabled = !!req.body.membershipReminderEnabled;
+    if (req.body.inactivityWarningEnabled !== undefined) data.inactivityWarningEnabled = !!req.body.inactivityWarningEnabled;
+
+    const club = await prisma.club.update({
+      where: { id: clubId },
+      data,
+    });
+
+    res.json(club);
+  } catch (error) {
+    console.error('Update club settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+module.exports = router;

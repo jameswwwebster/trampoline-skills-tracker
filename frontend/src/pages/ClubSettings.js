@@ -12,6 +12,12 @@ const ClubSettings = () => {
     website: '',
     description: ''
   });
+  const [automationSettings, setAutomationSettings] = useState({
+    emailEnabled: true,
+    sessionReminderEnabled: true,
+    membershipReminderEnabled: true,
+    inactivityWarningEnabled: true,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -28,6 +34,12 @@ const ClubSettings = () => {
         email: response.data.email || '',
         website: response.data.website || '',
         description: response.data.description || ''
+      });
+      setAutomationSettings({
+        emailEnabled: response.data.emailEnabled ?? true,
+        sessionReminderEnabled: response.data.sessionReminderEnabled ?? true,
+        membershipReminderEnabled: response.data.membershipReminderEnabled ?? true,
+        inactivityWarningEnabled: response.data.inactivityWarningEnabled ?? true,
       });
     } catch (error) {
       console.error('Failed to fetch club settings:', error);
@@ -46,6 +58,11 @@ const ClubSettings = () => {
 
     fetchClubSettings();
   }, [isClubAdmin, fetchClubSettings]);
+
+  const updateSetting = (key, value) => {
+    setAutomationSettings(prev => ({ ...prev, [key]: value }));
+    if (success) setSuccess('');
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -108,6 +125,9 @@ const ClubSettings = () => {
 
     try {
       await axios.put(`/api/clubs/${user.clubId}`, formData);
+      await axios.patch(`/api/clubs/${user.clubId}/settings`, automationSettings, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
       setSuccess('Club settings updated successfully!');
     } catch (error) {
       console.error('Failed to update club settings:', error);
@@ -263,6 +283,38 @@ const ClubSettings = () => {
             )}
           </div>
 
+
+          <div className="form-group">
+            <label className="form-label">Email &amp; Automation Settings</label>
+            <div>
+              <label>
+                <input type="checkbox" checked={automationSettings.emailEnabled}
+                  onChange={e => updateSetting('emailEnabled', e.target.checked)} />
+                {' '}Enable email sending for this club
+              </label>
+            </div>
+            <div>
+              <label>
+                <input type="checkbox" checked={automationSettings.sessionReminderEnabled ?? true}
+                  onChange={e => updateSetting('sessionReminderEnabled', e.target.checked)} />
+                {' '}Send session reminders (day before, when slots available)
+              </label>
+            </div>
+            <div>
+              <label>
+                <input type="checkbox" checked={automationSettings.membershipReminderEnabled ?? true}
+                  onChange={e => updateSetting('membershipReminderEnabled', e.target.checked)} />
+                {' '}Send membership payment reminders (3 days before renewal)
+              </label>
+            </div>
+            <div>
+              <label>
+                <input type="checkbox" checked={automationSettings.inactivityWarningEnabled ?? true}
+                  onChange={e => updateSetting('inactivityWarningEnabled', e.target.checked)} />
+                {' '}Warn and delete inactive members after 6 months
+              </label>
+            </div>
+          </div>
 
           <div className="flex-end">
             <button
