@@ -18,7 +18,7 @@ export default function AdminRemovedMembers() {
   if (loading) return <p className="bk-muted">Loading...</p>;
 
   return (
-    <div>
+    <div className="bk-page bk-page--xl">
       <h2 style={{ marginBottom: '1rem' }}>Removed Members</h2>
       {summaries.length === 0 ? (
         <p className="bk-muted">No removed members yet.</p>

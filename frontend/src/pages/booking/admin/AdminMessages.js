@@ -165,7 +165,7 @@ export default function AdminMessages() {
 
   if (composing) {
     return (
-      <div>
+      <div className="bk-page bk-page--xl">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
           <button className="bk-btn" onClick={() => setComposing(false)}>← Back</button>
           <h2 style={{ margin: 0 }}>{editing ? 'Edit Campaign' : 'New Campaign'}</h2>
@@ -244,7 +244,7 @@ export default function AdminMessages() {
   }
 
   return (
-    <div>
+    <div className="bk-page bk-page--xl">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h2 style={{ margin: 0 }}>Messages</h2>
         <button className="bk-btn bk-btn-primary" onClick={openNew}>New Campaign</button>
