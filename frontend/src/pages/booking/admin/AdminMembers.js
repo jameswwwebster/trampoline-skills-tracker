@@ -194,6 +194,109 @@ const STATUS_STYLES = {
   SCHEDULED: { color: '#7c35e8', bg: 'rgba(124,53,232,0.1)' },
 };
 
+const BG_STATUS_STYLE = {
+  PENDING:  { color: '#e67e22', bg: 'rgba(230,126,34,0.12)' },
+  VERIFIED: { color: 'var(--booking-success)', bg: 'rgba(39,174,96,0.12)' },
+  INVALID:  { color: 'var(--booking-danger)', bg: 'rgba(231,76,60,0.1)' },
+};
+
+function BgNumberAdminRow({ gymnast, onUpdated }) {
+  const [input, setInput] = useState(gymnast.bgNumber || '');
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const style = gymnast.bgNumberStatus ? BG_STATUS_STYLE[gymnast.bgNumberStatus] : null;
+
+  const handleSet = async () => {
+    if (!input.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await bookingApi.setBgNumber(gymnast.id, input.trim());
+      setEditing(false);
+      onUpdated();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to save.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleVerify = async (action) => {
+    setSaving(true);
+    setError(null);
+    try {
+      await bookingApi.verifyBgNumber(gymnast.id, action);
+      onUpdated();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--booking-bg-light)', fontSize: '0.82rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <span style={{ fontWeight: 600, color: 'var(--booking-text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>BG Number</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+          {gymnast.bgNumberStatus && (
+            <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '1px 7px', borderRadius: 4, background: style.bg, color: style.color }}>
+              {gymnast.bgNumberStatus}
+            </span>
+          )}
+          {gymnast.bgNumber && !editing && (
+            <span style={{ fontFamily: 'monospace' }}>{gymnast.bgNumber}</span>
+          )}
+          {!editing && (
+            <button
+              className="bk-btn bk-btn--sm"
+              style={{ fontSize: '0.75rem', padding: '0.1rem 0.5rem', border: '1px solid var(--booking-border)' }}
+              onClick={() => { setEditing(true); setInput(gymnast.bgNumber || ''); }}
+            >
+              {gymnast.bgNumber ? 'Edit' : 'Set'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {editing && (
+        <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+          <input
+            className="bk-input"
+            style={{ flex: 1, minWidth: 0, fontSize: '0.82rem', padding: '0.2rem 0.4rem' }}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="BG number"
+          />
+          <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={saving || !input.trim()} onClick={handleSet} style={{ fontSize: '0.78rem' }}>
+            {saving ? 'Saving…' : 'Save (auto-verify)'}
+          </button>
+          <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)', fontSize: '0.78rem' }} onClick={() => setEditing(false)}>
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {gymnast.bgNumber && gymnast.bgNumberStatus === 'PENDING' && !editing && (
+        <div className="bk-row" style={{ marginTop: '0.4rem', gap: '0.3rem' }}>
+          <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={saving} onClick={() => handleVerify('verify')} style={{ fontSize: '0.78rem' }}>
+            Verify
+          </button>
+          <button className="bk-btn bk-btn--sm" disabled={saving}
+            style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)', fontSize: '0.78rem' }}
+            onClick={() => handleVerify('invalidate')}>
+            Mark Invalid
+          </button>
+        </div>
+      )}
+
+      {error && <p style={{ color: 'var(--booking-danger)', fontSize: '0.78rem', margin: '0.3rem 0 0' }}>{error}</p>}
+    </div>
+  );
+}
+
 function GymnastRow({ g, memberships, onUpdated }) {
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -327,6 +430,7 @@ function GymnastRow({ g, memberships, onUpdated }) {
         )}
       </div>
 
+      <BgNumberAdminRow gymnast={g} onUpdated={onUpdated} />
       <GymnastMembership gymnast={g} membership={membership} onRefresh={onUpdated} />
 
       {!g.isSelf && (
