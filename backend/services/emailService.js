@@ -335,6 +335,59 @@ class EmailService {
     });
   }
 
+  async sendBgNumberInvalidEmail(guardianEmail, guardianFirstName, gymnastFirstName) {
+    return this.sendEmail({
+      to: guardianEmail,
+      subject: `Action needed — BG membership number for ${gymnastFirstName}`,
+      html: brandedHtml(
+        `BG membership number for ${gymnastFirstName}`,
+        `<p>Hi ${guardianFirstName},</p>
+        <p>We weren't able to confirm ${gymnastFirstName}'s British Gymnastics membership number.</p>
+        ${infoBox(`<p style="margin:0"><strong>Please check:</strong></p>
+          <ul style="margin:0.5rem 0 0;padding-left:1.2rem">
+            <li>The number was entered correctly in your account</li>
+            <li>You have added <strong>Trampoline Life</strong> as a club on GymNet — if we can't see your membership from our end, we're unable to confirm it</li>
+          </ul>`)}
+        <p>Once you've updated it, your booking access will be restored within the grace period.</p>
+        ${ctaButton(BASE_URL() + '/booking/my-account', 'Update BG number')}`,
+      ),
+    });
+  }
+
+  async sendBgNumberPendingDigestEmail(coachEmail, coachFirstName, pendingGymnasts, adminUrl) {
+    const rows = pendingGymnasts.map(g => {
+      const days = Math.floor((Date.now() - new Date(g.bgNumberEnteredAt)) / (24 * 60 * 60 * 1000));
+      return `<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${g.firstName} ${g.lastName}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${g.guardianName}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;font-family:monospace">${g.bgNumber}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right">${days}d</td>
+      </tr>`;
+    }).join('');
+
+    return this.sendEmail({
+      to: coachEmail,
+      subject: `${pendingGymnasts.length} BG number${pendingGymnasts.length !== 1 ? 's' : ''} awaiting verification`,
+      html: brandedHtml(
+        'BG numbers awaiting verification',
+        `<p>Hi ${coachFirstName},</p>
+        <p>The following gymnasts have a BG membership number that needs verification:</p>
+        <table style="width:100%;border-collapse:collapse;font-size:0.9rem">
+          <thead>
+            <tr style="background:#f3eefe">
+              <th style="padding:6px 10px;text-align:left">Gymnast</th>
+              <th style="padding:6px 10px;text-align:left">Parent</th>
+              <th style="padding:6px 10px;text-align:left">BG Number</th>
+              <th style="padding:6px 10px;text-align:right">Age</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${ctaButton(adminUrl, 'Review BG Numbers')}`,
+      ),
+    });
+  }
+
   async sendGuardianConnectionNotification(guardianEmail, guardianName, gymnastName, clubName, relationship) {
     return this._send({
       from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
