@@ -9,6 +9,38 @@ const { audit } = require('../../services/auditLogService');
 const router = express.Router();
 const prisma = new PrismaClient();
 
+/**
+ * Returns gymnasts blocked from booking due to BG number requirements.
+ * Blocked if: no number + 2+ past sessions, status=INVALID, or PENDING with expired grace.
+ */
+async function checkBgNumbers(gymnastIds, now) {
+  return (await Promise.all(
+    gymnastIds.map(async (gId) => {
+      const g = await prisma.gymnast.findUnique({
+        where: { id: gId },
+        select: {
+          firstName: true, bgNumber: true, bgNumberStatus: true,
+          bgNumberEnteredAt: true, bgNumberGraceDays: true,
+        },
+      });
+      const pastCount = await prisma.bookingLine.count({
+        where: {
+          gymnastId: gId,
+          booking: { status: 'CONFIRMED', sessionInstance: { date: { lte: now } } },
+        },
+      });
+
+      if (!g.bgNumber && pastCount >= 2) return g; // no number after 2 sessions
+      if (g.bgNumberStatus === 'INVALID') return g; // explicitly rejected
+      if (g.bgNumberStatus === 'PENDING' && g.bgNumberEnteredAt && g.bgNumberGraceDays) {
+        const graceMs = g.bgNumberGraceDays * 24 * 60 * 60 * 1000;
+        if (now - new Date(g.bgNumberEnteredAt) > graceMs) return g; // grace expired
+      }
+      return null;
+    })
+  )).filter(Boolean);
+}
+
 const PRICE_PER_GYMNAST_PENCE = 600; // £6.00
 
 const createBookingSchema = Joi.object({
@@ -57,28 +89,12 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: 'Not enough slots available' });
     }
 
-    // Check BG number requirement (after 2 past sessions)
     const now = new Date();
-    const insuranceChecks = await Promise.all(
-      gymnastIds.map(async (gId) => {
-        const g = await prisma.gymnast.findUnique({
-          where: { id: gId },
-          select: { firstName: true, bgNumberStatus: true },
-        });
-        const pastCount = await prisma.bookingLine.count({
-          where: {
-            gymnastId: gId,
-            booking: { status: 'CONFIRMED', sessionInstance: { date: { lte: now } } },
-          },
-        });
-        return { ...g, pastCount };
-      })
-    );
-    const needsInsurance = insuranceChecks.filter(g => g.pastCount >= 2 && g.bgNumberStatus !== 'VERIFIED');
-    if (needsInsurance.length > 0) {
-      const names = needsInsurance.map(g => g.firstName).join(', ');
+    const blockedByBg = await checkBgNumbers(gymnastIds, now);
+    if (blockedByBg.length > 0) {
+      const names = blockedByBg.map(g => g.firstName).join(', ');
       return res.status(400).json({
-        error: `British Gymnastics number required for: ${names}. Please add your BG number in My Account before booking.`,
+        error: `British Gymnastics membership number required for: ${names}. Please add or update it in My Account.`,
         code: 'BG_NUMBER_REQUIRED',
       });
     }
@@ -237,20 +253,10 @@ router.post('/batch', auth, async (req, res) => {
         return res.status(400).json({ error: `Not enough slots available for session at ${instance.date} ${instance.template.startTime}` });
       }
 
-      // BG number check
-      const insuranceChecks = await Promise.all(
-        gymnastIds.map(async (gId) => {
-          const g = await prisma.gymnast.findUnique({ where: { id: gId }, select: { firstName: true, bgNumberStatus: true } });
-          const pastCount = await prisma.bookingLine.count({
-            where: { gymnastId: gId, booking: { status: 'CONFIRMED', sessionInstance: { date: { lte: now } } } },
-          });
-          return { ...g, pastCount };
-        })
-      );
-      const needsInsurance = insuranceChecks.filter(g => g.pastCount >= 2 && g.bgNumberStatus !== 'VERIFIED');
-      if (needsInsurance.length > 0) {
+      const blockedByBg = await checkBgNumbers(gymnastIds, now);
+      if (blockedByBg.length > 0) {
         return res.status(400).json({
-          error: `British Gymnastics number required for: ${needsInsurance.map(g => g.firstName).join(', ')}. Please add your BG number in My Account before booking.`,
+          error: `British Gymnastics membership number required for: ${blockedByBg.map(g => g.firstName).join(', ')}. Please add or update it in My Account.`,
           code: 'BG_NUMBER_REQUIRED',
         });
       }
