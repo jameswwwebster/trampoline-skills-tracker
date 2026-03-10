@@ -20,7 +20,7 @@ const batchBookingSchema = Joi.object({
   items: Joi.array().items(Joi.object({
     sessionInstanceId: Joi.string().required(),
     gymnastIds: Joi.array().items(Joi.string()).min(1).required(),
-  })).min(1).required(),
+  })).min(1).unique('sessionInstanceId').required(),
 });
 
 // POST /api/booking/bookings
@@ -250,7 +250,7 @@ router.post('/batch', auth, async (req, res) => {
       const needsInsurance = insuranceChecks.filter(g => g.pastCount >= 2 && !g.bgInsuranceConfirmed);
       if (needsInsurance.length > 0) {
         return res.status(400).json({
-          error: `BG insurance confirmation required for: ${needsInsurance.map(g => g.firstName).join(', ')}`,
+          error: `British Gymnastics insurance confirmation required for: ${needsInsurance.map(g => g.firstName).join(', ')}. Please confirm in My Account before booking.`,
           code: 'INSURANCE_REQUIRED',
         });
       }
@@ -263,7 +263,7 @@ router.post('/batch', auth, async (req, res) => {
           if (g.dateOfBirth) {
             const age = Math.floor((instanceDate - new Date(g.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000));
             if (age < instance.template.minAge) {
-              return res.status(400).json({ error: `${g.firstName} doesn't meet the minimum age requirement` });
+              return res.status(400).json({ error: `${g.firstName} does not meet the minimum age requirement for this session` });
             }
           }
         }
