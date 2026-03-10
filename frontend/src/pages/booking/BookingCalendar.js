@@ -21,6 +21,7 @@ export default function BookingCalendar() {
   const [pickerYear, setPickerYear] = useState(today.getFullYear());
   const [viewMode, setViewMode] = useState('week'); // 'week' | 'month'
   const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [cart, setCart] = useState(new Map()); // Map<sessionInstanceId, gymnast[]>
 
   useEffect(() => {
     setSelectedSessionId(null);
@@ -109,6 +110,18 @@ export default function BookingCalendar() {
     if (s.isBooked) return 'booked';
     if (s.availableSlots > 0 && !s.cancelledAt && !isPast) return 'open';
     return 'full';
+  };
+
+  const handleCartUpdate = (sessionId, gymnasts) => {
+    setCart(prev => {
+      const next = new Map(prev);
+      if (gymnasts.length === 0) {
+        next.delete(sessionId);
+      } else {
+        next.set(sessionId, gymnasts);
+      }
+      return next;
+    });
   };
 
   const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -263,6 +276,9 @@ export default function BookingCalendar() {
           <SessionDetail
             instanceId={selectedSessionId}
             onClose={() => setSelectedSessionId(null)}
+            cartMode
+            cartGymnastIds={(cart.get(selectedSessionId) || []).map(g => g.id)}
+            onCartUpdate={handleCartUpdate}
           />
         ) : (
           <>
