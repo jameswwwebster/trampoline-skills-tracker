@@ -29,7 +29,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
     const [selfGymnast, linked] = await Promise.all([
       prisma.gymnast.findFirst({
         where: { userId: req.user.id, isArchived: false },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumberStatus: true, bgNumberEnteredAt: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberGraceDays: true },
       }),
       prisma.gymnast.findMany({
         where: {
@@ -40,7 +40,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
             { userId: { not: req.user.id } },
           ],
         },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumberStatus: true, bgNumberEnteredAt: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberGraceDays: true },
       }),
     ]);
     const allGymnasts = selfGymnast
@@ -184,9 +184,56 @@ router.post('/admin-add-child', auth, requireRole(['CLUB_ADMIN', 'COACH']), asyn
   }
 });
 
-// PATCH /api/gymnasts/:id/insurance
-// Guardian confirms BG insurance for a gymnast; staff can also confirm/clear
-router.patch('/:id/insurance', auth, async (req, res) => {
+// PATCH /api/gymnasts/:id/bg-number/verify
+// Staff only: verify or mark invalid
+router.patch('/:id/bg-number/verify', auth, async (req, res) => {
+  try {
+    const isStaff = ['CLUB_ADMIN', 'COACH'].includes(req.user.role);
+    if (!isStaff) return res.status(403).json({ error: 'Staff only' });
+
+    const gymnast = await prisma.gymnast.findUnique({
+      where: { id: req.params.id },
+      include: { guardians: { select: { id: true, email: true, firstName: true } }, club: true },
+    });
+    if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
+    if (!gymnast.bgNumber) return res.status(400).json({ error: 'No BG number to verify' });
+
+    const { action } = req.body; // 'verify' | 'invalidate'
+    if (!['verify', 'invalidate'].includes(action)) {
+      return res.status(400).json({ error: 'action must be "verify" or "invalidate"' });
+    }
+
+    const newStatus = action === 'verify' ? 'VERIFIED' : 'INVALID';
+    await prisma.gymnast.update({
+      where: { id: req.params.id },
+      data: {
+        bgNumberStatus: newStatus,
+        bgNumberVerifiedAt: action === 'verify' ? new Date() : null,
+        bgNumberVerifiedBy: action === 'verify' ? req.user.id : null,
+      },
+    });
+
+    // Send email to parent if invalidated
+    if (action === 'invalidate' && gymnast.club.emailEnabled) {
+      const emailService = require('../services/emailService');
+      for (const guardian of gymnast.guardians) {
+        if (!guardian.email) continue;
+        await emailService.sendBgNumberInvalidEmail(
+          guardian.email, guardian.firstName, gymnast.firstName
+        ).catch(() => {});
+      }
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /api/gymnasts/:id/bg-number
+// Guardian sets BG number; staff entry auto-verifies
+router.patch('/:id/bg-number', auth, async (req, res) => {
   try {
     const gymnast = await prisma.gymnast.findUnique({
       where: { id: req.params.id },
@@ -198,15 +245,32 @@ router.patch('/:id/insurance', auth, async (req, res) => {
     const isStaff = ['CLUB_ADMIN', 'COACH'].includes(req.user.role);
     if (!isGuardian && !isStaff) return res.status(403).json({ error: 'Access denied' });
 
-    const { confirmed } = req.body;
-    if (typeof confirmed !== 'boolean') return res.status(400).json({ error: 'confirmed must be a boolean' });
+    const { bgNumber } = req.body;
+    if (!bgNumber || typeof bgNumber !== 'string' || !bgNumber.trim()) {
+      return res.status(400).json({ error: 'bgNumber is required' });
+    }
+
+    let status, graceDays;
+    if (isStaff) {
+      status = 'VERIFIED';
+      graceDays = null;
+    } else {
+      // If previous status was INVALID, shortened grace period
+      const wasInvalid = gymnast.bgNumberStatus === 'INVALID';
+      status = 'PENDING';
+      graceDays = wasInvalid ? 3 : 14;
+    }
 
     const updated = await prisma.gymnast.update({
       where: { id: req.params.id },
       data: {
-        bgNumberStatus: confirmed ? 'VERIFIED' : null,
-        bgNumberVerifiedAt: confirmed ? new Date() : null,
-        bgNumberVerifiedBy: confirmed ? req.user.id : null,
+        bgNumber: bgNumber.trim(),
+        bgNumberStatus: status,
+        bgNumberGraceDays: graceDays,
+        bgNumberEnteredAt: new Date(),
+        bgNumberEnteredBy: req.user.id,
+        bgNumberVerifiedAt: isStaff ? new Date() : null,
+        bgNumberVerifiedBy: isStaff ? req.user.id : null,
       },
     });
     res.json(updated);
