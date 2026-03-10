@@ -771,6 +771,7 @@ function MemberDetail({ userId, onRemoved }) {
   const [addChildError, setAddChildError] = useState(null);
   const [sendingReset, setSendingReset] = useState(false);
   const [resetMessage, setResetMessage] = useState(null);
+  const [creditsOpen, setCreditsOpen] = useState(false);
 
   const handlePasswordReset = async () => {
     setSendingReset(true);
@@ -845,151 +846,187 @@ function MemberDetail({ userId, onRemoved }) {
 
   return (
     <div>
-      {/* Header */}
-      <div style={{
-        background: 'var(--booking-accent-gradient)',
-        borderRadius: 'var(--booking-radius-lg)',
-        padding: '1.25rem 1.5rem',
-        marginBottom: '1rem',
-        color: '#fff',
-      }}>
-        <div>
-          <p style={{ margin: '0 0 0.2rem', fontSize: '0.75rem', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {ROLE_LABELS[member.role] ?? member.role}
-            {member.isArchived && <span style={{ marginLeft: '0.5rem', background: 'rgba(231,76,60,0.4)', padding: '1px 6px', borderRadius: 4 }}>Archived</span>}
-          </p>
-          <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.4rem', fontWeight: 700 }}>
-            {member.firstName} {member.lastName}
-          </h3>
-          <p style={{ margin: 0, fontSize: '0.875rem', opacity: 0.85 }}>{member.email}</p>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '0.75rem' }}>
-          <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.7 }}>
-            Member since {new Date(member.createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
-          </p>
-          {!confirmRemoveMember ? (
-            <button
-              className="bk-btn bk-btn--sm"
-              style={{ background: 'rgba(231,76,60,0.2)', color: '#fff', border: '1px solid rgba(231,76,60,0.6)' }}
-              onClick={() => setConfirmRemoveMember(true)}
-            >
-              Remove member
-            </button>
-          ) : (
-            <div style={{ background: 'rgba(231,76,60,0.15)', border: '1px solid rgba(231,76,60,0.5)', borderRadius: 'var(--booking-radius)', padding: '0.5rem 0.75rem' }}>
-              <p style={{ margin: '0 0 0.4rem', fontSize: '0.82rem' }}>Remove {member.firstName} and all their children? This cannot be undone.</p>
-              {removeError && <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', color: '#ff9999' }}>{removeError}</p>}
-              <div className="bk-row" style={{ gap: '0.4rem' }}>
-                <button className="bk-btn bk-btn--sm" disabled={removing}
-                  style={{ background: 'rgba(231,76,60,0.7)', color: '#fff', border: 'none' }}
-                  onClick={handleRemoveMember}>{removing ? 'Removing...' : 'Confirm remove'}</button>
-                <button className="bk-btn bk-btn--sm" style={{ border: '1px solid rgba(255,255,255,0.4)', color: '#fff' }}
-                  onClick={() => { setConfirmRemoveMember(false); setRemoveError(null); }}>Cancel</button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Profile edit */}
+      {/* ── Profile section ─────────────────────────── */}
       <div className="bk-card" style={{ marginBottom: '1rem' }}>
-        <div className="bk-row bk-row--between">
-          <h4 style={{ margin: 0, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--booking-text-muted)' }}>Profile</h4>
-          {!editingProfile && (
-            <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => setEditingProfile(true)}>
-              Edit
-            </button>
-          )}
-        </div>
         {editingProfile ? (
           <EditProfileForm member={member} onDone={() => { setEditingProfile(false); load(); }} />
         ) : (
           <>
-            <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.4rem 1rem' }}>
-              <span className="bk-muted">Name</span><span>{member.firstName} {member.lastName}</span>
-              <span className="bk-muted">Email</span><span>{member.email}</span>
-              <span className="bk-muted">Phone</span>
-              <span>
-                {member.phone
-                  ? <a href={`tel:${member.phone}`} style={{ color: 'var(--booking-accent)' }}>{member.phone}</a>
-                  : <span style={{ color: 'var(--booking-danger)' }}>No phone number</span>}
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              {[
+                { key: 'Email', val: member.email },
+                {
+                  key: 'Phone', val: member.phone
+                    ? <a href={`tel:${member.phone}`} style={{ color: 'var(--booking-accent)' }}>{member.phone}</a>
+                    : <span style={{ color: 'var(--booking-danger)' }}>No phone number</span>
+                },
+                {
+                  key: 'Role', val: (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {ROLE_LABELS[member.role] ?? member.role}
+                      <button
+                        className="bk-btn bk-btn--sm"
+                        style={{ fontSize: '0.72rem', padding: '0.1rem 0.4rem', border: '1px solid var(--booking-border)' }}
+                        onClick={() => setEditingRole(v => !v)}
+                      >
+                        Change
+                      </button>
+                    </span>
+                  )
+                },
+                {
+                  key: 'Member since',
+                  val: new Date(member.createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+                },
+                {
+                  key: 'Credits', val: totalCredits > 0
+                    ? (
+                      <button
+                        onClick={() => setCreditsOpen(v => !v)}
+                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--booking-accent)', fontWeight: 600, fontSize: '0.875rem' }}
+                      >
+                        £{(totalCredits / 100).toFixed(2)} {creditsOpen ? '▴' : '▾'}
+                      </button>
+                    )
+                    : <span className="bk-muted">No credits</span>
+                },
+                // Note: + Assign credit button is rendered below the list always (see below)
+              ].map(({ key, val }) => (
+                <li key={key} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                  padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)',
+                  gap: '0.75rem', fontSize: '0.875rem',
+                }}>
+                  <span style={{ color: 'var(--booking-text-muted)', flexShrink: 0 }}>{key}</span>
+                  <span style={{ textAlign: 'right' }}>{val}</span>
+                </li>
+              ))}
+            </ul>
+
+            {member.isArchived && (
+              <span style={{
+                display: 'inline-block', marginTop: '0.5rem',
+                fontSize: '0.75rem', fontWeight: 600, padding: '1px 8px', borderRadius: 4,
+                background: 'rgba(231,76,60,0.1)', color: 'var(--booking-danger)',
+              }}>
+                Archived
               </span>
-              <span className="bk-muted">Role</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {ROLE_LABELS[member.role] ?? member.role}
-                {!editingProfile && (
-                  <button className="bk-btn bk-btn--sm"
-                    style={{ fontSize: '0.75rem', padding: '0.1rem 0.4rem', border: '1px solid var(--booking-border)' }}
-                    onClick={() => setEditingRole(v => !v)}>
-                    Change
-                  </button>
-                )}
-              </span>
-            </div>
-            {editingRole && (
-              <RoleSelector
-                member={member}
-                onDone={() => { setEditingRole(false); load(); }}
-              />
             )}
-            <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--booking-bg-light)' }}>
+
+            {/* Credits inline expand — only when there are credits to show */}
+            {creditsOpen && totalCredits > 0 && (
+              <div style={{
+                marginTop: '0.5rem', background: 'rgba(124,53,232,0.05)',
+                border: '1px solid rgba(124,53,232,0.15)', borderRadius: 'var(--booking-radius)',
+                padding: '0.65rem 0.75rem',
+              }}>
+                {member.credits.map(c => (
+                  <div key={c.id} style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    fontSize: '0.875rem', padding: '0.2rem 0',
+                    borderBottom: '1px solid var(--booking-bg-light)',
+                  }}>
+                    <span>£{(c.amount / 100).toFixed(2)}</span>
+                    <span className="bk-muted">Expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Assign credit — always accessible regardless of current balance */}
+            <div style={{ marginTop: '0.5rem' }}>
+              {assigningCredit ? (
+                <AssignCreditForm userId={member.id} onDone={() => { setAssigningCredit(false); load(); }} />
+              ) : (
+                <button className="bk-btn bk-btn--sm bk-btn--primary" onClick={() => setAssigningCredit(true)}>
+                  + Assign credit
+                </button>
+              )}
+            </div>
+
+            {/* Role change inline */}
+            {editingRole && (
+              <RoleSelector member={member} onDone={() => { setEditingRole(false); load(); }} />
+            )}
+
+            {/* Password reset message */}
+            {resetMessage && (
+              <p style={{
+                margin: '0.4rem 0 0', fontSize: '0.8rem',
+                color: resetMessage.type === 'success' ? 'var(--booking-success)' : 'var(--booking-danger)',
+              }}>
+                {resetMessage.text}
+              </p>
+            )}
+
+            {/* Actions */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.75rem' }}>
+              <button
+                className="bk-btn bk-btn--sm"
+                style={{ border: '1px solid var(--booking-border)' }}
+                onClick={() => setEditingProfile(true)}
+              >
+                Edit profile
+              </button>
               <button
                 className="bk-btn bk-btn--sm"
                 style={{ border: '1px solid var(--booking-border)' }}
                 disabled={sendingReset}
                 onClick={handlePasswordReset}
               >
-                {sendingReset ? 'Sending…' : 'Send password reset'}
+                {sendingReset ? 'Sending…' : '↺ Password reset'}
               </button>
-              {resetMessage && (
-                <p style={{
-                  margin: '0.4rem 0 0',
-                  fontSize: '0.8rem',
-                  color: resetMessage.type === 'success' ? 'var(--booking-success)' : 'var(--booking-danger)',
+              {!confirmRemoveMember ? (
+                <button
+                  className="bk-btn bk-btn--sm"
+                  style={{ color: 'var(--booking-danger)', border: '1px solid rgba(231,76,60,0.4)' }}
+                  onClick={() => setConfirmRemoveMember(true)}
+                >
+                  Remove member
+                </button>
+              ) : (
+                <div style={{
+                  width: '100%', marginTop: '0.25rem',
+                  background: 'rgba(231,76,60,0.06)', border: '1px solid rgba(231,76,60,0.3)',
+                  borderRadius: 'var(--booking-radius)', padding: '0.5rem 0.75rem',
                 }}>
-                  {resetMessage.text}
-                </p>
+                  <p style={{ margin: '0 0 0.4rem', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>
+                    Remove {member.firstName} and all their children? This cannot be undone.
+                  </p>
+                  {removeError && <p className="bk-error" style={{ marginBottom: '0.4rem' }}>{removeError}</p>}
+                  <div className="bk-row" style={{ gap: '0.4rem' }}>
+                    <button
+                      className="bk-btn bk-btn--sm" disabled={removing}
+                      style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+                      onClick={handleRemoveMember}
+                    >
+                      {removing ? 'Removing...' : 'Confirm remove'}
+                    </button>
+                    <button
+                      className="bk-btn bk-btn--sm"
+                      style={{ border: '1px solid var(--booking-border)' }}
+                      onClick={() => { setConfirmRemoveMember(false); setRemoveError(null); }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </>
         )}
       </div>
 
-      {/* Credits */}
-      <div className="bk-card" style={{ marginBottom: '1rem' }}>
-        <div className="bk-row bk-row--between" style={{ marginBottom: '0.5rem' }}>
-          <h4 style={{ margin: 0, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--booking-text-muted)' }}>Credits</h4>
-          {totalCredits > 0 && (
-            <strong style={{ color: 'var(--booking-accent)' }}>£{(totalCredits / 100).toFixed(2)} available</strong>
-          )}
-        </div>
-        {member.credits.length === 0 ? (
-          <p className="bk-muted" style={{ margin: '0 0 0.5rem' }}>No active credits.</p>
-        ) : (
-          <div style={{ marginBottom: '0.5rem' }}>
-            {member.credits.map(c => (
-              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)' }}>
-                <span>£{(c.amount / 100).toFixed(2)}</span>
-                <span className="bk-muted">Expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {assigningCredit ? (
-          <AssignCreditForm userId={member.id} onDone={() => { setAssigningCredit(false); load(); }} />
-        ) : (
-          <button className="bk-btn bk-btn--sm bk-btn--primary" onClick={() => setAssigningCredit(true)}>
-            + Assign credit
-          </button>
-        )}
-      </div>
-
-      {/* Gymnasts */}
+      {/* ── Gymnasts section ─────────────────────────── */}
       <div className="bk-card">
         <div className="bk-row bk-row--between" style={{ marginBottom: '0.75rem' }}>
-          <h4 style={{ margin: 0, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--booking-text-muted)' }}>Participants</h4>
+          <h4 style={{ margin: 0, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--booking-text-muted)' }}>
+            Gymnasts
+          </h4>
           {!showAddChild && (
-            <button className="bk-btn bk-btn--sm bk-btn--primary" onClick={() => setShowAddChild(true)}>+ Add child</button>
+            <button className="bk-btn bk-btn--sm bk-btn--primary" onClick={() => setShowAddChild(true)}>
+              + Add child
+            </button>
           )}
         </div>
 
@@ -1002,7 +1039,14 @@ function MemberDetail({ userId, onRemoved }) {
         ))}
 
         {showAddChild && (
-          <form onSubmit={handleAddChild} style={{ marginTop: member.gymnasts.length > 0 ? '0.75rem' : 0, paddingTop: member.gymnasts.length > 0 ? '0.75rem' : 0, borderTop: member.gymnasts.length > 0 ? '1px solid var(--booking-bg-light)' : 'none' }}>
+          <form
+            onSubmit={handleAddChild}
+            style={{
+              marginTop: member.gymnasts.length > 0 ? '0.75rem' : 0,
+              paddingTop: member.gymnasts.length > 0 ? '0.75rem' : 0,
+              borderTop: member.gymnasts.length > 0 ? '1px solid var(--booking-bg-light)' : 'none',
+            }}
+          >
             <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>Add child</p>
             <div className="bk-grid-2" style={{ marginBottom: '0.5rem' }}>
               <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem' }}>First name
@@ -1016,32 +1060,27 @@ function MemberDetail({ userId, onRemoved }) {
                   required style={{ marginTop: '0.2rem' }} />
               </label>
             </div>
-            <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem', marginBottom: '0.5rem', display: 'block' }}>Date of birth
+            <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem', marginBottom: '0.5rem', display: 'block' }}>
+              Date of birth
               <input type="date" className="bk-input" value={addChildForm.dateOfBirth}
                 onChange={e => setAddChildForm(f => ({ ...f, dateOfBirth: e.target.value }))}
                 required style={{ marginTop: '0.2rem' }} />
             </label>
             <fieldset style={{ border: 'none', padding: 0, margin: '0.5rem 0 0' }}>
               <label className="bk-label" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.4rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 'normal' }}>
-                <input
-                  type="checkbox"
-                  checked={addChildForm.healthNotesNone}
+                <input type="checkbox" checked={addChildForm.healthNotesNone}
                   onChange={e => setAddChildForm(f => ({ ...f, healthNotesNone: e.target.checked }))}
-                  className="bk-checkbox"
-                />
+                  className="bk-checkbox" />
                 No known health issues or learning differences
               </label>
               <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem' }}>
                 Health issues or learning differences
-                <textarea
-                  className="bk-input"
-                  value={addChildForm.healthNotes}
+                <textarea className="bk-input" value={addChildForm.healthNotes}
                   disabled={addChildForm.healthNotesNone}
                   onChange={e => setAddChildForm(f => ({ ...f, healthNotes: e.target.value }))}
                   rows={2}
                   placeholder="Describe any conditions or confirm none above"
-                  style={{ marginTop: '0.2rem', opacity: addChildForm.healthNotesNone ? 0.5 : 1 }}
-                />
+                  style={{ marginTop: '0.2rem', opacity: addChildForm.healthNotesNone ? 0.5 : 1 }} />
               </label>
             </fieldset>
             {addChildError && <p className="bk-error">{addChildError}</p>}
@@ -1049,8 +1088,13 @@ function MemberDetail({ userId, onRemoved }) {
               <button type="submit" disabled={addingChild} className="bk-btn bk-btn--sm bk-btn--primary">
                 {addingChild ? 'Adding...' : 'Add child'}
               </button>
-              <button type="button" className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
-                onClick={() => { setShowAddChild(false); setAddChildForm({ firstName: '', lastName: '', dateOfBirth: '', healthNotes: '', healthNotesNone: false }); setAddChildError(null); }}>
+              <button type="button" className="bk-btn bk-btn--sm"
+                style={{ border: '1px solid var(--booking-border)' }}
+                onClick={() => {
+                  setShowAddChild(false);
+                  setAddChildForm({ firstName: '', lastName: '', dateOfBirth: '', healthNotes: '', healthNotesNone: false });
+                  setAddChildError(null);
+                }}>
                 Cancel
               </button>
             </div>
