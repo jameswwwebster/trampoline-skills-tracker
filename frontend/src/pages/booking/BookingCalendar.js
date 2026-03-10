@@ -211,6 +211,17 @@ export default function BookingCalendar() {
   // ── Default: week view ──
   return (
     <div className="booking-calendar">
+      {cartTotalSlots > 0 && (
+        <div className="booking-calendar__cart-bar">
+          <span>
+            {cartTotalSlots} gymnast-slot{cartTotalSlots !== 1 ? 's' : ''} · £{(cartTotalAmount / 100).toFixed(2)}
+          </span>
+          <button className="booking-calendar__cart-checkout-btn" onClick={handleCartCheckout}>
+            Checkout →
+          </button>
+        </div>
+      )}
+
       <div className="booking-calendar__header">
         <button aria-label="Previous week" onClick={prevWeek}>&#8249;</button>
         <button
@@ -324,17 +335,6 @@ export default function BookingCalendar() {
           </>
         )}
       </div>
-
-      {cartTotalSlots > 0 && (
-        <div className="booking-calendar__cart-bar">
-          <span>
-            {cartTotalSlots} gymnast-slot{cartTotalSlots !== 1 ? 's' : ''} · £{(cartTotalAmount / 100).toFixed(2)}
-          </span>
-          <button className="booking-calendar__cart-checkout-btn" onClick={handleCartCheckout}>
-            Checkout →
-          </button>
-        </div>
-      )}
 
       {loading && <p className="booking-calendar__loading">Loading…</p>}
     </div>

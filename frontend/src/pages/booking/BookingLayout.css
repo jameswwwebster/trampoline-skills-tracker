@@ -9,6 +9,9 @@
 }
 
 .booking-layout__nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   background: var(--booking-bg-dark);
   color: var(--booking-text-on-dark);
 }
