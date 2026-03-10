@@ -50,6 +50,7 @@ import BookingAdmin from './pages/booking/admin/BookingAdmin';
 import AdminClosures from './pages/booking/admin/AdminClosures';
 import AdminMembers from './pages/booking/admin/AdminMembers';
 import AdminMessages from './pages/booking/admin/AdminMessages';
+import AdminBgNumbers from './pages/booking/admin/AdminBgNumbers';
 import AuditLog from './pages/booking/admin/AuditLog';
 import './App.css';
 
@@ -189,6 +190,7 @@ function AppContent() {
           <Route path="admin/closures" element={<AdminClosures />} />
           <Route path="admin/members" element={<AdminMembers />} />
           <Route path="admin/messages" element={<AdminMessages />} />
+          <Route path="admin/bg-numbers" element={<AdminBgNumbers />} />
           <Route path="admin/audit-log" element={<AuditLog />} />
         </Route>
       </Routes>
