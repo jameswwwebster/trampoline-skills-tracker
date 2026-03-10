@@ -191,6 +191,7 @@ const STATUS_STYLES = {
   ACTIVE:    { color: 'var(--booking-success)', bg: 'rgba(39,174,96,0.12)' },
   PAUSED:    { color: '#e67e22', bg: 'rgba(230,126,34,0.12)' },
   CANCELLED: { color: 'var(--booking-danger)', bg: 'rgba(231,76,60,0.1)' },
+  SCHEDULED: { color: '#7c35e8', bg: 'rgba(124,53,232,0.1)' },
 };
 
 function GymnastRow({ g, memberships, onUpdated }) {
@@ -397,12 +398,14 @@ function GymnastMembership({ gymnast, membership, onRefresh }) {
     }
   };
 
-  const handleEditAmount = async (e) => {
-    e.preventDefault();
+  const handleEditAmount = async (prorationBehavior) => {
     setSaving(true);
     setError(null);
     try {
-      await bookingApi.updateMembership(membership.id, { monthlyAmount: Math.round(parseFloat(editAmount) * 100) });
+      await bookingApi.updateMembership(membership.id, {
+        monthlyAmount: Math.round(parseFloat(editAmount) * 100),
+        prorationBehavior,
+      });
       setShowEditAmount(false);
       onRefresh();
     } catch (err) {
@@ -460,16 +463,21 @@ function GymnastMembership({ gymnast, membership, onRefresh }) {
       )}
 
       {membership && showEditAmount && (
-        <form onSubmit={handleEditAmount} style={{ marginTop: '0.5rem', display: 'flex', gap: '0.4rem', alignItems: 'flex-end' }}>
-          <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem', flex: 1 }}>New monthly amount (£)
+        <div style={{ marginTop: '0.5rem' }}>
+          <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem' }}>New monthly amount (£)
             <input type="number" step="0.01" min="0.01" className="bk-input"
               value={editAmount} onChange={e => setEditAmount(e.target.value)}
-              required style={{ marginTop: '0.2rem' }} />
+              style={{ marginTop: '0.2rem' }} />
           </label>
-          <button type="submit" className="bk-btn bk-btn--sm bk-btn--primary" disabled={saving}>Save</button>
-          <button type="button" className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
-            onClick={() => setShowEditAmount(false)}>Cancel</button>
-        </form>
+          <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+            <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={saving}
+              onClick={() => handleEditAmount('create_prorations')}>Apply now (pro-rata)</button>
+            <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={saving}
+              onClick={() => handleEditAmount('none')}>Apply from next month</button>
+            <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
+              onClick={() => setShowEditAmount(false)}>Cancel</button>
+          </div>
+        </div>
       )}
 
       {!membership && !showForm && (
@@ -511,6 +519,7 @@ const MEMBERSHIP_STATUS_LABELS = {
   ACTIVE:          { label: 'Active', color: 'var(--booking-success)' },
   PAUSED:          { label: 'Paused', color: 'var(--booking-text-muted)' },
   CANCELLED:       { label: 'Cancelled', color: 'var(--booking-danger)' },
+  SCHEDULED:       { label: 'Scheduled', color: '#7c35e8' },
 };
 
 function MembershipsPanel() {
@@ -1129,14 +1138,25 @@ export default function AdminMembers() {
                     {u.email}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0, marginLeft: '0.5rem' }}>
-                  <span style={{
-                    fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.04em',
-                    textTransform: 'uppercase', color: 'var(--booking-text-muted)',
-                  }}>
-                    {ROLE_LABELS[u.role] ?? u.role}
-                  </span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)', display: 'inline-block', transition: 'transform 0.2s', transform: isSelected ? 'rotate(180deg)' : 'none' }}>▾</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', flexShrink: 0, marginLeft: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{
+                      fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.04em',
+                      textTransform: 'uppercase', color: 'var(--booking-text-muted)',
+                    }}>
+                      {ROLE_LABELS[u.role] ?? u.role}
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)', display: 'inline-block', transition: 'transform 0.2s', transform: isSelected ? 'rotate(180deg)' : 'none' }}>▾</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.72rem', color: 'var(--booking-text-muted)' }}>
+                    <span title="Confirmed bookings">{u.confirmedBookings ?? 0} booked</span>
+                    <span title="Cancelled bookings">{u.cancelledBookings ?? 0} cancelled</span>
+                    <span title="Last login">
+                      {u.lastLoginAt
+                        ? new Date(u.lastLoginAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                        : 'Never logged in'}
+                    </span>
+                  </div>
                 </div>
               </button>
 

@@ -122,6 +122,9 @@ router.post('/login', async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRE || '7d' }
     );
 
+    // Stamp last login (fire-and-forget)
+    prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }).catch(() => {});
+
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 

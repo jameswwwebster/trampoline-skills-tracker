@@ -64,6 +64,11 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
         archivedAt: true,
         archivedReason: true,
         createdAt: true,
+        lastLoginAt: true,
+        bookings: {
+          select: { status: true },
+          where: { status: { in: ['CONFIRMED', 'CANCELLED'] } },
+        },
         customFieldValues: {
           select: {
             id: true,
@@ -129,9 +134,12 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
       customFieldValues: gymnast.user?.customFieldValues || [],
     }));
 
-    // Add custom field values to regular users
+    // Add custom field values and booking counts to regular users
     const usersWithCustomFields = users.map(user => ({
       ...user,
+      confirmedBookings: user.bookings.filter(b => b.status === 'CONFIRMED').length,
+      cancelledBookings: user.bookings.filter(b => b.status === 'CANCELLED').length,
+      bookings: undefined,
       customFieldValues: user.customFieldValues || []
     }));
 

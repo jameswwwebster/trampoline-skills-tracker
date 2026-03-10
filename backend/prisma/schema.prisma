@@ -23,6 +23,7 @@ model User {
   passwordResetTokenExpiresAt   DateTime?
   mustChangePassword            Boolean           @default(false)
   phone                         String?
+  lastLoginAt                   DateTime?
   archivedAt                    DateTime?
   archivedById                  String?
   archivedReason                String?
@@ -644,6 +645,7 @@ enum MembershipStatus {
   ACTIVE
   CANCELLED
   PAUSED
+  SCHEDULED
 }
 
 model WaitlistEntry {
