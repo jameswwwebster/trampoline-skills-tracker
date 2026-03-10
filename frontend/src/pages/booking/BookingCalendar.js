@@ -114,18 +114,6 @@ export default function BookingCalendar() {
   const dayIsClosed = isInClosure(selectedDate);
   const dayIsPast = selectedMidnight < todayMidnight;
 
-  // ── Inline session detail ──
-  if (selectedSessionId) {
-    return (
-      <div className="booking-calendar">
-        <SessionDetail
-          instanceId={selectedSessionId}
-          onClose={() => setSelectedSessionId(null)}
-        />
-      </div>
-    );
-  }
-
   // ── Month grid view ──
   if (viewMode === 'month') {
     const firstDay = new Date(year, month - 1, 1).getDay();
@@ -267,24 +255,33 @@ export default function BookingCalendar() {
         className="booking-calendar__day-detail"
         style={{ '--detail-arrow': `${(selectedDate.getDay() + 0.5) / 7 * 100}%` }}
       >
-        <p className="booking-calendar__day-detail-heading">
-          {selectedDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </p>
-        {dayIsClosed && <p className="booking-calendar__day-closed">Closed</p>}
-        {!dayIsClosed && daySessions.length === 0 && (
-          <p className="booking-calendar__day-empty">No sessions</p>
+        {selectedSessionId ? (
+          <SessionDetail
+            instanceId={selectedSessionId}
+            onClose={() => setSelectedSessionId(null)}
+          />
+        ) : (
+          <>
+            <p className="booking-calendar__day-detail-heading">
+              {selectedDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+            {dayIsClosed && <p className="booking-calendar__day-closed">Closed</p>}
+            {!dayIsClosed && daySessions.length === 0 && (
+              <p className="booking-calendar__day-empty">No sessions</p>
+            )}
+            {!dayIsClosed && daySessions.map(s => (
+              <button
+                key={s.id}
+                className={`booking-calendar__day-session booking-calendar__day-session--${sessionClass(s, dayIsPast)}`}
+                disabled={(!s.isBooked && s.availableSlots === 0) || !!s.cancelledAt || dayIsPast}
+                onClick={() => setSelectedSessionId(s.id)}
+              >
+                <span className="booking-calendar__day-session-time">{s.startTime}–{s.endTime}</span>
+                <span className="booking-calendar__day-session-status">{sessionLabel(s)}</span>
+              </button>
+            ))}
+          </>
         )}
-        {!dayIsClosed && daySessions.map(s => (
-          <button
-            key={s.id}
-            className={`booking-calendar__day-session booking-calendar__day-session--${sessionClass(s, dayIsPast)}`}
-            disabled={(!s.isBooked && s.availableSlots === 0) || !!s.cancelledAt || dayIsPast}
-            onClick={() => setSelectedSessionId(s.id)}
-          >
-            <span className="booking-calendar__day-session-time">{s.startTime}–{s.endTime}</span>
-            <span className="booking-calendar__day-session-status">{sessionLabel(s)}</span>
-          </button>
-        ))}
       </div>
 
       {loading && <p className="booking-calendar__loading">Loading…</p>}
