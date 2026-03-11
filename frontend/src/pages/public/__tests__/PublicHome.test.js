@@ -34,3 +34,20 @@ test('renders Tuesday session times', () => {
   render(<MemoryRouter><PublicHome /></MemoryRouter>);
   expect(screen.getByText('Tuesday')).toBeInTheDocument();
 });
+
+test('renders Welfare Officer section', () => {
+  render(<MemoryRouter><PublicHome /></MemoryRouter>);
+  expect(screen.getByText('Welfare Officer')).toBeInTheDocument();
+  expect(screen.getByText('Wendy')).toBeInTheDocument();
+});
+
+test('renders sponsors section', () => {
+  render(<MemoryRouter><PublicHome /></MemoryRouter>);
+  expect(screen.getByAltText('British Engines')).toBeInTheDocument();
+});
+
+test('renders contact address', () => {
+  render(<MemoryRouter><PublicHome /></MemoryRouter>);
+  expect(screen.getByText(/Kenton Lane/i)).toBeInTheDocument();
+  expect(screen.getByText(/contact@trampoline.life/i)).toBeInTheDocument();
+});

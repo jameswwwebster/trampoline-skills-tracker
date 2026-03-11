@@ -65,6 +65,79 @@ export default function PublicHome() {
             </div>
           </div>
         </section>
+
+        {/* Welfare Officer */}
+        <section className="pub-section pub-welfare">
+          <div className="pub-section-inner pub-welfare-inner">
+            <img
+              src="https://static.wixstatic.com/media/010c39_0dc74357e2cb4848806f93e84723d3b6~mv2.jpg/v1/fill/w_632,h_632,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/010c39_0dc74357e2cb4848806f93e84723d3b6~mv2.jpg"
+              alt="Wendy — Welfare Officer"
+              className="pub-welfare-photo"
+            />
+            <div className="pub-welfare-info">
+              <p className="pub-welfare-title">Welfare Officer</p>
+              <h2 className="pub-welfare-name">Wendy</h2>
+              <a href="tel:07761185480" className="pub-welfare-phone">07761 185480</a>
+            </div>
+          </div>
+        </section>
+
+        {/* Sponsors */}
+        <section className="pub-section pub-sponsors">
+          <div className="pub-section-inner">
+            <h2 className="pub-section-title" style={{ textAlign: 'center' }}>Our Sponsors</h2>
+            <div className="pub-sponsors-list">
+              <a
+                href="https://www.britishengines.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="pub-sponsor-link"
+              >
+                <img
+                  src="https://static.wixstatic.com/media/010c39_504658f1638c4a6283d58ff8a756e724~mv2.jpg/v1/fill/w_340,h_340,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/329757191_1482935178903653_4558575537921607617_n_jpg__nc_cat%3D110%26ccb%3D1-7%26_nc_sid%3D6ee11a%26_n.jpg"
+                  alt="British Engines"
+                  className="pub-sponsor-logo"
+                />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Contact */}
+        <section className="pub-section pub-contact">
+          <div className="pub-section-inner">
+            <h2 className="pub-section-title">Contact Us</h2>
+            <div className="pub-contact-grid">
+              <div className="pub-contact-details">
+                <div className="pub-contact-item">
+                  <p className="pub-contact-label">Address</p>
+                  <address className="pub-contact-address">
+                    Sport@Kenton<br />
+                    Kenton Lane<br />
+                    NE3 3RU
+                  </address>
+                </div>
+                <div className="pub-contact-item">
+                  <p className="pub-contact-label">Email</p>
+                  <a href="mailto:contact@trampoline.life" className="pub-contact-email">
+                    contact@trampoline.life
+                  </a>
+                </div>
+              </div>
+              <div className="pub-contact-map">
+                <iframe
+                  title="Trampoline Life location"
+                  src="https://maps.google.com/maps?q=Sport+at+Kenton,+Kenton+Lane,+Newcastle,+NE3+3RU&output=embed"
+                  width="100%"
+                  height="300"
+                  style={{ border: 0, borderRadius: '8px' }}
+                  allowFullScreen=""
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
       <PublicFooter />
     </div>

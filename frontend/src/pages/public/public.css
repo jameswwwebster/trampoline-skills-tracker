@@ -316,3 +316,133 @@
     gap: 1.5rem;
   }
 }
+
+/* ─── Welfare Officer ────────────────────────────────────────────────────── */
+.pub-welfare {
+  background: #f8f8ff;
+}
+
+.pub-welfare-inner {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.pub-welfare-photo {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 4px solid var(--secondary-color);
+}
+
+.pub-welfare-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--secondary-color);
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.pub-welfare-name {
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+}
+
+.pub-welfare-phone {
+  color: var(--text-color);
+  font-size: 1rem;
+  text-decoration: none;
+  font-weight: 600;
+}
+.pub-welfare-phone:hover { color: var(--secondary-color); }
+
+@media (max-width: 600px) {
+  .pub-welfare-inner {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* ─── Sponsors ──────────────────────────────────────────────────────────── */
+.pub-sponsors {
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.pub-sponsors-list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.pub-sponsor-link {
+  display: block;
+}
+
+.pub-sponsor-logo {
+  max-height: 80px;
+  width: auto;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+.pub-sponsor-logo:hover { opacity: 1; }
+
+/* ─── Contact ───────────────────────────────────────────────────────────── */
+.pub-contact {
+  background: #f8f8ff;
+}
+
+.pub-contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.pub-contact-item {
+  margin-bottom: 1.5rem;
+}
+
+.pub-contact-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--secondary-color);
+  font-weight: 600;
+  margin: 0 0 0.4rem;
+}
+
+.pub-contact-address {
+  font-style: normal;
+  line-height: 1.7;
+  color: var(--text-color);
+}
+
+.pub-contact-email {
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+.pub-contact-email:hover { color: var(--secondary-color); }
+
+.pub-contact-map {
+  border-radius: 8px;
+  overflow: hidden;
+}
+.pub-contact-map iframe {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .pub-contact-grid {
+    grid-template-columns: 1fr;
+  }
+}
