@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../utils/bookingApi';
 import { useAuth } from '../../contexts/AuthContext';
 import RichTextEditor from '../../components/RichTextEditor';
+import RecipientPicker from '../../components/RecipientPicker';
 import './Noticeboard.css';
 import './booking-shared.css';
 
-const EMPTY_FORM = { title: '', body: '', archiveAt: '' };
+const EMPTY_FORM = { title: '', body: '', archiveAt: '', recipientFilter: null };
 const isStaff = (user) => user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
 
-function PostForm({ initial, onSave, onCancel }) {
+function PostForm({ initial, onSave, onCancel, groups = [] }) {
   const [form, setForm] = useState(initial || EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -61,6 +62,13 @@ function PostForm({ initial, onSave, onCancel }) {
             min={new Date().toISOString().slice(0, 10)}
           />
         </label>
+        {!initial && (
+          <RecipientPicker
+            value={form.recipientFilter}
+            onChange={rf => setForm(f => ({ ...f, recipientFilter: rf }))}
+            groups={groups}
+          />
+        )}
         {error && <p className="bk-error">{error}</p>}
         <div className="bk-row">
           <button type="submit" disabled={saving} className="bk-btn bk-btn--primary bk-btn--sm">
@@ -82,6 +90,7 @@ export default function Noticeboard() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [groups, setGroups] = useState([]);
 
   const staff = isStaff(user);
 
@@ -99,7 +108,12 @@ export default function Noticeboard() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    if (isStaff(user)) {
+      bookingApi.getRecipientGroups().then(r => setGroups(r.data)).catch(() => {});
+    }
+  }, []);
 
   const handleCreate = async (form) => {
     await bookingApi.createNoticeboardPost({
@@ -139,7 +153,7 @@ export default function Noticeboard() {
       </div>
 
       {showForm && (
-        <PostForm onSave={handleCreate} onCancel={() => setShowForm(false)} />
+        <PostForm onSave={handleCreate} onCancel={() => setShowForm(false)} groups={groups} />
       )}
 
       {posts.length === 0 && !showForm && (
