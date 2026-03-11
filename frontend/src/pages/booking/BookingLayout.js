@@ -4,23 +4,33 @@ import { useAuth } from '../../contexts/AuthContext';
 import { bookingApi } from '../../utils/bookingApi';
 import './BookingLayout.css';
 
-function getCartSlotCount() {
+function getTotalCartCount() {
+  let count = 0;
   try {
     const saved = sessionStorage.getItem('booking-cart');
-    return saved ? JSON.parse(saved).reduce((s, [, g]) => s + g.length, 0) : 0;
-  } catch { return 0; }
+    if (saved) count += JSON.parse(saved).reduce((s, [, g]) => s + g.length, 0);
+  } catch {}
+  try {
+    const shopItems = JSON.parse(localStorage.getItem('shopCart')) || [];
+    count += shopItems.reduce((s, item) => s + item.quantity, 0);
+  } catch {}
+  return count;
 }
 
 export default function BookingLayout() {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
   const [paymentBanner, setPaymentBanner] = useState(null); // null | 'pending' | 'needs_method'
-  const [cartCount, setCartCount] = useState(getCartSlotCount);
+  const [cartCount, setCartCount] = useState(getTotalCartCount);
 
   useEffect(() => {
-    const handler = () => setCartCount(getCartSlotCount());
+    const handler = () => setCartCount(getTotalCartCount());
     window.addEventListener('booking-cart-update', handler);
-    return () => window.removeEventListener('booking-cart-update', handler);
+    window.addEventListener('shop-cart-update', handler);
+    return () => {
+      window.removeEventListener('booking-cart-update', handler);
+      window.removeEventListener('shop-cart-update', handler);
+    };
   }, []);
 
   useEffect(() => {
@@ -57,7 +67,7 @@ export default function BookingLayout() {
         <div className="booking-layout__links">
           <NavLink to="/booking" end>Calendar</NavLink>
           {!isAdmin && cartCount > 0 && (
-            <NavLink to="/booking" end className="booking-layout__cart-link">
+            <NavLink to="/booking/cart" className="booking-layout__cart-link">
               Cart ({cartCount})
             </NavLink>
           )}

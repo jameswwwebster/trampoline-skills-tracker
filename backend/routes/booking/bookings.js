@@ -5,6 +5,7 @@ const Joi = require('joi');
 const getStripe = () => require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { processWaitlist } = require('../../services/waitlistService');
 const { audit } = require('../../services/auditLogService');
+const { SHOP_PRODUCTS } = require('../../data/shopProducts');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -573,6 +574,211 @@ router.post('/:bookingId/refund', auth, requireRole(['CLUB_ADMIN', 'COACH']), as
   } catch (err) {
     console.error('Refund error:', err);
     res.status(500).json({ error: err.message || 'Failed to issue refund' });
+  }
+});
+
+// POST /api/booking/bookings/combined
+// Single checkout for booking sessions + shop items with one Stripe PaymentIntent
+router.post('/combined', auth, async (req, res) => {
+  try {
+    const { sessions = [], shopItems = [] } = req.body;
+    if (sessions.length === 0 && shopItems.length === 0) {
+      return res.status(400).json({ error: 'Cart is empty' });
+    }
+
+    const now = new Date();
+
+    // ── Validate sessions ──
+    const validatedSessions = [];
+    if (sessions.length > 0) {
+      const allGymnastIds = [...new Set(sessions.flatMap(s => s.gymnastIds))];
+      const pendingCounts = {};
+      for (const s of sessions) {
+        for (const gId of s.gymnastIds) {
+          pendingCounts[gId] = (pendingCounts[gId] || 0) + 1;
+        }
+      }
+      const blockedByBg = await checkBgNumbers(allGymnastIds, now, pendingCounts);
+      if (blockedByBg.length > 0) {
+        return res.status(400).json({
+          error: `British Gymnastics membership number required for: ${blockedByBg.map(g => g.firstName).join(', ')}. Please add or update it in My Account.`,
+          code: 'BG_NUMBER_REQUIRED',
+        });
+      }
+
+      for (const item of sessions) {
+        const { sessionInstanceId, gymnastIds } = item;
+        const instance = await prisma.sessionInstance.findUnique({
+          where: { id: sessionInstanceId },
+          include: { template: true, bookings: { where: { status: 'CONFIRMED' }, include: { lines: true } } },
+        });
+        if (!instance) return res.status(404).json({ error: `Session ${sessionInstanceId} not found` });
+        if (instance.cancelledAt) return res.status(400).json({ error: 'A session in your cart is cancelled' });
+        if (instance.template.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
+
+        const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+        const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
+        if (bookedCount + gymnastIds.length > capacity) {
+          return res.status(400).json({ error: `Not enough slots for session at ${instance.date} ${instance.template.startTime}` });
+        }
+
+        if (instance.template.minAge) {
+          const gymnasts = await prisma.gymnast.findMany({ where: { id: { in: gymnastIds } } });
+          const instanceDate = new Date(instance.date);
+          for (const g of gymnasts) {
+            if (g.dateOfBirth) {
+              const age = Math.floor((instanceDate - new Date(g.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000));
+              if (age < instance.template.minAge) {
+                return res.status(400).json({ error: `${g.firstName} does not meet the minimum age requirement` });
+              }
+            }
+          }
+        }
+
+        if (req.user.role === 'PARENT') {
+          const myGymnasts = await prisma.gymnast.findMany({
+            where: { id: { in: gymnastIds }, guardians: { some: { id: req.user.id } } },
+          });
+          if (myGymnasts.length !== gymnastIds.length) {
+            return res.status(403).json({ error: 'Access denied to one or more gymnasts' });
+          }
+        }
+
+        validatedSessions.push({ sessionInstanceId, gymnastIds, itemAmount: PRICE_PER_GYMNAST_PENCE * gymnastIds.length });
+      }
+    }
+
+    // ── Validate shop items ──
+    const validatedShopItems = [];
+    let shopTotal = 0;
+    for (const item of shopItems) {
+      const product = SHOP_PRODUCTS.find(p => p.id === item.productId);
+      if (!product) return res.status(400).json({ error: `Unknown product: ${item.productId}` });
+      const variant = product.variants.find(v => v.label === item.size);
+      if (!variant) return res.status(400).json({ error: `Unknown size "${item.size}" for "${item.productId}"` });
+      const qty = parseInt(item.quantity, 10);
+      if (!qty || qty < 1 || qty > 10) return res.status(400).json({ error: 'quantity must be between 1 and 10' });
+      if (product.customisation?.required && !item.customisation?.trim()) {
+        return res.status(400).json({ error: `customisation is required for ${product.name}` });
+      }
+      validatedShopItems.push({
+        productId: product.id, productName: product.name, size: variant.label,
+        quantity: qty, customisation: item.customisation?.trim() || null, price: variant.price,
+      });
+      shopTotal += variant.price * qty;
+    }
+
+    // ── Credits (applied to sessions only) ──
+    const sessionTotal = validatedSessions.reduce((sum, s) => sum + s.itemAmount, 0);
+    const creditsToUse = [];
+    if (sessionTotal > 0) {
+      const availableCredits = await prisma.credit.findMany({
+        where: { userId: req.user.id, usedAt: null, expiresAt: { gt: new Date() } },
+        orderBy: { expiresAt: 'asc' },
+      });
+      let remaining = sessionTotal;
+      for (const credit of availableCredits) {
+        if (remaining <= 0) break;
+        const consume = Math.min(credit.amount, remaining);
+        remaining -= consume;
+        creditsToUse.push({ id: credit.id, consume, remainder: credit.amount - consume, expiresAt: credit.expiresAt });
+      }
+    }
+    const creditAmount = creditsToUse.reduce((sum, c) => sum + c.consume, 0);
+    const chargeAmount = Math.max(0, sessionTotal - creditAmount) + shopTotal;
+
+    // ── Cancel stale PENDING session bookings ──
+    for (const item of validatedSessions) {
+      const stalePending = await prisma.booking.findMany({
+        where: { userId: req.user.id, sessionInstanceId: item.sessionInstanceId, status: 'PENDING' },
+      });
+      for (const stale of stalePending) {
+        await prisma.credit.updateMany({ where: { usedOnBookingId: stale.id }, data: { usedAt: null, usedOnBookingId: null } });
+        await prisma.booking.update({ where: { id: stale.id }, data: { status: 'CANCELLED' } });
+      }
+    }
+
+    // ── Stripe PaymentIntent ──
+    let paymentIntentId = null;
+    let clientSecret = null;
+    if (chargeAmount > 0) {
+      const paymentIntent = await getStripe().paymentIntents.create({
+        amount: chargeAmount,
+        currency: 'gbp',
+        automatic_payment_methods: { enabled: true },
+        metadata: { userId: req.user.id },
+      });
+      paymentIntentId = paymentIntent.id;
+      clientSecret = paymentIntent.client_secret;
+    }
+
+    // ── Create bookings ──
+    const bookings = [];
+    for (const item of validatedSessions) {
+      const booking = await prisma.booking.create({
+        data: {
+          userId: req.user.id,
+          sessionInstanceId: item.sessionInstanceId,
+          stripePaymentIntentId: paymentIntentId,
+          status: paymentIntentId ? 'PENDING' : 'CONFIRMED',
+          totalAmount: item.itemAmount,
+          lines: { create: item.gymnastIds.map(id => ({ gymnastId: id, amount: PRICE_PER_GYMNAST_PENCE })) },
+        },
+        include: { lines: true },
+      });
+      bookings.push(booking);
+    }
+
+    // ── Mark credits ──
+    if (bookings.length > 0) {
+      for (const c of creditsToUse) {
+        await prisma.credit.update({
+          where: { id: c.id },
+          data: { amount: c.consume, usedAt: new Date(), usedOnBookingId: bookings[0].id },
+        });
+        if (c.remainder > 0) {
+          await prisma.credit.create({ data: { userId: req.user.id, amount: c.remainder, expiresAt: c.expiresAt } });
+        }
+      }
+    }
+
+    // ── Create shop order ──
+    let shopOrder = null;
+    if (validatedShopItems.length > 0) {
+      const shopStatus = paymentIntentId ? 'PENDING_PAYMENT' : 'ORDERED';
+      shopOrder = await prisma.shopOrder.create({
+        data: {
+          userId: req.user.id,
+          stripePaymentIntentId: paymentIntentId,
+          total: shopTotal,
+          status: shopStatus,
+          items: { create: validatedShopItems },
+        },
+        include: { items: true },
+      });
+
+      if (shopStatus === 'ORDERED') {
+        try {
+          const shopEmailService = require('../../services/shopEmailService');
+          const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            select: { id: true, firstName: true, lastName: true, email: true },
+          });
+          await shopEmailService.sendOrderConfirmationEmail(user, shopOrder);
+        } catch (emailErr) {
+          console.error('Shop confirmation email failed:', emailErr.message);
+        }
+      }
+    }
+
+    res.json({
+      clientSecret,
+      bookingId: bookings[0]?.id || null,
+      shopOrderId: shopOrder?.id || null,
+    });
+  } catch (err) {
+    console.error('Combined checkout error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

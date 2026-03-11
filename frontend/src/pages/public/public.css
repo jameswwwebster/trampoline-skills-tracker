@@ -453,6 +453,13 @@
 }
 .pub-contact-email:hover { color: var(--secondary-color); }
 
+.pub-contact-whatsapp {
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+.pub-contact-whatsapp:hover { color: #25d366; }
+
 .pub-contact-map {
   border-radius: 8px;
   overflow: hidden;

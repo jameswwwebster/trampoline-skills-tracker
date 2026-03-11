@@ -47,6 +47,9 @@ export const bookingApi = {
   createBatchBooking: (data) =>
     axios.post(`${API_URL}/booking/bookings/batch`, data, { headers: getHeaders() }),
 
+  combinedCheckout: (data) =>
+    axios.post(`${API_URL}/booking/bookings/combined`, data, { headers: getHeaders() }),
+
   getMyBookings: () =>
     axios.get(`${API_URL}/booking/bookings/my`, { headers: getHeaders() }),
 

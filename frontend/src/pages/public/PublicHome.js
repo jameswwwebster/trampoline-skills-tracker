@@ -159,6 +159,17 @@ export default function PublicHome() {
                     contact@trampoline.life
                   </a>
                 </div>
+                <div className="pub-contact-item">
+                  <p className="pub-contact-label">WhatsApp</p>
+                  <a
+                    href="https://wa.me/447700149040"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="pub-contact-whatsapp"
+                  >
+                    Message us on WhatsApp
+                  </a>
+                </div>
               </div>
               <div className="pub-contact-map">
                 <iframe

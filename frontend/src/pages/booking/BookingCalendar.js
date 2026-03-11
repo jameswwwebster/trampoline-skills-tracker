@@ -74,17 +74,7 @@ export default function BookingCalendar() {
   const cartTotalAmount = cartTotalSlots * 600;
 
   const handleCartCheckout = () => {
-    const cartItems = cartEntries.map(([sessionInstanceId, gymnasts]) => {
-      const session = sessions.find(s => s.id === sessionInstanceId);
-      return {
-        sessionInstanceId,
-        date: session?.date,
-        startTime: session?.startTime,
-        endTime: session?.endTime,
-        gymnasts,
-      };
-    });
-    navigate('/booking/cart-checkout', { state: { cart: cartItems } });
+    navigate('/booking/cart');
   };
 
   return (

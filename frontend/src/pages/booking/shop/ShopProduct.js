@@ -92,6 +92,7 @@ export default function ShopProduct() {
     }
 
     saveCart(cart);
+    window.dispatchEvent(new CustomEvent('shop-cart-update'));
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }
@@ -167,7 +168,7 @@ export default function ShopProduct() {
 
         <button
           style={{ marginTop: '0.5rem', width: '100%', background: 'none', border: '1px solid #ddd', borderRadius: 8, padding: '0.6rem', cursor: 'pointer', fontSize: '0.9rem' }}
-          onClick={() => navigate('/booking/shop/cart')}
+          onClick={() => navigate('/booking/cart')}
         >
           View cart
         </button>
