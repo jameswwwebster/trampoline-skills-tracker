@@ -5377,7 +5377,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   opacity: 1;
 }
 
-input[type="checkbox"] {
+.checkbox-label input[type="checkbox"] {
   display: none;
 }
 

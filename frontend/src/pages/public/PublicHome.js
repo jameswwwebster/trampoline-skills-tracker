@@ -112,7 +112,7 @@ export default function PublicHome() {
                 />
                 <p className="pub-team-role">Welfare Officer</p>
                 <h3 className="pub-team-name">Wendy</h3>
-                <a href="tel:07761185480" className="pub-team-contact">07761 185480</a>
+                <a href="mailto:welfare@trampoline.life" className="pub-team-contact">welfare@trampoline.life</a>
               </div>
             </div>
           </div>
