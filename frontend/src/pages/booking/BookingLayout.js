@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { bookingApi } from '../../utils/bookingApi';
@@ -23,6 +23,22 @@ export default function BookingLayout() {
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
   const [paymentBanner, setPaymentBanner] = useState(null); // null | 'pending' | 'needs_method'
   const [cartCount, setCartCount] = useState(getTotalCartCount);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [noticeBanner, setNoticeBanner] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null); // null | 'sessions' | 'members' | 'tools'
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpenDropdown(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleDropdown = (name) => setOpenDropdown(o => o === name ? null : name);
 
   useEffect(() => {
     const handler = () => setCartCount(getTotalCartCount());
@@ -33,6 +49,17 @@ export default function BookingLayout() {
       window.removeEventListener('shop-cart-update', handler);
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    bookingApi.getNoticeboard()
+      .then(r => {
+        const unread = r.data.filter(p => !p.isRead).length;
+        setUnreadCount(unread);
+        setNoticeBanner(unread > 0);
+      })
+      .catch(() => {});
+  }, [user]);
 
   useEffect(() => {
     if (!user || isAdmin) return;
@@ -85,21 +112,78 @@ export default function BookingLayout() {
           <NavLink to="/booking/my-account">My Account</NavLink>
           <NavLink to="/booking/shop">Shop</NavLink>
           <NavLink to="/booking/my-orders">My Orders</NavLink>
+          <NavLink
+            to="/booking/noticeboard"
+            style={{ position: 'relative' }}
+            onClick={() => setNoticeBanner(false)}
+          >
+            Noticeboard
+            {unreadCount > 0 && (
+              <span className="booking-layout__unread-badge">{unreadCount}</span>
+            )}
+          </NavLink>
           {isAdmin && (
-            <>
+            <div className="booking-layout__admin-group" ref={dropdownRef}>
               <span className="booking-layout__admin-divider" />
               <span className="booking-layout__admin-label">Admin</span>
-              <NavLink to="/booking/admin" className="booking-layout__admin-link">Sessions</NavLink>
-              <NavLink to="/booking/admin/members" className="booking-layout__admin-link">Members</NavLink>
-              <NavLink to="/booking/admin/messages" className="booking-layout__admin-link">Messages</NavLink>
-              <NavLink to="/booking/admin/bg-numbers" className="booking-layout__admin-link">BG Numbers</NavLink>
-              <NavLink to="/booking/admin/closures" className="booking-layout__admin-link">Closures</NavLink>
-              <NavLink to="/booking/admin/audit-log" className="booking-layout__admin-link">Audit Log</NavLink>
+              <div className="booking-layout__dropdown">
+                <button
+                  className={`booking-layout__admin-link booking-layout__dropdown-btn${openDropdown === 'sessions' ? ' active' : ''}`}
+                  onClick={() => toggleDropdown('sessions')}
+                >
+                  Sessions ▾
+                </button>
+                {openDropdown === 'sessions' && (
+                  <div className="booking-layout__dropdown-menu">
+                    <NavLink to="/booking/admin" end className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Sessions</NavLink>
+                    <NavLink to="/booking/admin/closures" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Closures</NavLink>
+                  </div>
+                )}
+              </div>
+              <div className="booking-layout__dropdown">
+                <button
+                  className={`booking-layout__admin-link booking-layout__dropdown-btn${openDropdown === 'members' ? ' active' : ''}`}
+                  onClick={() => toggleDropdown('members')}
+                >
+                  Members ▾
+                </button>
+                {openDropdown === 'members' && (
+                  <div className="booking-layout__dropdown-menu">
+                    <NavLink to="/booking/admin/members" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Members</NavLink>
+                    <NavLink to="/booking/admin/bg-numbers" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>BG Numbers</NavLink>
+                  </div>
+                )}
+              </div>
               <NavLink to="/booking/admin/shop-orders" className="booking-layout__admin-link">Shop Orders</NavLink>
-            </>
+              <div className="booking-layout__dropdown">
+                <button
+                  className={`booking-layout__admin-link booking-layout__dropdown-btn${openDropdown === 'tools' ? ' active' : ''}`}
+                  onClick={() => toggleDropdown('tools')}
+                >
+                  Tools ▾
+                </button>
+                {openDropdown === 'tools' && (
+                  <div className="booking-layout__dropdown-menu">
+                    <NavLink to="/booking/admin/messages" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Messages</NavLink>
+                    <NavLink to="/booking/admin/audit-log" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Audit Log</NavLink>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </nav>
+
+      {noticeBanner && (
+        <Link
+          to="/booking/noticeboard"
+          className="booking-layout__notice-banner"
+          onClick={() => setNoticeBanner(false)}
+        >
+          <span>📌 {unreadCount} new notice{unreadCount !== 1 ? 's' : ''} on the noticeboard</span>
+          <span className="booking-layout__payment-banner-cta">View →</span>
+        </Link>
+      )}
 
       {paymentBanner && (
         <Link to="/booking/my-account" className="booking-layout__payment-banner">

@@ -59,6 +59,7 @@ import ShopProduct from './pages/booking/shop/ShopProduct';
 import ShopCart from './pages/booking/shop/ShopCart';
 import ShopConfirmation from './pages/booking/shop/ShopConfirmation';
 import MyOrders from './pages/booking/shop/MyOrders';
+import Noticeboard from './pages/booking/Noticeboard';
 import AdminShopOrders from './pages/booking/admin/AdminShopOrders';
 import PublicHome from './pages/public/PublicHome';
 import PublicPolicies from './pages/public/PublicPolicies';
@@ -211,6 +212,7 @@ function AppContent() {
           <Route path="shop/:productId" element={<ShopProduct />} />
           <Route path="shop/confirmation/:orderId" element={<ShopConfirmation />} />
           <Route path="my-orders" element={<MyOrders />} />
+          <Route path="noticeboard" element={<Noticeboard />} />
           <Route path="admin/shop-orders" element={<AdminShopOrders />} />
         </Route>
       </Routes>
