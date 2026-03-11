@@ -316,25 +316,24 @@ cron.schedule('0 8 * * 1', async () => {
 
       if (availableSessions.length === 0) continue;
 
-      // Exclude guardians who have an active membership for any of their gymnasts
-      // (members attend without booking and don't need session availability reminders)
-      const guardianIdsWithActiveMembership = await prisma.user.findMany({
-        where: {
-          clubId: club.id,
-          gymnasts: { some: { memberships: { some: { status: 'ACTIVE', clubId: club.id } } } },
+      // Exclude guardians only if ALL of their gymnasts are on active memberships.
+      // A parent with one member child and one non-member child still needs the reminder.
+      const guardianCandidates = await prisma.user.findMany({
+        where: { clubId: club.id, isArchived: false, email: { not: null }, weeklySessionReminder: true },
+        select: {
+          id: true, email: true, firstName: true,
+          gymnasts: {
+            select: {
+              memberships: { where: { status: 'ACTIVE', clubId: club.id }, select: { id: true } },
+            },
+          },
         },
-        select: { id: true },
-      }).then(rows => rows.map(r => r.id));
+      });
 
-      const members = await prisma.user.findMany({
-        where: {
-          clubId: club.id,
-          isArchived: false,
-          email: { not: null },
-          weeklySessionReminder: true,
-          id: { notIn: guardianIdsWithActiveMembership },
-        },
-        select: { email: true, firstName: true },
+      const members = guardianCandidates.filter(u => {
+        // Include if they have no gymnasts (books for themselves) OR at least one gymnast without an active membership
+        if (u.gymnasts.length === 0) return true;
+        return u.gymnasts.some(g => g.memberships.length === 0);
       });
 
       for (const member of members) {
