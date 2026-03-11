@@ -6,5 +6,5 @@ export const SOCIAL_LINKS = {
   whatsapp: 'https://wa.me/',
 };
 
-// Kit shop URL — update before go-live
-export const SHOP_URL = 'https://shop.sumup.com/';
+// Kit shop URL
+export const SHOP_URL = 'https://trampoline-life.sumupstore.com';
