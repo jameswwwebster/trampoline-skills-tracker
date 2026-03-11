@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
+import RichTextEditor from '../../../components/RichTextEditor';
 import '../booking-shared.css';
 
 const STATUS_COLOURS = {
@@ -186,13 +187,11 @@ export default function AdminMessages() {
           </div>
 
           <div>
-            <label className="bk-label">Body (HTML)</label>
-            <textarea
-              className="bk-input"
-              style={{ width: '100%', minHeight: '200px', fontFamily: 'monospace', fontSize: '0.875rem' }}
+            <label className="bk-label">Body</label>
+            <RichTextEditor
               value={form.htmlBody}
-              onChange={e => setForm(f => ({ ...f, htmlBody: e.target.value }))}
-              placeholder="<p>Hi,</p><p>Your message here.</p>"
+              onChange={html => setForm(f => ({ ...f, htmlBody: html }))}
+              placeholder="Write your email..."
             />
           </div>
 
