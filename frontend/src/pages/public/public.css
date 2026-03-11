@@ -233,3 +233,86 @@
   transition: opacity 0.15s;
 }
 .pub-hero-cta:hover { opacity: 0.9; }
+
+/* ─── Sessions ──────────────────────────────────────────────────────────── */
+.pub-sessions {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 4rem 1rem;
+  text-align: center;
+}
+
+.pub-sessions-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.pub-sessions-title {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  color: #fff;
+}
+
+.pub-sessions-subtitle {
+  font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  color: #fff;
+}
+
+.pub-sessions-price {
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 800;
+  color: var(--secondary-color);
+  margin: 0 0 0.25rem;
+}
+
+.pub-sessions-age {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem;
+  opacity: 0.85;
+}
+
+.pub-sessions-body {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  opacity: 0.85;
+  margin: 0 auto 1rem;
+  text-align: left;
+  max-width: 700px;
+}
+
+.pub-sessions-link {
+  color: var(--secondary-color);
+  text-decoration: underline;
+}
+
+.pub-sessions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 2.5rem;
+  text-align: center;
+}
+
+.pub-sessions-day h4 {
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  color: #fff;
+}
+
+.pub-sessions-day p {
+  font-size: 0.95rem;
+  opacity: 0.85;
+  margin: 0.2rem 0;
+}
+
+@media (max-width: 600px) {
+  .pub-sessions-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
