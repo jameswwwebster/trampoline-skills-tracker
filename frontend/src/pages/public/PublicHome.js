@@ -19,10 +19,7 @@ export default function PublicHome() {
               from qualified coaches in a safe environment. Come along and try it out for
               yourselves; young or old, everybody is welcome!
             </p>
-            <div className="pub-hero-actions">
-              <a href="/booking" className="pub-hero-cta">Book a session</a>
-              <a href="/login" className="pub-hero-login">Log in →</a>
-            </div>
+            <a href="/booking" className="pub-hero-cta">Book a session</a>
           </div>
         </section>
 
