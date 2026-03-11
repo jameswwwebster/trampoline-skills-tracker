@@ -152,12 +152,11 @@ function AppContent() {
         <Route path="/cheatsheets/:cheatsheetId" element={<CheatsheetViewer />} />
         {/* Public game route - no authentication required */}
         <Route path="/wavelength" element={<WaveLength />} />
-        <Route path="/" element={
+        <Route element={
           <ProtectedRoute>
             <Layout />
           </ProtectedRoute>
         }>
-          <Route index element={<Navigate to="/booking" replace />} />
           <Route path="gymnasts" element={<Gymnasts />} />
           <Route path="levels" element={<Levels />} />
           <Route path="competitions" element={<Competitions />} />
