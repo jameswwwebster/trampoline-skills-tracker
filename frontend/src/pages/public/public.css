@@ -177,3 +177,59 @@
   .pub-footer-inner { flex-direction: column; text-align: center; }
   .pub-footer-links { justify-content: center; flex-wrap: wrap; }
 }
+
+/* ─── Hero ──────────────────────────────────────────────────────────────── */
+.pub-hero {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 420px;
+  display: flex;
+}
+
+.pub-hero-overlay {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+}
+
+.pub-hero-content {
+  max-width: 720px;
+  text-align: center;
+  color: #fff;
+}
+
+.pub-hero-headline {
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  font-weight: 800;
+  margin: 0 0 1rem;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.pub-accent {
+  color: var(--secondary-color);
+}
+
+.pub-hero-body {
+  font-size: clamp(1rem, 2.5vw, 1.15rem);
+  opacity: 0.9;
+  margin: 0 0 2rem;
+  line-height: 1.6;
+}
+
+.pub-hero-cta {
+  display: inline-block;
+  background: var(--secondary-color);
+  color: #fff;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.pub-hero-cta:hover { opacity: 0.9; }
