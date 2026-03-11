@@ -63,6 +63,8 @@ export default function BookingLayout() {
           )}
           <NavLink to="/booking/my-bookings">My Bookings</NavLink>
           <NavLink to="/booking/my-account">My Account</NavLink>
+          <NavLink to="/booking/shop">Shop</NavLink>
+          <NavLink to="/booking/my-orders">My Orders</NavLink>
           {isAdmin && (
             <>
               <span className="booking-layout__admin-divider" />
@@ -73,6 +75,7 @@ export default function BookingLayout() {
               <NavLink to="/booking/admin/bg-numbers" className="booking-layout__admin-link">BG Numbers</NavLink>
               <NavLink to="/booking/admin/closures" className="booking-layout__admin-link">Closures</NavLink>
               <NavLink to="/booking/admin/audit-log" className="booking-layout__admin-link">Audit Log</NavLink>
+              <NavLink to="/booking/admin/shop-orders" className="booking-layout__admin-link">Shop Orders</NavLink>
             </>
           )}
         </div>

@@ -52,6 +52,12 @@ import AdminMembers from './pages/booking/admin/AdminMembers';
 import AdminMessages from './pages/booking/admin/AdminMessages';
 import AdminBgNumbers from './pages/booking/admin/AdminBgNumbers';
 import AuditLog from './pages/booking/admin/AuditLog';
+import ShopListing from './pages/booking/shop/ShopListing';
+import ShopProduct from './pages/booking/shop/ShopProduct';
+import ShopCart from './pages/booking/shop/ShopCart';
+import ShopConfirmation from './pages/booking/shop/ShopConfirmation';
+import MyOrders from './pages/booking/shop/MyOrders';
+import AdminShopOrders from './pages/booking/admin/AdminShopOrders';
 import PublicHome from './pages/public/PublicHome';
 import PublicPolicies from './pages/public/PublicPolicies';
 import './App.css';
@@ -196,6 +202,12 @@ function AppContent() {
           <Route path="admin/messages" element={<AdminMessages />} />
           <Route path="admin/bg-numbers" element={<AdminBgNumbers />} />
           <Route path="admin/audit-log" element={<AuditLog />} />
+          <Route path="shop" element={<ShopListing />} />
+          <Route path="shop/cart" element={<ShopCart />} />
+          <Route path="shop/:productId" element={<ShopProduct />} />
+          <Route path="shop/confirmation/:orderId" element={<ShopConfirmation />} />
+          <Route path="my-orders" element={<MyOrders />} />
+          <Route path="admin/shop-orders" element={<AdminShopOrders />} />
         </Route>
       </Routes>
     </div>
