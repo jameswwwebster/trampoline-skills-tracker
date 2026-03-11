@@ -1,16 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-
-// Social media profile URLs — update these before go-live
-const SOCIAL_LINKS = {
-  instagram: 'https://www.instagram.com/',
-  tiktok: 'https://www.tiktok.com/',
-  facebook: 'https://www.facebook.com/',
-  whatsapp: 'https://wa.me/',
-};
-
-// Kit shop URL — update before go-live
-const SHOP_URL = 'https://shop.sumup.com/';
+import { SOCIAL_LINKS, SHOP_URL } from './publicConstants';
 
 function InstagramIcon() {
   return (
@@ -96,7 +86,7 @@ export default function PublicNav() {
           >
             <WhatsAppIcon />
           </a>
-          <a href="/booking" className="pub-nav-cta">Book a session</a>
+          <Link to="/booking" className="pub-nav-cta">Book a session</Link>
         </div>
 
         {/* Mobile hamburger */}
@@ -121,7 +111,7 @@ export default function PublicNav() {
             <a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook"><FacebookIcon /></a>
             <a href={SOCIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><WhatsAppIcon /></a>
           </div>
-          <a href="/booking" className="pub-nav-cta" style={{ margin: '0.5rem 1rem' }}>Book a session</a>
+          <Link to="/booking" className="pub-nav-cta" style={{ margin: '0.5rem 1rem' }}>Book a session</Link>
         </div>
       )}
     </nav>

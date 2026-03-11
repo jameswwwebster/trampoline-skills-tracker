@@ -7,7 +7,7 @@ export default function PublicPolicies() {
   return (
     <div className="public-page">
       <PublicNav />
-      <main style={{ flex: 1 }}>
+      <main className="pub-main">
         <p style={{ padding: '2rem' }}>Policies coming soon</p>
       </main>
       <PublicFooter />

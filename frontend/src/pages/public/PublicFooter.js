@@ -1,11 +1,5 @@
 import React from 'react';
-
-const SOCIAL_LINKS = {
-  instagram: 'https://www.instagram.com/',
-  tiktok: 'https://www.tiktok.com/',
-  facebook: 'https://www.facebook.com/',
-  whatsapp: 'https://wa.me/',
-};
+import { SOCIAL_LINKS } from './publicConstants';
 
 export default function PublicFooter() {
   return (

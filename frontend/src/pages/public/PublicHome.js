@@ -7,7 +7,7 @@ export default function PublicHome() {
   return (
     <div className="public-page">
       <PublicNav />
-      <main style={{ flex: 1 }}>
+      <main className="pub-main">
         <p style={{ padding: '2rem' }}>Homepage coming soon</p>
       </main>
       <PublicFooter />

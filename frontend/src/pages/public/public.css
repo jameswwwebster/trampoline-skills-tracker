@@ -89,6 +89,7 @@
 
 /* Mobile menu */
 .pub-nav-mobile {
+  display: flex;
   flex-direction: column;
   background: #1a1a2e;
   padding: 0.5rem 0 1rem;
@@ -162,6 +163,10 @@
   font-weight: 800;
   margin: 0 0 1.5rem;
   color: var(--text-color);
+}
+
+.pub-main {
+  flex: 1;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
