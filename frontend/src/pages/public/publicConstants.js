@@ -1,9 +1,8 @@
-// Social media profile URLs — update these before go-live
 export const SOCIAL_LINKS = {
-  instagram: 'https://www.instagram.com/',
-  tiktok: 'https://www.tiktok.com/',
-  facebook: 'https://www.facebook.com/',
-  whatsapp: 'https://wa.me/',
+  instagram: 'https://www.instagram.com/trampolinelife_ncl/',
+  tiktok: 'https://www.tiktok.com/@trampolinelifencl',
+  facebook: 'https://www.facebook.com/trampolinelife/',
+  whatsapp: 'tel:+447700149040',
 };
 
 // Kit shop URL
