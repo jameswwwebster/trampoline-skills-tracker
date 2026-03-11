@@ -178,6 +178,20 @@ export const bookingApi = {
     axios.delete(`${API_URL}/noticeboard/${id}`, { headers: getHeaders() }),
   markNoticeboardRead: (id) =>
     axios.post(`${API_URL}/noticeboard/${id}/read`, {}, { headers: getHeaders() }),
+
+  // Recipient groups
+  getRecipientGroups: () =>
+    axios.get(`${API_URL}/recipient-groups`, { headers: getHeaders() }),
+  createRecipientGroup: (data) =>
+    axios.post(`${API_URL}/recipient-groups`, data, { headers: getHeaders() }),
+  updateRecipientGroup: (id, data) =>
+    axios.patch(`${API_URL}/recipient-groups/${id}`, data, { headers: getHeaders() }),
+  deleteRecipientGroup: (id) =>
+    axios.delete(`${API_URL}/recipient-groups/${id}`, { headers: getHeaders() }),
+
+  // Noticeboard recipient preview
+  previewNoticeboardRecipients: (recipientFilter) =>
+    axios.post(`${API_URL}/noticeboard/preview-recipients`, { recipientFilter }, { headers: getHeaders() }),
 };
 
 // Audit log
