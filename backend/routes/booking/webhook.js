@@ -26,6 +26,31 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
       data: { status: 'CONFIRMED' },
     });
     console.log(`Booking confirmed for payment intent ${paymentIntent.id}`);
+
+    // Check if this is a shop order
+    const shopOrder = await prisma.shopOrder.findUnique({
+      where: { stripePaymentIntentId: paymentIntent.id },
+      include: {
+        items: true,
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+    });
+
+    if (shopOrder && shopOrder.status === 'PENDING_PAYMENT') {
+      await prisma.shopOrder.update({
+        where: { id: shopOrder.id },
+        data: { status: 'ORDERED' },
+      });
+
+      try {
+        const shopEmailService = require('../services/shopEmailService');
+        await shopEmailService.sendOrderConfirmationEmail(shopOrder.user, shopOrder);
+      } catch (emailErr) {
+        console.error('Shop order confirmation email failed:', emailErr.message);
+      }
+
+      console.log(`[SHOP] Order ${shopOrder.id} confirmed`);
+    }
   }
 
   if (event.type === 'payment_intent.payment_failed' || event.type === 'payment_intent.canceled') {

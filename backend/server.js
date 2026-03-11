@@ -178,6 +178,8 @@ app.use('/api/booking/memberships', require('./routes/booking/memberships'));
 app.use('/api/booking/waitlist', require('./routes/booking/waitlist'));
 app.use('/api/booking/admin', require('./routes/booking/admin'));
 app.use('/api/booking/templates', require('./routes/booking/templates'));
+app.use('/api/booking/shop/admin', require('./routes/booking/shopAdmin'));
+app.use('/api/booking/shop', require('./routes/booking/shop'));
 
 // Booking: daily session generation cron
 const cron = require('node-cron');
