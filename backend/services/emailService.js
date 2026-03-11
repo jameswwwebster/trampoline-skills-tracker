@@ -292,17 +292,41 @@ class EmailService {
     }, { to: email, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount, loginUrl });
   }
 
-  async sendSessionReminderEmail(email, firstName, sessionDate, startTime, endTime, availableSlots) {
-    const dateStr = new Date(sessionDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-    const subject = `Spaces still available — ${dateStr}`;
+  async sendWeeklySessionReminderEmail(email, firstName, sessions) {
+    // sessions: [{ date, startTime, endTime, availableSlots }]
+    const rows = sessions.map(s => {
+      const dateStr = new Date(s.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      return `<tr>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee">${dateStr}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee">${s.startTime}–${s.endTime}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:right">${s.availableSlots} space${s.availableSlots !== 1 ? 's' : ''}</td>
+      </tr>`;
+    }).join('');
+
+    const base = BASE_URL();
     return this.sendEmail({
       to: email,
-      subject,
-      html: brandedHtml('Session reminder', `
+      subject: 'Sessions available this week — Trampoline Life',
+      html: brandedHtml('Sessions this week', `
         <p style="margin-top:0">Hi ${firstName},</p>
-        <p>There are still <strong>${availableSlots} spaces</strong> available for tomorrow's session on <strong>${dateStr}</strong> (${startTime}–${endTime}).</p>
-        ${ctaButton(`${BASE_URL()}/booking`, 'Book now')}
+        <p>Here's a look at what's available to book this week:</p>
+        <table style="width:100%;border-collapse:collapse;font-size:0.9rem;margin-bottom:1rem">
+          <thead>
+            <tr style="background-color:#f3eefe">
+              <th style="padding:7px 10px;text-align:left">Date</th>
+              <th style="padding:7px 10px;text-align:left">Time</th>
+              <th style="padding:7px 10px;text-align:right">Spaces</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${ctaButton(`${base}/booking`, 'Book a session')}
+        ${muted('To stop receiving these weekly emails, log in and update your notification preferences in My Account.')}
       `),
+      text: `Hi ${firstName},\n\nHere are the sessions available to book this week:\n\n${sessions.map(s => {
+        const dateStr = new Date(s.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+        return `${dateStr} ${s.startTime}–${s.endTime} (${s.availableSlots} space${s.availableSlots !== 1 ? 's' : ''})`;
+      }).join('\n')}\n\nBook at: ${base}/booking\n\nTo unsubscribe, log in and update your notification preferences in My Account.`,
     });
   }
 

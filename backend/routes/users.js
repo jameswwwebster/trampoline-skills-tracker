@@ -14,6 +14,7 @@ const updateProfileSchema = Joi.object({
   lastName: Joi.string().min(2).max(50).optional(),
   email: Joi.string().email().optional(),
   phone: Joi.string().allow('').optional(),
+  weeklySessionReminder: Joi.boolean().optional(),
 });
 
 const changePasswordSchema = Joi.object({

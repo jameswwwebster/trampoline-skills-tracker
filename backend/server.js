@@ -276,47 +276,75 @@ cron.schedule('* * * * *', async () => {
   }
 });
 
-// Session reminder — runs daily at 08:00
-cron.schedule('0 8 * * *', async () => {
+// Weekly session reminder — runs every Monday at 08:00
+cron.schedule('0 8 * * 1', async () => {
   try {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    const dayAfter = new Date(tomorrow);
-    dayAfter.setDate(dayAfter.getDate() + 1);
+    // Collect sessions for the next 7 days (Mon–Sun)
+    const weekStart = new Date();
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
 
-    const instances = await prisma.sessionInstance.findMany({
-      where: {
-        date: { gte: tomorrow, lt: dayAfter },
-        cancelledAt: null,
-        template: { is: { club: { is: { emailEnabled: true, sessionReminderEnabled: true } } } },
-      },
-      include: {
-        template: { include: { club: true } },
-        bookings: { where: { status: 'CONFIRMED' }, include: { lines: true } },
-      },
+    const clubs = await prisma.club.findMany({
+      where: { isArchived: false, emailEnabled: true, sessionReminderEnabled: true },
+      select: { id: true },
     });
 
-    for (const instance of instances) {
-      const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
-      const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
-      const availableSlots = Math.max(0, capacity - bookedCount);
-      if (availableSlots === 0) continue;
+    for (const club of clubs) {
+      const instances = await prisma.sessionInstance.findMany({
+        where: {
+          date: { gte: weekStart, lt: weekEnd },
+          cancelledAt: null,
+          template: { is: { clubId: club.id } },
+        },
+        include: {
+          template: true,
+          bookings: { where: { status: 'CONFIRMED' }, include: { lines: true } },
+        },
+        orderBy: { date: 'asc' },
+      });
+
+      // Only include sessions that still have availability
+      const availableSessions = instances
+        .map(inst => {
+          const bookedCount = inst.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+          const capacity = inst.openSlotsOverride ?? inst.template.openSlots;
+          const availableSlots = Math.max(0, capacity - bookedCount);
+          return { date: inst.date, startTime: inst.template.startTime, endTime: inst.template.endTime, availableSlots };
+        })
+        .filter(s => s.availableSlots > 0);
+
+      if (availableSessions.length === 0) continue;
+
+      // Exclude guardians who have an active membership for any of their gymnasts
+      // (members attend without booking and don't need session availability reminders)
+      const guardianIdsWithActiveMembership = await prisma.user.findMany({
+        where: {
+          clubId: club.id,
+          gymnasts: { some: { memberships: { some: { status: 'ACTIVE', clubId: club.id } } } },
+        },
+        select: { id: true },
+      }).then(rows => rows.map(r => r.id));
 
       const members = await prisma.user.findMany({
-        where: { clubId: instance.template.clubId, isArchived: false, email: { not: null } },
+        where: {
+          clubId: club.id,
+          isArchived: false,
+          email: { not: null },
+          weeklySessionReminder: true,
+          id: { notIn: guardianIdsWithActiveMembership },
+        },
         select: { email: true, firstName: true },
       });
 
       for (const member of members) {
-        await emailService.sendSessionReminderEmail(
-          member.email, member.firstName, instance.date,
-          instance.template.startTime, instance.template.endTime, availableSlots
+        await emailService.sendWeeklySessionReminderEmail(
+          member.email, member.firstName, availableSessions
         ).catch(() => {});
       }
     }
   } catch (err) {
-    console.error('Session reminder cron error:', err);
+    console.error('Weekly session reminder cron error:', err);
   }
 });
 

@@ -29,6 +29,7 @@ model User {
   archivedReason                String?
   isArchived                    Boolean           @default(false)
   stripeCustomerId              String?
+  weeklySessionReminder         Boolean           @default(true)
   awardedCertificates           Certificate[]     @relation("AwardedCertificates")
   physicallyAwardedCertificates Certificate[]     @relation("PhysicallyAwardedCertificates")
   printedCertificates           Certificate[]     @relation("PrintedCertificates")

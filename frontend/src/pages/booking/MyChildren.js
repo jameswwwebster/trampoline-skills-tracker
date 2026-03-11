@@ -509,6 +509,53 @@ function MembershipCard({ membership }) {
   );
 }
 
+function NotificationPreferences({ user, onSaved }) {
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const toggle = async () => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      const res = await axios.put(
+        `${API_URL}/users/profile`,
+        { weeklySessionReminder: !user.weeklySessionReminder },
+        { headers: getHeaders() }
+      );
+      onSaved(res.data.user);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      // silently ignore — preference is non-critical
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section style={{ marginBottom: '2rem' }}>
+      <h3>Notifications</h3>
+      <div className="bk-card">
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={user?.weeklySessionReminder !== false}
+            onChange={toggle}
+            disabled={saving}
+          />
+          <span>
+            <strong>Weekly session reminder</strong>
+            <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--booking-text-muted)', marginTop: '0.1rem' }}>
+              Receive a Monday morning email showing available sessions for the week.
+            </span>
+          </span>
+        </label>
+        {saved && <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: 'var(--booking-success)' }}>Saved</p>}
+      </div>
+    </section>
+  );
+}
+
 export default function MyChildren() {
   const { user, updateUser } = useAuth();
   const [gymnasts, setGymnasts] = useState([]);
@@ -771,6 +818,8 @@ export default function MyChildren() {
           <GymnastCard key={g.id} gymnast={g} onUpdated={load} />
         ))}
       </section>
+
+      <NotificationPreferences user={user} onSaved={updateUser} />
     </div>
   );
 }
