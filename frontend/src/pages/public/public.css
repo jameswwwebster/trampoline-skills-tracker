@@ -10,7 +10,7 @@
 
 /* ─── Nav ───────────────────────────────────────────────────────────────── */
 .pub-nav {
-  background: #1a1a2e;
+  background: var(--secondary-color);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -54,20 +54,21 @@
   align-items: center;
   transition: color 0.15s;
 }
-.pub-nav-social:hover { color: var(--secondary-color); }
+.pub-nav-social:hover { color: #fff; }
 
 .pub-nav-cta {
-  background: var(--secondary-color);
+  background: transparent;
   color: #fff;
   padding: 0.45rem 1rem;
   border-radius: 6px;
+  border: 2px solid #fff;
   font-size: 0.85rem;
   font-weight: 600;
   text-decoration: none;
-  transition: opacity 0.15s;
+  transition: background 0.15s;
   white-space: nowrap;
 }
-.pub-nav-cta:hover { opacity: 0.9; }
+.pub-nav-cta:hover { background: rgba(255,255,255,0.15); }
 
 /* Hamburger — hidden on desktop */
 .pub-nav-hamburger {
@@ -91,9 +92,9 @@
 .pub-nav-mobile {
   display: flex;
   flex-direction: column;
-  background: #1a1a2e;
+  background: var(--secondary-color);
   padding: 0.5rem 0 1rem;
-  border-top: 1px solid rgba(255,255,255,0.1);
+  border-top: 1px solid rgba(255,255,255,0.2);
 }
 
 .pub-nav-mobile-link {
@@ -115,7 +116,7 @@
   color: rgba(255, 255, 255, 0.85);
   display: flex;
 }
-.pub-nav-mobile-social a:hover { color: var(--secondary-color); }
+.pub-nav-mobile-social a:hover { color: #fff; }
 
 /* ─── Footer ───────────────────────────────────────────────────────────── */
 .pub-footer {
@@ -180,26 +181,25 @@
 
 /* ─── Hero ──────────────────────────────────────────────────────────────── */
 .pub-hero {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  min-height: 420px;
+  background: #000;
   display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.pub-hero-overlay {
+.pub-hero-image {
   width: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 1rem;
+  max-height: 480px;
+  object-fit: cover;
+  object-position: center;
+  display: block;
 }
 
 .pub-hero-content {
   max-width: 720px;
   text-align: center;
   color: #fff;
+  padding: 3rem 1.5rem;
 }
 
 .pub-hero-headline {
@@ -216,7 +216,7 @@
 
 .pub-hero-body {
   font-size: clamp(1rem, 2.5vw, 1.15rem);
-  opacity: 0.9;
+  opacity: 0.85;
   margin: 0 0 2rem;
   line-height: 1.6;
 }
@@ -225,6 +225,7 @@
   display: inline-block;
   background: var(--secondary-color);
   color: #fff;
+  border: 2px solid #fff;
   padding: 0.75rem 2rem;
   border-radius: 8px;
   font-size: 1rem;
@@ -236,7 +237,7 @@
 
 /* ─── Sessions ──────────────────────────────────────────────────────────── */
 .pub-sessions {
-  background: #1a1a2e;
+  background: var(--secondary-color);
   color: #fff;
   padding: 4rem 1rem;
   text-align: center;
@@ -264,7 +265,7 @@
 .pub-sessions-price {
   font-size: clamp(1.6rem, 4vw, 2.2rem);
   font-weight: 800;
-  color: var(--secondary-color);
+  color: #fff;
   margin: 0 0 0.25rem;
 }
 
@@ -285,7 +286,7 @@
 }
 
 .pub-sessions-link {
-  color: var(--secondary-color);
+  color: #fff;
   text-decoration: underline;
 }
 

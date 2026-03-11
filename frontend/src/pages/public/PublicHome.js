@@ -11,19 +11,18 @@ export default function PublicHome() {
       <PublicNav />
       <main className="pub-main">
         {/* Hero */}
-        <section className="pub-hero" style={{ backgroundImage: `url(${HERO_IMAGE})` }}>
-          <div className="pub-hero-overlay">
-            <div className="pub-hero-content">
-              <h1 className="pub-hero-headline">
-                The only <span className="pub-accent">trampoline</span> and <span className="pub-accent">DMT</span> club in Newcastle
-              </h1>
-              <p className="pub-hero-body">
-                Trampoline Life offers recreational and competitive Trampoline and DMT training
-                from qualified coaches in a safe environment. Come along and try it out for
-                yourselves; young or old, everybody is welcome!
-              </p>
-              <a href="/booking" className="pub-hero-cta">Book a session</a>
-            </div>
+        <section className="pub-hero">
+          <img src={HERO_IMAGE} alt="Trampoline Life" className="pub-hero-image" />
+          <div className="pub-hero-content">
+            <h1 className="pub-hero-headline">
+              The only <span className="pub-accent">trampoline</span> and <span className="pub-accent">DMT</span> club in Newcastle
+            </h1>
+            <p className="pub-hero-body">
+              Trampoline Life offers recreational and competitive Trampoline and DMT training
+              from qualified coaches in a safe environment. Come along and try it out for
+              yourselves; young or old, everybody is welcome!
+            </p>
+            <a href="/booking" className="pub-hero-cta">Book a session</a>
           </div>
         </section>
 
