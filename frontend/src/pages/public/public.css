@@ -1,1 +1,174 @@
-/* Public website styles — uses existing CSS custom properties from App.css */
+/* ─── Public site foundation ───────────────────────────────────────────── */
+.public-page {
+  font-family: var(--font-family);
+  color: var(--text-color);
+  min-height: 100vh;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Nav ───────────────────────────────────────────────────────────────── */
+.pub-nav {
+  background: #1a1a2e;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.pub-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pub-nav-brand {
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pub-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.pub-nav-link {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.15s;
+}
+.pub-nav-link:hover { color: #fff; }
+
+.pub-nav-social {
+  color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.pub-nav-social:hover { color: var(--secondary-color); }
+
+.pub-nav-cta {
+  background: var(--secondary-color);
+  color: #fff;
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.pub-nav-cta:hover { opacity: 0.9; }
+
+/* Hamburger — hidden on desktop */
+.pub-nav-hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+.pub-nav-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #fff;
+  border-radius: 2px;
+}
+
+/* Mobile menu */
+.pub-nav-mobile {
+  flex-direction: column;
+  background: #1a1a2e;
+  padding: 0.5rem 0 1rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.pub-nav-mobile-link {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  display: block;
+}
+.pub-nav-mobile-link:hover { color: #fff; }
+
+.pub-nav-mobile-social {
+  display: flex;
+  gap: 1.25rem;
+  padding: 0.75rem 1.25rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+.pub-nav-mobile-social a {
+  color: rgba(255, 255, 255, 0.85);
+  display: flex;
+}
+.pub-nav-mobile-social a:hover { color: var(--secondary-color); }
+
+/* ─── Footer ───────────────────────────────────────────────────────────── */
+.pub-footer {
+  background: #1a1a2e;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.82rem;
+  margin-top: auto;
+}
+
+.pub-footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pub-footer-links {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.pub-footer-links a {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.pub-footer-links a:hover { color: #fff; }
+
+/* ─── Section common ────────────────────────────────────────────────────── */
+.pub-section {
+  padding: 4rem 1rem;
+}
+
+.pub-section-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.pub-section-title {
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-weight: 800;
+  margin: 0 0 1.5rem;
+  color: var(--text-color);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .pub-nav-links { display: none; }
+  .pub-nav-hamburger { display: flex; }
+
+  .pub-footer-inner { flex-direction: column; text-align: center; }
+  .pub-footer-links { justify-content: center; flex-wrap: wrap; }
+}
