@@ -61,6 +61,7 @@ import ShopConfirmation from './pages/booking/shop/ShopConfirmation';
 import MyOrders from './pages/booking/shop/MyOrders';
 import Noticeboard from './pages/booking/Noticeboard';
 import AdminShopOrders from './pages/booking/admin/AdminShopOrders';
+import AdminRecipientGroups from './pages/booking/admin/AdminRecipientGroups';
 import PublicHome from './pages/public/PublicHome';
 import PublicPolicies from './pages/public/PublicPolicies';
 import './App.css';
@@ -214,6 +215,7 @@ function AppContent() {
           <Route path="my-orders" element={<MyOrders />} />
           <Route path="noticeboard" element={<Noticeboard />} />
           <Route path="admin/shop-orders" element={<AdminShopOrders />} />
+          <Route path="admin/recipient-groups" element={<AdminRecipientGroups />} />
         </Route>
       </Routes>
     </div>
