@@ -62,6 +62,15 @@
   color: #fff;
 }
 
+.booking-layout__help {
+  color: rgba(255,255,255,0.5);
+  font-size: 0.78rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.booking-layout__help:hover { color: #25d366; }
+
 /* Link row: wraps to multiple lines on small screens */
 .booking-layout__links {
   display: flex;

@@ -228,6 +228,23 @@
 }
 .pub-hero-cta:hover { opacity: 0.9; }
 
+.pub-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.pub-hero-login {
+  color: rgba(255,255,255,0.85);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.pub-hero-login:hover { color: #fff; }
+
 /* ─── Sessions ──────────────────────────────────────────────────────────── */
 .pub-sessions {
   background: var(--secondary-color);
@@ -453,12 +470,20 @@
 }
 .pub-contact-email:hover { color: var(--secondary-color); }
 
-.pub-contact-whatsapp {
-  color: var(--text-color);
+.pub-contact-whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #25d366;
+  color: #fff;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: background 0.15s;
 }
-.pub-contact-whatsapp:hover { color: #25d366; }
+.pub-contact-whatsapp-btn:hover { background: #1ebe5d; }
 
 .pub-contact-map {
   border-radius: 8px;

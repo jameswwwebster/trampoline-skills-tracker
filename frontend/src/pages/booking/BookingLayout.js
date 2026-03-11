@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, NavLink, Link } from 'react-router-dom';
+import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { bookingApi } from '../../utils/bookingApi';
 import './BookingLayout.css';
@@ -19,6 +19,7 @@ function getTotalCartCount() {
 
 export default function BookingLayout() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
   const [paymentBanner, setPaymentBanner] = useState(null); // null | 'pending' | 'needs_method'
   const [cartCount, setCartCount] = useState(getTotalCartCount);
@@ -59,7 +60,16 @@ export default function BookingLayout() {
                 {user.firstName} {user.lastName}
               </span>
             )}
-            <button className="booking-layout__logout" onClick={logout}>Log out</button>
+            <a
+            href="https://wa.me/447700149040"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="booking-layout__help"
+            title="Having trouble? Message us on WhatsApp"
+          >
+            Having trouble?
+          </a>
+            <button className="booking-layout__logout" onClick={() => { logout(); navigate('/'); }}>Log out</button>
           </div>
         </div>
 

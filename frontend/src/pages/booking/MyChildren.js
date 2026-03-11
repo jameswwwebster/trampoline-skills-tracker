@@ -519,7 +519,7 @@ function NotificationPreferences({ user, onSaved }) {
     try {
       const res = await axios.put(
         `${API_URL}/users/profile`,
-        { weeklySessionReminder: !user.weeklySessionReminder },
+        { weeklySessionReminder: user.weeklySessionReminder === false },
         { headers: getHeaders() }
       );
       onSaved(res.data.user);
