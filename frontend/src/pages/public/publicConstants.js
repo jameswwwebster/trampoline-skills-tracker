@@ -2,7 +2,7 @@ export const SOCIAL_LINKS = {
   instagram: 'https://www.instagram.com/trampolinelife_ncl/',
   tiktok: 'https://www.tiktok.com/@trampolinelifencl',
   facebook: 'https://www.facebook.com/trampolinelife/',
-  whatsapp: 'tel:+447700149040',
+  whatsapp: 'https://wa.me/447700149040',
 };
 
 // Kit shop URL
