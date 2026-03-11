@@ -25,6 +25,12 @@
 - Update another user's role (ADMIN; cannot change own role)
 - Must-change-password flag on first login after admin reset
 
+### Account Inactivity & Deletion
+- Accounts inactive for ~6 months receive an inactivity warning email
+- Warning states the account will be permanently deleted in one week if no login
+- Logging in resets the inactivity timer
+- Account auto-deleted after the warning period if still inactive
+
 ### Child / Share Code Access
 - Generate personal share code (6-digit, per user)
 - Child login with share code + name (no password required)
@@ -115,6 +121,17 @@
 - Confirm British Gymnastics insurance (guardian or staff)
 - Manage photo consents (coaching use, social media)
 - Track insurance confirmation date and confirming user
+
+### British Gymnastics (BG) Membership Number
+- Parent enters BG membership number for a gymnast in My Account
+- Number is stored with status: PENDING (awaiting verification) / INVALID / CONFIRMED
+- Coach/admin verifies numbers via the admin member view
+- If a number is marked INVALID: warning shown in My Account, email sent to guardian with instructions
+- If a number cannot be confirmed (not added to correct club on BG portal): guardian directed to add "Trampoline Life" as a club on mybg.british-gymnastics.org
+- Grace period applies — bookings allowed while number is PENDING; blocked only once INVALID or if past session threshold with no number
+- Coach receives digest email listing all gymnasts with unverified BG numbers (with days pending)
+- Guardian can update/correct their BG number at any time
+- `pastSessionCount` tracked per gymnast — triggers BG number requirement after 2 sessions
 
 ---
 
@@ -208,23 +225,54 @@
 
 ### Memberships (Recurring Billing)
 - Admin creates membership for a gymnast: sets monthly amount, start date
-- Creates Stripe Customer for guardian (if not already exists), stored on User record
+- If start date is today or in the past: activates immediately via `membershipActivationService`
+- If start date is in the future: status is SCHEDULED until the activation service processes it
+- On activation: creates Stripe Customer for guardian (if not already exists), stored on User record
 - Creates Stripe Subscription with billing cycle anchored to 1st of next month (pro-rata first payment)
-- Existing guardian credits auto-applied to first invoice as negative invoice items
-- If credits fully cover first invoice: invoice finalised and paid out-of-band, subscription activates immediately — no card needed
-- Member sees PENDING_PAYMENT status; follows hosted Stripe URL to complete payment setup
-- First month pro-rata amount displayed in My Account so member understands the charge
-- Membership statuses: PENDING_PAYMENT, ACTIVE, PAUSED, CANCELLED
-- Admin can pause membership (calls Stripe `pause_collection`)
-- Admin can resume membership
+- Existing guardian credits auto-applied to the pending first invoice as negative invoice items
+- **Credits fully cover first invoice**: invoice finalised and paid out-of-band; subscription activates immediately; `needsPaymentMethod = true` set on membership so member is prompted to add a card for future billing
+- **Credits partially cover or don't apply**: member directed to hosted Stripe invoice URL to complete card payment; subscription moves to ACTIVE after payment
+- First month pro-rata amount calculated and displayed in My Account (with "from [date]" label for ongoing amount)
+- `needsPaymentMethod` flag triggers a "Payment method needed" card in My Account, explaining credits covered the first payment and a card is needed for future months
+- Member adds card via Stripe SetupIntent (`POST /:id/setup-intent`) collected in-app with Stripe Elements
+- On confirmation (`POST /:id/confirm-payment-method`): card set as default on Stripe Customer and Subscription; clears `needsPaymentMethod` on all of that guardian's memberships
+- Membership statuses: **SCHEDULED** → **PENDING_PAYMENT** → **ACTIVE** → **PAUSED** / **CANCELLED**
+- Admin can pause membership (calls Stripe `pause_collection: void`)
+- Admin can resume membership (clears `pause_collection`)
 - Admin can cancel membership (calls Stripe subscription cancel)
-- Admin can edit monthly amount (updates Stripe subscription item price)
+- Admin can edit monthly amount inline in admin table; syncs to Stripe subscription price
+- Amount update supports proration behaviour: `create_prorations` (adjust current cycle pro-rata) or `none` (take effect from next billing date)
 - Stripe webhooks: `invoice.paid` → mark ACTIVE, send payment success email; `invoice.payment_failed` → send failure email; `customer.subscription.deleted` → mark CANCELLED; `customer.subscription.paused` → mark PAUSED; `customer.subscription.resumed` → mark ACTIVE
 - Gymnasts with ACTIVE membership excluded from open slot counts (they attend without booking)
+- Admin memberships table: click monthly amount cell to edit inline
 
 ---
 
-## 8. Guardian Request System (Self-Service Signup)
+## 8. Transactional Emails
+
+All emails gated by `club.emailEnabled`. Sent via Gmail SMTP (nodemailer). All use the branded HTML template with solid purple header and CTA button.
+
+| Email | Trigger | Recipient |
+|---|---|---|
+| Account created | Admin creates user account | New user — contains set-password link (1-hour expiry) |
+| Welcome | User registers themselves | Registering user |
+| Password reset | Forgot password request | Requesting user — contains reset link (1-hour expiry) |
+| Invite | Admin sends club invite | Invitee — contains accept link |
+| Membership created | Admin creates membership | Guardian — contains payment setup link, fee explanation, flexibility info |
+| Payment success | `invoice.paid` Stripe webhook | Guardian — amount paid, next billing date |
+| Payment failed | `invoice.payment_failed` webhook | Guardian — retry instructions, link to My Account |
+| Payment reminder | Manually triggered by admin | Guardian — upcoming payment amount and date |
+| Waitlist offer | Slot opens on full session | Waitlisted user — claim link, 24-hour expiry |
+| Session reminder | Triggered for sessions with open slots (day before) | Prospective members — session date/time, book now link |
+| BG number invalid | Admin marks BG number as INVALID | Guardian — instructions to correct number and add club on BG portal |
+| BG number digest | Triggered for coaches (periodic) | Coach — table of all gymnasts with unverified BG numbers and days pending |
+| Inactivity warning | Account inactive for ~6 months | User — 1-week warning before auto-deletion |
+| Guardian connection confirmed | Guardian linked to gymnast | Guardian |
+| Guardian invitation | Gymnast created with guardian email | Guardian — accept link |
+
+---
+
+## 9. Guardian Request System (Self-Service Signup)
 - Parent submits request using club code + gymnast name/DOB + their own info
 - Admin reviews and matches to actual gymnast
 - Admin can create new parent account during approval
@@ -233,7 +281,7 @@
 
 ---
 
-## 9. Dashboard & Reporting
+## 10. Dashboard & Reporting
 - Level distribution — gymnast count per level/working level
 - Completions by competition type
 - Gymnast list per level
@@ -241,7 +289,7 @@
 
 ---
 
-## 10. Audit Logging (ADMIN)
+## 11. Audit Logging (ADMIN)
 - All create / update / delete actions logged with timestamp and acting user
 - Covers: role changes, member add/remove, credit assignments, certificate awards, booking events, membership changes
 - Searchable by entity type and entity ID
@@ -249,7 +297,7 @@
 
 ---
 
-## 11. Super Admin
+## 12. Super Admin
 - Switch between clubs via `X-Switch-Club-Id` header
 - Access all clubs' data
 - Manage global competitions
@@ -264,7 +312,7 @@ Priority order as agreed:
 
 1. **Basic club info / home page** — a public-facing landing page at `/` with club details, session times, and a link to the booking system
 2. **Competition management** — entry management, heat sheets, results, possibly linked to the existing skills/levels system
-3. **Email / messaging system** — direct messaging and bulk emails from admin to members or groups (separate from transactional emails already in place)
+3. ~~**Email / messaging system** — direct messaging and bulk emails from admin to members or groups (separate from transactional emails already in place)~~ ✓ Done
 4. **Finance summary** — admin view of revenue: bookings, memberships, credits issued/used, outstanding balances
 5. **Coach invoicing** — coaches submit invoices through the system for sessions coached; admin reviews and approves
 6. **Move the rest of the website** — migrate existing Wix content (about, contact, etc.) into this app so everything lives under one roof
@@ -275,13 +323,19 @@ Priority order as agreed:
 
 | Rule | Detail |
 |---|---|
+| BG number requirement | Triggered after 2 past confirmed sessions |
+| BG number statuses | PENDING (entered, awaiting verification) / INVALID (failed check) / CONFIRMED |
+| BG number grace period | Bookings allowed while PENDING; blocked if INVALID or no number past threshold |
 | BG Insurance | Required after 2 past confirmed sessions; blocks booking if unconfirmed |
 | Session capacity | Bookings (CONFIRMED + PENDING) count against capacity; members excluded |
 | Age restriction | Per-session minimum age enforced at booking time |
 | Credit order | Applied oldest-expiring first; partial use creates remainder credit |
 | Credit expiry | Cancellation credits: 1 month. Admin-assigned: configurable (default 90 days) |
 | Same-day cancellation | No credit issued |
+| Membership statuses | SCHEDULED → PENDING_PAYMENT → ACTIVE → PAUSED / CANCELLED |
 | Membership billing anchor | Always 1st of next calendar month; Stripe calculates pro-rata first month |
+| needsPaymentMethod | Set when credits fully cover first invoice; separate SetupIntent flow to collect card |
+| Amount update proration | `create_prorations` adjusts current cycle; `none` takes effect from next billing date |
 | Email gating | All outbound email blocked if `club.emailEnabled` is false |
 | Password reset token | 1-hour expiry |
 | Invites | 7-day expiry |
