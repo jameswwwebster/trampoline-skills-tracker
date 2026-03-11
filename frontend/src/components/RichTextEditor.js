@@ -50,7 +50,7 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
   if (!editor) return null;
 
   return (
-    <div className="rte">
+    <div className="rte" onClick={(e) => { if (!e.target.closest('button')) editor.commands.focus(); }}>
       <div className="rte-toolbar">
         <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold">
           <strong>B</strong>

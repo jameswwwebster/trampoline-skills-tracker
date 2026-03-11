@@ -41,16 +41,14 @@ function PostForm({ initial, onSave, onCancel }) {
             maxLength={200}
           />
         </label>
-        <label className="bk-label" style={{ display: 'block', marginBottom: '0.75rem' }}>
-          Message
-          <div style={{ marginTop: '0.25rem' }}>
-            <RichTextEditor
-              value={form.body}
-              onChange={html => setForm(f => ({ ...f, body: html }))}
-              placeholder="Write your notice..."
-            />
-          </div>
-        </label>
+        <div style={{ marginBottom: '0.75rem' }}>
+          <p className="bk-label" style={{ margin: '0 0 0.25rem' }}>Message</p>
+          <RichTextEditor
+            value={form.body}
+            onChange={html => setForm(f => ({ ...f, body: html }))}
+            placeholder="Write your notice..."
+          />
+        </div>
         <label className="bk-label" style={{ display: 'block', marginBottom: '1rem' }}>
           Archive after
           <input
