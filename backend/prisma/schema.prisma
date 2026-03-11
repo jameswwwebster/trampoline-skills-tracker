@@ -55,6 +55,8 @@ model User {
   authoredMessages              Message[]
   messageRecipients             MessageRecipient[]
   shopOrders                    ShopOrder[]
+  noticeboardPosts              NoticeboardPost[]
+  noticeboardReads              NoticeboardRead[]
 
   @@map("users")
 }
@@ -135,6 +137,7 @@ model Club {
   auditLogs             AuditLog[]
   messages              Message[]
   archivedMemberSummaries ArchivedMemberSummary[]
+  noticeboardPosts      NoticeboardPost[]
 
   @@map("clubs")
 }
@@ -785,6 +788,31 @@ model MessageRecipient {
 
   @@index([messageId])
   @@map("message_recipients")
+}
+
+model NoticeboardPost {
+  id        String            @id @default(cuid())
+  clubId    String
+  authorId  String
+  title     String
+  body      String
+  archiveAt DateTime
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  club      Club              @relation(fields: [clubId], references: [id])
+  author    User              @relation(fields: [authorId], references: [id])
+  reads     NoticeboardRead[]
+}
+
+model NoticeboardRead {
+  id     String          @id @default(cuid())
+  postId String
+  userId String
+  readAt DateTime        @default(now())
+  post   NoticeboardPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
 }
 
 model ArchivedMemberSummary {
