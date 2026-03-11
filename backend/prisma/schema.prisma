@@ -57,6 +57,7 @@ model User {
   shopOrders                    ShopOrder[]
   noticeboardPosts              NoticeboardPost[]
   noticeboardReads              NoticeboardRead[]
+  recipientGroups               RecipientGroup[]
 
   @@map("users")
 }
@@ -138,6 +139,7 @@ model Club {
   messages              Message[]
   archivedMemberSummaries ArchivedMemberSummary[]
   noticeboardPosts      NoticeboardPost[]
+  recipientGroups       RecipientGroup[]
 
   @@map("clubs")
 }
@@ -791,17 +793,18 @@ model MessageRecipient {
 }
 
 model NoticeboardPost {
-  id        String            @id @default(cuid())
-  clubId    String
-  authorId  String
-  title     String
-  body      String
-  archiveAt DateTime
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  club      Club              @relation(fields: [clubId], references: [id])
-  author    User              @relation(fields: [authorId], references: [id])
-  reads     NoticeboardRead[]
+  id              String            @id @default(cuid())
+  clubId          String
+  authorId        String
+  title           String
+  body            String
+  archiveAt       DateTime
+  recipientFilter Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  club            Club              @relation(fields: [clubId], references: [id])
+  author          User              @relation(fields: [authorId], references: [id])
+  reads           NoticeboardRead[]
 }
 
 model NoticeboardRead {
@@ -813,6 +816,18 @@ model NoticeboardRead {
   user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
+}
+
+model RecipientGroup {
+  id              String   @id @default(cuid())
+  clubId          String
+  name            String
+  recipientFilter Json
+  createdById     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  club            Club     @relation(fields: [clubId], references: [id])
+  createdBy       User     @relation(fields: [createdById], references: [id])
 }
 
 model ArchivedMemberSummary {
