@@ -3,6 +3,9 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
 const Joi = require('joi');
+const { resolveRecipients } = require('../services/recipientResolver');
+const { sendMessage } = require('../services/messageSender');
+const emailService = require('../services/emailService');
 
 const prisma = new PrismaClient();
 const ADMIN_ROLES = ['CLUB_ADMIN', 'COACH'];
@@ -11,6 +14,7 @@ const postSchema = Joi.object({
   title: Joi.string().max(200).required(),
   body: Joi.string().required(),
   archiveAt: Joi.string().isoDate().required(),
+  recipientFilter: Joi.object().optional(),
 });
 
 // GET /api/noticeboard — active posts annotated with isRead
@@ -50,11 +54,52 @@ router.post('/', auth, requireRole(ADMIN_ROLES), async (req, res) => {
         title: value.title,
         body: value.body,
         archiveAt: new Date(value.archiveAt),
+        ...(value.recipientFilter && { recipientFilter: value.recipientFilter }),
       },
       include: { author: { select: { firstName: true, lastName: true } } },
     });
 
     res.status(201).json({ ...post, isRead: false });
+
+    // Send email notifications (non-fatal)
+    if (value.recipientFilter) {
+      try {
+        const club = await prisma.club.findUnique({ where: { id: req.user.clubId } });
+        if (club && club.emailEnabled) {
+          const recipients = await resolveRecipients(value.recipientFilter, req.user.clubId);
+          for (const u of recipients) {
+            try {
+              await emailService.sendEmail({
+                to: u.email,
+                subject: value.title,
+                html: value.body,
+              });
+            } catch (sendErr) {
+              console.error('Failed to send noticeboard email to', u.email, sendErr);
+            }
+          }
+        }
+      } catch (emailErr) {
+        console.error('Noticeboard email send error:', emailErr);
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/noticeboard/preview-recipients — resolve filter without saving
+// IMPORTANT: This route MUST be before /:id to avoid 'preview-recipients' being treated as an id
+router.post('/preview-recipients', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const { recipientFilter } = req.body;
+    if (!recipientFilter) return res.status(400).json({ error: 'recipientFilter required' });
+    const recipients = await resolveRecipients(recipientFilter, req.user.clubId);
+    res.json({
+      count: recipients.length,
+      preview: recipients.slice(0, 5).map(r => ({ name: `${r.firstName} ${r.lastName}`, email: r.email })),
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
