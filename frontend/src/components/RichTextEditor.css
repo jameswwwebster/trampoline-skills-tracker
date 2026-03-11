@@ -1,0 +1,75 @@
+.rte {
+  border: 1px solid var(--booking-border);
+  border-radius: var(--booking-radius);
+  overflow: hidden;
+  background: var(--booking-bg-white);
+}
+
+.rte-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--booking-border);
+  background: var(--booking-bg-light);
+  flex-wrap: wrap;
+}
+
+.rte-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 0.2rem 0.45rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--booking-text-on-light);
+  font-family: var(--booking-font);
+  transition: background 0.1s, border-color 0.1s;
+  min-width: 28px;
+  text-align: center;
+}
+
+.rte-btn:hover {
+  background: var(--booking-bg-white);
+  border-color: var(--booking-border);
+}
+
+.rte-btn--active {
+  background: var(--booking-accent);
+  color: #fff;
+  border-color: var(--booking-accent);
+}
+
+.rte-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--booking-border);
+  margin: 0 0.2rem;
+  flex-shrink: 0;
+}
+
+.rte-content {
+  padding: 0.6rem 0.75rem;
+  min-height: 120px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.rte-content .ProseMirror {
+  outline: none;
+  min-height: 100px;
+}
+
+.rte-content .ProseMirror p { margin: 0 0 0.5rem; }
+.rte-content .ProseMirror p:last-child { margin-bottom: 0; }
+.rte-content .ProseMirror ul,
+.rte-content .ProseMirror ol { padding-left: 1.5rem; margin: 0 0 0.5rem; }
+.rte-content .ProseMirror a { color: var(--booking-accent); }
+.rte-content .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--booking-text-muted);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
