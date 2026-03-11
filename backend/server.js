@@ -27,6 +27,7 @@ const guardianInviteRoutes = require('./routes/guardianInvites');
 const userCustomFieldRoutes = require('./routes/userCustomFields');
 const systemAdminRoutes = require('./routes/systemAdmin');
 const messageRoutes = require('./routes/messages');
+const noticeboardRouter = require('./routes/noticeboard');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -168,6 +169,7 @@ app.use('/api/user-custom-fields', userCustomFieldRoutes);
 app.use('/api/system-admin', systemAdminRoutes);
 app.use('/api/super-admin', require('./routes/superAdmin'));
 app.use('/api/messages', messageRoutes);
+app.use('/api/noticeboard', noticeboardRouter);
 
 // Booking routes
 app.use('/api/booking/sessions', require('./routes/booking/sessions'));
