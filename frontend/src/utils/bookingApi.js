@@ -166,6 +166,18 @@ export const bookingApi = {
     axios.delete(`${API_URL}/messages/${id}`, { headers: getHeaders() }),
   getArchivedMembers: () =>
     axios.get(`${API_URL}/messages/archived-members`, { headers: getHeaders() }),
+
+  // Noticeboard
+  getNoticeboard: () =>
+    axios.get(`${API_URL}/noticeboard`, { headers: getHeaders() }),
+  createNoticeboardPost: (data) =>
+    axios.post(`${API_URL}/noticeboard`, data, { headers: getHeaders() }),
+  updateNoticeboardPost: (id, data) =>
+    axios.patch(`${API_URL}/noticeboard/${id}`, data, { headers: getHeaders() }),
+  deleteNoticeboardPost: (id) =>
+    axios.delete(`${API_URL}/noticeboard/${id}`, { headers: getHeaders() }),
+  markNoticeboardRead: (id) =>
+    axios.post(`${API_URL}/noticeboard/${id}/read`, {}, { headers: getHeaders() }),
 };
 
 // Audit log
