@@ -3,8 +3,6 @@ import PublicNav from './PublicNav';
 import PublicFooter from './PublicFooter';
 import './public.css';
 
-const HERO_IMAGE = 'https://static.wixstatic.com/media/010c39_6310c1e27ecf44e199e0055176fcbb5a~mv2.png/v1/crop/x_0,y_9,w_1080,h_383,q_90,enc_avif,quality_auto/010c39_6310c1e27ecf44e199e0055176fcbb5a~mv2.png';
-
 export default function PublicHome() {
   return (
     <div className="public-page">
@@ -12,7 +10,6 @@ export default function PublicHome() {
       <main className="pub-main">
         {/* Hero */}
         <section className="pub-hero">
-          <img src={HERO_IMAGE} alt="Trampoline Life" className="pub-hero-image" />
           <div className="pub-hero-content">
             <h1 className="pub-hero-headline">
               The only <span className="pub-accent">trampoline</span> and <span className="pub-accent">DMT</span> club in Newcastle

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { SOCIAL_LINKS, SHOP_URL } from './publicConstants';
 
+const BANNER_IMAGE = 'https://static.wixstatic.com/media/010c39_6310c1e27ecf44e199e0055176fcbb5a~mv2.png/v1/crop/x_0,y_9,w_1080,h_383,q_90,enc_avif,quality_auto/010c39_6310c1e27ecf44e199e0055176fcbb5a~mv2.png';
+
 function InstagramIcon() {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
@@ -114,6 +116,8 @@ export default function PublicNav() {
           <Link to="/booking" className="pub-nav-cta" style={{ margin: '0.5rem 1rem' }}>Book a session</Link>
         </div>
       )}
+
+      <img src={BANNER_IMAGE} alt="" className="pub-nav-banner" aria-hidden="true" />
     </nav>
   );
 }

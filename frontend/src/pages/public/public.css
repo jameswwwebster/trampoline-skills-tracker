@@ -187,11 +187,11 @@
   align-items: center;
 }
 
-.pub-hero-image {
+.pub-nav-banner {
   width: 100%;
-  max-height: 480px;
+  max-height: 160px;
   object-fit: cover;
-  object-position: center;
+  object-position: center top;
   display: block;
 }
 
@@ -325,8 +325,10 @@
 
 .pub-welfare-inner {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 2.5rem;
+  text-align: center;
+  gap: 1.5rem;
 }
 
 .pub-welfare-photo {
@@ -361,12 +363,6 @@
 }
 .pub-welfare-phone:hover { color: var(--secondary-color); }
 
-@media (max-width: 600px) {
-  .pub-welfare-inner {
-    flex-direction: column;
-    text-align: center;
-  }
-}
 
 /* ─── Sponsors ──────────────────────────────────────────────────────────── */
 .pub-sponsors {
