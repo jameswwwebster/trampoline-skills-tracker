@@ -27,11 +27,16 @@
 }
 
 .pub-nav-brand {
-  color: #fff;
-  font-weight: 700;
-  font-size: 1.1rem;
   text-decoration: none;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pub-nav-brand-img {
+  height: 40px;
+  width: auto;
+  display: block;
 }
 
 .pub-nav-links {
@@ -187,13 +192,6 @@
   align-items: center;
 }
 
-.pub-nav-banner {
-  width: 100%;
-  max-height: 160px;
-  object-fit: cover;
-  object-position: center top;
-  display: block;
-}
 
 .pub-hero-content {
   max-width: 720px;

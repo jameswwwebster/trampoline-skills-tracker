@@ -45,7 +45,9 @@ export default function PublicNav() {
   return (
     <nav className="pub-nav">
       <div className="pub-nav-inner">
-        <Link to="/" className="pub-nav-brand">Trampoline Life</Link>
+        <Link to="/" className="pub-nav-brand">
+          <img src={BANNER_IMAGE} alt="Trampoline Life" className="pub-nav-brand-img" />
+        </Link>
 
         {/* Desktop links */}
         <div className="pub-nav-links">
@@ -117,7 +119,6 @@ export default function PublicNav() {
         </div>
       )}
 
-      <img src={BANNER_IMAGE} alt="" className="pub-nav-banner" aria-hidden="true" />
     </nav>
   );
 }
