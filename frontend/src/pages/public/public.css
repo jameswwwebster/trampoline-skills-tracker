@@ -446,3 +446,72 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ─── Policies page ─────────────────────────────────────────────────────── */
+.pub-policies-main {
+  background: #fff;
+}
+
+.pub-policies-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.pub-policies-page-title {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-weight: 800;
+  margin: 0 0 2.5rem;
+  color: var(--text-color);
+}
+
+.pub-policy-section {
+  margin-bottom: 3rem;
+  padding-bottom: 3rem;
+  border-bottom: 1px solid #eee;
+}
+.pub-policy-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.pub-policy-section h2 {
+  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+  font-weight: 800;
+  color: var(--secondary-color);
+  margin: 0 0 0.75rem;
+}
+
+.pub-policy-intro {
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+}
+
+.pub-policy-section ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.pub-policy-section li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.pub-policy-subheading {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 1.25rem 0 0.75rem;
+  color: var(--text-color);
+}
+
+.pub-policy-links li {
+  margin-bottom: 0.5rem;
+}
+
+.pub-policy-links a {
+  color: var(--secondary-color);
+  text-decoration: none;
+}
+.pub-policy-links a:hover {
+  text-decoration: underline;
+}
