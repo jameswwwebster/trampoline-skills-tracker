@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { SOCIAL_LINKS, SHOP_URL } from './publicConstants';
+import { SOCIAL_LINKS } from './publicConstants';
 
 
 function InstagramIcon() {
@@ -50,7 +50,7 @@ export default function PublicNav() {
         <div className="pub-nav-links">
           <a href={isHome ? '#sessions' : '/#sessions'} className="pub-nav-link">Sessions</a>
           <Link to="/policies" className="pub-nav-link">Policies</Link>
-          <a href={SHOP_URL} target="_blank" rel="noopener noreferrer" className="pub-nav-link">Shop</a>
+          <Link to="/booking/shop" className="pub-nav-link">Shop</Link>
           <a
             href={SOCIAL_LINKS.instagram}
             target="_blank"
@@ -105,7 +105,7 @@ export default function PublicNav() {
         <div className="pub-nav-mobile" onClick={() => setMenuOpen(false)}>
           <a href={isHome ? '#sessions' : '/#sessions'} className="pub-nav-mobile-link">Sessions</a>
           <Link to="/policies" className="pub-nav-mobile-link">Policies</Link>
-          <a href={SHOP_URL} target="_blank" rel="noopener noreferrer" className="pub-nav-mobile-link">Shop</a>
+          <Link to="/booking/shop" className="pub-nav-mobile-link">Shop</Link>
           <div className="pub-nav-mobile-social">
             <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><InstagramIcon /></a>
             <a href={SOCIAL_LINKS.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok"><TikTokIcon /></a>

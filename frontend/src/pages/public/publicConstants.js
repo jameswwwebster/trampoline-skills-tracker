@@ -5,5 +5,3 @@ export const SOCIAL_LINKS = {
   whatsapp: 'https://wa.me/447700149040',
 };
 
-// Kit shop URL
-export const SHOP_URL = 'https://trampoline-life.sumupstore.com';
