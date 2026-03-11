@@ -61,7 +61,7 @@ router.patch('/orders/:id/status', auth, requireRole(STAFF_ROLES), async (req, r
     const updated = await prisma.shopOrder.update({
       where: { id: order.id },
       data: { status },
-      include: { items: true, user: { select: { id: true, name: true, email: true } } },
+      include: { items: true, user: { select: { id: true, firstName: true, lastName: true, email: true } } },
     });
 
     await audit({
