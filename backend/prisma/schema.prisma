@@ -54,6 +54,7 @@ model User {
   auditLogs                     AuditLog[]
   authoredMessages              Message[]
   messageRecipients             MessageRecipient[]
+  shopOrders                    ShopOrder[]
 
   @@map("users")
 }
@@ -535,6 +536,34 @@ model BookingLine {
   @@map("booking_lines")
 }
 
+model ShopOrder {
+  id                    String          @id @default(cuid())
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id])
+  status                ShopOrderStatus @default(PENDING_PAYMENT)
+  stripePaymentIntentId String          @unique
+  total                 Int
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  items                 ShopOrderItem[]
+
+  @@map("shop_orders")
+}
+
+model ShopOrderItem {
+  id            String    @id @default(cuid())
+  orderId       String
+  order         ShopOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  productName   String
+  size          String
+  quantity      Int
+  customisation String?
+  price         Int
+
+  @@map("shop_order_items")
+}
+
 model Credit {
   id              String    @id @default(cuid())
   userId          String
@@ -650,6 +679,13 @@ enum BookingStatus {
   PENDING
   CONFIRMED
   CANCELLED
+}
+
+enum ShopOrderStatus {
+  PENDING_PAYMENT
+  ORDERED
+  ARRIVED
+  FULFILLED
 }
 
 enum MembershipStatus {
