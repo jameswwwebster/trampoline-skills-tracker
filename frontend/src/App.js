@@ -52,6 +52,8 @@ import AdminMembers from './pages/booking/admin/AdminMembers';
 import AdminMessages from './pages/booking/admin/AdminMessages';
 import AdminBgNumbers from './pages/booking/admin/AdminBgNumbers';
 import AuditLog from './pages/booking/admin/AuditLog';
+import PublicHome from './pages/public/PublicHome';
+import PublicPolicies from './pages/public/PublicPolicies';
 import './App.css';
 
 function PageMeta() {
@@ -135,6 +137,9 @@ function AppContent() {
       <PageMeta />
       <RateLimitBanner />
       <Routes>
+        {/* Public website routes — no authentication required */}
+        <Route path="/" element={<PublicHome />} />
+        <Route path="/policies" element={<PublicPolicies />} />
         <Route path="/login" element={<Login />} />
         <Route path="/child-login" element={<ChildLogin />} />
         <Route path="/register" element={<Register />} />
