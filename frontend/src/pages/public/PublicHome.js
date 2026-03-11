@@ -62,18 +62,58 @@ export default function PublicHome() {
           </div>
         </section>
 
-        {/* Welfare Officer */}
-        <section className="pub-section pub-welfare">
-          <div className="pub-section-inner pub-welfare-inner">
-            <img
-              src="https://static.wixstatic.com/media/010c39_0dc74357e2cb4848806f93e84723d3b6~mv2.jpg/v1/fill/w_632,h_632,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/010c39_0dc74357e2cb4848806f93e84723d3b6~mv2.jpg"
-              alt="Wendy — Welfare Officer"
-              className="pub-welfare-photo"
-            />
-            <div className="pub-welfare-info">
-              <p className="pub-welfare-title">Welfare Officer</p>
-              <h2 className="pub-welfare-name">Wendy</h2>
-              <a href="tel:07761185480" className="pub-welfare-phone">07761 185480</a>
+        {/* Team */}
+        <section className="pub-section pub-team">
+          <div className="pub-section-inner">
+            <h2 className="pub-section-title" style={{ textAlign: 'center' }}>Meet the Team</h2>
+            <div className="pub-team-grid">
+              <div className="pub-team-card">
+                <img src="/james-coach.png" alt="James" className="pub-team-photo" />
+                <p className="pub-team-role">Lead Coach</p>
+                <h3 className="pub-team-name">James</h3>
+                <ul className="pub-team-quals">
+                  <li>Trampoline: PC</li>
+                  <li>DMT: HPC</li>
+                  <li>Regional Judge</li>
+                </ul>
+              </div>
+              <div className="pub-team-card">
+                <img
+                  src="https://static.wixstatic.com/media/010c39_065755d1a67a488f9578ad6d1f265f3e~mv2.png/v1/fill/w_475,h_475,al_c,lg_1,q_85,enc_avif,quality_auto/010c39_065755d1a67a488f9578ad6d1f265f3e~mv2.png"
+                  alt="Leo"
+                  className="pub-team-photo"
+                />
+                <p className="pub-team-role">Coach</p>
+                <h3 className="pub-team-name">Leo</h3>
+                <ul className="pub-team-quals">
+                  <li>Trampoline Level 3.3</li>
+                  <li>DMT Club Coach</li>
+                  <li>Regional Judge</li>
+                </ul>
+              </div>
+              <div className="pub-team-card">
+                <img
+                  src="https://static.wixstatic.com/media/010c39_4c6a1e1fa4ac4748a5bf2c12d6d492e6~mv2.jpg/v1/fill/w_506,h_506,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/010c39_4c6a1e1fa4ac4748a5bf2c12d6d492e6~mv2.jpg"
+                  alt="Lucy"
+                  className="pub-team-photo"
+                />
+                <p className="pub-team-role">Coach</p>
+                <h3 className="pub-team-name">Lucy</h3>
+                <ul className="pub-team-quals">
+                  <li>Trampoline Level 3.2</li>
+                  <li>DMT Club Coach</li>
+                </ul>
+              </div>
+              <div className="pub-team-card">
+                <img
+                  src="https://static.wixstatic.com/media/010c39_0dc74357e2cb4848806f93e84723d3b6~mv2.jpg/v1/fill/w_632,h_632,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/010c39_0dc74357e2cb4848806f93e84723d3b6~mv2.jpg"
+                  alt="Wendy"
+                  className="pub-team-photo"
+                />
+                <p className="pub-team-role">Welfare Officer</p>
+                <h3 className="pub-team-name">Wendy</h3>
+                <a href="tel:07761185480" className="pub-team-contact">07761 185480</a>
+              </div>
             </div>
           </div>
         </section>

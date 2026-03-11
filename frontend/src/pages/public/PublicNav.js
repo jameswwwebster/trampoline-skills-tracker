@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { SOCIAL_LINKS, SHOP_URL } from './publicConstants';
 
-const BANNER_IMAGE = 'https://static.wixstatic.com/media/010c39_6310c1e27ecf44e199e0055176fcbb5a~mv2.png/v1/crop/x_0,y_9,w_1080,h_383,q_90,enc_avif,quality_auto/010c39_6310c1e27ecf44e199e0055176fcbb5a~mv2.png';
 
 function InstagramIcon() {
   return (
@@ -45,9 +44,7 @@ export default function PublicNav() {
   return (
     <nav className="pub-nav">
       <div className="pub-nav-inner">
-        <Link to="/" className="pub-nav-brand">
-          <img src={BANNER_IMAGE} alt="Trampoline Life" className="pub-nav-brand-img" />
-        </Link>
+        <Link to="/" className="pub-nav-brand">Trampoline Life</Link>
 
         {/* Desktop links */}
         <div className="pub-nav-links">
