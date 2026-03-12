@@ -132,6 +132,13 @@
   color: #fff !important;
   font-weight: 700;
   border-radius: var(--booking-radius);
+  transition: filter 0.15s;
+}
+
+.booking-layout__cart-link:hover,
+.booking-layout__cart-link.active {
+  filter: brightness(1.15);
+  color: #fff !important;
 }
 
 .booking-layout__payment-banner {
