@@ -104,7 +104,7 @@ export default function BookingLayout() {
         </div>
 
         {/* Bottom row: scrollable links */}
-        <div className="booking-layout__links">
+        <div className="booking-layout__links" ref={dropdownRef}>
           {!isAdmin && (
             <>
               {/* Bookings dropdown */}
@@ -173,7 +173,7 @@ export default function BookingLayout() {
             </>
           )}
           {isAdmin && (
-            <div className="booking-layout__admin-group" ref={dropdownRef}>
+            <div className="booking-layout__admin-group">
               <span className="booking-layout__admin-divider" />
               <span className="booking-layout__admin-label">Admin</span>
               <div className="booking-layout__dropdown">
