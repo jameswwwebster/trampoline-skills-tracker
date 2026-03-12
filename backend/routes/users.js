@@ -179,7 +179,7 @@ router.put('/profile', auth, async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { firstName, lastName, email, phone } = value;
+    const { firstName, lastName, email, phone, weeklySessionReminder } = value;
 
     // If email is being updated, check if it's already taken
     if (email && email !== req.user.email) {
@@ -200,6 +200,7 @@ router.put('/profile', auth, async (req, res) => {
         lastName: lastName || req.user.lastName,
         email: email || req.user.email,
         ...(phone !== undefined && { phone: phone || null }),
+        ...(weeklySessionReminder !== undefined && { weeklySessionReminder }),
       },
       include: {
         club: true,
