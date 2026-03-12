@@ -78,6 +78,12 @@ export default function BookingLayout() {
       .catch(() => {});
   }, [user, isAdmin]);
 
+  useEffect(() => {
+    if (isAdmin && location.pathname === '/booking') {
+      navigate('/booking/admin', { replace: true });
+    }
+  }, [isAdmin, location.pathname, navigate]);
+
   return (
     <div className="booking-layout">
       <nav className="booking-layout__nav">
