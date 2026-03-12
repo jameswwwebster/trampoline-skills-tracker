@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { bookingApi } from '../../utils/bookingApi';
 import './BookingLayout.css';
@@ -20,6 +20,9 @@ function getTotalCartCount() {
 export default function BookingLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isBookingsActive = location.pathname === '/booking' || location.pathname.startsWith('/booking/my-bookings');
+  const isShopActive = location.pathname.startsWith('/booking/shop') || location.pathname.startsWith('/booking/my-orders');
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
   const [paymentBanner, setPaymentBanner] = useState(null); // null | 'pending' | 'needs_method'
   const [cartCount, setCartCount] = useState(getTotalCartCount);
