@@ -512,21 +512,24 @@ function MembershipCard({ membership }) {
 function NotificationPreferences({ user, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   const toggle = async () => {
     setSaving(true);
     setSaved(false);
+    setSaveError(null);
+    const newValue = user.weeklySessionReminder === false;
     try {
       const res = await axios.put(
         `${API_URL}/users/profile`,
-        { weeklySessionReminder: user.weeklySessionReminder === false },
+        { weeklySessionReminder: newValue },
         { headers: getHeaders() }
       );
       onSaved(res.data.user);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {
-      // silently ignore — preference is non-critical
+    } catch (err) {
+      setSaveError(err.response?.data?.error || err.message || 'Failed to save');
     } finally {
       setSaving(false);
     }
@@ -551,6 +554,7 @@ function NotificationPreferences({ user, onSaved }) {
           </span>
         </label>
         {saved && <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: 'var(--booking-success)' }}>Saved</p>}
+        {saveError && <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: 'var(--booking-danger)' }}>{saveError}</p>}
       </div>
     </section>
   );
