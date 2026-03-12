@@ -105,26 +105,73 @@ export default function BookingLayout() {
 
         {/* Bottom row: scrollable links */}
         <div className="booking-layout__links">
-          <NavLink to="/booking" end>Calendar</NavLink>
-          {!isAdmin && cartCount > 0 && (
-            <NavLink to="/booking/cart" className="booking-layout__cart-link">
-              Cart ({cartCount})
-            </NavLink>
+          {!isAdmin && (
+            <>
+              {/* Bookings dropdown */}
+              <div className="booking-layout__dropdown">
+                <button
+                  className={`booking-layout__dropdown-btn${openDropdown === 'bookings' || isBookingsActive ? ' active' : ''}`}
+                  onClick={() => toggleDropdown('bookings')}
+                >
+                  Bookings ▾
+                </button>
+                {openDropdown === 'bookings' && (
+                  <div className="booking-layout__dropdown-menu">
+                    <NavLink to="/booking" end className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
+                      Book
+                    </NavLink>
+                    <NavLink to="/booking/my-bookings" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
+                      My Bookings
+                    </NavLink>
+                  </div>
+                )}
+              </div>
+
+              {/* Shop dropdown */}
+              <div className="booking-layout__dropdown">
+                <button
+                  className={`booking-layout__dropdown-btn${openDropdown === 'shop' || isShopActive ? ' active' : ''}`}
+                  onClick={() => toggleDropdown('shop')}
+                >
+                  Shop ▾
+                </button>
+                {openDropdown === 'shop' && (
+                  <div className="booking-layout__dropdown-menu">
+                    <NavLink to="/booking/shop" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
+                      Shop
+                    </NavLink>
+                    <NavLink to="/booking/my-orders" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
+                      My Orders
+                    </NavLink>
+                  </div>
+                )}
+              </div>
+
+              {/* Noticeboard */}
+              <NavLink
+                to="/booking/noticeboard"
+                style={{ position: 'relative' }}
+                onClick={() => { setNoticeBanner(false); setOpenDropdown(null); }}
+              >
+                Noticeboard
+                {unreadCount > 0 && (
+                  <span className="booking-layout__unread-badge">{unreadCount}</span>
+                )}
+              </NavLink>
+
+              {/* Account */}
+              <NavLink to="/booking/my-account" onClick={() => setOpenDropdown(null)}>
+                Account
+              </NavLink>
+
+              {/* Cart — standalone, conditional, visually inverted */}
+              {cartCount > 0 && (
+                <NavLink to="/booking/cart" className="booking-layout__cart-link" onClick={() => setOpenDropdown(null)}>
+                  Cart ({cartCount})
+                </NavLink>
+              )}
+            </>
           )}
-          <NavLink to="/booking/my-bookings">My Bookings</NavLink>
-          <NavLink to="/booking/my-account">My Account</NavLink>
-          <NavLink to="/booking/shop">Shop</NavLink>
-          <NavLink to="/booking/my-orders">My Orders</NavLink>
-          <NavLink
-            to="/booking/noticeboard"
-            style={{ position: 'relative' }}
-            onClick={() => setNoticeBanner(false)}
-          >
-            Noticeboard
-            {unreadCount > 0 && (
-              <span className="booking-layout__unread-badge">{unreadCount}</span>
-            )}
-          </NavLink>
           {isAdmin && (
             <div className="booking-layout__admin-group" ref={dropdownRef}>
               <span className="booking-layout__admin-divider" />
