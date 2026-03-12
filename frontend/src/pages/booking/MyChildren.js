@@ -525,7 +525,6 @@ function NotificationPreferences({ user, onSaved }) {
         { weeklySessionReminder: newValue },
         { headers: getHeaders() }
       );
-      console.log('[toggle] weeklySessionReminder in response:', res.data.user?.weeklySessionReminder);
       onSaved(res.data.user);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
