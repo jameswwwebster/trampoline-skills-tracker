@@ -83,6 +83,20 @@ describe('GET /api/booking/sessions', () => {
     const res = await request(app).get(`/api/booking/sessions?year=${YEAR}&month=${MONTH}`);
     expect(res.status).toBe(401);
   });
+
+  it('returns pricePerGymnast from the session template', async () => {
+    const sessionDate = new Date(YEAR, MONTH - 1, 15);
+    const pricedSession = await createSession(club, sessionDate, { pricePerGymnast: 750 });
+
+    const res = await request(app)
+      .get(`/api/booking/sessions?year=${YEAR}&month=${MONTH}`)
+      .set('Authorization', `Bearer ${tokenFor(parent)}`);
+
+    expect(res.status).toBe(200);
+    const found = res.body.find(x => x.id === pricedSession.instance.id);
+    expect(found).toBeDefined();
+    expect(found.pricePerGymnast).toBe(750);
+  });
 });
 
 // ─── Session detail ───────────────────────────────────────────────────────────

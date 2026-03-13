@@ -59,7 +59,7 @@ async function createGymnast(club, guardian, overrides = {}) {
  * @param {object} club
  * @param {Date}   date    defaults to 7 days from now (future session)
  */
-async function createSession(club, date) {
+async function createSession(club, date, templateOverrides = {}) {
   const sessionDate = date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   // Normalise to midnight UTC
   sessionDate.setUTCHours(0, 0, 0, 0);
@@ -71,6 +71,7 @@ async function createSession(club, date) {
       startTime: '10:00',
       endTime: '11:00',
       openSlots: 10,
+      ...templateOverrides,
     },
   });
 

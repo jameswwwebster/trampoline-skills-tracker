@@ -49,6 +49,7 @@ router.get('/', auth, async (req, res) => {
         availableSlots: Math.max(0, capacity - bookedCount),
         cancelledAt: instance.cancelledAt,
         isBooked: confirmedBookings.some(b => b.userId === req.user.id),
+        pricePerGymnast: instance.template.pricePerGymnast,
       };
     });
 
