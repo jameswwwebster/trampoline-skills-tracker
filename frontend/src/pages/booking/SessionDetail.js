@@ -223,6 +223,8 @@ export default function SessionDetail({
             <h3>Who's coming?</h3>
 
             {bookableGymnasts.map(g => {
+              const isDmtSession = session?.type === 'DMT';
+              const dmtBlocked = isDmtSession && !g.dmtApproved;
               const selected = selectedGymnastIds.includes(g.id);
               const now = Date.now();
               const bgBlocked = (() => {
@@ -235,7 +237,7 @@ export default function SessionDetail({
                 return false;
               })();
               const atCapacity = !selected && selectedGymnastIds.length >= session.availableSlots;
-              const blocked = bgBlocked;
+              const blocked = bgBlocked || dmtBlocked;
               return (
                 <div key={g.id}>
                   <div
@@ -251,7 +253,13 @@ export default function SessionDetail({
                     <span className="session-detail__option-check">
                       {selected && '✓'}
                     </span>
-                    <span>{g.firstName} {g.lastName}{g.isSelf ? ' (me)' : ''}</span>
+                    <span>{g.firstName} {g.lastName}{g.isSelf ? ' (me)' : ''}
+                      {dmtBlocked && (
+                        <span style={{ fontSize: '0.78rem', color: 'var(--booking-text-muted)', marginLeft: '0.4rem' }}>
+                          Not approved for DMT — speak to a coach.
+                        </span>
+                      )}
+                    </span>
                   </div>
                   {bgBlocked && (
                     <p style={{ fontSize: '0.8rem', color: 'var(--booking-danger)', margin: '-0.25rem 0 0.5rem 0.5rem' }}>

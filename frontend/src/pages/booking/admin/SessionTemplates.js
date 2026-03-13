@@ -6,7 +6,7 @@ import { getTemplates, createTemplate, updateTemplate, toggleTemplate, deleteTem
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const EMPTY_FORM = { dayOfWeek: '1', startTime: '', endTime: '', openSlots: '12', minAge: '', pricePerGymnast: '6', information: '' };
+const EMPTY_FORM = { dayOfWeek: '1', startTime: '', endTime: '', openSlots: '12', minAge: '', pricePerGymnast: '6', information: '', type: 'STANDARD' };
 
 // Minimal TipTap toolbar
 function Toolbar({ editor }) {
@@ -124,6 +124,7 @@ export default function SessionTemplates() {
       minAge: t.minAge != null ? String(t.minAge) : '',
       pricePerGymnast: String(t.pricePerGymnast / 100),
       information: t.information || '',
+      type: t.type,
     });
   };
 
@@ -137,6 +138,7 @@ export default function SessionTemplates() {
     pricePerGymnast: Math.round(parseFloat(form.pricePerGymnast) * 100) || 600,
     minAge: form.minAge !== '' ? parseInt(form.minAge) : null,
     information: form.information || null,
+    type: form.type,
   });
 
   const handleSave = async (applyToFutureInstances) => {
@@ -244,6 +246,12 @@ export default function SessionTemplates() {
               Price per gymnast (£)
               <input type="number" step="0.01" min="0.01" value={form.pricePerGymnast} onChange={e => setForm(f => ({ ...f, pricePerGymnast: e.target.value }))} className="bk-input" required />
             </label>
+            <label className="auth-label">Session type
+              <select name="type" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="auth-input">
+                <option value="STANDARD">Standard</option>
+                <option value="DMT">DMT</option>
+              </select>
+            </label>
           </div>
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, marginBottom: '1rem' }}>
             Session information (optional)
@@ -285,6 +293,7 @@ export default function SessionTemplates() {
                 <div style={{ fontSize: '0.82rem', color: 'var(--booking-text-muted)', marginTop: '0.15rem' }}>
                   {t.openSlots} slots &middot; £{(t.pricePerGymnast / 100).toFixed(2)}{t.minAge ? ` \u00b7 ${t.minAge}+` : ''}
                   {t.information && <span> &middot; <em>Has info text</em></span>}
+                  {t.type === 'DMT' && <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--booking-accent)' }}>DMT</span>}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>

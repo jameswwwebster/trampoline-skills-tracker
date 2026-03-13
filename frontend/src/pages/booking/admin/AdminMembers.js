@@ -340,6 +340,8 @@ function GymnastRow({ g, memberships, onUpdated }) {
   const [dobValue, setDobValue] = useState('');
   const [dobSaving, setDobSaving] = useState(false);
   const [dobError, setDobError] = useState(null);
+  const [dmtLoading, setDmtLoading] = useState(false);
+  const [dmtError, setDmtError] = useState(null);
 
   const handleSaveDob = async () => {
     if (!dobValue) return;
@@ -356,6 +358,19 @@ function GymnastRow({ g, memberships, onUpdated }) {
     } catch (err) {
       setDobError(err.response?.data?.error || 'Failed to save.');
       setDobSaving(false);
+    }
+  };
+
+  const handleDmtToggle = async () => {
+    setDmtLoading(true);
+    setDmtError(null);
+    try {
+      await bookingApi.approveDmt(g.id, !g.dmtApproved);
+      onUpdated();
+    } catch (err) {
+      setDmtError(err.response?.data?.error || 'Failed to update DMT approval.');
+    } finally {
+      setDmtLoading(false);
     }
   };
 
@@ -484,6 +499,34 @@ function GymnastRow({ g, memberships, onUpdated }) {
             {bgInsuranceDisplay()}
           </li>
         )}
+        {/* DMT approval */}
+        <li style={{ ...infoItemStyle, borderBottom: 'none' }}>
+          <span style={keyStyle}>DMT</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {g.dmtApproved ? (
+              <span style={{ color: 'var(--booking-success)' }}>
+                ✓ Approved
+                {g.dmtApprovedBy && (
+                  <span style={{ fontWeight: 400, color: 'var(--booking-text-muted)', marginLeft: '0.3rem' }}>
+                    by {g.dmtApprovedBy.firstName} {g.dmtApprovedBy.lastName}
+                    {g.dmtApprovedAt && ` on ${new Date(g.dmtApprovedAt).toLocaleDateString('en-GB')}`}
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span style={{ color: 'var(--booking-text-muted)' }}>Not approved</span>
+            )}
+            <button
+              className="bk-btn bk-btn--sm"
+              style={{ fontSize: '0.75rem', border: '1px solid var(--booking-border)' }}
+              disabled={dmtLoading}
+              onClick={handleDmtToggle}
+            >
+              {g.dmtApproved ? 'Revoke' : 'Approve'}
+            </button>
+            {dmtError && <span style={{ color: 'var(--booking-danger)', fontSize: '0.75rem' }}>{dmtError}</span>}
+          </span>
+        </li>
         {/* Emergency contact (adult participants only) */}
         {g.isSelf && (
           <li style={{ ...infoItemStyle, borderBottom: 'none' }}>

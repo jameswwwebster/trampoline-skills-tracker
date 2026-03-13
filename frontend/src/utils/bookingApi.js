@@ -25,6 +25,9 @@ export const bookingApi = {
   updateConsents: (gymnastId, data) =>
     axios.patch(`${API_URL}/gymnasts/${gymnastId}/consents`, data, { headers: getHeaders() }),
 
+  approveDmt: (gymnastId, approved) =>
+    axios.patch(`${API_URL}/gymnasts/${gymnastId}/dmt-approval`, { approved }, { headers: getHeaders() }),
+
   setBgNumber: (gymnastId, bgNumber) =>
     axios.patch(`${API_URL}/gymnasts/${gymnastId}/bg-number`, { bgNumber }, { headers: getHeaders() }),
   verifyBgNumber: (gymnastId, action) =>

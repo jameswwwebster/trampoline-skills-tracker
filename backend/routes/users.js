@@ -291,7 +291,10 @@ router.get('/:userId', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
           { userId: req.params.userId },
         ],
       },
-      include: { consents: true },
+      include: {
+        consents: true,
+        dmtApprovedBy: { select: { firstName: true, lastName: true } },
+      },
     });
 
     const gymnastsWithCount = await Promise.all(gymnasts.map(async (g) => {
