@@ -186,31 +186,36 @@ router.post('/admin-add-child', auth, requireRole(['CLUB_ADMIN', 'COACH']), asyn
 
 // PATCH /api/gymnasts/:id/dmt-approval  (coach/admin only)
 router.patch('/:id/dmt-approval', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
-  const { id } = req.params;
-  const { approved } = req.body;
+  try {
+    const { id } = req.params;
+    const { approved } = req.body;
 
-  if (typeof approved !== 'boolean') {
-    return res.status(400).json({ error: 'approved must be a boolean' });
+    if (typeof approved !== 'boolean') {
+      return res.status(400).json({ error: 'approved must be a boolean' });
+    }
+
+    const gymnast = await prisma.gymnast.findFirst({
+      where: { id, clubId: req.user.clubId },
+    });
+    if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
+
+    const data = approved
+      ? { dmtApproved: true, dmtApprovedAt: new Date(), dmtApprovedById: req.user.id }
+      : { dmtApproved: false, dmtApprovedAt: null, dmtApprovedById: null };
+
+    const updated = await prisma.gymnast.update({ where: { id }, data });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'gymnast.dmt_approval', entityType: 'Gymnast', entityId: id,
+      metadata: { approved, gymnastId: id },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
   }
-
-  const gymnast = await prisma.gymnast.findFirst({
-    where: { id, clubId: req.user.clubId },
-  });
-  if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
-
-  const data = approved
-    ? { dmtApproved: true, dmtApprovedAt: new Date(), dmtApprovedById: req.user.id }
-    : { dmtApproved: false, dmtApprovedAt: null, dmtApprovedById: null };
-
-  const updated = await prisma.gymnast.update({ where: { id }, data });
-
-  await audit({
-    userId: req.user.id, clubId: req.user.clubId,
-    action: 'gymnast.dmt_approval', entityType: 'Gymnast', entityId: id,
-    metadata: { approved, gymnastId: id },
-  });
-
-  res.json(updated);
 });
 
 // PATCH /api/gymnasts/:id/bg-number/verify
