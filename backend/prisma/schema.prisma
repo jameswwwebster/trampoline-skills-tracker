@@ -58,6 +58,7 @@ model User {
   noticeboardPosts              NoticeboardPost[]
   noticeboardReads              NoticeboardRead[]
   recipientGroups               RecipientGroup[]
+  dmtApprovals                  Gymnast[]         @relation("DmtApprovedBy")
 
   @@map("users")
 }
@@ -165,6 +166,10 @@ model Gymnast {
   bgNumberEnteredBy     String?
   bgNumberVerifiedAt    DateTime?
   bgNumberVerifiedBy    String?
+  dmtApproved           Boolean           @default(false)
+  dmtApprovedAt         DateTime?
+  dmtApprovedById       String?
+  dmtApprovedBy         User?             @relation("DmtApprovedBy", fields: [dmtApprovedById], references: [id])
   archivedAt                   DateTime?
   archivedById     String?
   archivedReason   String?
@@ -485,6 +490,7 @@ model SessionTemplate {
   endTime     String            // "18:00"
   openSlots       Int               @default(12)
   pricePerGymnast Int               @default(600)   // in pence, e.g. 600 = £6.00
+  type            SessionType       @default(STANDARD)
   minAge          Int?              // null = no restriction, 16 = 16+ only
   information String?
   isActive    Boolean           @default(true)
@@ -851,4 +857,9 @@ enum BgNumberStatus {
   PENDING
   VERIFIED
   INVALID
+}
+
+enum SessionType {
+  STANDARD
+  DMT
 }
