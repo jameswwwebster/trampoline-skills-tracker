@@ -546,8 +546,8 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
       ]);
     }
 
-    // Free slot — offer to next person on waitlist
-    await processWaitlist(booking.sessionInstanceId);
+    // Free slot — offer to next person on waitlist (non-critical; don't fail the cancellation)
+    processWaitlist(booking.sessionInstanceId).catch(err => console.error('Waitlist processing failed:', err));
 
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
