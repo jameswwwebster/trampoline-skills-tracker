@@ -7,6 +7,7 @@ const {
   createParent,
   createGymnast,
   createSession,
+  createCredit,
   tokenFor,
 } = require('./helpers/seed');
 
@@ -121,5 +122,80 @@ describe('POST /api/booking/bookings/:id/cancel — credit amount matches line a
     });
     expect(credits).toHaveLength(1);
     expect(credits[0].amount).toBe(750);
+  });
+});
+
+describe('DMT booking gate', () => {
+  let dmtClub, dmtParent, dmtToken, approvedGymnast, unapprovedGymnast;
+
+  beforeAll(async () => {
+    dmtClub = await createTestClub();
+    dmtParent = await createParent(dmtClub);
+    dmtToken = tokenFor(dmtParent);
+    approvedGymnast = await createGymnast(dmtClub, dmtParent, { dmtApproved: true });
+    unapprovedGymnast = await createGymnast(dmtClub, dmtParent);
+  });
+
+  it('POST / — blocks unapproved gymnast for DMT session', async () => {
+    const { instance } = await createSession(dmtClub, undefined, { type: 'DMT' });
+    await createCredit(dmtParent, 1200); // enough to cover, eliminates Stripe
+
+    const res = await request(testApp)
+      .post('/api/booking/bookings')
+      .set('Authorization', `Bearer ${dmtToken}`)
+      .send({ sessionInstanceId: instance.id, gymnastIds: [unapprovedGymnast.id] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/not approved for DMT/i);
+  });
+
+  it('POST / — allows approved gymnast for DMT session', async () => {
+    const { instance } = await createSession(dmtClub, undefined, { type: 'DMT' });
+    await createCredit(dmtParent, 1200);
+
+    const res = await request(testApp)
+      .post('/api/booking/bookings')
+      .set('Authorization', `Bearer ${dmtToken}`)
+      .send({ sessionInstanceId: instance.id, gymnastIds: [approvedGymnast.id] });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('POST / — STANDARD session does not apply DMT gate', async () => {
+    const { instance } = await createSession(dmtClub, undefined, { type: 'STANDARD' });
+    await createCredit(dmtParent, 1200);
+
+    const res = await request(testApp)
+      .post('/api/booking/bookings')
+      .set('Authorization', `Bearer ${dmtToken}`)
+      .send({ sessionInstanceId: instance.id, gymnastIds: [unapprovedGymnast.id] });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('POST /batch — blocks unapproved gymnast for DMT session', async () => {
+    const { instance } = await createSession(dmtClub, undefined, { type: 'DMT' });
+    await createCredit(dmtParent, 1200);
+
+    const res = await request(testApp)
+      .post('/api/booking/bookings/batch')
+      .set('Authorization', `Bearer ${dmtToken}`)
+      .send({ items: [{ sessionInstanceId: instance.id, gymnastIds: [unapprovedGymnast.id] }] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/not approved for DMT/i);
+  });
+
+  it('POST /combined — blocks unapproved gymnast for DMT session', async () => {
+    const { instance } = await createSession(dmtClub, undefined, { type: 'DMT' });
+    await createCredit(dmtParent, 1200);
+
+    const res = await request(testApp)
+      .post('/api/booking/bookings/combined')
+      .set('Authorization', `Bearer ${dmtToken}`)
+      .send({ sessions: [{ sessionInstanceId: instance.id, gymnastIds: [unapprovedGymnast.id] }], shopItems: [] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/not approved for DMT/i);
   });
 });

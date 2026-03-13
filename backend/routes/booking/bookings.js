@@ -139,6 +139,20 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
+    // DMT approval check
+    if (instance.template.type === 'DMT') {
+      const gymnastsToCheck = await prisma.gymnast.findMany({
+        where: { id: { in: gymnastIds } },
+        select: { id: true, firstName: true, dmtApproved: true },
+      });
+      const blocked = gymnastsToCheck.filter(g => !g.dmtApproved);
+      if (blocked.length > 0) {
+        return res.status(400).json({
+          error: `The following gymnasts are not approved for DMT: ${blocked.map(g => g.firstName).join(', ')}`,
+        });
+      }
+    }
+
     // Verify parent owns these gymnasts
     if (req.user.role === 'PARENT') {
       const myGymnasts = await prisma.gymnast.findMany({
@@ -309,6 +323,20 @@ router.post('/batch', auth, async (req, res) => {
               return res.status(400).json({ error: `${g.firstName} does not meet the minimum age requirement for this session` });
             }
           }
+        }
+      }
+
+      // DMT approval check
+      if (instance.template.type === 'DMT') {
+        const gymnastsToCheck = await prisma.gymnast.findMany({
+          where: { id: { in: gymnastIds } },
+          select: { id: true, firstName: true, dmtApproved: true },
+        });
+        const blocked = gymnastsToCheck.filter(g => !g.dmtApproved);
+        if (blocked.length > 0) {
+          return res.status(400).json({
+            error: `The following gymnasts are not approved for DMT: ${blocked.map(g => g.firstName).join(', ')}`,
+          });
         }
       }
 
@@ -664,6 +692,20 @@ router.post('/combined', auth, async (req, res) => {
           });
           if (myGymnasts.length !== gymnastIds.length) {
             return res.status(403).json({ error: 'Access denied to one or more gymnasts' });
+          }
+        }
+
+        // DMT approval check
+        if (instance.template.type === 'DMT') {
+          const gymnastsToCheck = await prisma.gymnast.findMany({
+            where: { id: { in: gymnastIds } },
+            select: { id: true, firstName: true, dmtApproved: true },
+          });
+          const blocked = gymnastsToCheck.filter(g => !g.dmtApproved);
+          if (blocked.length > 0) {
+            return res.status(400).json({
+              error: `The following gymnasts are not approved for DMT: ${blocked.map(g => g.firstName).join(', ')}`,
+            });
           }
         }
 
