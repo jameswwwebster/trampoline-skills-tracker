@@ -134,7 +134,7 @@ export default function SessionTemplates() {
     startTime: form.startTime,
     endTime: form.endTime,
     openSlots: parseInt(form.openSlots),
-    pricePerGymnast: Math.round(parseFloat(form.pricePerGymnast) * 100),
+    pricePerGymnast: Math.round(parseFloat(form.pricePerGymnast) * 100) || 600,
     minAge: form.minAge !== '' ? parseInt(form.minAge) : null,
     information: form.information || null,
   });

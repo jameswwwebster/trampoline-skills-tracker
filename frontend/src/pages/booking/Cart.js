@@ -102,7 +102,7 @@ export default function Cart() {
   }, []);
 
   const isEmpty = bookingEntries.length === 0 && shopCart.length === 0;
-  const sessionTotal = bookingEntries.reduce((sum, [, g]) => sum + g.length * 600, 0);
+  const sessionTotal = bookingEntries.reduce((sum, [instanceId, g]) => sum + g.length * (sessionDetails[instanceId]?.pricePerGymnast ?? 600), 0);
   const shopTotal = shopCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const creditAmount = Math.min(credits, sessionTotal);
   const chargeAmount = Math.max(0, sessionTotal - creditAmount) + shopTotal;
@@ -205,7 +205,7 @@ export default function Cart() {
                         : instanceId}
                     </div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)', marginTop: '0.15rem' }}>
-                      {gymnasts.map(g => g.firstName).join(', ')} · £{((gymnasts.length * 600) / 100).toFixed(2)}
+                      {gymnasts.map(g => g.firstName).join(', ')} · £{((gymnasts.length * (sessionDetails[instanceId]?.pricePerGymnast ?? 600)) / 100).toFixed(2)}
                     </div>
                   </div>
                   <button
