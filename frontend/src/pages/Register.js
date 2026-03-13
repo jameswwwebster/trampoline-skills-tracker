@@ -61,13 +61,12 @@ const Register = () => {
         <div className="auth-brand">Trampoline Life</div>
         <h1 className="auth-heading">Create an account</h1>
 
-        <p className="auth-hint">Please enter <b>your</b> details. If you are registering on behalf of children, their details can be added after sign-up.</p>
+        <p className="auth-hint">Please enter <b style={{ color: 'var(--booking-accent)' }}>your</b> details. If you are registering on behalf of children, their details can be added after sign-up.</p>
 
         {error && <p className="auth-error">{error}</p>}
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <div className="auth-grid-2">
-            <label className="auth-label">Your first name<br/><i>Not your child's first name</i>
+            <label className="auth-label">Your first name <span style={{ color:'var(--booking-accent)', fontSize: '0.7rem' }}><i>Not your child's name</i></span>
               <input name="firstName" value={formData.firstName} onChange={handleChange}
                 className={`auth-input${validationErrors.firstName ? ' auth-input--error' : ''}`} required />
               {validationErrors.firstName && <span className="auth-field-error">{validationErrors.firstName}</span>}
@@ -77,7 +76,6 @@ const Register = () => {
                 className={`auth-input${validationErrors.lastName ? ' auth-input--error' : ''}`} required />
               {validationErrors.lastName && <span className="auth-field-error">{validationErrors.lastName}</span>}
             </label>
-          </div>
 
           <label className="auth-label">Email
             <input type="email" name="email" value={formData.email} onChange={handleChange}
