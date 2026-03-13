@@ -79,10 +79,10 @@ export default function BookingLayout() {
   }, [user, isAdmin]);
 
   useEffect(() => {
-    if (isAdmin && location.pathname === '/booking') {
+    if (isAdmin && location.pathname === '/booking' && !location.state?.skipAdminRedirect) {
       navigate('/booking/admin', { replace: true });
     }
-  }, [isAdmin, location.pathname, navigate]);
+  }, [isAdmin, location.pathname, navigate, location.state]);
 
   return (
     <div className="booking-layout">
@@ -123,7 +123,7 @@ export default function BookingLayout() {
                 </button>
                 {openDropdown === 'bookings' && (
                   <div className="booking-layout__dropdown-menu">
-                    <NavLink to="/booking" end className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
+                    <NavLink to="/booking" end state={{ skipAdminRedirect: true }} className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
                       Book
                     </NavLink>
                     <NavLink to="/booking/my-bookings" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
