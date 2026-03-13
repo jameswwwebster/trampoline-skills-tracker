@@ -6,7 +6,7 @@ import { getTemplates, createTemplate, updateTemplate, toggleTemplate, deleteTem
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const EMPTY_FORM = { dayOfWeek: '1', startTime: '', endTime: '', openSlots: '12', minAge: '', information: '' };
+const EMPTY_FORM = { dayOfWeek: '1', startTime: '', endTime: '', openSlots: '12', minAge: '', pricePerGymnast: '6', information: '' };
 
 // Minimal TipTap toolbar
 function Toolbar({ editor }) {
@@ -122,6 +122,7 @@ export default function SessionTemplates() {
       endTime: t.endTime,
       openSlots: String(t.openSlots),
       minAge: t.minAge != null ? String(t.minAge) : '',
+      pricePerGymnast: String(t.pricePerGymnast / 100),
       information: t.information || '',
     });
   };
@@ -133,6 +134,7 @@ export default function SessionTemplates() {
     startTime: form.startTime,
     endTime: form.endTime,
     openSlots: parseInt(form.openSlots),
+    pricePerGymnast: Math.round(parseFloat(form.pricePerGymnast) * 100),
     minAge: form.minAge !== '' ? parseInt(form.minAge) : null,
     information: form.information || null,
   });
@@ -238,6 +240,10 @@ export default function SessionTemplates() {
               Min age (optional)
               <input type="number" min="0" value={form.minAge} onChange={e => setForm(f => ({ ...f, minAge: e.target.value }))} className="bk-input" placeholder="None" />
             </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600 }}>
+              Price per gymnast (£)
+              <input type="number" step="0.01" min="0.01" value={form.pricePerGymnast} onChange={e => setForm(f => ({ ...f, pricePerGymnast: e.target.value }))} className="bk-input" required />
+            </label>
           </div>
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, marginBottom: '1rem' }}>
             Session information (optional)
@@ -277,7 +283,7 @@ export default function SessionTemplates() {
                   }}>{t.isActive ? 'Active' : 'Inactive'}</span>
                 </div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--booking-text-muted)', marginTop: '0.15rem' }}>
-                  {t.openSlots} slots{t.minAge ? ` \u00b7 ${t.minAge}+` : ''}
+                  {t.openSlots} slots &middot; £{(t.pricePerGymnast / 100).toFixed(2)}{t.minAge ? ` \u00b7 ${t.minAge}+` : ''}
                   {t.information && <span> &middot; <em>Has info text</em></span>}
                 </div>
               </div>
