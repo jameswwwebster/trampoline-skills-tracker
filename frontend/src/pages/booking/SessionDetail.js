@@ -85,7 +85,7 @@ export default function SessionDetail({
     }
   };
 
-  const totalAmount = selectedGymnastIds.length * 600;
+  const totalAmount = selectedGymnastIds.length * (session?.pricePerGymnast ?? 600);
   const creditAmount = Math.min(totalCreditsAvailable, totalAmount);
   const chargeAmount = Math.max(0, totalAmount - creditAmount);
 

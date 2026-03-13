@@ -18,7 +18,7 @@ export default function CartCheckout() {
   }, []);
 
   const totalSlots = cartItems.reduce((sum, item) => sum + item.gymnasts.length, 0);
-  const totalAmount = totalSlots * 600;
+  const totalAmount = cartItems.reduce((sum, item) => sum + item.gymnasts.length * (item.pricePerGymnast ?? 600), 0);
   const creditAmount = Math.min(creditsAvailable, totalAmount);
   const chargeAmount = Math.max(0, totalAmount - creditAmount);
 
@@ -75,7 +75,7 @@ export default function CartCheckout() {
             </div>
             <div style={{ fontSize: '0.875rem', color: 'var(--booking-text-muted)' }}>
               {item.gymnasts.map(g => `${g.firstName} ${g.lastName}`).join(', ')}
-              {' · '}£{((item.gymnasts.length * 600) / 100).toFixed(2)}
+              {' · '}£{((item.gymnasts.length * (item.pricePerGymnast ?? 600)) / 100).toFixed(2)}
             </div>
           </div>
         ))}
