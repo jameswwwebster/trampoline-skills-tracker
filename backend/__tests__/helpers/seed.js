@@ -86,14 +86,14 @@ async function createSession(club, date, templateOverrides = {}) {
 }
 
 /** Create a CONFIRMED booking for a parent + gymnast on a given session instance. */
-async function createConfirmedBooking(parent, gymnast, instance) {
+async function createConfirmedBooking(parent, gymnast, instance, amount = 600) {
   return prisma.booking.create({
     data: {
       userId: parent.id,
       sessionInstanceId: instance.id,
       status: 'CONFIRMED',
-      totalAmount: 600,
-      lines: { create: [{ gymnastId: gymnast.id, amount: 600 }] },
+      totalAmount: amount,
+      lines: { create: [{ gymnastId: gymnast.id, amount }] },
     },
     include: { lines: true },
   });

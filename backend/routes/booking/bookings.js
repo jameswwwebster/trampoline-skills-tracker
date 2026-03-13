@@ -55,7 +55,6 @@ async function checkBgNumbers(gymnastIds, now, pendingCounts = {}) {
   )).filter(Boolean);
 }
 
-const PRICE_PER_GYMNAST_PENCE = 600; // £6.00
 
 const createBookingSchema = Joi.object({
   sessionInstanceId: Joi.string().required(),
@@ -153,7 +152,7 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
-    const totalAmount = PRICE_PER_GYMNAST_PENCE * gymnastIds.length;
+    const totalAmount = instance.template.pricePerGymnast * gymnastIds.length;
 
     // Auto-apply available credits (oldest first), only consuming what's needed
     const availableCredits = await prisma.credit.findMany({
@@ -216,7 +215,7 @@ router.post('/', auth, async (req, res) => {
         lines: {
           create: gymnastIds.map(id => ({
             gymnastId: id,
-            amount: PRICE_PER_GYMNAST_PENCE,
+            amount: instance.template.pricePerGymnast,
           })),
         },
       },
@@ -326,7 +325,8 @@ router.post('/batch', auth, async (req, res) => {
       validatedItems.push({
         sessionInstanceId,
         gymnastIds,
-        itemAmount: PRICE_PER_GYMNAST_PENCE * gymnastIds.length,
+        pricePerGymnast: instance.template.pricePerGymnast,
+        itemAmount: instance.template.pricePerGymnast * gymnastIds.length,
       });
     }
 
@@ -383,7 +383,7 @@ router.post('/batch', auth, async (req, res) => {
           status: chargeAmount === 0 ? 'CONFIRMED' : 'PENDING',
           totalAmount: item.itemAmount,
           lines: {
-            create: item.gymnastIds.map(id => ({ gymnastId: id, amount: PRICE_PER_GYMNAST_PENCE })),
+            create: item.gymnastIds.map(id => ({ gymnastId: id, amount: item.pricePerGymnast })),
           },
         },
         include: { lines: true },
@@ -533,11 +533,11 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
           where: { id: booking.id },
           data: { status: 'CANCELLED' },
         }),
-        ...booking.lines.map(() =>
+        ...booking.lines.map((line) =>
           prisma.credit.create({
             data: {
               userId: booking.userId,
-              amount: 600,
+              amount: line.amount,
               expiresAt,
               sourceBookingId: booking.id,
             },
@@ -667,7 +667,7 @@ router.post('/combined', auth, async (req, res) => {
           }
         }
 
-        validatedSessions.push({ sessionInstanceId, gymnastIds, itemAmount: PRICE_PER_GYMNAST_PENCE * gymnastIds.length });
+        validatedSessions.push({ sessionInstanceId, gymnastIds, pricePerGymnast: instance.template.pricePerGymnast, itemAmount: instance.template.pricePerGymnast * gymnastIds.length });
       }
     }
 
@@ -745,7 +745,7 @@ router.post('/combined', auth, async (req, res) => {
           stripePaymentIntentId: paymentIntentId,
           status: paymentIntentId ? 'PENDING' : 'CONFIRMED',
           totalAmount: item.itemAmount,
-          lines: { create: item.gymnastIds.map(id => ({ gymnastId: id, amount: PRICE_PER_GYMNAST_PENCE })) },
+          lines: { create: item.gymnastIds.map(id => ({ gymnastId: id, amount: item.pricePerGymnast })) },
         },
         include: { lines: true },
       });
