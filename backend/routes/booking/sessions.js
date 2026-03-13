@@ -50,6 +50,7 @@ router.get('/', auth, async (req, res) => {
         cancelledAt: instance.cancelledAt,
         isBooked: confirmedBookings.some(b => b.userId === req.user.id),
         pricePerGymnast: instance.template.pricePerGymnast,
+        type: instance.template.type,
       };
     });
 
@@ -110,6 +111,7 @@ router.get('/:instanceId', auth, async (req, res) => {
       bookedCount,
       availableSlots: Math.max(0, capacity - bookedCount),
       cancelledAt: instance.cancelledAt,
+      type: instance.template.type,
       bookings: instance.bookings,
     });
   } catch (err) {

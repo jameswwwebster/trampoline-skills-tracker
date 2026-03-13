@@ -17,6 +17,7 @@ function createTestApp() {
   app.use('/api/booking/memberships', require('../../routes/booking/memberships'));
   app.use('/api/booking/shop/admin', require('../../routes/booking/shopAdmin'));
   app.use('/api/booking/shop', require('../../routes/booking/shop'));
+  app.use('/api/gymnasts', require('../../routes/gymnasts'));
 
   // Generic error handler
   app.use((err, req, res, _next) => {

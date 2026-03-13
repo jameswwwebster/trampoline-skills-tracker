@@ -29,7 +29,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
     const [selfGymnast, linked] = await Promise.all([
       prisma.gymnast.findFirst({
         where: { userId: req.user.id, isArchived: false },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberGraceDays: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberGraceDays: true, dmtApproved: true },
       }),
       prisma.gymnast.findMany({
         where: {
@@ -40,7 +40,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
             { userId: { not: req.user.id } },
           ],
         },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberGraceDays: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberGraceDays: true, dmtApproved: true },
       }),
     ]);
     const allGymnasts = selfGymnast
