@@ -483,8 +483,9 @@ model SessionTemplate {
   dayOfWeek   Int               // 0=Sun, 1=Mon, ... 2=Tue, 3=Wed, 4=Thu
   startTime   String            // "17:00"
   endTime     String            // "18:00"
-  openSlots   Int               @default(12)
-  minAge      Int?              // null = no restriction, 16 = 16+ only
+  openSlots       Int               @default(12)
+  pricePerGymnast Int               @default(600)   // in pence, e.g. 600 = £6.00
+  minAge          Int?              // null = no restriction, 16 = 16+ only
   information String?
   isActive    Boolean           @default(true)
   createdAt   DateTime          @default(now())
