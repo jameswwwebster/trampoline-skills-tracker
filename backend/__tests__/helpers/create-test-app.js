@@ -9,6 +9,7 @@ function createTestApp() {
   app.use(express.json());
 
   app.use('/api/auth', require('../../routes/auth'));
+  app.use('/api/booking/templates', require('../../routes/booking/templates'));
   app.use('/api/booking/sessions', require('../../routes/booking/sessions'));
   app.use('/api/booking/bookings', require('../../routes/booking/bookings'));
   app.use('/api/booking/credits', require('../../routes/booking/credits'));

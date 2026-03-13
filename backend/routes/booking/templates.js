@@ -12,6 +12,7 @@ const templateSchema = Joi.object({
   startTime: Joi.string().pattern(/^\d{2}:\d{2}$/).required(),
   endTime: Joi.string().pattern(/^\d{2}:\d{2}$/).required(),
   openSlots: Joi.number().integer().min(1).required(),
+  pricePerGymnast: Joi.number().integer().min(1).optional().default(600),
   minAge: Joi.number().integer().min(0).allow(null).optional(),
   information: Joi.string().allow('', null).optional(),
 });

@@ -45,6 +45,7 @@ async function cleanDatabase() {
 
   await prisma.membership.deleteMany({ where: { gymnastId: { in: testGymnastIds } } });
   await prisma.gymnast.deleteMany({ where: { id: { in: testGymnastIds } } });
+  await prisma.auditLog.deleteMany({ where: { userId: { in: testUserIds } } });
   await prisma.user.deleteMany({ where: { id: { in: testUserIds } } });
 
   // Delete test session instances and templates
