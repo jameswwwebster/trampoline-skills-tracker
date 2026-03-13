@@ -61,16 +61,18 @@ const Register = () => {
         <div className="auth-brand">Trampoline Life</div>
         <h1 className="auth-heading">Create an account</h1>
 
+        <p className="auth-hint">Please enter your own details as the adult member. If you are registering on behalf of children, their details can be added after sign-up.</p>
+
         {error && <p className="auth-error">{error}</p>}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-grid-2">
-            <label className="auth-label">First name
+            <label className="auth-label">Your first name
               <input name="firstName" value={formData.firstName} onChange={handleChange}
                 className={`auth-input${validationErrors.firstName ? ' auth-input--error' : ''}`} required />
               {validationErrors.firstName && <span className="auth-field-error">{validationErrors.firstName}</span>}
             </label>
-            <label className="auth-label">Last name
+            <label className="auth-label">Your last name
               <input name="lastName" value={formData.lastName} onChange={handleChange}
                 className={`auth-input${validationErrors.lastName ? ' auth-input--error' : ''}`} required />
               {validationErrors.lastName && <span className="auth-field-error">{validationErrors.lastName}</span>}

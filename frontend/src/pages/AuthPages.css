@@ -44,6 +44,13 @@
   margin-bottom: 1rem;
 }
 
+.auth-hint {
+  font-size: 0.875rem;
+  color: var(--booking-text-muted);
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
 .auth-error {
   background: rgba(231, 76, 60, 0.1);
   border: 1px solid rgba(231, 76, 60, 0.3);
