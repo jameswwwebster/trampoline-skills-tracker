@@ -79,7 +79,11 @@ export default function BookingCalendar() {
 
   const cartEntries = Array.from(cart.entries());
   const cartTotalSlots = cartEntries.reduce((sum, [, g]) => sum + g.length, 0);
-  const cartTotalAmount = cartTotalSlots * 600;
+  const cartTotalAmount = cartEntries.reduce((sum, [sessionId, gymnasts]) => {
+    const session = sessions.find(s => s.id === sessionId);
+    const price = session?.pricePerGymnast ?? 600;
+    return sum + price * gymnasts.length;
+  }, 0);
 
   const handleCartCheckout = () => {
     navigate('/booking/cart');
