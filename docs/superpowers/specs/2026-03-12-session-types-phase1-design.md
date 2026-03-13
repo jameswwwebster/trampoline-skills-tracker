@@ -67,7 +67,7 @@ Include `type` in the `data` object for both `POST /` (create) and `PUT /:id` (u
 
 ### `routes/gymnasts.js`
 
-New endpoint: `PATCH /api/gymnasts/:id/dmt-approval`
+**New endpoint:** `PATCH /api/gymnasts/:id/dmt-approval`
 
 - Auth: `requireRole(['CLUB_ADMIN', 'COACH'])`
 - Body: `{ approved: boolean }`
@@ -76,11 +76,13 @@ New endpoint: `PATCH /api/gymnasts/:id/dmt-approval`
 - Audit logged: action `gymnast.dmt_approval`, metadata `{ approved, gymnastId }`
 - Returns updated gymnast
 
-Register route before any parameterised routes to avoid Express matching `/dmt-approval` as an `:id`.
+This follows the same sub-path pattern as existing endpoints (`/:id/bg-number`, `/:id/consents`, etc.) — no special route ordering needed.
+
+**Update `GET /bookable-for-me`:** Add `dmtApproved` to the `select` clause on both the self-gymnast query and the linked-children query. `SessionDetail.js` reads gymnasts from this endpoint to populate the selection list, so `dmtApproved` must be present for the frontend eligibility check to work.
 
 ### `routes/booking/bookings.js`
 
-In `POST /`, `POST /batch`, and `POST /combined` — after fetching the session instance, add a DMT approval check when `instance.template.type === 'DMT'`:
+In `POST /`, `POST /batch`, and `POST /combined` — after fetching the session instance, add a DMT approval check when `instance.template.type === 'DMT'`. `POST /admin-add` is intentionally excluded — staff adding gymnasts to sessions directly do not need the DMT gate.
 
 ```js
 if (instance.template.type === 'DMT') {
@@ -101,7 +103,10 @@ This check should be placed alongside the existing age and BG number validation.
 
 ### `routes/booking/sessions.js`
 
-No change needed — `type` is returned automatically via the existing `include: { template: true }` on the session query.
+Both endpoints manually construct response objects and do not pass through the full template — `type` must be added explicitly:
+
+- `GET /` (list): add `type: instance.template.type` to the mapped object
+- `GET /:instanceId` (detail): add `type: instance.template.type` to the response object
 
 ### `server.js`
 
