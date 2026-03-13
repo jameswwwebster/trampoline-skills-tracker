@@ -111,7 +111,7 @@ export default function BookingLayout() {
 
         {/* Bottom row: scrollable links */}
         <div className="booking-layout__links" ref={dropdownRef}>
-          {!isAdmin && (
+          {(
             <>
               {/* Bookings dropdown */}
               <div className="booking-layout__dropdown">

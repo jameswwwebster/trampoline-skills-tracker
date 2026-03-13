@@ -7,7 +7,7 @@ import '../BookingCalendar.css';
 
 // ─── ManualAddForm (unchanged) ───────────────────────────────────────────────
 
-function ManualAddForm({ sessionId, onAdded }) {
+function ManualAddForm({ sessionId, bookedGymnastIds, onAdded }) {
   const [users, setUsers] = useState([]);
   const [gymnasts, setGymnasts] = useState([]);
   const [userId, setUserId] = useState('');
@@ -29,19 +29,25 @@ function ManualAddForm({ sessionId, onAdded }) {
     }).catch(console.error);
   }, []);
 
-  const toggleGymnast = (id) =>
-    setGymnastIds(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]);
-
   const filteredUsers = userSearch.trim().length > 0
     ? users.filter(u => `${u.firstName} ${u.lastName}`.toLowerCase().includes(userSearch.toLowerCase()))
     : [];
 
   const selectedUser = users.find(u => u.id === userId);
 
+  // Gymnasts belonging to the selected account holder, excluding already-booked ones
+  const availableGymnasts = userId
+    ? gymnasts.filter(g => !g.isArchived && g.userId === userId && !bookedGymnastIds.includes(g.id))
+    : [];
+
+  const toggleGymnast = (id) =>
+    setGymnastIds(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]);
+
   const handleSelectUser = (u) => {
     setUserId(u.id);
     setUserSearch(`${u.firstName} ${u.lastName}`);
     setShowUserDropdown(false);
+    setGymnastIds([]);
   };
 
   const handleSubmit = async (e) => {
@@ -65,68 +71,89 @@ function ManualAddForm({ sessionId, onAdded }) {
   return (
     <form onSubmit={handleSubmit} className="bk-form-card" style={{ marginTop: '1rem' }}>
       <h4 style={{ margin: '0 0 0.75rem' }}>Add participant</h4>
-      <div className="bk-grid-2">
-        <label className="bk-label" style={{ fontWeight: 'normal' }}>Account holder
-          <div style={{ position: 'relative', marginTop: '0.25rem' }}>
-            <input
-              className="bk-input"
-              placeholder="Search by name..."
-              value={userSearch}
-              onChange={e => { setUserSearch(e.target.value); setUserId(''); setShowUserDropdown(true); }}
-              onFocus={() => setShowUserDropdown(true)}
-              onBlur={() => setTimeout(() => setShowUserDropdown(false), 150)}
-              autoComplete="off"
-            />
-            {showUserDropdown && filteredUsers.length > 0 && (
-              <div style={{
-                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
-                background: 'var(--booking-bg-white)', border: '1px solid var(--booking-border)',
-                borderRadius: 'var(--booking-radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                maxHeight: 200, overflowY: 'auto',
-              }}>
-                {filteredUsers.map(u => (
-                  <div
-                    key={u.id}
-                    onMouseDown={() => handleSelectUser(u)}
-                    style={{
-                      padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.875rem',
-                      background: u.id === userId ? 'rgba(124,53,232,0.08)' : 'transparent',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--booking-bg-light)'}
-                    onMouseLeave={e => e.currentTarget.style.background = u.id === userId ? 'rgba(124,53,232,0.08)' : 'transparent'}
-                  >
-                    {u.firstName} {u.lastName}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {selectedUser && (
-            <span style={{ fontSize: '0.8rem', color: 'var(--booking-success)', marginTop: '0.2rem', display: 'block' }}>
-              ✓ {selectedUser.firstName} {selectedUser.lastName} selected
-            </span>
-          )}
-        </label>
-      </div>
-      <div style={{ marginBottom: '0.75rem' }}>
-        <p className="bk-label" style={{ fontWeight: 'normal', marginBottom: '0.4rem' }}>Gymnasts</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-          {gymnasts.filter(g => !g.isArchived).map(g => (
-            <label key={g.id} style={{
-              display: 'flex', alignItems: 'center', gap: '0.3rem',
-              padding: '0.3rem 0.6rem', border: `1px solid ${gymnastIds.includes(g.id) ? 'var(--booking-accent)' : 'var(--booking-border)'}`,
-              borderRadius: 'var(--booking-radius)', cursor: 'pointer', fontSize: '0.875rem',
-              background: gymnastIds.includes(g.id) ? 'rgba(124,53,232,0.08)' : 'var(--booking-bg-white)',
+
+      {/* Step 1: account holder */}
+      <label className="bk-label" style={{ fontWeight: 'normal', display: 'block', marginBottom: '0.75rem' }}>
+        Account holder
+        <div style={{ position: 'relative', marginTop: '0.25rem' }}>
+          <input
+            className="bk-input"
+            placeholder="Search by name..."
+            value={userSearch}
+            onChange={e => { setUserSearch(e.target.value); setUserId(''); setGymnastIds([]); setShowUserDropdown(true); }}
+            onFocus={() => setShowUserDropdown(true)}
+            onBlur={() => setTimeout(() => setShowUserDropdown(false), 150)}
+            autoComplete="off"
+          />
+          {showUserDropdown && filteredUsers.length > 0 && (
+            <div style={{
+              position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+              background: 'var(--booking-bg-white)', border: '1px solid var(--booking-border)',
+              borderRadius: 'var(--booking-radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              maxHeight: 200, overflowY: 'auto',
             }}>
-              <input type="checkbox" checked={gymnastIds.includes(g.id)} onChange={() => toggleGymnast(g.id)} />
-              {g.firstName} {g.lastName}
-            </label>
-          ))}
+              {filteredUsers.map(u => (
+                <div
+                  key={u.id}
+                  onMouseDown={() => handleSelectUser(u)}
+                  style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.875rem' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--booking-bg-light)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  {u.firstName} {u.lastName}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      </label>
+
+      {/* Step 2: gymnasts (only shown after account holder selected) */}
+      {selectedUser && (
+        <div style={{ marginBottom: '0.75rem' }}>
+          <p className="bk-label" style={{ fontWeight: 'normal', marginBottom: '0.4rem' }}>
+            Gymnast{availableGymnasts.length !== 1 ? 's' : ''}
+          </p>
+          {availableGymnasts.length === 0 ? (
+            <p style={{ fontSize: '0.875rem', color: 'var(--booking-text-muted)', margin: 0 }}>
+              All of {selectedUser.firstName}'s gymnasts are already booked into this session.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {availableGymnasts.map(g => {
+                const selected = gymnastIds.includes(g.id);
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => toggleGymnast(g.id)}
+                    style={{
+                      padding: '0.35rem 0.75rem',
+                      border: `1px solid ${selected ? 'var(--booking-accent)' : 'var(--booking-border)'}`,
+                      borderRadius: 'var(--booking-radius)',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      background: selected ? 'rgba(124,53,232,0.1)' : 'var(--booking-bg-white)',
+                      color: selected ? 'var(--booking-accent)' : 'inherit',
+                      fontWeight: selected ? 600 : 400,
+                    }}
+                  >
+                    {selected ? '✓ ' : ''}{g.firstName} {g.lastName}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {error && <p className="bk-error">{error}</p>}
-      <button type="submit" disabled={submitting || !userId || gymnastIds.length === 0} className="bk-btn bk-btn--primary bk-btn--sm">
-        {submitting ? 'Adding...' : 'Add to session'}
+      <button
+        type="submit"
+        disabled={submitting || !userId || gymnastIds.length === 0}
+        className="bk-btn bk-btn--primary bk-btn--sm"
+      >
+        {submitting ? 'Adding...' : `Add ${gymnastIds.length > 1 ? `${gymnastIds.length} gymnasts` : 'gymnast'} to session`}
       </button>
     </form>
   );
@@ -298,7 +325,11 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
       </button>
 
       {showManualAdd && (
-        <ManualAddForm sessionId={selectedSession} onAdded={onAdded} />
+        <ManualAddForm
+          sessionId={selectedSession}
+          bookedGymnastIds={sessionDetail.bookings?.flatMap(b => b.lines.map(l => l.gymnast.id)) ?? []}
+          onAdded={onAdded}
+        />
       )}
     </div>
   );

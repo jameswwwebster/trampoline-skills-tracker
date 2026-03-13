@@ -47,9 +47,16 @@ export default function BookingCalendar() {
     }).catch(console.error).finally(() => setLoading(false));
   };
 
+  const hasStarted = (s) => {
+    const [h, m] = s.startTime.split(':').map(Number);
+    const start = new Date(s.date);
+    start.setHours(h, m, 0, 0);
+    return new Date() >= start;
+  };
+
   const sessionClass = (s, isPast) => {
     if (s.isBooked) return 'booked';
-    if (s.availableSlots > 0 && !s.cancelledAt && !isPast) return 'open';
+    if (s.availableSlots > 0 && !s.cancelledAt && !isPast && !hasStarted(s)) return 'open';
     return 'full';
   };
 
@@ -57,6 +64,7 @@ export default function BookingCalendar() {
     if (s.cancelledAt) return 'Cancelled';
     if (s.isBooked) return 'Booked';
     if (s.availableSlots === 0) return 'Full';
+    if (hasStarted(s)) return 'Started';
     return `${s.availableSlots} left`;
   };
 
@@ -123,7 +131,7 @@ export default function BookingCalendar() {
                   <button
                     key={s.id}
                     className={`booking-calendar__day-session booking-calendar__day-session--${sessionClass(s, isPast)}`}
-                    disabled={(!s.isBooked && s.availableSlots === 0) || !!s.cancelledAt || isPast}
+                    disabled={(!s.isBooked && s.availableSlots === 0) || !!s.cancelledAt || isPast || hasStarted(s)}
                     onClick={() => setSelectedSessionId(s.id)}
                   >
                     <span className="booking-calendar__day-session-time">{s.startTime}–{s.endTime}</span>

@@ -310,12 +310,13 @@ All emails gated by `club.emailEnabled`. Sent via Gmail SMTP (nodemailer). All u
 
 Priority order as agreed:
 
-1. **Basic club info / home page** — a public-facing landing page at `/` with club details, session times, and a link to the booking system
+1. ~~**Basic club info / home page** — a public-facing landing page at `/` with club details, session times, and a link to the booking system~~ ✓ Done
 2. **Competition management** — entry management, heat sheets, results, possibly linked to the existing skills/levels system
 3. ~~**Email / messaging system** — direct messaging and bulk emails from admin to members or groups (separate from transactional emails already in place)~~ ✓ Done
 4. **Finance summary** — admin view of revenue: bookings, memberships, credits issued/used, outstanding balances
 5. **Coach invoicing** — coaches submit invoices through the system for sessions coached; admin reviews and approves
-6. **Move the rest of the website** — migrate existing Wix content (about, contact, etc.) into this app so everything lives under one roof
+6. ~~**Move the rest of the website** — migrate existing Wix content (about, contact, etc.) into this app so everything lives under one roof~~ ✓ Done
+7. **Noticeboard** — club announcements visible to members
 
 ---
 

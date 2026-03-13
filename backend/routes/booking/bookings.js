@@ -96,6 +96,14 @@ router.post('/', auth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // Prevent booking after the session has started
+    const [sh0, sm0] = instance.template.startTime.split(':').map(Number);
+    const sessionStart0 = new Date(instance.date);
+    sessionStart0.setHours(sh0, sm0, 0, 0);
+    if (new Date() >= sessionStart0) {
+      return res.status(400).json({ error: 'Bookings are not allowed after a session has started' });
+    }
+
     // Check availability
     const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
     const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
@@ -276,6 +284,14 @@ router.post('/batch', auth, async (req, res) => {
       if (!instance) return res.status(404).json({ error: `Session ${sessionInstanceId} not found` });
       if (instance.cancelledAt) return res.status(400).json({ error: 'A session in your cart is cancelled' });
       if (instance.template.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
+
+      // Prevent booking after the session has started
+      const [sh, sm] = instance.template.startTime.split(':').map(Number);
+      const sessionStart = new Date(instance.date);
+      sessionStart.setHours(sh, sm, 0, 0);
+      if (now >= sessionStart) {
+        return res.status(400).json({ error: 'Bookings are not allowed after a session has started' });
+      }
 
       const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
       const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
@@ -615,6 +631,13 @@ router.post('/combined', auth, async (req, res) => {
         if (!instance) return res.status(404).json({ error: `Session ${sessionInstanceId} not found` });
         if (instance.cancelledAt) return res.status(400).json({ error: 'A session in your cart is cancelled' });
         if (instance.template.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
+
+        const [shC, smC] = instance.template.startTime.split(':').map(Number);
+        const sessionStartC = new Date(instance.date);
+        sessionStartC.setHours(shC, smC, 0, 0);
+        if (now >= sessionStartC) {
+          return res.status(400).json({ error: 'Bookings are not allowed after a session has started' });
+        }
 
         const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
         const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
