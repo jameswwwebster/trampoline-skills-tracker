@@ -170,8 +170,19 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
   const [confirmingRemove, setConfirmingRemove] = useState(null);
   const [removing, setRemoving] = useState(null);
   const [removeError, setRemoveError] = useState(null);
+  const [standingSlots, setStandingSlots] = useState(null);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const totalGymnasts = sessionDetail.bookings?.reduce((n, b) => n + b.lines.length, 0) ?? 0;
   const capacity = sessionDetail.capacity;
+
+  useEffect(() => {
+    if (!sessionDetail.templateId) return;
+    setSlotsLoading(true);
+    bookingApi.getCommitmentsForTemplate(sessionDetail.templateId)
+      .then(res => setStandingSlots(res.data))
+      .catch(() => setStandingSlots([]))
+      .finally(() => setSlotsLoading(false));
+  }, [sessionDetail.templateId]);
 
   const handleRemove = async (bookingId, issueCredit) => {
     setRemoving(bookingId);
@@ -205,13 +216,16 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem', opacity: 0.9 }}>
             <span>{totalGymnasts} booked</span>
-            <span>{capacity - totalGymnasts} remaining</span>
+            <span>
+              {capacity - totalGymnasts - (sessionDetail.activeCommitments ?? 0)} remaining
+              {sessionDetail.activeCommitments > 0 && ` (${sessionDetail.activeCommitments} standing)`}
+            </span>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.25)', borderRadius: 99, height: 8 }}>
             <div style={{
               height: 8, borderRadius: 99,
-              background: totalGymnasts >= capacity ? '#e74c3c' : '#fff',
-              width: `${Math.min(100, (totalGymnasts / capacity) * 100)}%`,
+              background: (totalGymnasts + (sessionDetail.activeCommitments ?? 0)) >= capacity ? '#e74c3c' : '#fff',
+              width: `${Math.min(100, ((totalGymnasts + (sessionDetail.activeCommitments ?? 0)) / capacity) * 100)}%`,
               transition: 'width 0.3s',
             }} />
           </div>
@@ -222,6 +236,28 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
           </p>
         )}
       </div>
+
+      {sessionDetail.templateId && (
+        <div className="bk-card" style={{ marginBottom: '1rem' }}>
+          <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--booking-text-muted)' }}>
+            Standing slots
+          </h4>
+          {slotsLoading && <p className="bk-muted" style={{ margin: 0 }}>Loading…</p>}
+          {!slotsLoading && standingSlots && standingSlots.length === 0 && (
+            <p className="bk-muted" style={{ margin: 0 }}>No standing slots.</p>
+          )}
+          {!slotsLoading && standingSlots && standingSlots.map(c => (
+            <div key={c.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--booking-bg-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.9rem' }}>{c.gymnast.firstName} {c.gymnast.lastName}</span>
+              {c.status === 'PAUSED' && (
+                <span style={{ fontSize: '0.75rem', padding: '1px 6px', borderRadius: 4, background: 'rgba(0,0,0,0.06)', color: 'var(--booking-text-muted)' }}>
+                  Paused
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="bk-card" style={{ marginBottom: '1rem' }}>
         <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--booking-text-muted)' }}>
