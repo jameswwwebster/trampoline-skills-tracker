@@ -197,6 +197,49 @@ describe('DELETE /api/booking/charges/:id', () => {
   });
 });
 
+describe('POST /api/booking/bookings/combined — charge settlement', () => {
+  const { createSession, createGymnast, createMembership, createCredit } = require('./helpers/seed');
+  let gymnast, instance;
+
+  beforeAll(async () => {
+    gymnast = await createGymnast(club, parent, { bgNumber: 'BG123456' });
+    await createMembership(gymnast, club);
+    const sess = await createSession(club);
+    instance = sess.instance;
+  });
+
+  afterEach(() => prisma.charge.deleteMany({}));
+
+  it('empty sessions+shop cart with an outstanding charge is not rejected (charge-only checkout allowed)', async () => {
+    await seedCharge(); // £15 outstanding
+    const res = await request(app)
+      .post('/api/booking/bookings/combined')
+      .set('Authorization', `Bearer ${parentToken}`)
+      .send({ sessions: [], shopItems: [] });
+    // Should NOT be 400 "Cart is empty"
+    expect(res.status).not.toBe(400);
+  });
+
+  it('charge-only free checkout (credits cover charge) marks charges paid immediately', async () => {
+    const credit = await createCredit(parent, 1500); // 1500p = £15
+    const charge = await seedCharge(); // 1500p
+
+    const res = await request(app)
+      .post('/api/booking/bookings/combined')
+      .set('Authorization', `Bearer ${parentToken}`)
+      .send({ sessions: [], shopItems: [] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.clientSecret).toBeFalsy(); // free checkout — no PaymentIntent
+
+    const updated = await prisma.charge.findUnique({ where: { id: charge.id } });
+    expect(updated.paidAt).not.toBeNull();
+
+    // cleanup credit
+    await prisma.credit.deleteMany({ where: { userId: parent.id } });
+  });
+});
+
 describe('Overdue charge blocks POST /api/booking/bookings', () => {
   const { createSession, createGymnast, createMembership } = require('./helpers/seed');
   let gymnast, instance;

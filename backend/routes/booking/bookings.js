@@ -716,7 +716,16 @@ router.post('/:bookingId/refund', auth, requireRole(['CLUB_ADMIN', 'COACH']), as
 router.post('/combined', auth, async (req, res) => {
   try {
     const { sessions = [], shopItems = [] } = req.body;
-    if (sessions.length === 0 && shopItems.length === 0) {
+
+    // ── Fetch outstanding charges ──
+    const outstandingCharges = await prisma.charge.findMany({
+      where: { userId: req.user.id, paidAt: null },
+    });
+    const chargeTotal = outstandingCharges.reduce((s, c) => s + c.amount, 0);
+    const outstandingChargeIds = outstandingCharges.map(c => c.id);
+
+    // Empty cart guard (now includes charges)
+    if (sessions.length === 0 && shopItems.length === 0 && chargeTotal === 0) {
       return res.status(400).json({ error: 'Cart is empty' });
     }
 
@@ -860,15 +869,16 @@ router.post('/combined', auth, async (req, res) => {
       shopTotal += variant.price * qty;
     }
 
-    // ── Credits (applied to sessions only) ──
+    // ── Credits (applied to full grand total: sessions + shop + charges) ──
     const sessionTotal = validatedSessions.reduce((sum, s) => sum + s.itemAmount, 0);
+    const grandTotal = sessionTotal + shopTotal + chargeTotal;
     const creditsToUse = [];
-    if (sessionTotal > 0) {
+    if (grandTotal > 0) {
       const availableCredits = await prisma.credit.findMany({
         where: { userId: req.user.id, usedAt: null, expiresAt: { gt: new Date() } },
         orderBy: { expiresAt: 'asc' },
       });
-      let remaining = sessionTotal;
+      let remaining = grandTotal;
       for (const credit of availableCredits) {
         if (remaining <= 0) break;
         const consume = Math.min(credit.amount, remaining);
@@ -877,7 +887,7 @@ router.post('/combined', auth, async (req, res) => {
       }
     }
     const creditAmount = creditsToUse.reduce((sum, c) => sum + c.consume, 0);
-    const chargeAmount = Math.max(0, sessionTotal - creditAmount) + shopTotal;
+    const paymentAmount = Math.max(0, grandTotal - creditAmount);
 
     // ── Cancel stale PENDING session bookings ──
     for (const item of validatedSessions) {
@@ -890,18 +900,34 @@ router.post('/combined', auth, async (req, res) => {
       }
     }
 
+    // ── Clear stale paidOnPaymentIntentId on prior abandoned checkouts ──
+    if (outstandingChargeIds.length > 0) {
+      await prisma.charge.updateMany({
+        where: { id: { in: outstandingChargeIds }, paidOnPaymentIntentId: { not: null } },
+        data: { paidOnPaymentIntentId: null },
+      });
+    }
+
     // ── Stripe PaymentIntent ──
     let paymentIntentId = null;
     let clientSecret = null;
-    if (chargeAmount > 0) {
+    if (paymentAmount > 0) {
       const paymentIntent = await getStripe().paymentIntents.create({
-        amount: chargeAmount,
+        amount: paymentAmount,
         currency: 'gbp',
         automatic_payment_methods: { enabled: true },
         metadata: { userId: req.user.id },
       });
       paymentIntentId = paymentIntent.id;
       clientSecret = paymentIntent.client_secret;
+
+      // Tag outstanding charges with the PaymentIntent id
+      if (outstandingChargeIds.length > 0) {
+        await prisma.charge.updateMany({
+          where: { id: { in: outstandingChargeIds } },
+          data: { paidOnPaymentIntentId: paymentIntent.id },
+        });
+      }
     }
 
     // ── Create bookings ──
@@ -922,16 +948,22 @@ router.post('/combined', auth, async (req, res) => {
     }
 
     // ── Mark credits ──
-    if (bookings.length > 0) {
-      for (const c of creditsToUse) {
-        await prisma.credit.update({
-          where: { id: c.id },
-          data: { amount: c.consume, usedAt: new Date(), usedOnBookingId: bookings[0].id },
-        });
-        if (c.remainder > 0) {
-          await prisma.credit.create({ data: { userId: req.user.id, amount: c.remainder, expiresAt: c.expiresAt } });
-        }
+    for (const c of creditsToUse) {
+      await prisma.credit.update({
+        where: { id: c.id },
+        data: { amount: c.consume, usedAt: new Date(), usedOnBookingId: bookings[0]?.id ?? null },
+      });
+      if (c.remainder > 0) {
+        await prisma.credit.create({ data: { userId: req.user.id, amount: c.remainder, expiresAt: c.expiresAt } });
       }
+    }
+
+    // ── Settle charges immediately if no payment required ──
+    if (paymentAmount === 0 && outstandingChargeIds.length > 0) {
+      await prisma.charge.updateMany({
+        where: { id: { in: outstandingChargeIds } },
+        data: { paidAt: new Date() },
+      });
     }
 
     // ── Create shop order ──
