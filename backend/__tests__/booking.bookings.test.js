@@ -161,8 +161,8 @@ describe('DMT booking gate', () => {
     expect(res.status).toBe(200);
   });
 
-  it('POST / — STANDARD session does not apply DMT gate', async () => {
-    const { instance } = await createSession(dmtClub, undefined, { type: 'STANDARD' });
+  it('POST / — TRAMPOLINE session does not apply DMT gate', async () => {
+    const { instance } = await createSession(dmtClub, undefined, { type: 'TRAMPOLINE' });
     await createCredit(dmtParent, 1200);
 
     const res = await request(testApp)

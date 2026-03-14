@@ -76,19 +76,19 @@ describe('POST /api/booking/templates — session type', () => {
     expect(res.body.type).toBe('DMT');
   });
 
-  it('defaults type to STANDARD when not provided', async () => {
+  it('defaults type to TRAMPOLINE when not provided', async () => {
     const res = await request(app)
       .post('/api/booking/templates')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ dayOfWeek: 2, startTime: '09:00', endTime: '10:00', openSlots: 10 });
 
     expect(res.status).toBe(201);
-    expect(res.body.type).toBe('STANDARD');
+    expect(res.body.type).toBe('TRAMPOLINE');
   });
 });
 
 describe('PUT /api/booking/templates/:id — session type', () => {
-  it('updates type from STANDARD to DMT', async () => {
+  it('updates type from TRAMPOLINE to DMT', async () => {
     const template = await prisma.sessionTemplate.create({
       data: { clubId: club.id, dayOfWeek: 4, startTime: '11:00', endTime: '12:00', openSlots: 6, pricePerGymnast: 600 },
     });
