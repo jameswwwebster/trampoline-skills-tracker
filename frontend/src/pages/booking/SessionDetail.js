@@ -26,6 +26,7 @@ export default function SessionDetail({
   const [waitlistEntry, setWaitlistEntry] = useState(null);
   const [waitlistBusy, setWaitlistBusy] = useState(false);
   const [pendingMemberId, setPendingMemberId] = useState(null); // gymnast awaiting member confirmation
+  const [myCommitments, setMyCommitments] = useState([]); // [{ gymnastId, status }]
 
   const loadGymnasts = () =>
     bookingApi.getBookableGymnasts().then(r => setMyGymnasts(r.data)).catch(() => setMyGymnasts([]));
@@ -40,6 +41,11 @@ export default function SessionDetail({
       setTotalCreditsAvailable(credRes.data.reduce((s, c) => s + c.amount, 0));
       const entry = waitRes.data.find(e => e.sessionInstanceId === instanceId);
       setWaitlistEntry(entry || null);
+      if (sessRes.data.templateId) {
+        bookingApi.getMyCommitmentsForTemplate(sessRes.data.templateId)
+          .then(r => setMyCommitments(r.data))
+          .catch(() => {});
+      }
     }).catch(console.error).finally(() => setLoading(false));
 
     loadGymnasts();
@@ -223,6 +229,10 @@ export default function SessionDetail({
             <h3>Who's coming?</h3>
 
             {bookableGymnasts.map(g => {
+              const isDmtSession = session?.type === 'DMT';
+              const dmtBlocked = isDmtSession && !g.dmtApproved;
+              const myCommitment = myCommitments.find(c => c.gymnastId === g.id);
+              const hasActiveCommitment = myCommitment?.status === 'ACTIVE';
               const selected = selectedGymnastIds.includes(g.id);
               const now = Date.now();
               const bgBlocked = (() => {
@@ -235,7 +245,7 @@ export default function SessionDetail({
                 return false;
               })();
               const atCapacity = !selected && selectedGymnastIds.length >= session.availableSlots;
-              const blocked = bgBlocked;
+              const blocked = bgBlocked || dmtBlocked || hasActiveCommitment;
               return (
                 <div key={g.id}>
                   <div
@@ -251,12 +261,23 @@ export default function SessionDetail({
                     <span className="session-detail__option-check">
                       {selected && '✓'}
                     </span>
-                    <span>{g.firstName} {g.lastName}{g.isSelf ? ' (me)' : ''}</span>
+                    <span>{g.firstName} {g.lastName}{g.isSelf ? ' (me)' : ''}
+                      {dmtBlocked && (
+                        <span style={{ fontSize: '0.78rem', color: 'var(--booking-text-muted)', marginLeft: '0.4rem' }}>
+                          Not approved for DMT — speak to a coach.
+                        </span>
+                      )}
+                    </span>
                   </div>
                   {bgBlocked && (
                     <p style={{ fontSize: '0.8rem', color: 'var(--booking-danger)', margin: '-0.25rem 0 0.5rem 0.5rem' }}>
                       BG membership number required —{' '}
                       <a href="/booking/my-account" style={{ color: 'var(--booking-danger)' }}>update in My Account</a>
+                    </p>
+                  )}
+                  {hasActiveCommitment && (
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--booking-success)', fontWeight: 500 }}>
+                      Standing slot — you're already booked for this session.
                     </p>
                   )}
                 </div>

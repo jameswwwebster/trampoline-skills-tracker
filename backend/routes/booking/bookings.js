@@ -105,8 +105,11 @@ router.post('/', auth, async (req, res) => {
 
     // Check availability
     const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+    const activeCommitments = await prisma.commitment.count({
+      where: { templateId: instance.templateId, status: 'ACTIVE' },
+    });
     const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
-    if (bookedCount + gymnastIds.length > capacity) {
+    if (bookedCount + activeCommitments + gymnastIds.length > capacity) {
       return res.status(400).json({ error: 'Not enough slots available' });
     }
 
@@ -137,6 +140,32 @@ router.post('/', auth, async (req, res) => {
           }
         }
       }
+    }
+
+    // DMT approval check
+    if (instance.template.type === 'DMT') {
+      const gymnastsToCheck = await prisma.gymnast.findMany({
+        where: { id: { in: gymnastIds } },
+        select: { id: true, firstName: true, dmtApproved: true },
+      });
+      const blocked = gymnastsToCheck.filter(g => !g.dmtApproved);
+      if (blocked.length > 0) {
+        return res.status(400).json({
+          error: `The following gymnasts are not approved for DMT: ${blocked.map(g => g.firstName).join(', ')}`,
+        });
+      }
+    }
+
+    // Commitment block check — gymnasts with an ACTIVE standing slot cannot book the same session
+    const committedGymnasts = await prisma.commitment.findMany({
+      where: { gymnastId: { in: gymnastIds }, templateId: instance.templateId, status: 'ACTIVE' },
+      include: { gymnast: { select: { firstName: true } } },
+    });
+    if (committedGymnasts.length > 0) {
+      const names = committedGymnasts.map(c => c.gymnast.firstName).join(', ');
+      return res.status(400).json({
+        error: `The following gymnasts already have a standing slot for this session: ${names}`,
+      });
     }
 
     // Verify parent owns these gymnasts
@@ -293,8 +322,11 @@ router.post('/batch', auth, async (req, res) => {
       }
 
       const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+      const activeCommitmentsCount = await prisma.commitment.count({
+        where: { templateId: instance.templateId, status: 'ACTIVE' },
+      });
       const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
-      if (bookedCount + gymnastIds.length > capacity) {
+      if (bookedCount + activeCommitmentsCount + gymnastIds.length > capacity) {
         return res.status(400).json({ error: `Not enough slots available for session at ${instance.date} ${instance.template.startTime}` });
       }
 
@@ -310,6 +342,32 @@ router.post('/batch', auth, async (req, res) => {
             }
           }
         }
+      }
+
+      // DMT approval check
+      if (instance.template.type === 'DMT') {
+        const gymnastsToCheck = await prisma.gymnast.findMany({
+          where: { id: { in: gymnastIds } },
+          select: { id: true, firstName: true, dmtApproved: true },
+        });
+        const blocked = gymnastsToCheck.filter(g => !g.dmtApproved);
+        if (blocked.length > 0) {
+          return res.status(400).json({
+            error: `The following gymnasts are not approved for DMT: ${blocked.map(g => g.firstName).join(', ')}`,
+          });
+        }
+      }
+
+      // Commitment block check
+      const committedInBatch = await prisma.commitment.findMany({
+        where: { gymnastId: { in: gymnastIds }, templateId: instance.templateId, status: 'ACTIVE' },
+        include: { gymnast: { select: { firstName: true } } },
+      });
+      if (committedInBatch.length > 0) {
+        const names = committedInBatch.map(c => c.gymnast.firstName).join(', ');
+        return res.status(400).json({
+          error: `The following gymnasts already have a standing slot for this session: ${names}`,
+        });
       }
 
       // Parent ownership check
@@ -640,8 +698,11 @@ router.post('/combined', auth, async (req, res) => {
         }
 
         const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+        const activeCommitmentsCount = await prisma.commitment.count({
+          where: { templateId: instance.templateId, status: 'ACTIVE' },
+        });
         const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
-        if (bookedCount + gymnastIds.length > capacity) {
+        if (bookedCount + activeCommitmentsCount + gymnastIds.length > capacity) {
           return res.status(400).json({ error: `Not enough slots for session at ${instance.date} ${instance.template.startTime}` });
         }
 
@@ -665,6 +726,32 @@ router.post('/combined', auth, async (req, res) => {
           if (myGymnasts.length !== gymnastIds.length) {
             return res.status(403).json({ error: 'Access denied to one or more gymnasts' });
           }
+        }
+
+        // DMT approval check
+        if (instance.template.type === 'DMT') {
+          const gymnastsToCheck = await prisma.gymnast.findMany({
+            where: { id: { in: gymnastIds } },
+            select: { id: true, firstName: true, dmtApproved: true },
+          });
+          const blocked = gymnastsToCheck.filter(g => !g.dmtApproved);
+          if (blocked.length > 0) {
+            return res.status(400).json({
+              error: `The following gymnasts are not approved for DMT: ${blocked.map(g => g.firstName).join(', ')}`,
+            });
+          }
+        }
+
+        // Commitment block check
+        const committedInCombined = await prisma.commitment.findMany({
+          where: { gymnastId: { in: gymnastIds }, templateId: instance.templateId, status: 'ACTIVE' },
+          include: { gymnast: { select: { firstName: true } } },
+        });
+        if (committedInCombined.length > 0) {
+          const names = committedInCombined.map(c => c.gymnast.firstName).join(', ');
+          return res.status(400).json({
+            error: `The following gymnasts already have a standing slot for this session: ${names}`,
+          });
         }
 
         validatedSessions.push({ sessionInstanceId, gymnastIds, pricePerGymnast: instance.template.pricePerGymnast, itemAmount: instance.template.pricePerGymnast * gymnastIds.length });

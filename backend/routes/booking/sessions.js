@@ -34,9 +34,13 @@ router.get('/', auth, async (req, res) => {
       orderBy: [{ date: 'asc' }, { template: { startTime: 'asc' } }],
     });
 
-    const result = instances.map(instance => {
+    const result = await Promise.all(instances.map(async instance => {
       const confirmedBookings = instance.bookings;
-      const bookedCount = confirmedBookings.reduce((sum, b) => sum + b.lines.length, 0);
+      const bookingCount = confirmedBookings.reduce((sum, b) => sum + b.lines.length, 0);
+      const activeCommitments = await prisma.commitment.count({
+        where: { templateId: instance.templateId, status: 'ACTIVE' },
+      });
+      const bookedCount = bookingCount + activeCommitments;
       const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
       return {
         id: instance.id,
@@ -46,12 +50,15 @@ router.get('/', auth, async (req, res) => {
         minAge: instance.template.minAge,
         capacity,
         bookedCount,
+        activeCommitments,
         availableSlots: Math.max(0, capacity - bookedCount),
         cancelledAt: instance.cancelledAt,
         isBooked: confirmedBookings.some(b => b.userId === req.user.id),
         pricePerGymnast: instance.template.pricePerGymnast,
+        type: instance.template.type,
+        templateId: instance.templateId,
       };
-    });
+    }));
 
     res.json(result);
   } catch (err) {
@@ -96,7 +103,11 @@ router.get('/:instanceId', auth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+    const bookingCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+    const activeCommitments = await prisma.commitment.count({
+      where: { templateId: instance.templateId, status: 'ACTIVE' },
+    });
+    const bookedCount = bookingCount + activeCommitments;
     const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
 
     res.json({
@@ -108,8 +119,11 @@ router.get('/:instanceId', auth, async (req, res) => {
       information: instance.template.information || null,
       capacity,
       bookedCount,
+      activeCommitments,
       availableSlots: Math.max(0, capacity - bookedCount),
       cancelledAt: instance.cancelledAt,
+      type: instance.template.type,
+      templateId: instance.templateId,
       bookings: instance.bookings,
     });
   } catch (err) {

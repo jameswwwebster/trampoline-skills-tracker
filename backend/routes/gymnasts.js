@@ -29,7 +29,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
     const [selfGymnast, linked] = await Promise.all([
       prisma.gymnast.findFirst({
         where: { userId: req.user.id, isArchived: false },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberGraceDays: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberGraceDays: true, dmtApproved: true },
       }),
       prisma.gymnast.findMany({
         where: {
@@ -40,7 +40,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
             { userId: { not: req.user.id } },
           ],
         },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberGraceDays: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberGraceDays: true, dmtApproved: true },
       }),
     ]);
     const allGymnasts = selfGymnast
@@ -178,6 +178,40 @@ router.post('/admin-add-child', auth, requireRole(['CLUB_ADMIN', 'COACH']), asyn
     });
 
     res.status(201).json(gymnast);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /api/gymnasts/:id/dmt-approval  (coach/admin only)
+router.patch('/:id/dmt-approval', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { approved } = req.body;
+
+    if (typeof approved !== 'boolean') {
+      return res.status(400).json({ error: 'approved must be a boolean' });
+    }
+
+    const gymnast = await prisma.gymnast.findFirst({
+      where: { id, clubId: req.user.clubId },
+    });
+    if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
+
+    const data = approved
+      ? { dmtApproved: true, dmtApprovedAt: new Date(), dmtApprovedById: req.user.id }
+      : { dmtApproved: false, dmtApprovedAt: null, dmtApprovedById: null };
+
+    const updated = await prisma.gymnast.update({ where: { id }, data });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'gymnast.dmt_approval', entityType: 'Gymnast', entityId: id,
+      metadata: { approved, gymnastId: id },
+    });
+
+    res.json(updated);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

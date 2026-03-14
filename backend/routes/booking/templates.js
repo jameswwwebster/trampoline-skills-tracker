@@ -15,6 +15,7 @@ const templateSchema = Joi.object({
   pricePerGymnast: Joi.number().integer().min(1).optional().default(600),
   minAge: Joi.number().integer().min(0).allow(null).optional(),
   information: Joi.string().allow('', null).optional(),
+  type: Joi.string().valid('STANDARD', 'DMT').optional().default('STANDARD'),
 });
 
 // GET /api/booking/templates — list all templates for the club

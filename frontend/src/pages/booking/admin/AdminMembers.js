@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { bookingApi } from '../../../utils/bookingApi';
+import { bookingApi, getTemplates } from '../../../utils/bookingApi';
 import AdminRemovedMembers from './AdminRemovedMembers';
 import '../booking-shared.css';
 
@@ -334,12 +334,18 @@ const MEMBERSHIP_BADGE = {
   SCHEDULED:       (m) => ({ label: `Scheduled £${(m.monthlyAmount/100).toFixed(2)}/mo`, color: '#7c35e8', bg: 'rgba(124,53,232,0.1)' }),
 };
 
-function GymnastRow({ g, memberships, onUpdated }) {
+function GymnastRow({ g, memberships, templates, onUpdated }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editingDob, setEditingDob] = useState(false);
   const [dobValue, setDobValue] = useState('');
   const [dobSaving, setDobSaving] = useState(false);
   const [dobError, setDobError] = useState(null);
+  const [dmtLoading, setDmtLoading] = useState(false);
+  const [dmtError, setDmtError] = useState(null);
+  const [commitments, setCommitments] = useState(null);
+  const [commitmentLoading, setCommitmentLoading] = useState(false);
+  const [commitmentError, setCommitmentError] = useState(null);
+  const [addingTemplateId, setAddingTemplateId] = useState('');
 
   const handleSaveDob = async () => {
     if (!dobValue) return;
@@ -356,6 +362,66 @@ function GymnastRow({ g, memberships, onUpdated }) {
     } catch (err) {
       setDobError(err.response?.data?.error || 'Failed to save.');
       setDobSaving(false);
+    }
+  };
+
+  const handleDmtToggle = async () => {
+    setDmtLoading(true);
+    setDmtError(null);
+    try {
+      await bookingApi.approveDmt(g.id, !g.dmtApproved);
+      onUpdated();
+    } catch (err) {
+      setDmtError(err.response?.data?.error || 'Failed to update DMT approval.');
+    } finally {
+      setDmtLoading(false);
+    }
+  };
+
+  const loadCommitments = async () => {
+    setCommitmentLoading(true);
+    setCommitmentError(null);
+    try {
+      const res = await bookingApi.getCommitmentsForGymnast(g.id);
+      setCommitments(res.data);
+    } catch {
+      setCommitmentError('Failed to load commitments.');
+    } finally {
+      setCommitmentLoading(false);
+    }
+  };
+
+  const handleAddCommitment = async () => {
+    if (!addingTemplateId) return;
+    setCommitmentError(null);
+    try {
+      await bookingApi.createCommitment(g.id, addingTemplateId);
+      setAddingTemplateId('');
+      await loadCommitments();
+    } catch (err) {
+      setCommitmentError(err.response?.data?.error || 'Failed to add commitment.');
+    }
+  };
+
+  const handleToggleCommitmentStatus = async (commitment) => {
+    const newStatus = commitment.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    setCommitmentError(null);
+    try {
+      await bookingApi.updateCommitmentStatus(commitment.id, newStatus);
+      await loadCommitments();
+    } catch (err) {
+      setCommitmentError(err.response?.data?.error || 'Failed to update commitment.');
+    }
+  };
+
+  const handleDeleteCommitment = async (commitmentId) => {
+    if (!window.confirm('Remove this standing slot?')) return;
+    setCommitmentError(null);
+    try {
+      await bookingApi.deleteCommitment(commitmentId);
+      await loadCommitments();
+    } catch (err) {
+      setCommitmentError(err.response?.data?.error || 'Failed to remove commitment.');
     }
   };
 
@@ -484,6 +550,34 @@ function GymnastRow({ g, memberships, onUpdated }) {
             {bgInsuranceDisplay()}
           </li>
         )}
+        {/* DMT approval */}
+        <li style={{ ...infoItemStyle, borderBottom: 'none' }}>
+          <span style={keyStyle}>DMT</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {g.dmtApproved ? (
+              <span style={{ color: 'var(--booking-success)' }}>
+                ✓ Approved
+                {g.dmtApprovedBy && (
+                  <span style={{ fontWeight: 400, color: 'var(--booking-text-muted)', marginLeft: '0.3rem' }}>
+                    by {g.dmtApprovedBy.firstName} {g.dmtApprovedBy.lastName}
+                    {g.dmtApprovedAt && ` on ${new Date(g.dmtApprovedAt).toLocaleDateString('en-GB')}`}
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span style={{ color: 'var(--booking-text-muted)' }}>Not approved</span>
+            )}
+            <button
+              className="bk-btn bk-btn--sm"
+              style={{ fontSize: '0.75rem', border: '1px solid var(--booking-border)' }}
+              disabled={dmtLoading}
+              onClick={handleDmtToggle}
+            >
+              {g.dmtApproved ? 'Revoke' : 'Approve'}
+            </button>
+            {dmtError && <span style={{ color: 'var(--booking-danger)', fontSize: '0.75rem' }}>{dmtError}</span>}
+          </span>
+        </li>
         {/* Emergency contact (adult participants only) */}
         {g.isSelf && (
           <li style={{ ...infoItemStyle, borderBottom: 'none' }}>
@@ -494,6 +588,70 @@ function GymnastRow({ g, memberships, onUpdated }) {
           </li>
         )}
       </ul>
+
+      {/* Standing slots (commitments) */}
+      <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--booking-bg-light)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Standing slots</span>
+          <button className="bk-btn bk-btn--sm" onClick={loadCommitments} disabled={commitmentLoading}>
+            {commitments === null ? 'Load' : 'Refresh'}
+          </button>
+        </div>
+        {commitmentLoading && <p className="bk-muted" style={{ fontSize: '0.85rem', margin: 0 }}>Loading...</p>}
+        {commitmentError && <p style={{ color: 'var(--booking-danger)', fontSize: '0.82rem', margin: 0 }}>{commitmentError}</p>}
+        {commitments !== null && (
+          <>
+            {commitments.length === 0 && <p className="bk-muted" style={{ fontSize: '0.85rem', margin: '0 0 0.5rem' }}>No commitments.</p>}
+            {commitments.map(c => {
+              const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+              const label = `${days[c.template.dayOfWeek]} ${c.template.startTime}–${c.template.endTime}`;
+              return (
+                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.875rem' }}>
+                  <span>
+                    {label}
+                    <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: c.status === 'ACTIVE' ? 'var(--booking-success)' : 'var(--booking-text-muted)', fontWeight: 600 }}>
+                      {c.status === 'ACTIVE' ? 'Active' : 'Paused'}
+                    </span>
+                  </span>
+                  <div className="bk-row" style={{ gap: '0.3rem' }}>
+                    <button className="bk-btn bk-btn--sm" onClick={() => handleToggleCommitmentStatus(c)}>
+                      {c.status === 'ACTIVE' ? 'Pause' : 'Resume'}
+                    </button>
+                    <button
+                      className="bk-btn bk-btn--sm"
+                      style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+                      onClick={() => handleDeleteCommitment(c.id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <select
+                value={addingTemplateId}
+                onChange={e => setAddingTemplateId(e.target.value)}
+                className="bk-input"
+                style={{ fontSize: '0.85rem', flex: 1 }}
+              >
+                <option value="">Add standing slot...</option>
+                {(templates || []).filter(t => t.isActive && !commitments.some(c => c.templateId === t.id)).map(t => {
+                  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                  return <option key={t.id} value={t.id}>{days[t.dayOfWeek]} {t.startTime}–{t.endTime}{t.type === 'DMT' ? ' · DMT' : ''}</option>;
+                })}
+              </select>
+              <button
+                className="bk-btn bk-btn--sm bk-btn--primary"
+                disabled={!addingTemplateId}
+                onClick={handleAddCommitment}
+              >
+                Add
+              </button>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* BG action bar (PENDING or INVALID) */}
       {(g.bgNumberStatus === 'PENDING' || g.bgNumberStatus === 'INVALID') && (
@@ -1119,7 +1277,7 @@ function MemberDetail({ userId, onRemoved }) {
         )}
 
         {[...member.gymnasts].sort((a, b) => (b.isSelf ? 1 : 0) - (a.isSelf ? 1 : 0)).map(g => (
-          <GymnastRow key={g.id} g={g} memberships={memberships} onUpdated={load} />
+          <GymnastRow key={g.id} g={g} memberships={memberships} templates={templates} onUpdated={load} />
         ))}
 
         {showAddChild && (
@@ -1216,6 +1374,9 @@ export default function AdminMembers() {
   const [showMemberships, setShowMemberships] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
   const [showRemovedMembers, setShowRemovedMembers] = useState(false);
+  const [templates, setTemplates] = useState([]);
+
+  useEffect(() => { getTemplates().then(r => setTemplates(r.data)).catch(() => {}); }, []);
 
   useEffect(() => { setPage(1); }, [search, letterFilter]);
 

@@ -58,6 +58,9 @@ model User {
   noticeboardPosts              NoticeboardPost[]
   noticeboardReads              NoticeboardRead[]
   recipientGroups               RecipientGroup[]
+  dmtApprovals                  Gymnast[]         @relation("DmtApprovedBy")
+  commitmentsCreated            Commitment[]      @relation("CommitmentCreatedBy")
+  commitmentsPaused             Commitment[]      @relation("CommitmentPausedBy")
 
   @@map("users")
 }
@@ -165,6 +168,10 @@ model Gymnast {
   bgNumberEnteredBy     String?
   bgNumberVerifiedAt    DateTime?
   bgNumberVerifiedBy    String?
+  dmtApproved           Boolean           @default(false)
+  dmtApprovedAt         DateTime?
+  dmtApprovedById       String?
+  dmtApprovedBy         User?             @relation("DmtApprovedBy", fields: [dmtApprovedById], references: [id])
   archivedAt                   DateTime?
   archivedById     String?
   archivedReason   String?
@@ -181,6 +188,7 @@ model Gymnast {
   bookingLines     BookingLine[]
   memberships      Membership[]
   consents         Consent[]
+  commitments      Commitment[]
 
   @@map("gymnasts")
 }
@@ -485,6 +493,7 @@ model SessionTemplate {
   endTime     String            // "18:00"
   openSlots       Int               @default(12)
   pricePerGymnast Int               @default(600)   // in pence, e.g. 600 = £6.00
+  type            SessionType       @default(STANDARD)
   minAge          Int?              // null = no restriction, 16 = 16+ only
   information String?
   isActive    Boolean           @default(true)
@@ -492,8 +501,27 @@ model SessionTemplate {
   updatedAt   DateTime          @updatedAt
   club        Club              @relation(fields: [clubId], references: [id])
   instances   SessionInstance[]
+  commitments Commitment[]
 
   @@map("session_templates")
+}
+
+model Commitment {
+  id           String           @id @default(cuid())
+  gymnast      Gymnast          @relation(fields: [gymnastId], references: [id], onDelete: Cascade)
+  gymnastId    String
+  template     SessionTemplate  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  templateId   String
+  status       CommitmentStatus @default(ACTIVE)
+  pausedAt     DateTime?
+  pausedById   String?
+  pausedBy     User?            @relation("CommitmentPausedBy", fields: [pausedById], references: [id])
+  createdById  String
+  createdBy    User             @relation("CommitmentCreatedBy", fields: [createdById], references: [id])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([gymnastId, templateId])
 }
 
 model SessionInstance {
@@ -851,4 +879,14 @@ enum BgNumberStatus {
   PENDING
   VERIFIED
   INVALID
+}
+
+enum SessionType {
+  STANDARD
+  DMT
+}
+
+enum CommitmentStatus {
+  ACTIVE
+  PAUSED
 }

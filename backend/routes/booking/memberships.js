@@ -262,6 +262,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       gymnastId: Joi.string().required(),
       monthlyAmount: Joi.number().integer().min(1).required(),
       startDate: Joi.date().required(),
+      templateIds: Joi.array().items(Joi.string()).optional().default([]),
     }).validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
@@ -289,16 +290,43 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     todayMidnight.setHours(0, 0, 0, 0);
     const isFuture = startDate > todayMidnight;
 
-    // Create the membership record — always start as SCHEDULED; activate immediately if start date is today or past
-    const membership = await prisma.membership.create({
-      data: {
-        gymnastId: value.gymnastId,
-        clubId: req.user.clubId,
-        monthlyAmount: value.monthlyAmount,
-        status: 'SCHEDULED',
-        startDate,
-      },
-      include: { gymnast: true },
+    // Validate templateIds belong to this club and have no existing commitments
+    if (value.templateIds.length > 0) {
+      const templates = await prisma.sessionTemplate.findMany({
+        where: { id: { in: value.templateIds }, clubId: req.user.clubId },
+      });
+      if (templates.length !== value.templateIds.length) {
+        return res.status(400).json({ error: 'One or more session templates not found' });
+      }
+
+      const existingCommitments = await prisma.commitment.findMany({
+        where: { gymnastId: value.gymnastId, templateId: { in: value.templateIds } },
+      });
+      if (existingCommitments.length > 0) {
+        return res.status(409).json({ error: 'Gymnast already has a commitment to one or more of these templates' });
+      }
+    }
+
+    // Create the membership record atomically with any commitments
+    const membership = await prisma.$transaction(async (tx) => {
+      const created = await tx.membership.create({
+        data: {
+          gymnastId: value.gymnastId,
+          clubId: req.user.clubId,
+          monthlyAmount: value.monthlyAmount,
+          status: 'SCHEDULED',
+          startDate,
+        },
+        include: { gymnast: true },
+      });
+
+      for (const templateId of value.templateIds) {
+        await tx.commitment.create({
+          data: { gymnastId: value.gymnastId, templateId, createdById: req.user.id },
+        });
+      }
+
+      return created;
     });
 
     await audit({

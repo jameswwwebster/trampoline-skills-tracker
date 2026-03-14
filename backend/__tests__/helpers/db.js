@@ -44,6 +44,7 @@ async function cleanDatabase() {
   const testGymnastIds = testGymnasts.map(g => g.id);
 
   await prisma.membership.deleteMany({ where: { gymnastId: { in: testGymnastIds } } });
+  await prisma.commitment.deleteMany({ where: { gymnastId: { in: testGymnastIds } } });
   await prisma.gymnast.deleteMany({ where: { id: { in: testGymnastIds } } });
   await prisma.auditLog.deleteMany({ where: { userId: { in: testUserIds } } });
   await prisma.user.deleteMany({ where: { id: { in: testUserIds } } });
@@ -52,6 +53,7 @@ async function cleanDatabase() {
   await prisma.sessionInstance.deleteMany({
     where: { template: { club: { name: 'Test Club TL' } } },
   });
+  await prisma.commitment.deleteMany({ where: { template: { club: { name: 'Test Club TL' } } } });
   await prisma.sessionTemplate.deleteMany({
     where: { club: { name: 'Test Club TL' } },
   });
