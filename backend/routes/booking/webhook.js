@@ -27,6 +27,12 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
     });
     console.log(`Booking confirmed for payment intent ${paymentIntent.id}`);
 
+    // Mark charges paid
+    await prisma.charge.updateMany({
+      where: { paidOnPaymentIntentId: paymentIntent.id },
+      data: { paidAt: new Date() },
+    });
+
     // Check if this is a shop order
     const shopOrder = await prisma.shopOrder.findUnique({
       where: { stripePaymentIntentId: paymentIntent.id },
@@ -69,6 +75,13 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
       where: { stripePaymentIntentId: paymentIntent.id, status: 'PENDING' },
       data: { status: 'CANCELLED' },
     });
+
+    // Release charge PI link so they appear outstanding again
+    await prisma.charge.updateMany({
+      where: { paidOnPaymentIntentId: paymentIntent.id },
+      data: { paidOnPaymentIntentId: null },
+    });
+
     console.log(`Bookings cancelled and credits released for payment intent ${paymentIntent.id} (${event.type})`);
   }
 
