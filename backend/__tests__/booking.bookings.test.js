@@ -199,3 +199,67 @@ describe('DMT booking gate', () => {
     expect(res.body.error).toMatch(/not approved for DMT/i);
   });
 });
+
+describe('Commitment enforcement in booking', () => {
+  let club3, coach3, parent3, gymnast3, template3, instance3, coachToken3, parentToken3;
+
+  beforeAll(async () => {
+    club3 = await createTestClub();
+    coach3 = await createParent(club3, { role: 'COACH', email: `bk-coach3-${Date.now()}@test.tl` });
+    parent3 = await createParent(club3, { email: `bk-parent3-${Date.now()}@test.tl` });
+    gymnast3 = await createGymnast(club3, parent3);
+    ({ template: template3, instance: instance3 } = await createSession(club3));
+    coachToken3 = tokenFor(coach3);
+    parentToken3 = tokenFor(parent3);
+  });
+
+  afterEach(async () => {
+    await prisma.commitment.deleteMany({ where: { templateId: template3.id } });
+    await prisma.booking.deleteMany({ where: { sessionInstanceId: instance3.id } });
+  });
+
+  it('cannot book when capacity is full due to commitments', async () => {
+    const template3WithCapacity = await prisma.sessionTemplate.findUnique({ where: { id: template3.id } });
+    for (let i = 0; i < template3WithCapacity.openSlots; i++) {
+      const g = await createGymnast(club3, parent3);
+      await prisma.commitment.create({ data: { gymnastId: g.id, templateId: template3.id, createdById: coach3.id } });
+    }
+
+    const res = await request(testApp)
+      .post('/api/booking/bookings')
+      .set('Authorization', `Bearer ${parentToken3}`)
+      .send({ sessionInstanceId: instance3.id, gymnastIds: [gymnast3.id] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/not enough slots/i);
+  });
+
+  it('gymnast with ACTIVE commitment cannot book the same template session', async () => {
+    await prisma.commitment.create({
+      data: { gymnastId: gymnast3.id, templateId: template3.id, createdById: coach3.id },
+    });
+
+    const res = await request(testApp)
+      .post('/api/booking/bookings')
+      .set('Authorization', `Bearer ${parentToken3}`)
+      .send({ sessionInstanceId: instance3.id, gymnastIds: [gymnast3.id] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/standing slot/i);
+  });
+
+  it('gymnast with PAUSED commitment can book', async () => {
+    await prisma.commitment.create({
+      data: { gymnastId: gymnast3.id, templateId: template3.id, createdById: coach3.id, status: 'PAUSED' },
+    });
+    // Add credit to cover cost so Stripe is not called in tests
+    await createCredit(parent3, 1200);
+
+    const res = await request(testApp)
+      .post('/api/booking/bookings')
+      .set('Authorization', `Bearer ${parentToken3}`)
+      .send({ sessionInstanceId: instance3.id, gymnastIds: [gymnast3.id] });
+
+    expect(res.status).toBe(200);
+  });
+});
