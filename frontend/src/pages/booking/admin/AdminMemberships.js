@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { bookingApi } from '../../../utils/bookingApi';
+import { bookingApi, getTemplates } from '../../../utils/bookingApi';
 import '../booking-shared.css';
 
 const STATUS_LABELS = {
@@ -12,7 +12,8 @@ const STATUS_LABELS = {
 export default function AdminMemberships() {
   const [memberships, setMemberships] = useState([]);
   const [gymnasts, setGymnasts] = useState([]);
-  const [form, setForm] = useState({ gymnastId: '', monthlyAmount: '', startDate: '' });
+  const [form, setForm] = useState({ gymnastId: '', monthlyAmount: '', startDate: '', templateIds: [] });
+  const [templates, setTemplates] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState(null);
   const [error, setError] = useState(null);
@@ -21,6 +22,7 @@ export default function AdminMemberships() {
 
   const load = () => {
     bookingApi.getMemberships().then(res => setMemberships(res.data));
+    getTemplates().then(res => setTemplates(res.data));
     const API_URL = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api`;
     fetch(`${API_URL}/gymnasts`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
       .then(r => r.json()).then(data => setGymnasts(Array.isArray(data) ? data : data.gymnasts || []));
@@ -33,14 +35,19 @@ export default function AdminMemberships() {
     setSubmitting(true);
     setError(null);
     setSubmitMsg(null);
+    if (form.templateIds.length === 0) {
+      setError('Please select at least one standing slot session.');
+      setSubmitting(false);
+      return;
+    }
     try {
       const res = await bookingApi.createMembership({
         gymnastId: form.gymnastId,
         monthlyAmount: Math.round(parseFloat(form.monthlyAmount) * 100),
-
         startDate: form.startDate,
+        templateIds: form.templateIds,
       });
-      setForm({ gymnastId: '', monthlyAmount: '', startDate: '' });
+      setForm({ gymnastId: '', monthlyAmount: '', startDate: '', templateIds: [] });
       setSubmitMsg(res.data.clientSecret
         ? 'Membership created. The member will see a payment setup prompt in their account.'
         : 'Membership created.');
@@ -103,6 +110,30 @@ export default function AdminMemberships() {
         </div>
         <label className="bk-label">Start date
           <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} required className="bk-input" style={{ marginTop: '0.25rem' }} />
+        </label>
+        <label className="bk-label">Standing slots
+          <div style={{ marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            {templates.filter(t => t.isActive).map(t => {
+              const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+              const label = `${days[t.dayOfWeek]} ${t.startTime}–${t.endTime}`;
+              const checked = form.templateIds.includes(t.id);
+              return (
+                <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'normal', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    className="auth-checkbox"
+                    checked={checked}
+                    onChange={() => setForm(f => ({
+                      ...f,
+                      templateIds: checked ? f.templateIds.filter(id => id !== t.id) : [...f.templateIds, t.id],
+                    }))}
+                  />
+                  {label}{t.type === 'DMT' ? ' · DMT' : ''}
+                </label>
+              );
+            })}
+            {templates.length === 0 && <span className="bk-muted" style={{ fontSize: '0.85rem' }}>No session templates found</span>}
+          </div>
         </label>
         {error && <p className="bk-error">{error}</p>}
         {submitMsg && <p style={{ color: 'var(--booking-success)', fontSize: '0.875rem' }}>{submitMsg}</p>}
