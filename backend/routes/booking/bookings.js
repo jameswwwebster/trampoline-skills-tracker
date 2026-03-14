@@ -717,6 +717,8 @@ router.post('/combined', auth, async (req, res) => {
   try {
     const { sessions = [], shopItems = [] } = req.body;
 
+    const now = new Date();
+
     // ── Fetch outstanding charges ──
     const outstandingCharges = await prisma.charge.findMany({
       where: { userId: req.user.id, paidAt: null },
@@ -728,8 +730,6 @@ router.post('/combined', auth, async (req, res) => {
     if (sessions.length === 0 && shopItems.length === 0 && chargeTotal === 0) {
       return res.status(400).json({ error: 'Cart is empty' });
     }
-
-    const now = new Date();
 
     // ── Validate sessions ──
     const validatedSessions = [];
