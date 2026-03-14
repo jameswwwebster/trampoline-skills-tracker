@@ -413,26 +413,23 @@ class EmailService {
   }
 
   async sendNewMemberDigestEmail(coachEmail, coachFirstName, newMembers) {
-    const rows = newMembers.map(m => {
+    const rows = [];
+    const textLines = [];
+    for (const m of newMembers) {
       const signedUpAt = new Date(m.createdAt).toLocaleString('en-GB', {
         day: 'numeric', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit',
       });
-      return `<tr>
+      rows.push(`<tr>
         <td style="padding:6px 10px;border-bottom:1px solid #eee">${m.firstName} ${m.lastName}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee">${m.email}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;color:#888">${signedUpAt}</td>
-      </tr>`;
-    }).join('');
+      </tr>`);
+      textLines.push(`${m.firstName} ${m.lastName} <${m.email}> — ${signedUpAt}`);
+    }
 
     const text = `Hi ${coachFirstName},\n\nThe following new member${newMembers.length !== 1 ? 's have' : ' has'} signed up in the last 24 hours:\n\n` +
-      newMembers.map(m => {
-        const signedUpAt = new Date(m.createdAt).toLocaleString('en-GB', {
-          day: 'numeric', month: 'short', year: 'numeric',
-          hour: '2-digit', minute: '2-digit',
-        });
-        return `${m.firstName} ${m.lastName} <${m.email}> — ${signedUpAt}`;
-      }).join('\n');
+      textLines.join('\n');
 
     return this.sendEmail({
       to: coachEmail,
@@ -450,7 +447,7 @@ class EmailService {
               <th style="padding:6px 10px;text-align:left">Signed up</th>
             </tr>
           </thead>
-          <tbody>${rows}</tbody>
+          <tbody>${rows.join('')}</tbody>
         </table>`,
       ),
     });
