@@ -1,7 +1,7 @@
 const request = require('supertest');
 const { createTestApp } = require('./helpers/create-test-app');
 const { prisma, cleanDatabase } = require('./helpers/db');
-const { createTestClub, createParent, createGymnast, createSession, tokenFor } = require('./helpers/seed');
+const { createTestClub, createParent, createGymnast, createSession, createMembership, tokenFor } = require('./helpers/seed');
 
 const app = createTestApp();
 let club, admin, adminToken, coach, coachToken, parent, parentToken, gymnast, template;
@@ -13,6 +13,7 @@ beforeAll(async () => {
   coach = await createParent(club, { role: 'COACH', email: `commit-coach-${Date.now()}@test.tl` });
   parent = await createParent(club);
   gymnast = await createGymnast(club, parent);
+  await createMembership(gymnast, club);
   const sess = await createSession(club);
   template = sess.template;
   adminToken = tokenFor(admin);
@@ -86,6 +87,27 @@ describe('POST /api/commitments', () => {
       .send({ gymnastId: gymnast.id, templateId: otherTemplate.id });
 
     expect(res.status).toBe(400);
+  });
+
+  it('returns 422 if gymnast has no active membership', async () => {
+    const noMembershipGymnast = await createGymnast(club, parent);
+    const res = await request(app)
+      .post('/api/commitments')
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ gymnastId: noMembershipGymnast.id, templateId: template.id });
+    expect(res.status).toBe(422);
+    expect(res.body.error).toMatch(/active membership/);
+  });
+
+  it('returns 422 if gymnast BG number is not verified', async () => {
+    const noBgGymnast = await createGymnast(club, parent, { bgNumberStatus: 'PENDING' });
+    await createMembership(noBgGymnast, club);
+    const res = await request(app)
+      .post('/api/commitments')
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ gymnastId: noBgGymnast.id, templateId: template.id });
+    expect(res.status).toBe(422);
+    expect(res.body.error).toMatch(/British Gymnastics/);
   });
 
   it('returns 403 if parent tries to create commitment', async () => {

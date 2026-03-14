@@ -88,8 +88,22 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     // Validate gymnast belongs to caller's club
     const gymnast = await prisma.gymnast.findFirst({
       where: { id: gymnastId, clubId: req.user.clubId },
+      select: { id: true, firstName: true, bgNumberStatus: true },
     });
     if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
+
+    // Validate gymnast has an active membership
+    const activeMembership = await prisma.membership.findFirst({
+      where: { gymnastId, status: 'ACTIVE' },
+    });
+    if (!activeMembership) {
+      return res.status(422).json({ error: `${gymnast.firstName} must have an active membership to be given a standing slot` });
+    }
+
+    // Validate gymnast has a verified BG number
+    if (gymnast.bgNumberStatus !== 'VERIFIED') {
+      return res.status(422).json({ error: `${gymnast.firstName} must have a verified British Gymnastics number to be given a standing slot` });
+    }
 
     // Validate template belongs to caller's club
     const template = await prisma.sessionTemplate.findFirst({

@@ -57,7 +57,10 @@ function RichTextEditor({ value, onChange }) {
   }, [editor, value]);
 
   return (
-    <div style={{ border: '1.5px solid var(--booking-border)', borderRadius: 'var(--booking-radius)', overflow: 'hidden' }}>
+    <div
+      style={{ border: '1.5px solid var(--booking-border)', borderRadius: 'var(--booking-radius)', overflow: 'hidden' }}
+      onClick={() => editor?.commands.focus()}
+    >
       <Toolbar editor={editor} />
       <EditorContent
         editor={editor}
@@ -255,7 +258,7 @@ export default function SessionTemplates() {
           </div>
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, marginBottom: '1rem' }}>
             Session information (optional)
-            <RichTextEditor value={form.information} onChange={v => setForm(f => ({ ...f, information: v }))} />
+            <RichTextEditor key={editingId} value={form.information} onChange={v => setForm(f => ({ ...f, information: v }))} />
           </label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button type="submit" disabled={saving} className="bk-btn bk-btn--primary">{saving ? 'Saving\u2026' : 'Save'}</button>

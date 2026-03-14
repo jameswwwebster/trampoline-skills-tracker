@@ -168,6 +168,28 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
+    // Cross-type conflict check — cannot book DMT and Standard sessions on the same day
+    const crossTypeConflicts = await prisma.bookingLine.findMany({
+      where: {
+        gymnastId: { in: gymnastIds },
+        booking: {
+          status: 'CONFIRMED',
+          sessionInstance: {
+            date: instance.date,
+            template: { type: { not: instance.template.type } },
+          },
+        },
+      },
+      include: { gymnast: { select: { firstName: true } } },
+      distinct: ['gymnastId'],
+    });
+    if (crossTypeConflicts.length > 0) {
+      const names = crossTypeConflicts.map(l => l.gymnast.firstName).join(', ');
+      return res.status(400).json({
+        error: `The following gymnasts already have a booking for a different session type on this day: ${names}`,
+      });
+    }
+
     // Verify parent owns these gymnasts
     if (req.user.role === 'PARENT') {
       const myGymnasts = await prisma.gymnast.findMany({
@@ -367,6 +389,28 @@ router.post('/batch', auth, async (req, res) => {
         const names = committedInBatch.map(c => c.gymnast.firstName).join(', ');
         return res.status(400).json({
           error: `The following gymnasts already have a standing slot for this session: ${names}`,
+        });
+      }
+
+      // Cross-type conflict check
+      const crossTypeBatch = await prisma.bookingLine.findMany({
+        where: {
+          gymnastId: { in: gymnastIds },
+          booking: {
+            status: 'CONFIRMED',
+            sessionInstance: {
+              date: instance.date,
+              template: { type: { not: instance.template.type } },
+            },
+          },
+        },
+        include: { gymnast: { select: { firstName: true } } },
+        distinct: ['gymnastId'],
+      });
+      if (crossTypeBatch.length > 0) {
+        const names = crossTypeBatch.map(l => l.gymnast.firstName).join(', ');
+        return res.status(400).json({
+          error: `The following gymnasts already have a booking for a different session type on this day: ${names}`,
         });
       }
 
@@ -751,6 +795,28 @@ router.post('/combined', auth, async (req, res) => {
           const names = committedInCombined.map(c => c.gymnast.firstName).join(', ');
           return res.status(400).json({
             error: `The following gymnasts already have a standing slot for this session: ${names}`,
+          });
+        }
+
+        // Cross-type conflict check
+        const crossTypeCombined = await prisma.bookingLine.findMany({
+          where: {
+            gymnastId: { in: gymnastIds },
+            booking: {
+              status: 'CONFIRMED',
+              sessionInstance: {
+                date: instance.date,
+                template: { type: { not: instance.template.type } },
+              },
+            },
+          },
+          include: { gymnast: { select: { firstName: true } } },
+          distinct: ['gymnastId'],
+        });
+        if (crossTypeCombined.length > 0) {
+          const names = crossTypeCombined.map(l => l.gymnast.firstName).join(', ');
+          return res.status(400).json({
+            error: `The following gymnasts already have a booking for a different session type on this day: ${names}`,
           });
         }
 
