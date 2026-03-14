@@ -209,6 +209,7 @@ export default function BookingLayout() {
                   <div className="booking-layout__dropdown-menu">
                     <NavLink to="/booking/admin" end className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Sessions</NavLink>
                     <NavLink to="/booking/admin/closures" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Closures</NavLink>
+                    <NavLink to="/booking/admin/session-management" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Session Management</NavLink>
                   </div>
                 )}
               </div>

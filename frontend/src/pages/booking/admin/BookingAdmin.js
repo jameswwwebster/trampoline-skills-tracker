@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
 import CalendarNav from '../CalendarNav';
-import SessionTemplates from './SessionTemplates';
 import '../booking-shared.css';
 import '../BookingCalendar.css';
 
@@ -246,7 +245,7 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
           {!slotsLoading && standingSlots && standingSlots.length === 0 && (
             <p className="bk-muted" style={{ margin: 0 }}>No standing slots.</p>
           )}
-          {!slotsLoading && standingSlots && standingSlots.map(c => (
+          {!slotsLoading && standingSlots && standingSlots.filter(c => c.status !== 'WAITLISTED').map(c => (
             <div key={c.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--booking-bg-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.9rem' }}>{c.gymnast.firstName} {c.gymnast.lastName}</span>
               {c.status === 'PAUSED' && (
@@ -381,7 +380,6 @@ export default function BookingAdmin() {
   const [selectedSession, setSelectedSession] = useState(null);
   const [sessionDetail, setSessionDetail] = useState(null);
   const [showManualAdd, setShowManualAdd] = useState(false);
-  const [templatesOpen, setTemplatesOpen] = useState(false);
 
   const loadDetail = (id) =>
     bookingApi.getSession(id).then(res => setSessionDetail(res.data));
@@ -543,25 +541,6 @@ export default function BookingAdmin() {
         </div>
       )}
 
-      {/* Session Templates */}
-      <div style={{ marginTop: '2.5rem', borderTop: '1px solid var(--booking-border)', paddingTop: '1.25rem' }}>
-        <button
-          onClick={() => setTemplatesOpen(v => !v)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '0.5rem',
-            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-            fontSize: '1rem', fontWeight: 700, color: 'var(--booking-text-on-light)',
-          }}
-        >
-          <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', transition: 'transform 0.2s', display: 'inline-block', transform: templatesOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
-          Session Templates
-        </button>
-        {templatesOpen && (
-          <div style={{ marginTop: '1rem' }}>
-            <SessionTemplates />
-          </div>
-        )}
-      </div>
     </div>
   );
 }
