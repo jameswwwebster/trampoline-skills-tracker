@@ -97,6 +97,8 @@ export default function SessionTemplates() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [modal, setModal] = useState(null); // { type, templateId, payload }
+  const [filterType, setFilterType] = useState('ALL');
+  const [filterStatus, setFilterStatus] = useState('ALL');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -268,13 +270,35 @@ export default function SessionTemplates() {
       )}
 
       {/* Template list */}
+      {!loading && templates.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
+          {[['ALL', 'All types'], ['TRAMPOLINE', 'Trampoline'], ['DMT', 'DMT']].map(([val, label]) => (
+            <button key={val} type="button" onClick={() => setFilterType(val)} style={{
+              fontSize: '0.8rem', fontWeight: 600, padding: '0.3rem 0.75rem', borderRadius: 999, cursor: 'pointer', border: 'none',
+              background: filterType === val ? (val === 'DMT' ? '#e67e22' : val === 'TRAMPOLINE' ? 'var(--booking-accent)' : 'var(--booking-bg-dark)') : 'var(--booking-border)',
+              color: filterType === val ? '#fff' : 'var(--booking-text-muted)',
+            }}>{label}</button>
+          ))}
+          <span style={{ width: '1px', background: 'var(--booking-border)', margin: '0 0.25rem' }} />
+          {[['ALL', 'All'], ['ACTIVE', 'Active'], ['INACTIVE', 'Inactive']].map(([val, label]) => (
+            <button key={val} type="button" onClick={() => setFilterStatus(val)} style={{
+              fontSize: '0.8rem', fontWeight: 600, padding: '0.3rem 0.75rem', borderRadius: 999, cursor: 'pointer', border: 'none',
+              background: filterStatus === val ? 'var(--booking-bg-dark)' : 'var(--booking-border)',
+              color: filterStatus === val ? '#fff' : 'var(--booking-text-muted)',
+            }}>{label}</button>
+          ))}
+        </div>
+      )}
       {loading ? (
         <p style={{ color: 'var(--booking-text-muted)' }}>Loading\u2026</p>
       ) : templates.length === 0 ? (
         <p style={{ color: 'var(--booking-text-muted)' }}>No templates yet. Create one to start generating sessions.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {templates.map(t => (
+          {templates.filter(t =>
+            (filterType === 'ALL' || t.type === filterType) &&
+            (filterStatus === 'ALL' || (filterStatus === 'ACTIVE' ? t.isActive : !t.isActive))
+          ).map(t => (
             <div key={t.id} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem',
               padding: '0.75rem 1rem',
@@ -296,8 +320,8 @@ export default function SessionTemplates() {
                 <div style={{ fontSize: '0.82rem', color: 'var(--booking-text-muted)', marginTop: '0.15rem' }}>
                   {t.openSlots} slots &middot; £{(t.pricePerGymnast / 100).toFixed(2)}{t.minAge ? ` \u00b7 ${t.minAge}+` : ''}
                   {t.information && <span> &middot; <em>Has info text</em></span>}
-                  {t.type === 'DMT' && <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--booking-accent)' }}>DMT</span>}
-                  {t.type === 'TRAMPOLINE' && <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--booking-accent)' }}>Trampoline</span>}
+                  {t.type === 'DMT' && <span style={{ marginLeft: '0.4rem', fontSize: '0.72rem', fontWeight: 700, color: '#fff', background: '#e67e22', borderRadius: 3, padding: '0 5px' }}>DMT</span>}
+                  {t.type === 'TRAMPOLINE' && <span style={{ marginLeft: '0.4rem', fontSize: '0.72rem', fontWeight: 700, color: '#fff', background: 'var(--booking-accent)', borderRadius: 3, padding: '0 5px' }}>Trampoline</span>}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
