@@ -59,6 +59,8 @@ model User {
   noticeboardReads              NoticeboardRead[]
   recipientGroups               RecipientGroup[]
   dmtApprovals                  Gymnast[]         @relation("DmtApprovedBy")
+  commitmentsCreated            Commitment[]      @relation("CommitmentCreatedBy")
+  commitmentsPaused             Commitment[]      @relation("CommitmentPausedBy")
 
   @@map("users")
 }
@@ -186,6 +188,7 @@ model Gymnast {
   bookingLines     BookingLine[]
   memberships      Membership[]
   consents         Consent[]
+  commitments      Commitment[]
 
   @@map("gymnasts")
 }
@@ -498,8 +501,27 @@ model SessionTemplate {
   updatedAt   DateTime          @updatedAt
   club        Club              @relation(fields: [clubId], references: [id])
   instances   SessionInstance[]
+  commitments Commitment[]
 
   @@map("session_templates")
+}
+
+model Commitment {
+  id           String           @id @default(cuid())
+  gymnast      Gymnast          @relation(fields: [gymnastId], references: [id], onDelete: Cascade)
+  gymnastId    String
+  template     SessionTemplate  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  templateId   String
+  status       CommitmentStatus @default(ACTIVE)
+  pausedAt     DateTime?
+  pausedById   String?
+  pausedBy     User?            @relation("CommitmentPausedBy", fields: [pausedById], references: [id])
+  createdById  String
+  createdBy    User             @relation("CommitmentCreatedBy", fields: [createdById], references: [id])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([gymnastId, templateId])
 }
 
 model SessionInstance {
@@ -862,4 +884,9 @@ enum BgNumberStatus {
 enum SessionType {
   STANDARD
   DMT
+}
+
+enum CommitmentStatus {
+  ACTIVE
+  PAUSED
 }
