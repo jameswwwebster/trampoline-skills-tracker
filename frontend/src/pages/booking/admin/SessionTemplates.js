@@ -2,11 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
-import { getTemplates, createTemplate, updateTemplate, toggleTemplate, deleteTemplate } from '../../../utils/bookingApi';
+import { bookingApi, getTemplates, createTemplate, updateTemplate, toggleTemplate, deleteTemplate } from '../../../utils/bookingApi';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const EMPTY_FORM = { dayOfWeek: '1', startTime: '', endTime: '', openSlots: '12', minAge: '', pricePerGymnast: '6', information: '', type: 'TRAMPOLINE' };
+const EMPTY_FORM = { dayOfWeek: '1', startTime: '', endTime: '', openSlots: '12', minAge: '', competitiveSlots: '', pricePerGymnast: '6', information: '', type: 'TRAMPOLINE' };
 
 // Minimal TipTap toolbar
 function Toolbar({ editor }) {
@@ -99,6 +99,8 @@ export default function SessionTemplates() {
   const [modal, setModal] = useState(null); // { type, templateId, payload }
   const [filterType, setFilterType] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [openPanels, setOpenPanels] = useState({});
+  const [panelData, setPanelData] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -114,6 +116,50 @@ export default function SessionTemplates() {
 
   useEffect(() => { load(); }, [load]);
 
+  const loadPanel = useCallback(async (templateId) => {
+    setPanelData(prev => ({ ...prev, [templateId]: { ...(prev[templateId] || {}), loading: true, error: null } }));
+    try {
+      const { data } = await bookingApi.getCommitmentsForTemplate(templateId);
+      setPanelData(prev => ({ ...prev, [templateId]: { commitments: data, loading: false, error: null } }));
+    } catch {
+      setPanelData(prev => ({ ...prev, [templateId]: { commitments: [], loading: false, error: 'Failed to load' } }));
+    }
+  }, []);
+
+  const togglePanel = (templateId) => {
+    const isOpening = !openPanels[templateId];
+    setOpenPanels(prev => ({ ...prev, [templateId]: isOpening }));
+    if (isOpening) loadPanel(templateId);
+  };
+
+  const handlePauseCommitment = async (templateId, commitmentId) => {
+    try {
+      await bookingApi.updateCommitmentStatus(commitmentId, 'PAUSED');
+      loadPanel(templateId);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to pause commitment');
+    }
+  };
+
+  const handleActivateCommitment = async (templateId, commitmentId) => {
+    try {
+      await bookingApi.updateCommitmentStatus(commitmentId, 'ACTIVE');
+      loadPanel(templateId);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to activate commitment');
+    }
+  };
+
+  const handleRemoveCommitment = async (templateId, commitmentId) => {
+    if (!window.confirm('Remove this commitment?')) return;
+    try {
+      await bookingApi.deleteCommitment(commitmentId);
+      loadPanel(templateId);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to remove commitment');
+    }
+  };
+
   const openCreate = () => {
     setEditingId('new');
     setForm(EMPTY_FORM);
@@ -127,6 +173,7 @@ export default function SessionTemplates() {
       endTime: t.endTime,
       openSlots: String(t.openSlots),
       minAge: t.minAge != null ? String(t.minAge) : '',
+      competitiveSlots: t.competitiveSlots != null ? String(t.competitiveSlots) : '',
       pricePerGymnast: String(t.pricePerGymnast / 100),
       information: t.information || '',
       type: t.type,
@@ -142,6 +189,7 @@ export default function SessionTemplates() {
     openSlots: parseInt(form.openSlots),
     pricePerGymnast: Math.round(parseFloat(form.pricePerGymnast) * 100) || 600,
     minAge: form.minAge !== '' ? parseInt(form.minAge) : null,
+    competitiveSlots: form.competitiveSlots !== '' ? parseInt(form.competitiveSlots) : null,
     information: form.information || null,
     type: form.type,
   });
@@ -212,7 +260,7 @@ export default function SessionTemplates() {
   return (
     <div style={{ marginBottom: '2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--booking-text-on-light)' }}>Session Templates</h2>
+        <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--booking-text-on-light)' }}>Session Management</h2>
         {editingId === null && (
           <button className="bk-btn bk-btn--primary" onClick={openCreate}>+ New Template</button>
         )}
@@ -246,6 +294,10 @@ export default function SessionTemplates() {
             <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600 }}>
               Min age (optional)
               <input type="number" min="0" value={form.minAge} onChange={e => setForm(f => ({ ...f, minAge: e.target.value }))} className="bk-input" placeholder="None" />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600 }}>
+              Competitive slots (optional)
+              <input type="number" min="1" value={form.competitiveSlots} onChange={e => setForm(f => ({ ...f, competitiveSlots: e.target.value }))} className="bk-input" placeholder="No cap" />
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600 }}>
               Price per gymnast (£)
@@ -300,7 +352,7 @@ export default function SessionTemplates() {
             (filterStatus === 'ALL' || (filterStatus === 'ACTIVE' ? t.isActive : !t.isActive))
           ).map(t => (
             <div key={t.id} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem',
+              display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem',
               padding: '0.75rem 1rem',
               border: '1.5px solid var(--booking-border)',
               borderRadius: 'var(--booking-radius)',
@@ -325,12 +377,93 @@ export default function SessionTemplates() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                <button className="bk-btn bk-btn--ghost" style={{ fontSize: '0.82rem', padding: '0.3rem 0.65rem' }} onClick={() => togglePanel(t.id)}>
+                  {openPanels[t.id] ? 'Hide slots' : 'View slots'}
+                </button>
                 <button className="bk-btn bk-btn--ghost" style={{ fontSize: '0.82rem', padding: '0.3rem 0.65rem' }} onClick={() => openEdit(t)}>Edit</button>
                 <button className="bk-btn bk-btn--ghost" style={{ fontSize: '0.82rem', padding: '0.3rem 0.65rem' }} onClick={() => handleToggle(t)}>
                   {t.isActive ? 'Deactivate' : 'Activate'}
                 </button>
                 <button className="bk-btn bk-btn--ghost" style={{ fontSize: '0.82rem', padding: '0.3rem 0.65rem', color: 'var(--booking-danger)' }} onClick={() => handleDelete(t)}>Delete</button>
               </div>
+              {openPanels[t.id] && (() => {
+                const pd = panelData[t.id];
+                const commitments = pd?.commitments || [];
+                const active = commitments.filter(c => c.status === 'ACTIVE').sort((a, b) => a.createdAt < b.createdAt ? -1 : 1);
+                const paused = commitments.filter(c => c.status === 'PAUSED').sort((a, b) => a.createdAt < b.createdAt ? -1 : 1);
+                const waitlisted = commitments.filter(c => c.status === 'WAITLISTED').sort((a, b) => a.createdAt < b.createdAt ? -1 : (a.createdAt === b.createdAt ? (a.id < b.id ? -1 : 1) : 1));
+                const hasSlotAvailable = t.competitiveSlots !== null && active.length < t.competitiveSlots && waitlisted.length > 0;
+                const slotsLabel = t.competitiveSlots !== null ? `${active.length} / ${t.competitiveSlots} competitive slots` : null;
+                return (
+                  <div style={{ width: '100%', borderTop: '1px solid var(--booking-border)', paddingTop: '0.75rem', marginTop: '0.25rem' }}>
+                    {pd?.loading && <p style={{ color: 'var(--booking-text-muted)', fontSize: '0.85rem', margin: 0 }}>Loading...</p>}
+                    {pd?.error && <p style={{ color: 'var(--booking-danger)', fontSize: '0.85rem', margin: 0 }}>{pd.error}</p>}
+                    {pd && !pd.loading && !pd.error && (
+                      <>
+                        {slotsLabel && (
+                          <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--booking-text-muted)' }}>{slotsLabel}</span>
+                            {hasSlotAvailable && (
+                              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', background: 'var(--booking-success)', borderRadius: 4, padding: '0.1rem 0.5rem' }}>
+                                {t.competitiveSlots - active.length} slot{t.competitiveSlots - active.length !== 1 ? 's' : ''} available \u2014 {waitlisted.length} on waitlist
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {commitments.length === 0 && <p style={{ color: 'var(--booking-text-muted)', fontSize: '0.85rem', margin: 0 }}>No commitments yet.</p>}
+                        {active.length > 0 && (
+                          <div style={{ marginBottom: '0.5rem' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--booking-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>Active</div>
+                            {active.map(c => (
+                              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.85rem' }}>
+                                <span>{c.gymnast.firstName} {c.gymnast.lastName}</span>
+                                <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                  <button className="bk-btn bk-btn--sm" onClick={() => handlePauseCommitment(t.id, c.id)}>Pause</button>
+                                  <button className="bk-btn bk-btn--sm" style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }} onClick={() => handleRemoveCommitment(t.id, c.id)}>Remove</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {paused.length > 0 && (
+                          <div style={{ marginBottom: '0.5rem' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--booking-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>Paused</div>
+                            {paused.map(c => (
+                              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.85rem' }}>
+                                <span>{c.gymnast.firstName} {c.gymnast.lastName}</span>
+                                <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                  <button className="bk-btn bk-btn--sm" onClick={() => handleActivateCommitment(t.id, c.id)}>Activate</button>
+                                  <button className="bk-btn bk-btn--sm" style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }} onClick={() => handleRemoveCommitment(t.id, c.id)}>Remove</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {waitlisted.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--booking-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>Waitlist</div>
+                            {waitlisted.map((c, idx) => (
+                              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.85rem' }}>
+                                <span><span style={{ color: 'var(--booking-text-muted)', marginRight: '0.4rem' }}>#{idx + 1}</span>{c.gymnast.firstName} {c.gymnast.lastName}</span>
+                                <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                  <button
+                                    className="bk-btn bk-btn--sm"
+                                    disabled={!hasSlotAvailable && !(t.competitiveSlots === null)}
+                                    onClick={() => handleActivateCommitment(t.id, c.id)}
+                                  >
+                                    Promote
+                                  </button>
+                                  <button className="bk-btn bk-btn--sm" style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }} onClick={() => handleRemoveCommitment(t.id, c.id)}>Remove</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>
