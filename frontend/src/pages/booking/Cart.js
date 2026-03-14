@@ -84,6 +84,7 @@ export default function Cart() {
   const [clientSecret, setClientSecret] = useState(null);
   const [checkoutBookingId, setCheckoutBookingId] = useState(null);
   const [checkoutShopOrderId, setCheckoutShopOrderId] = useState(null);
+  const [charges, setCharges] = useState([]);
 
   // Fetch session details for display
   useEffect(() => {
@@ -101,11 +102,20 @@ export default function Cart() {
       .catch(() => {});
   }, []);
 
-  const isEmpty = bookingEntries.length === 0 && shopCart.length === 0;
+  // Fetch outstanding charges
+  useEffect(() => {
+    bookingApi.getMyCharges()
+      .then(r => setCharges(r.data))
+      .catch(() => {});
+  }, []);
+
+  const isEmpty = bookingEntries.length === 0 && shopCart.length === 0 && charges.length === 0;
   const sessionTotal = bookingEntries.reduce((sum, [instanceId, g]) => sum + g.length * (sessionDetails[instanceId]?.pricePerGymnast ?? 600), 0);
   const shopTotal = shopCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const creditAmount = Math.min(credits, sessionTotal);
-  const chargeAmount = Math.max(0, sessionTotal - creditAmount) + shopTotal;
+  const chargesTotal = charges.reduce((sum, c) => sum + c.amount, 0);
+  const grandTotal = sessionTotal + shopTotal + chargesTotal;
+  const creditAmount = Math.min(credits, grandTotal);
+  const chargeAmount = Math.max(0, grandTotal - creditAmount); // amount to charge Stripe — name unchanged, used at lines ~165 and ~288
 
   function removeSession(instanceId) {
     const next = bookingEntries.filter(([id]) => id !== instanceId);
@@ -143,12 +153,17 @@ export default function Cart() {
         setCheckoutShopOrderId(res.data.shopOrderId);
         setClientSecret(res.data.clientSecret);
       } else {
-        // Free checkout — clear carts and navigate to confirmation
+        // Free checkout — clear carts
         clearAllCarts();
-        const params = new URLSearchParams();
-        if (res.data.bookingId) params.set('bookingId', res.data.bookingId);
-        if (res.data.shopOrderId) params.set('shopOrderId', res.data.shopOrderId);
-        navigate(`/booking/cart-confirmation?${params}`);
+        // Charges-only cart: no booking or shop order IDs — navigate to My Charges with confirmation
+        if (!res.data.bookingId && !res.data.shopOrderId) {
+          navigate('/booking/my-charges?paid=true');
+        } else {
+          const params = new URLSearchParams();
+          if (res.data.bookingId) params.set('bookingId', res.data.bookingId);
+          if (res.data.shopOrderId) params.set('shopOrderId', res.data.shopOrderId);
+          navigate(`/booking/cart-confirmation?${params}`);
+        }
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Checkout failed. Please try again.');
@@ -256,6 +271,21 @@ export default function Cart() {
         </div>
       )}
 
+      {/* Outstanding charges — non-removable */}
+      {charges.length > 0 && (
+        <div style={{ marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '0.9rem', color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
+            Outstanding charges
+          </h3>
+          {charges.map(c => (
+            <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--booking-border)' }}>
+              <span>{c.description}</span>
+              <span>£{(c.amount / 100).toFixed(2)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Totals */}
       <div className="bk-card" style={{ padding: '0.75rem 1rem', marginBottom: '1.25rem' }}>
         {sessionTotal > 0 && shopTotal > 0 && (
@@ -268,12 +298,17 @@ export default function Cart() {
             </div>
           </>
         )}
+        {chargesTotal > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--booking-text-muted)', marginBottom: '0.25rem' }}>
+            <span>Outstanding charges</span><span>£{(chargesTotal / 100).toFixed(2)}</span>
+          </div>
+        )}
         {creditAmount > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--booking-text-muted)', marginBottom: '0.25rem' }}>
             <span>Credit applied</span><span>−£{(creditAmount / 100).toFixed(2)}</span>
           </div>
         )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.05rem', paddingTop: creditAmount > 0 || (sessionTotal > 0 && shopTotal > 0) ? '0.5rem' : 0, borderTop: creditAmount > 0 || (sessionTotal > 0 && shopTotal > 0) ? '1px solid #eee' : 'none' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.05rem', paddingTop: creditAmount > 0 || (sessionTotal > 0 && shopTotal > 0) || chargesTotal > 0 ? '0.5rem' : 0, borderTop: creditAmount > 0 || (sessionTotal > 0 && shopTotal > 0) || chargesTotal > 0 ? '1px solid #eee' : 'none' }}>
           <span>Total</span><span>£{(chargeAmount / 100).toFixed(2)}</span>
         </div>
       </div>
