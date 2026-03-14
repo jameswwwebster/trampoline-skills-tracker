@@ -1014,6 +1014,9 @@ function MemberDetail({ userId, onRemoved }) {
   const [sendingReset, setSendingReset] = useState(false);
   const [resetMessage, setResetMessage] = useState(null);
   const [creditsOpen, setCreditsOpen] = useState(false);
+  const [templates, setTemplates] = useState([]);
+
+  useEffect(() => { getTemplates().then(r => setTemplates(r.data)).catch(() => {}); }, []);
 
   const handlePasswordReset = async () => {
     setSendingReset(true);
@@ -1374,9 +1377,6 @@ export default function AdminMembers() {
   const [showMemberships, setShowMemberships] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
   const [showRemovedMembers, setShowRemovedMembers] = useState(false);
-  const [templates, setTemplates] = useState([]);
-
-  useEffect(() => { getTemplates().then(r => setTemplates(r.data)).catch(() => {}); }, []);
 
   useEffect(() => { setPage(1); }, [search, letterFilter]);
 
