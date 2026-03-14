@@ -209,6 +209,16 @@ export const bookingApi = {
     axios.patch(`${API_URL}/commitments/${commitmentId}/status`, { status }, { headers: getHeaders() }),
   deleteCommitment: (commitmentId) =>
     axios.delete(`${API_URL}/commitments/${commitmentId}`, { headers: getHeaders() }),
+
+  // Charges
+  getMyCharges: () =>
+    axios.get(`${API_URL}/booking/charges/my`, { headers: getHeaders() }),
+  getAdminCharges: () =>
+    axios.get(`${API_URL}/booking/charges`, { headers: getHeaders() }),
+  createCharge: (data) =>
+    axios.post(`${API_URL}/booking/charges`, data, { headers: getHeaders() }),
+  deleteCharge: (id) =>
+    axios.delete(`${API_URL}/booking/charges/${id}`, { headers: getHeaders() }),
 };
 
 // Audit log
