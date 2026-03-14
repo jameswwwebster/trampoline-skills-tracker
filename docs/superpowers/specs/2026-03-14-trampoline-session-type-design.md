@@ -30,6 +30,7 @@ No new models or fields are required.
 - **`frontend/src/pages/booking/BookingCalendar.js`** — add "Trampoline" badge for `type === 'TRAMPOLINE'` sessions (alongside existing "DMT" badge)
 - **`frontend/src/pages/booking/admin/SessionTemplates.js`** — default form value `'TRAMPOLINE'`, option label "Trampoline", template list badge
 - **`frontend/src/pages/booking/admin/AdminMemberships.js`** — session type label: show "Trampoline" for `TRAMPOLINE` type
+- **`frontend/src/pages/booking/admin/AdminMembers.js`** — commitment template dropdown: same `t.type === 'DMT' ? ' · DMT' : ' · Trampoline'` treatment (line ~641)
 
 ## Detailed Behaviour
 
@@ -39,7 +40,7 @@ No new models or fields are required.
 
 - If `req.user.role` is `CLUB_ADMIN` or `COACH`: no change, all sessions returned.
 - If `req.user.role` is `PARENT`:
-  1. Find all gymnasts where `userId === req.user.id` OR `guardians.some(g => g.id === req.user.id)`.
+  1. Find all gymnasts where `clubId === req.user.clubId` AND (`userId === req.user.id` OR `guardians.some(g => g.id === req.user.id)`).
   2. If **any** gymnast has `dmtApproved: true`, return all sessions as before.
   3. If **none** are DMT-approved, filter out instances where `instance.template.type === 'DMT'` before returning.
 
@@ -61,7 +62,7 @@ This means a parent with mixed approved/unapproved gymnasts sees DMT sessions (a
 
 ## Migration Notes
 
-`ALTER TYPE ... RENAME VALUE` runs outside a transaction block in Postgres. The migration file must contain only this single statement (no other DDL in the same file). Prisma handles this correctly when the migration is generated with `prisma migrate dev`.
+`ALTER TYPE ... RENAME VALUE` is standard DDL and can run inside a transaction (unlike `ALTER TYPE ... ADD VALUE`, which cannot). The migration file should contain only this single statement — keep it isolated for clarity. Prisma handles this correctly when the migration is generated with `prisma migrate dev`.
 
 ## Testing
 
