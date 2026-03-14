@@ -30,6 +30,7 @@ async function cleanDatabase() {
     where: { order: { userId: { in: testUserIds } } },
   });
   await prisma.shopOrder.deleteMany({ where: { userId: { in: testUserIds } } });
+  await prisma.charge.deleteMany({ where: { userId: { in: testUserIds } } });
 
   // Find gymnasts belonging to test users (via guardians or via userId for adult participants)
   const testGymnasts = await prisma.gymnast.findMany({

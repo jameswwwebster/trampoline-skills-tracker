@@ -61,6 +61,7 @@ model User {
   dmtApprovals                  Gymnast[]         @relation("DmtApprovedBy")
   commitmentsCreated            Commitment[]      @relation("CommitmentCreatedBy")
   commitmentsPaused             Commitment[]      @relation("CommitmentPausedBy")
+  charges               Charge[]
 
   @@map("users")
 }
@@ -143,6 +144,7 @@ model Club {
   archivedMemberSummaries ArchivedMemberSummary[]
   noticeboardPosts      NoticeboardPost[]
   recipientGroups       RecipientGroup[]
+  charges               Charge[]
 
   @@map("clubs")
 }
@@ -522,6 +524,23 @@ model Commitment {
   updatedAt    DateTime         @updatedAt
 
   @@unique([gymnastId, templateId])
+}
+
+model Charge {
+  id                    String    @id @default(cuid())
+  userId                String
+  clubId                String
+  amount                Int                          // pence
+  description           String
+  dueDate               DateTime
+  paidAt                DateTime?
+  paidOnPaymentIntentId String?
+  createdAt             DateTime  @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  club  Club  @relation(fields: [clubId], references: [id])
+
+  @@map("charges")
 }
 
 model SessionInstance {
