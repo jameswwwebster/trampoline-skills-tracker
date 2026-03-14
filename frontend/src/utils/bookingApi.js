@@ -195,6 +195,20 @@ export const bookingApi = {
   // Noticeboard recipient preview
   previewNoticeboardRecipients: (recipientFilter) =>
     axios.post(`${API_URL}/noticeboard/preview-recipients`, { recipientFilter }, { headers: getHeaders() }),
+
+  // Commitments
+  getCommitmentsForTemplate: (templateId) =>
+    axios.get(`${API_URL}/commitments?templateId=${templateId}`, { headers: getHeaders() }),
+  getCommitmentsForGymnast: (gymnastId) =>
+    axios.get(`${API_URL}/commitments/gymnast/${gymnastId}`, { headers: getHeaders() }),
+  getMyCommitmentsForTemplate: (templateId) =>
+    axios.get(`${API_URL}/commitments/mine?templateId=${templateId}`, { headers: getHeaders() }),
+  createCommitment: (gymnastId, templateId) =>
+    axios.post(`${API_URL}/commitments`, { gymnastId, templateId }, { headers: getHeaders() }),
+  updateCommitmentStatus: (commitmentId, status) =>
+    axios.patch(`${API_URL}/commitments/${commitmentId}/status`, { status }, { headers: getHeaders() }),
+  deleteCommitment: (commitmentId) =>
+    axios.delete(`${API_URL}/commitments/${commitmentId}`, { headers: getHeaders() }),
 };
 
 // Audit log
