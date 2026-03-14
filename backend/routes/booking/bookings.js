@@ -721,7 +721,7 @@ router.post('/combined', auth, async (req, res) => {
 
     // ── Fetch outstanding charges ──
     const outstandingCharges = await prisma.charge.findMany({
-      where: { userId: req.user.id, paidAt: null },
+      where: { userId: req.user.id, clubId: req.user.clubId, paidAt: null },
     });
     const chargeTotal = outstandingCharges.reduce((s, c) => s + c.amount, 0);
     const outstandingChargeIds = outstandingCharges.map(c => c.id);
