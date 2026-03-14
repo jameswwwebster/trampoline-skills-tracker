@@ -1568,7 +1568,7 @@ Find the DMT approval section JSX (around line 506). After that section's closin
         );
       })}
 
-      {/* Add commitment control — needs templates list; use the same fetch as AdminMemberships */}
+      {/* Add commitment control — `templates` is passed as a prop from AdminMembers (see step below) */}
       <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         <select
           value={addingTemplateId}
@@ -1746,7 +1746,7 @@ The `sessionDetail` now returns `activeCommitments`. Update the display to show 
 ```jsx
 <span>{totalGymnasts} booked</span>
 <span>
-  {sessionDetail.activeCommitments > 0
+  {(sessionDetail.activeCommitments ?? 0) > 0
     ? `${capacity - totalGymnasts - sessionDetail.activeCommitments} remaining (${sessionDetail.activeCommitments} standing)`
     : `${capacity - totalGymnasts} remaining`}
 </span>
@@ -1765,7 +1765,7 @@ In the `bk-card` div that contains the "Attendees" section (around line 226), ad
 
 ```jsx
 {/* Standing slots */}
-{((standingSlots && standingSlots.length > 0) || slotsLoading) && (
+{(slotsLoading || (standingSlots && standingSlots.length > 0)) && (
   <div className="bk-card" style={{ marginBottom: '1rem' }}>
     <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--booking-text-muted)' }}>
       Standing slots ({standingSlots?.length ?? '…'})
