@@ -19,7 +19,7 @@ const createChargeSchema = Joi.object({
 router.get('/my', auth, async (req, res) => {
   try {
     const charges = await prisma.charge.findMany({
-      where: { userId: req.user.id, paidAt: null },
+      where: { userId: req.user.id, clubId: req.user.clubId, paidAt: null },
       orderBy: { dueDate: 'asc' },
     });
     res.json(charges);

@@ -101,6 +101,11 @@ describe('GET /api/booking/charges/my', () => {
   beforeAll(async () => { charge = await seedCharge(); });
   afterAll(() => prisma.charge.deleteMany({}));
 
+  it('returns 401 without a token', async () => {
+    const res = await request(app).get('/api/booking/charges/my');
+    expect(res.status).toBe(401);
+  });
+
   it('parent sees their unpaid charges', async () => {
     const res = await request(app)
       .get('/api/booking/charges/my')
