@@ -13,6 +13,7 @@ function createTestApp() {
   app.use('/api/booking/sessions', require('../../routes/booking/sessions'));
   app.use('/api/booking/bookings', require('../../routes/booking/bookings'));
   app.use('/api/booking/credits', require('../../routes/booking/credits'));
+  app.use('/api/booking/charges', require('../../routes/booking/charges'));
   app.use('/api/booking/waitlist', require('../../routes/booking/waitlist'));
   app.use('/api/booking/memberships', require('../../routes/booking/memberships'));
   app.use('/api/commitments', require('../../routes/booking/commitments'));
