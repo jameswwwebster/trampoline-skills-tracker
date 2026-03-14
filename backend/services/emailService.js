@@ -412,6 +412,50 @@ class EmailService {
     });
   }
 
+  async sendNewMemberDigestEmail(coachEmail, coachFirstName, newMembers) {
+    const rows = newMembers.map(m => {
+      const signedUpAt = new Date(m.createdAt).toLocaleString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+      return `<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${m.firstName} ${m.lastName}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${m.email}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;color:#888">${signedUpAt}</td>
+      </tr>`;
+    }).join('');
+
+    const text = `Hi ${coachFirstName},\n\nThe following new member${newMembers.length !== 1 ? 's have' : ' has'} signed up in the last 24 hours:\n\n` +
+      newMembers.map(m => {
+        const signedUpAt = new Date(m.createdAt).toLocaleString('en-GB', {
+          day: 'numeric', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        });
+        return `${m.firstName} ${m.lastName} <${m.email}> — ${signedUpAt}`;
+      }).join('\n');
+
+    return this.sendEmail({
+      to: coachEmail,
+      subject: `New members (last 24 hours) — ${newMembers.length} sign-up${newMembers.length !== 1 ? 's' : ''}`,
+      text,
+      html: brandedHtml(
+        'New member sign-ups',
+        `<p>Hi ${coachFirstName},</p>
+        <p>The following new member${newMembers.length !== 1 ? 's have' : ' has'} signed up in the last 24 hours:</p>
+        <table style="width:100%;border-collapse:collapse;font-size:0.9rem">
+          <thead>
+            <tr style="background:#f3eefe">
+              <th style="padding:6px 10px;text-align:left">Name</th>
+              <th style="padding:6px 10px;text-align:left">Email</th>
+              <th style="padding:6px 10px;text-align:left">Signed up</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`,
+      ),
+    });
+  }
+
   async sendGuardianConnectionNotification(guardianEmail, guardianName, gymnastName, clubName, relationship) {
     return this._send({
       from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
