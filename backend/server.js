@@ -478,6 +478,35 @@ cron.schedule('30 7 * * *', async () => {
   }
 });
 
+// New member digest — runs daily at 08:00
+cron.schedule('0 8 * * *', async () => {
+  try {
+    const club = await prisma.club.findFirst();
+    if (!club?.emailEnabled) return;
+
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const newMembers = await prisma.user.findMany({
+      where: { clubId: club.id, createdAt: { gte: since } },
+      select: { firstName: true, lastName: true, email: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (newMembers.length === 0) return;
+
+    const staff = await prisma.user.findMany({
+      where: { clubId: club.id, role: { in: ['CLUB_ADMIN', 'COACH'] }, isArchived: false, email: { not: null } },
+      select: { email: true, firstName: true },
+    });
+    for (const member of staff) {
+      await emailService.sendNewMemberDigestEmail(
+        member.email, member.firstName, newMembers,
+      ).catch(() => {});
+    }
+    console.log(`New member digest: sent to ${staff.length} staff (${newMembers.length} new member(s))`);
+  } catch (err) {
+    console.error('New member digest cron error:', err);
+  }
+});
+
 // Also run on startup to ensure instances exist immediately after deploy
 (async () => {
   try {
