@@ -494,6 +494,7 @@ model SessionTemplate {
   startTime   String            // "17:00"
   endTime     String            // "18:00"
   openSlots       Int               @default(12)
+  competitiveSlots Int?
   pricePerGymnast Int               @default(600)   // in pence, e.g. 600 = £6.00
   type            SessionType       @default(TRAMPOLINE)
   minAge          Int?              // null = no restriction, 16 = 16+ only
@@ -908,4 +909,5 @@ enum SessionType {
 enum CommitmentStatus {
   ACTIVE
   PAUSED
+  WAITLISTED
 }
