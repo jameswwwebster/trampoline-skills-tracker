@@ -60,7 +60,26 @@ router.get('/', auth, async (req, res) => {
       };
     }));
 
-    res.json(result);
+    // Filter DMT sessions for parents with no approved gymnasts
+    let visibleResult = result;
+    if (req.user.role === 'PARENT') {
+      const myGymnasts = await prisma.gymnast.findMany({
+        where: {
+          clubId,
+          OR: [
+            { userId: req.user.id },
+            { guardians: { some: { id: req.user.id } } },
+          ],
+        },
+        select: { dmtApproved: true },
+      });
+      const hasDmtApproval = myGymnasts.some(g => g.dmtApproved);
+      if (!hasDmtApproval) {
+        visibleResult = result.filter(s => s.type !== 'DMT');
+      }
+    }
+
+    res.json(visibleResult);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

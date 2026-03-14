@@ -9,7 +9,7 @@ let club, parent, token;
 beforeAll(async () => {
   await cleanDatabase();
   club = await createTestClub();
-  parent = await createParent(club);
+  parent = await createParent(club, { role: 'COACH', email: `coach-type-${Date.now()}@test.tl` });
   token = tokenFor(parent);
 });
 
@@ -114,5 +114,60 @@ describe('Session capacity accounts for active commitments', () => {
       where: { templateId: template2.id },
       data: { status: 'ACTIVE' },
     });
+  });
+});
+
+describe('GET /api/booking/sessions — DMT visibility for parents', () => {
+  let visClub, dmtParent, dmtParentToken, noApprovalParent, noApprovalToken;
+  let dmtInstance, trampolineInstance;
+
+  beforeAll(async () => {
+    const { createGymnast } = require('./helpers/seed');
+    visClub = await createTestClub();
+
+    // Parent whose gymnast IS DMT approved
+    dmtParent = await createParent(visClub, { email: `dmt-vis-${Date.now()}@test.tl` });
+    const dmtGymnast = await createGymnast(visClub, dmtParent);
+    await prisma.gymnast.update({ where: { id: dmtGymnast.id }, data: { dmtApproved: true } });
+    dmtParentToken = tokenFor(dmtParent);
+
+    // Parent whose gymnast is NOT DMT approved
+    noApprovalParent = await createParent(visClub, { email: `no-dmt-${Date.now()}@test.tl` });
+    await createGymnast(visClub, noApprovalParent);
+    noApprovalToken = tokenFor(noApprovalParent);
+
+    // Create one DMT session and one TRAMPOLINE session in the same month
+    const { instance: di } = await createSession(visClub, undefined, { type: 'DMT' });
+    const { instance: ti } = await createSession(visClub, undefined, { type: 'TRAMPOLINE' });
+    dmtInstance = di;
+    trampolineInstance = ti;
+  });
+
+  afterAll(async () => {
+    await prisma.sessionInstance.deleteMany({ where: { templateId: { in: [dmtInstance.templateId, trampolineInstance.templateId] } } });
+    await prisma.sessionTemplate.deleteMany({ where: { id: { in: [dmtInstance.templateId, trampolineInstance.templateId] } } });
+  });
+
+  it('parent with no DMT-approved gymnasts does not see DMT sessions', async () => {
+    const d = dmtInstance.date;
+    const res = await request(app)
+      .get(`/api/booking/sessions?year=${d.getFullYear()}&month=${d.getMonth() + 1}`)
+      .set('Authorization', `Bearer ${noApprovalToken}`);
+
+    expect(res.status).toBe(200);
+    const ids = res.body.map(s => s.id);
+    expect(ids).not.toContain(dmtInstance.id);
+    expect(ids).toContain(trampolineInstance.id);
+  });
+
+  it('parent with a DMT-approved gymnast sees DMT sessions', async () => {
+    const d = dmtInstance.date;
+    const res = await request(app)
+      .get(`/api/booking/sessions?year=${d.getFullYear()}&month=${d.getMonth() + 1}`)
+      .set('Authorization', `Bearer ${dmtParentToken}`);
+
+    expect(res.status).toBe(200);
+    const ids = res.body.map(s => s.id);
+    expect(ids).toContain(dmtInstance.id);
   });
 });
