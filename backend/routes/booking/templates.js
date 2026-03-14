@@ -14,6 +14,7 @@ const templateSchema = Joi.object({
   openSlots: Joi.number().integer().min(1).required(),
   pricePerGymnast: Joi.number().integer().min(1).optional().default(600),
   minAge: Joi.number().integer().min(0).allow(null).optional(),
+  competitiveSlots: Joi.number().integer().min(1).allow(null).optional(),
   information: Joi.string().allow('', null).optional(),
   type: Joi.string().valid('TRAMPOLINE', 'DMT').optional().default('TRAMPOLINE'),
 });

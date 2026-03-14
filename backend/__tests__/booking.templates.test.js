@@ -28,6 +28,26 @@ afterAll(async () => {
 });
 
 describe('POST /api/booking/templates', () => {
+  it('accepts and returns competitiveSlots', async () => {
+    const res = await request(app)
+      .post('/api/booking/templates')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ dayOfWeek: 3, startTime: '14:00', endTime: '15:00', openSlots: 12, pricePerGymnast: 600, competitiveSlots: 6 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.competitiveSlots).toBe(6);
+  });
+
+  it('accepts null competitiveSlots (no cap)', async () => {
+    const res = await request(app)
+      .post('/api/booking/templates')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ dayOfWeek: 4, startTime: '14:00', endTime: '15:00', openSlots: 12, pricePerGymnast: 600, competitiveSlots: null });
+
+    expect(res.status).toBe(201);
+    expect(res.body.competitiveSlots).toBeNull();
+  });
+
   it('creates a template with a custom pricePerGymnast', async () => {
     const res = await request(app)
       .post('/api/booking/templates')
