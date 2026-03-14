@@ -63,6 +63,7 @@ import MyCharges from './pages/booking/MyCharges';
 import Noticeboard from './pages/booking/Noticeboard';
 import AdminShopOrders from './pages/booking/admin/AdminShopOrders';
 import AdminRecipientGroups from './pages/booking/admin/AdminRecipientGroups';
+import AdminCharges from './pages/booking/admin/AdminCharges';
 import PublicHome from './pages/public/PublicHome';
 import PublicPolicies from './pages/public/PublicPolicies';
 import './App.css';
@@ -218,6 +219,7 @@ function AppContent() {
           <Route path="noticeboard" element={<Noticeboard />} />
           <Route path="admin/shop-orders" element={<AdminShopOrders />} />
           <Route path="admin/recipient-groups" element={<AdminRecipientGroups />} />
+          <Route path="admin/charges" element={<AdminCharges />} />
         </Route>
       </Routes>
     </div>
