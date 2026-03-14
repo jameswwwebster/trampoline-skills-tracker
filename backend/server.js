@@ -179,6 +179,7 @@ app.use('/api/booking/bookings', require('./routes/booking/bookings'));
 app.use('/api/booking/credits', require('./routes/booking/credits'));
 app.use('/api/booking/closures', require('./routes/booking/closures'));
 app.use('/api/booking/memberships', require('./routes/booking/memberships'));
+app.use('/api/commitments', require('./routes/booking/commitments'));
 app.use('/api/booking/waitlist', require('./routes/booking/waitlist'));
 app.use('/api/booking/admin', require('./routes/booking/admin'));
 app.use('/api/booking/templates', require('./routes/booking/templates'));
