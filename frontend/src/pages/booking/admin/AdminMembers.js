@@ -609,14 +609,16 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
                 <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.875rem' }}>
                   <span>
                     {label}
-                    <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: c.status === 'ACTIVE' ? 'var(--booking-success)' : 'var(--booking-text-muted)', fontWeight: 600 }}>
-                      {c.status === 'ACTIVE' ? 'Active' : 'Paused'}
+                    <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: c.status === 'ACTIVE' ? 'var(--booking-success)' : c.status === 'WAITLISTED' ? '#e67e22' : 'var(--booking-text-muted)', fontWeight: 600 }}>
+                      {c.status === 'ACTIVE' ? 'Active' : c.status === 'WAITLISTED' ? 'Waitlisted' : 'Paused'}
                     </span>
                   </span>
                   <div className="bk-row" style={{ gap: '0.3rem' }}>
-                    <button className="bk-btn bk-btn--sm" onClick={() => handleToggleCommitmentStatus(c)}>
-                      {c.status === 'ACTIVE' ? 'Pause' : 'Resume'}
-                    </button>
+                    {c.status !== 'WAITLISTED' && (
+                      <button className="bk-btn bk-btn--sm" onClick={() => handleToggleCommitmentStatus(c)}>
+                        {c.status === 'ACTIVE' ? 'Pause' : 'Resume'}
+                      </button>
+                    )}
                     <button
                       className="bk-btn bk-btn--sm"
                       style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
