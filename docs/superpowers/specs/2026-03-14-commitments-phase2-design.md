@@ -4,7 +4,7 @@
 
 ## Overview
 
-Phase 2 introduces *commitments* — standing slot reservations that link a gymnast to a session template. Commitments are admin-initiated, covered by the gymnast's monthly membership subscription, and are always considered booked unless the commitment is paused. Recreational gymnasts continue to book per-session as before. Both share the same capacity pool.
+Phase 2 introduces *commitments* — standing slot reservations that link a gymnast to a session template. A commitment covers **every future instance generated from that template** — it is a perpetual reservation, not a per-date booking. Commitments are admin-initiated, covered by the gymnast's monthly membership subscription, and are always considered booked unless the commitment is paused. Recreational gymnasts continue to book per-session as before. Both share the same capacity pool.
 
 ## Database
 
@@ -22,9 +22,9 @@ enum CommitmentStatus {
 ```prisma
 model Commitment {
   id           String           @id @default(cuid())
-  gymnast      Gymnast          @relation(fields: [gymnastId], references: [id])
+  gymnast      Gymnast          @relation(fields: [gymnastId], references: [id], onDelete: Cascade)
   gymnastId    String
-  template     SessionTemplate  @relation(fields: [templateId], references: [id])
+  template     SessionTemplate  @relation(fields: [templateId], references: [id], onDelete: Restrict)
   templateId   String
   status       CommitmentStatus @default(ACTIVE)
   pausedAt     DateTime?
@@ -39,6 +39,10 @@ model Commitment {
 }
 ```
 
+**Deletion behaviour:**
+- `gymnast onDelete: Cascade` — when a gymnast is deleted, their commitments are automatically removed.
+- `template onDelete: Restrict` — a session template with active commitments cannot be deleted. The admin must remove or reassign all commitments first; the UI should surface a clear error if a delete is attempted on a template with commitments.
+
 Add reverse relations:
 - `Gymnast`: `commitments Commitment[]`
 - `SessionTemplate`: `commitments Commitment[]`
@@ -52,33 +56,45 @@ Migration: `npx prisma migrate dev --name add_commitments`
 
 ### New file: `routes/booking/commitments.js`
 
-Mounted at `/api/commitments` in `server.js`. All endpoints require `requireRole(['CLUB_ADMIN', 'COACH'])`.
+Mounted at `/api/commitments` in `server.js`.
+
+**Admin/coach endpoints** — all require `requireRole(['CLUB_ADMIN', 'COACH'])`:
 
 **`POST /`** — create a commitment.
 - Body: `{ gymnastId, templateId }`
 - Validate gymnast and template both belong to `req.user.clubId`
 - Return 409 if commitment already exists (`@@unique` constraint)
-- Audit log: action `commitment.create`, metadata `{ gymnastId, templateId }`
+- Audit log: `audit(req, 'commitment.create', { gymnastId, templateId }, 'Commitment', commitment.id)`
 - Returns created commitment
 
 **`DELETE /:id`** — remove a commitment.
 - Validate commitment's gymnast belongs to caller's club
-- Audit log: action `commitment.delete`, metadata `{ gymnastId, templateId }`
+- Audit log: `audit(req, 'commitment.delete', { gymnastId, templateId }, 'Commitment', id)`
+- Returns `{ success: true }`
 
 **`PATCH /:id/status`** — pause or resume.
 - Body: `{ status: 'ACTIVE' | 'PAUSED' }`
 - When pausing: set `pausedAt = new Date()`, `pausedById = req.user.id`
 - When resuming: set `pausedAt = null`, `pausedById = null`
-- Audit log: action `commitment.status`, metadata `{ status, gymnastId, templateId }`
+- Audit log: `audit(req, 'commitment.status', { status, gymnastId, templateId }, 'Commitment', id)`
 - Returns updated commitment
 
 **`GET /?templateId=xxx`** — list commitments for a template.
+- `templateId` is required; return 400 if absent
 - Include `gymnast: { select: { id, firstName, lastName } }`
 - Filter by `clubId` via gymnast relation
 
 **`GET /gymnast/:gymnastId`** — list commitments for a gymnast.
-- Include `template: { select: { id, name, dayOfWeek, startTime, endTime } }`
+- Include `template: { select: { id, dayOfWeek, startTime, endTime } }` (templates have no `name` field — display is derived from day + time)
 - Validate gymnast belongs to caller's club
+
+**Parent/gymnast endpoint** — requires `auth` only (no role restriction). **This route must be declared before `GET /:id` in the router file** to prevent Express matching `mine` as an `:id` parameter:
+
+**`GET /mine?templateId=xxx`** — returns commitment status for the requesting user's own gymnasts for a given template.
+- `templateId` is required; return 400 if absent
+- Queries gymnasts where `userId === req.user.id`, then finds commitments for those gymnasts on the given template
+- Returns array of `{ gymnastId, status }` — only gymnasts with an existing commitment are included
+- Used by `SessionDetail.js` to show the standing-slot indicator to parents/gymnasts without exposing other families' data
 
 ### Capacity changes: `routes/booking/sessions.js`
 
@@ -89,9 +105,10 @@ const activeCommitments = await prisma.commitment.count({
   where: { templateId: instance.templateId, status: 'ACTIVE' },
 });
 const bookedCount = bookings.length + activeCommitments;
+const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
 ```
 
-Include `activeCommitments` count in the response object so the frontend can display the breakdown.
+Include `activeCommitments` count in the response object so the frontend can display the breakdown. Remove `committedGymnastIds` from the session response — the standing-slot indicator for parents is handled via `GET /mine` instead.
 
 ### Capacity and validation changes: `routes/booking/bookings.js`
 
@@ -101,7 +118,8 @@ In `POST /`, `POST /batch`, and `POST /combined` — update capacity check to ac
 const activeCommitments = await prisma.commitment.count({
   where: { templateId: instance.templateId, status: 'ACTIVE' },
 });
-const available = instance.template.capacity - existingBookings - activeCommitments;
+const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
+const available = capacity - existingBookings - activeCommitments;
 ```
 
 Also add a pre-booking check: if a gymnast already has an `ACTIVE` commitment to the session's template, block the booking:
@@ -117,7 +135,33 @@ if (hasCommitment) {
 }
 ```
 
-`POST /admin-add` is excluded from the commitment block check (staff can override).
+`POST /admin-add` bypasses the commitment block check only. The existing capacity check behaviour in `admin-add` is unchanged.
+
+### Membership creation: `routes/booking/memberships.js`
+
+`POST /api/booking/memberships` gains an optional `templateIds` field:
+
+```js
+templateIds: Joi.array().items(Joi.string()).optional().default([]),
+```
+
+After the membership record is created, if `templateIds` is non-empty, create a `Commitment` for each template inside the same Prisma transaction:
+
+```js
+await prisma.$transaction(async (tx) => {
+  const membership = await tx.membership.create({ ... });
+  for (const templateId of value.templateIds) {
+    await tx.commitment.create({
+      data: { gymnastId: value.gymnastId, templateId, createdById: req.user.id },
+    });
+  }
+  return membership;
+});
+```
+
+Validate that each `templateId` belongs to `req.user.clubId` before entering the transaction — return 400 if any template is not found or belongs to a different club.
+
+If a commitment already exists for any `(gymnastId, templateId)` pair, return 409 before creating the membership (fail fast, not mid-transaction).
 
 ### `server.js`
 
@@ -137,6 +181,9 @@ getCommitmentsForTemplate: (templateId) =>
 getCommitmentsForGymnast: (gymnastId) =>
   axios.get(`/api/commitments/gymnast/${gymnastId}`, { headers: getHeaders() }),
 
+getMyCommitmentsForTemplate: (templateId) =>
+  axios.get(`/api/commitments/mine?templateId=${templateId}`, { headers: getHeaders() }),
+
 createCommitment: (gymnastId, templateId) =>
   axios.post('/api/commitments', { gymnastId, templateId }, { headers: getHeaders() }),
 
@@ -146,6 +193,12 @@ updateCommitmentStatus: (commitmentId, status) =>
 deleteCommitment: (commitmentId) =>
   axios.delete(`/api/commitments/${commitmentId}`, { headers: getHeaders() }),
 ```
+
+### Membership creation form (`AdminMemberships.js`)
+
+Add a "Standing slots" multi-select below the start date field. Populated from the club's session templates (same source as the template dropdown in the gymnast commitments section). The admin must select at least one template — frontend validation blocks submission with zero templates selected.
+
+On submit, `templateIds` is included in the `createMembership` request body alongside `gymnastId`, `monthlyAmount`, and `startDate`.
 
 ### Gymnast admin view (`AdminMembers.js`)
 
@@ -170,9 +223,10 @@ The `activeCommitments` count returned by `sessions.js` drives this display.
 
 **Available slots** displayed to recreational bookers uses the corrected available count from the API (capacity minus bookings minus active commitments) — no frontend change needed if the API returns the correct number.
 
-**Standing slot indicator:** When the viewing user has a gymnast with an `ACTIVE` commitment to a session's template, `SessionDetail.js` shows a "Standing slot — you're already booked" message instead of the booking controls for that gymnast.
-
-To support this, `GET /api/sessions/:instanceId` should include a `committedGymnastIds` array in its response (the IDs of gymnasts with active commitments to that template). `SessionDetail.js` cross-references this against the user's gymnasts returned by `bookable-for-me`.
+**Standing slot indicator:** When `SessionDetail.js` loads a session, it calls `bookingApi.getMyCommitmentsForTemplate(session.templateId)`. For each of the user's gymnasts:
+- If the gymnast has status `ACTIVE` → show "Standing slot — you're already booked" and hide booking controls
+- If the gymnast has status `PAUSED` → show normal booking controls (slot is free; they may book as a recreational gymnast)
+- If the gymnast has no commitment → show normal booking controls
 
 ## What is NOT changing in this phase
 
@@ -183,10 +237,13 @@ To support this, `GET /api/sessions/:instanceId` should include a `committedGymn
 
 ## Success criteria
 
+- Creating a membership requires selecting at least one session template; commitments are created atomically with the membership
 - Admin/coach can create, pause, resume, and delete commitments for a gymnast
 - A gymnast can hold commitments to multiple templates simultaneously
-- Session capacity correctly accounts for active commitments
+- Session capacity correctly accounts for active commitments; paused commitments do not count against capacity
 - Recreational bookers cannot over-book a session that is full due to commitments
 - A gymnast with an active commitment cannot double-book the same template
+- A gymnast with a paused commitment sees normal booking controls and can book as a recreational gymnast
 - Session admin view shows standing slots separately from per-instance bookings
 - Gymnasts with a standing slot see a clear indicator in the booking calendar rather than a Book button
+- A session template with active commitments cannot be deleted
