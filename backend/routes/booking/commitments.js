@@ -108,6 +108,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     // Validate template belongs to caller's club
     const template = await prisma.sessionTemplate.findFirst({
       where: { id: templateId, clubId: req.user.clubId },
+      select: { id: true, competitiveSlots: true },
     });
     if (!template) return res.status(400).json({ error: 'Session template not found' });
 
@@ -117,13 +118,25 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     });
     if (existing) return res.status(409).json({ error: 'Commitment already exists for this gymnast and template' });
 
+    // Determine status: WAITLISTED if competitive slots cap is reached
+    let commitmentStatus = 'ACTIVE';
+    if (template.competitiveSlots !== null) {
+      const activeCount = await prisma.commitment.count({
+        where: { templateId, status: 'ACTIVE' },
+      });
+      if (activeCount >= template.competitiveSlots) {
+        commitmentStatus = 'WAITLISTED';
+      }
+    }
+
     const commitment = await prisma.commitment.create({
-      data: { gymnastId, templateId, createdById: req.user.id },
+      data: { gymnastId, templateId, createdById: req.user.id, status: commitmentStatus },
     });
 
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
-      action: 'commitment.create', entityType: 'Commitment', entityId: commitment.id,
+      action: commitmentStatus === 'WAITLISTED' ? 'commitment.waitlisted' : 'commitment.create',
+      entityType: 'Commitment', entityId: commitment.id,
       metadata: { gymnastId, templateId },
     });
 
@@ -174,6 +187,33 @@ router.patch('/:id/status', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (r
     if (!commitment) return res.status(404).json({ error: 'Commitment not found' });
     if (commitment.gymnast.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
 
+    const current = commitment.status;
+
+    // Disallow WAITLISTED -> PAUSED
+    if (current === 'WAITLISTED' && status === 'PAUSED') {
+      return res.status(422).json({ error: 'Invalid status transition' });
+    }
+
+    // Cap check for any transition that activates a commitment
+    if (status === 'ACTIVE' && current !== 'ACTIVE') {
+      const template = await prisma.sessionTemplate.findUnique({
+        where: { id: commitment.templateId },
+        select: { competitiveSlots: true },
+      });
+      if (template && template.competitiveSlots !== null) {
+        const activeCount = await prisma.commitment.count({
+          where: { templateId: commitment.templateId, status: 'ACTIVE' },
+        });
+        if (activeCount >= template.competitiveSlots) {
+          const msg = current === 'WAITLISTED'
+            ? 'No competitive slot available'
+            : 'Competitive slots are full — promote a waitlisted gymnast first or increase the cap';
+          return res.status(422).json({ error: msg });
+        }
+      }
+    }
+
+    const isPromotion = current === 'WAITLISTED' && status === 'ACTIVE';
     const data = status === 'PAUSED'
       ? { status: 'PAUSED', pausedAt: new Date(), pausedById: req.user.id }
       : { status: 'ACTIVE', pausedAt: null, pausedById: null };
@@ -182,8 +222,9 @@ router.patch('/:id/status', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (r
 
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
-      action: 'commitment.status', entityType: 'Commitment', entityId: req.params.id,
-      metadata: { status, gymnastId: commitment.gymnastId, templateId: commitment.templateId },
+      action: isPromotion ? 'commitment.promoted' : 'commitment.status',
+      entityType: 'Commitment', entityId: req.params.id,
+      metadata: { status, gymnastId: commitment.gymnast.id, templateId: commitment.templateId },
     });
 
     res.json(updated);

@@ -302,3 +302,173 @@ describe('GET /api/commitments/mine?templateId=xxx', () => {
     expect(res.body).toHaveLength(0);
   });
 });
+
+describe('POST /api/commitments — competitive slots cap', () => {
+  let cappedTemplate;
+
+  beforeAll(async () => {
+    const { template: t } = await createSession(club, undefined, { competitiveSlots: 1 });
+    cappedTemplate = t;
+  });
+
+  afterEach(async () => {
+    await prisma.commitment.deleteMany({ where: { templateId: cappedTemplate.id } });
+  });
+
+  it('creates as ACTIVE when under cap', async () => {
+    const res = await request(app)
+      .post('/api/commitments')
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ gymnastId: gymnast.id, templateId: cappedTemplate.id });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('ACTIVE');
+  });
+
+  it('creates as WAITLISTED when at cap', async () => {
+    // Fill the cap
+    await prisma.commitment.create({
+      data: { gymnastId: gymnast.id, templateId: cappedTemplate.id, createdById: coach.id, status: 'ACTIVE' },
+    });
+
+    const gymnast2 = await createGymnast(club, parent);
+    await createMembership(gymnast2, club);
+
+    const res = await request(app)
+      .post('/api/commitments')
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ gymnastId: gymnast2.id, templateId: cappedTemplate.id });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('WAITLISTED');
+  });
+
+  it('creates as ACTIVE when no cap is set', async () => {
+    const res = await request(app)
+      .post('/api/commitments')
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ gymnastId: gymnast.id, templateId: template.id });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('ACTIVE');
+  });
+
+  it('audit action is commitment.waitlisted when waitlisted', async () => {
+    await prisma.commitment.create({
+      data: { gymnastId: gymnast.id, templateId: cappedTemplate.id, createdById: coach.id, status: 'ACTIVE' },
+    });
+    const gymnast3 = await createGymnast(club, parent);
+    await createMembership(gymnast3, club);
+
+    await request(app)
+      .post('/api/commitments')
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ gymnastId: gymnast3.id, templateId: cappedTemplate.id });
+
+    const log = await prisma.auditLog.findFirst({
+      where: { action: 'commitment.waitlisted' },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(log).toBeDefined();
+    expect(log.metadata).toMatchObject({ gymnastId: gymnast3.id, templateId: cappedTemplate.id });
+  });
+});
+
+describe('PATCH /api/commitments/:id/status — transitions', () => {
+  let cappedTemplate2;
+
+  beforeAll(async () => {
+    const { template: t } = await createSession(club, undefined, { competitiveSlots: 1 });
+    cappedTemplate2 = t;
+  });
+
+  afterEach(async () => {
+    await prisma.commitment.deleteMany({ where: { templateId: cappedTemplate2.id } });
+  });
+
+  it('promotes WAITLISTED -> ACTIVE when slot available', async () => {
+    const waitlisted = await prisma.commitment.create({
+      data: { gymnastId: gymnast.id, templateId: cappedTemplate2.id, createdById: coach.id, status: 'WAITLISTED' },
+    });
+
+    const res = await request(app)
+      .patch(`/api/commitments/${waitlisted.id}/status`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ status: 'ACTIVE' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ACTIVE');
+  });
+
+  it('returns 422 promoting WAITLISTED -> ACTIVE when cap is full', async () => {
+    const gymnast4 = await createGymnast(club, parent);
+    await createMembership(gymnast4, club);
+
+    await prisma.commitment.create({
+      data: { gymnastId: gymnast.id, templateId: cappedTemplate2.id, createdById: coach.id, status: 'ACTIVE' },
+    });
+    const waitlisted = await prisma.commitment.create({
+      data: { gymnastId: gymnast4.id, templateId: cappedTemplate2.id, createdById: coach.id, status: 'WAITLISTED' },
+    });
+
+    const res = await request(app)
+      .patch(`/api/commitments/${waitlisted.id}/status`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ status: 'ACTIVE' });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toMatch(/No competitive slot/);
+  });
+
+  it('returns 422 resuming PAUSED -> ACTIVE when cap is full', async () => {
+    const gymnast5 = await createGymnast(club, parent);
+    await createMembership(gymnast5, club);
+
+    await prisma.commitment.create({
+      data: { gymnastId: gymnast.id, templateId: cappedTemplate2.id, createdById: coach.id, status: 'ACTIVE' },
+    });
+    const paused = await prisma.commitment.create({
+      data: { gymnastId: gymnast5.id, templateId: cappedTemplate2.id, createdById: coach.id, status: 'PAUSED' },
+    });
+
+    const res = await request(app)
+      .patch(`/api/commitments/${paused.id}/status`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ status: 'ACTIVE' });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toMatch(/Competitive slots are full/);
+  });
+
+  it('returns 422 for WAITLISTED -> PAUSED transition', async () => {
+    const waitlisted = await prisma.commitment.create({
+      data: { gymnastId: gymnast.id, templateId: cappedTemplate2.id, createdById: coach.id, status: 'WAITLISTED' },
+    });
+
+    const res = await request(app)
+      .patch(`/api/commitments/${waitlisted.id}/status`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ status: 'PAUSED' });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toMatch(/Invalid status transition/);
+  });
+
+  it('audit action is commitment.promoted for WAITLISTED -> ACTIVE', async () => {
+    const waitlisted = await prisma.commitment.create({
+      data: { gymnastId: gymnast.id, templateId: cappedTemplate2.id, createdById: coach.id, status: 'WAITLISTED' },
+    });
+
+    await request(app)
+      .patch(`/api/commitments/${waitlisted.id}/status`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ status: 'ACTIVE' });
+
+    const log = await prisma.auditLog.findFirst({
+      where: { action: 'commitment.promoted' },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(log).toBeDefined();
+    expect(log.metadata).toMatchObject({ templateId: cappedTemplate2.id });
+  });
+});
