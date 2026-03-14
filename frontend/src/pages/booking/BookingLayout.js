@@ -129,6 +129,11 @@ export default function BookingLayout() {
                     <NavLink to="/booking/my-bookings" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
                       My Bookings
                     </NavLink>
+                    {!isAdmin && (
+                      <NavLink to="/booking/my-charges" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
+                        My Charges
+                      </NavLink>
+                    )}
                   </div>
                 )}
               </div>
