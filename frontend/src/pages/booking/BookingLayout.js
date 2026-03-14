@@ -25,6 +25,7 @@ export default function BookingLayout() {
   const isShopActive = location.pathname.startsWith('/booking/shop') || location.pathname.startsWith('/booking/my-orders');
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
   const [paymentBanner, setPaymentBanner] = useState(null); // null | 'pending' | 'needs_method'
+  const [hasOverdueCharge, setHasOverdueCharge] = useState(false);
   const [cartCount, setCartCount] = useState(getTotalCartCount);
   const [unreadCount, setUnreadCount] = useState(0);
   const [noticeBanner, setNoticeBanner] = useState(false);
@@ -74,6 +75,16 @@ export default function BookingLayout() {
         } else if (memberships.some(m => m.needsPaymentMethod)) {
           setPaymentBanner('needs_method');
         }
+      })
+      .catch(() => {});
+  }, [user, isAdmin]);
+
+  useEffect(() => {
+    if (!user || isAdmin) return;
+    bookingApi.getMyCharges()
+      .then(r => {
+        const now = new Date();
+        setHasOverdueCharge(r.data.some(c => new Date(c.dueDate) < now));
       })
       .catch(() => {});
   }, [user, isAdmin]);
@@ -260,6 +271,13 @@ export default function BookingLayout() {
               <span className="booking-layout__payment-banner-cta">Add now →</span>
             </>
           )}
+        </Link>
+      )}
+
+      {hasOverdueCharge && (
+        <Link to="/booking/cart" className="booking-layout__payment-banner">
+          <span>⚠ You have an overdue charge — pay it to make new bookings.</span>
+          <span className="booking-layout__payment-banner-cta">Pay now →</span>
         </Link>
       )}
 
