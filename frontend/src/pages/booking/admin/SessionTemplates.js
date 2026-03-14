@@ -6,7 +6,7 @@ import { getTemplates, createTemplate, updateTemplate, toggleTemplate, deleteTem
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const EMPTY_FORM = { dayOfWeek: '1', startTime: '', endTime: '', openSlots: '12', minAge: '', pricePerGymnast: '6', information: '', type: 'STANDARD' };
+const EMPTY_FORM = { dayOfWeek: '1', startTime: '', endTime: '', openSlots: '12', minAge: '', pricePerGymnast: '6', information: '', type: 'TRAMPOLINE' };
 
 // Minimal TipTap toolbar
 function Toolbar({ editor }) {
@@ -251,7 +251,7 @@ export default function SessionTemplates() {
             </label>
             <label className="auth-label">Session type
               <select name="type" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="auth-input">
-                <option value="STANDARD">Standard</option>
+                <option value="TRAMPOLINE">Trampoline</option>
                 <option value="DMT">DMT</option>
               </select>
             </label>
@@ -297,6 +297,7 @@ export default function SessionTemplates() {
                   {t.openSlots} slots &middot; £{(t.pricePerGymnast / 100).toFixed(2)}{t.minAge ? ` \u00b7 ${t.minAge}+` : ''}
                   {t.information && <span> &middot; <em>Has info text</em></span>}
                   {t.type === 'DMT' && <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--booking-accent)' }}>DMT</span>}
+                  {t.type === 'TRAMPOLINE' && <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--booking-accent)' }}>Trampoline</span>}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>

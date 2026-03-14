@@ -638,7 +638,7 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
                 <option value="">Add standing slot...</option>
                 {(templates || []).filter(t => t.isActive && !commitments.some(c => c.templateId === t.id)).map(t => {
                   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                  return <option key={t.id} value={t.id}>{days[t.dayOfWeek]} {t.startTime}–{t.endTime}{t.type === 'DMT' ? ' · DMT' : ''}</option>;
+                  return <option key={t.id} value={t.id}>{days[t.dayOfWeek]} {t.startTime}–{t.endTime}{t.type === 'DMT' ? ' · DMT' : ' · Trampoline'}</option>;
                 })}
               </select>
               <button

@@ -148,6 +148,15 @@ export default function BookingCalendar() {
                           DMT
                         </span>
                       )}
+                      {s.type === 'TRAMPOLINE' && (
+                        <span style={{
+                          fontSize: '0.7rem', fontWeight: 700, color: 'var(--booking-accent)',
+                          border: '1px solid var(--booking-accent)', borderRadius: 3,
+                          padding: '0 4px', marginLeft: '0.4rem', lineHeight: 1.6,
+                        }}>
+                          Trampoline
+                        </span>
+                      )}
                     </span>
                     <span className="booking-calendar__day-session-status">{sessionLabel(s)}</span>
                   </button>

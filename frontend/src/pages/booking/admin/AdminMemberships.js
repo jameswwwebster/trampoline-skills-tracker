@@ -128,7 +128,7 @@ export default function AdminMemberships() {
                       templateIds: checked ? f.templateIds.filter(id => id !== t.id) : [...f.templateIds, t.id],
                     }))}
                   />
-                  {label}{t.type === 'DMT' ? ' · DMT' : ''}
+                  {label}{t.type === 'DMT' ? ' · DMT' : ' · Trampoline'}
                 </label>
               );
             })}
