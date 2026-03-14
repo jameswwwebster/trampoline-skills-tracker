@@ -196,3 +196,33 @@ describe('DELETE /api/booking/charges/:id', () => {
     expect(log).toBeDefined();
   });
 });
+
+describe('Overdue charge blocks POST /api/booking/bookings', () => {
+  const { createSession, createGymnast, createMembership } = require('./helpers/seed');
+  let gymnast, instance;
+
+  beforeAll(async () => {
+    gymnast = await createGymnast(club, parent, { bgNumber: 'BG123456' });
+    await createMembership(gymnast, club);
+    const sess = await createSession(club);
+    instance = sess.instance;
+    const pastDue = new Date();
+    pastDue.setDate(pastDue.getDate() - 1);
+    await prisma.charge.create({
+      data: { userId: parent.id, clubId: club.id, amount: 1000, description: 'Overdue', dueDate: pastDue },
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.charge.deleteMany({});
+  });
+
+  it('returns 400 when parent has an overdue charge', async () => {
+    const res = await request(app)
+      .post('/api/booking/bookings')
+      .set('Authorization', `Bearer ${parentToken}`)
+      .send({ sessionInstanceId: instance.id, gymnastIds: [gymnast.id] });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/overdue charge/);
+  });
+});

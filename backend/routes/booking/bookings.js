@@ -123,6 +123,14 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
+    // Overdue charge guard — block booking if parent has any overdue unpaid charge
+    const overdueCharge = await prisma.charge.findFirst({
+      where: { userId: req.user.id, paidAt: null, dueDate: { lt: new Date() } },
+    });
+    if (overdueCharge) {
+      return res.status(400).json({ error: 'You have an overdue charge. Please pay it before making new bookings.' });
+    }
+
     // Check age restriction
     if (instance.template.minAge) {
       const gymnasts = await prisma.gymnast.findMany({
@@ -317,6 +325,14 @@ router.post('/batch', auth, async (req, res) => {
         error: `British Gymnastics membership number required for: ${blockedByBg.map(g => g.firstName).join(', ')}. Please add or update it in My Account.`,
         code: 'BG_NUMBER_REQUIRED',
       });
+    }
+
+    // Overdue charge guard
+    const overdueChargeBatch = await prisma.charge.findFirst({
+      where: { userId: req.user.id, paidAt: null, dueDate: { lt: new Date() } },
+    });
+    if (overdueChargeBatch) {
+      return res.status(400).json({ error: 'You have an overdue charge. Please pay it before making new bookings.' });
     }
 
     // ── Validate all items before creating anything ──
