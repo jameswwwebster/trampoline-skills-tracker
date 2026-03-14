@@ -495,7 +495,7 @@ model SessionTemplate {
   endTime     String            // "18:00"
   openSlots       Int               @default(12)
   pricePerGymnast Int               @default(600)   // in pence, e.g. 600 = £6.00
-  type            SessionType       @default(STANDARD)
+  type            SessionType       @default(TRAMPOLINE)
   minAge          Int?              // null = no restriction, 16 = 16+ only
   information String?
   isActive    Boolean           @default(true)
@@ -901,7 +901,7 @@ enum BgNumberStatus {
 }
 
 enum SessionType {
-  STANDARD
+  TRAMPOLINE
   DMT
 }
 
