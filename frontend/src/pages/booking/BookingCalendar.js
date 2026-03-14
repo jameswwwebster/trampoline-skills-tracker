@@ -157,6 +157,15 @@ export default function BookingCalendar() {
                           Trampoline
                         </span>
                       )}
+                      {s.minAge && (
+                        <span style={{
+                          fontSize: '0.7rem', fontWeight: 700, color: 'var(--booking-text-on-dark)',
+                          background: 'var(--booking-danger)', borderRadius: 3,
+                          padding: '0 4px', marginLeft: '0.4rem', lineHeight: 1.6,
+                        }}>
+                          {s.minAge}+
+                        </span>
+                      )}
                     </span>
                     <span className="booking-calendar__day-session-status">{sessionLabel(s)}</span>
                   </button>

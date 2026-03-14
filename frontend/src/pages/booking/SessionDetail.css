@@ -33,8 +33,10 @@
   background: var(--booking-danger);
   color: var(--booking-text-on-dark) !important;
   border-radius: var(--booking-radius);
-  padding: 2px 8px;
-  font-size: 0.8rem;
+  padding: 4px 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
 }
 
 .session-detail__cancelled {

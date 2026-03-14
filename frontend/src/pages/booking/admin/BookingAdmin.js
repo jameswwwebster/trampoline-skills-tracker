@@ -468,6 +468,9 @@ export default function BookingAdmin() {
                   {s.type === 'TRAMPOLINE' && (
                     <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--booking-accent)', border: '1px solid var(--booking-accent)', borderRadius: 3, padding: '0 4px', marginLeft: '0.4rem', lineHeight: 1.6 }}>Trampoline</span>
                   )}
+                  {s.minAge && (
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--booking-text-on-dark)', background: 'var(--booking-danger)', borderRadius: 3, padding: '0 4px', marginLeft: '0.4rem', lineHeight: 1.6 }}>{s.minAge}+</span>
+                  )}
                 </span>
                 <span className="booking-calendar__day-session-status">{s.bookedCount}/{s.bookedCount + s.availableSlots}</span>
               </button>
