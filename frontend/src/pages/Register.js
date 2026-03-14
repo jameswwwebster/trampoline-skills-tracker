@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import './booking/bookingVars.css';
 import './AuthPages.css';
 
+const SIGNUPS_DISABLED = process.env.REACT_APP_SIGNUPS_DISABLED === 'true';
+
 const Register = () => {
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '',
@@ -17,6 +19,21 @@ const Register = () => {
   useEffect(() => {
     if (isAuthenticated) navigate('/', { replace: true });
   }, [isAuthenticated, navigate]);
+
+  if (SIGNUPS_DISABLED) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card">
+          <div className="auth-brand">Trampoline Life</div>
+          <h1 className="auth-heading">Sign-ups paused</h1>
+          <p className="auth-hint">We're currently migrating our booking system. We'll be accepting new sign-ups again very soon — check back shortly!</p>
+          <div className="auth-links">
+            <Link to="/login" className="auth-link">Already have an account? Sign in</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;

@@ -62,8 +62,12 @@ const Login = () => {
 
         <div className="auth-links">
           <Link to="/forgot-password" className="auth-link">Forgot password?</Link>
-          <span className="auth-links__sep">·</span>
-          <Link to="/register" className="auth-link">Create an account</Link>
+          {process.env.REACT_APP_SIGNUPS_DISABLED !== 'true' && (
+            <>
+              <span className="auth-links__sep">·</span>
+              <Link to="/register" className="auth-link">Create an account</Link>
+            </>
+          )}
         </div>
 
         {isDevelopment && (
