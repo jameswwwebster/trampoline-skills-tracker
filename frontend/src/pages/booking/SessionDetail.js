@@ -70,6 +70,10 @@ export default function SessionDetail({
       })
     : myGymnasts;
 
+  const alreadyBookedGymnastIds = new Set(
+    session?.bookings?.flatMap(b => b.lines.map(l => l.gymnast.id)) ?? []
+  );
+
   const bookableGymnasts = eligibleGymnasts.filter(g => !g.hasMembership);
   const memberGymnasts = eligibleGymnasts.filter(g => g.hasMembership);
 
@@ -241,6 +245,7 @@ export default function SessionDetail({
               const dmtBlocked = isDmtSession && !g.dmtApproved;
               const myCommitment = myCommitments.find(c => c.gymnastId === g.id);
               const hasActiveCommitment = myCommitment?.status === 'ACTIVE';
+              const alreadyBooked = alreadyBookedGymnastIds.has(g.id);
               const selected = selectedGymnastIds.includes(g.id);
               const now = Date.now();
               const bgBlocked = (() => {
@@ -253,7 +258,7 @@ export default function SessionDetail({
                 return false;
               })();
               const atCapacity = !selected && selectedGymnastIds.length >= session.availableSlots;
-              const blocked = bgBlocked || dmtBlocked || hasActiveCommitment;
+              const blocked = bgBlocked || dmtBlocked || hasActiveCommitment || alreadyBooked;
               return (
                 <div key={g.id}>
                   <div
@@ -288,12 +293,18 @@ export default function SessionDetail({
                       Standing slot — you're already booked for this session.
                     </p>
                   )}
+                  {alreadyBooked && !hasActiveCommitment && (
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--booking-text-muted)', fontWeight: 500 }}>
+                      Already booked for this session.
+                    </p>
+                  )}
                 </div>
               );
             })}
             {memberGymnasts.map(g => {
               const selected = selectedGymnastIds.includes(g.id);
               const isPending = pendingMemberId === g.id;
+              const alreadyBooked = alreadyBookedGymnastIds.has(g.id);
               const atCapacity = !selected && selectedGymnastIds.length >= session.availableSlots;
               return (
                 <div key={g.id} style={{ marginBottom: '0.25rem' }}>
@@ -303,9 +314,10 @@ export default function SessionDetail({
                     className={[
                       'session-detail__gymnast-option',
                       selected ? 'session-detail__gymnast-option--selected' : '',
-                      atCapacity && !selected ? 'session-detail__gymnast-option--disabled' : '',
+                      (atCapacity && !selected) || alreadyBooked ? 'session-detail__gymnast-option--disabled' : '',
                     ].join(' ')}
                     onClick={() => {
+                      if (alreadyBooked) return;
                       if (selected) {
                         toggleGymnast(g.id);
                         setPendingMemberId(null);
@@ -318,7 +330,7 @@ export default function SessionDetail({
                     <span>{g.firstName} {g.lastName}</span>
                     <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--booking-success)', fontWeight: 600 }}>Member</span>
                   </div>
-                  {isPending && (
+                  {isPending && !alreadyBooked && (
                     <div style={{ margin: '0.25rem 0 0.5rem', padding: '0.6rem 0.75rem', background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.3)', borderRadius: 'var(--booking-radius)', fontSize: '0.85rem' }}>
                       <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>Book an extra session?</p>
                       <p style={{ margin: '0 0 0.5rem', color: 'var(--booking-text-muted)' }}>
@@ -336,6 +348,11 @@ export default function SessionDetail({
                         >Cancel</button>
                       </div>
                     </div>
+                  )}
+                  {alreadyBooked && (
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--booking-text-muted)', fontWeight: 500 }}>
+                      Already booked for this session.
+                    </p>
                   )}
                 </div>
               );
