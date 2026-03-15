@@ -335,7 +335,8 @@ const MEMBERSHIP_BADGE = {
 };
 
 function GymnastRow({ g, memberships, templates, onUpdated }) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const membership = memberships.find(m => m.gymnastId === g.id && m.status !== 'CANCELLED') ?? null;
+
   const [editingDob, setEditingDob] = useState(false);
   const [dobValue, setDobValue] = useState('');
   const [dobSaving, setDobSaving] = useState(false);
@@ -346,6 +347,11 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
   const [commitmentLoading, setCommitmentLoading] = useState(false);
   const [commitmentError, setCommitmentError] = useState(null);
   const [addingTemplateId, setAddingTemplateId] = useState('');
+  const defaultStartDate =
+    membership?.status === 'SCHEDULED' && membership?.startDate
+      ? new Date(membership.startDate).toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+  const [addingStartDate, setAddingStartDate] = useState(defaultStartDate);
 
   const handleSaveDob = async () => {
     if (!dobValue) return;
@@ -391,11 +397,15 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
     }
   };
 
+  useEffect(() => {
+    loadCommitments();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleAddCommitment = async () => {
     if (!addingTemplateId) return;
     setCommitmentError(null);
     try {
-      await bookingApi.createCommitment(g.id, addingTemplateId);
+      await bookingApi.createCommitment({ gymnastId: g.id, templateId: addingTemplateId, startDate: addingStartDate });
       setAddingTemplateId('');
       await loadCommitments();
     } catch (err) {
@@ -425,7 +435,6 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
     }
   };
 
-  const membership = memberships.find(m => m.gymnastId === g.id && m.status !== 'CANCELLED') ?? null;
   const badgeFn = membership ? MEMBERSHIP_BADGE[membership.status] : null;
   const badge = badgeFn ? badgeFn(membership) : { label: 'Ad-hoc', color: 'var(--booking-text-muted)', bg: 'var(--booking-bg-light)' };
 
@@ -467,10 +476,6 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
     );
     return <span style={{ color: 'var(--booking-danger)' }}>✗ Not provided</span>;
   };
-
-  const detailsLabel = g.isSelf
-    ? 'Emergency contact, health notes, membership'
-    : 'Health notes, membership';
 
   return (
     <div style={{
@@ -578,79 +583,120 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
             {dmtError && <span style={{ color: 'var(--booking-danger)', fontSize: '0.75rem' }}>{dmtError}</span>}
           </span>
         </li>
-        {/* Emergency contact (adult participants only) */}
+        {/* Health notes */}
+        <li style={{ ...infoItemStyle, ...(!g.isSelf ? { borderBottom: 'none' } : {}) }}>
+          <span style={keyStyle}>Health notes</span>
+          <span style={{ textAlign: 'right' }}>
+            {g.healthNotes === 'none'
+              ? <span style={{ color: 'var(--booking-text-muted)' }}>None</span>
+              : g.healthNotes
+                ? g.healthNotes
+                : <em style={{ color: 'var(--booking-text-muted)' }}>Not recorded</em>}
+          </span>
+        </li>
+        {/* Emergency contact (adult participants only) — full details */}
         {g.isSelf && (
           <li style={{ ...infoItemStyle, borderBottom: 'none' }}>
             <span style={keyStyle}>Emergency contact</span>
-            {g.emergencyContactName
-              ? <span style={{ color: 'var(--booking-success)' }}>✓ On file</span>
-              : <span style={{ color: 'var(--booking-danger)' }}>✗ Missing</span>}
+            <span style={{ textAlign: 'right' }}>
+              {g.emergencyContactName
+                ? <>
+                    <span style={{ fontWeight: 500 }}>{g.emergencyContactName}</span>
+                    {g.emergencyContactRelationship && <span style={{ color: 'var(--booking-text-muted)' }}> ({g.emergencyContactRelationship})</span>}
+                    {g.emergencyContactPhone && <><br /><a href={`tel:${g.emergencyContactPhone}`} style={{ color: 'var(--booking-accent)' }}>{g.emergencyContactPhone}</a></>}
+                  </>
+                : <span style={{ color: 'var(--booking-danger)' }}>✗ Missing</span>}
+            </span>
           </li>
         )}
       </ul>
 
-      {/* Standing slots (commitments) */}
+      {/* Membership & slots */}
       <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--booking-bg-light)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-          <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Standing slots</span>
-          <button className="bk-btn bk-btn--sm" onClick={loadCommitments} disabled={commitmentLoading}>
-            {commitments === null ? 'Load' : 'Refresh'}
-          </button>
-        </div>
-        {commitmentLoading && <p className="bk-muted" style={{ fontSize: '0.85rem', margin: 0 }}>Loading...</p>}
-        {commitmentError && <p style={{ color: 'var(--booking-danger)', fontSize: '0.82rem', margin: 0 }}>{commitmentError}</p>}
-        {commitments !== null && (
+        <span style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--booking-text-muted)', display: 'block', marginBottom: '0.5rem' }}>
+          Membership &amp; slots
+        </span>
+
+        {/* Membership management (inline — no border/margin wrapper) */}
+        <GymnastMembership gymnast={g} membership={membership} onRefresh={onUpdated} />
+
+        {/* Slots list — only when membership exists */}
+        {membership && (
           <>
-            {commitments.length === 0 && <p className="bk-muted" style={{ fontSize: '0.85rem', margin: '0 0 0.5rem' }}>No commitments.</p>}
-            {commitments.map(c => {
-              const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-              const label = `${days[c.template.dayOfWeek]} ${c.template.startTime}–${c.template.endTime}`;
-              return (
-                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.875rem' }}>
-                  <span>
-                    {label}
-                    <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: c.status === 'ACTIVE' ? 'var(--booking-success)' : c.status === 'WAITLISTED' ? '#e67e22' : 'var(--booking-text-muted)', fontWeight: 600 }}>
-                      {c.status === 'ACTIVE' ? 'Active' : c.status === 'WAITLISTED' ? 'Waitlisted' : 'Paused'}
-                    </span>
-                  </span>
-                  <div className="bk-row" style={{ gap: '0.3rem' }}>
-                    {c.status !== 'WAITLISTED' && (
-                      <button className="bk-btn bk-btn--sm" onClick={() => handleToggleCommitmentStatus(c)}>
-                        {c.status === 'ACTIVE' ? 'Pause' : 'Resume'}
-                      </button>
-                    )}
-                    <button
-                      className="bk-btn bk-btn--sm"
-                      style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
-                      onClick={() => handleDeleteCommitment(c.id)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-            <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <select
-                value={addingTemplateId}
-                onChange={e => setAddingTemplateId(e.target.value)}
-                className="bk-input"
-                style={{ fontSize: '0.85rem', flex: 1 }}
-              >
-                <option value="">Add standing slot...</option>
-                {(templates || []).filter(t => t.isActive && !commitments.some(c => c.templateId === t.id)).map(t => {
+            {commitmentLoading && <p className="bk-muted" style={{ fontSize: '0.85rem', margin: '0.5rem 0 0' }}>Loading...</p>}
+            {commitmentError && <p style={{ color: 'var(--booking-danger)', fontSize: '0.82rem', margin: '0.5rem 0 0' }}>{commitmentError}</p>}
+            {commitments !== null && (
+              <>
+                {commitments.length === 0 && <p className="bk-muted" style={{ fontSize: '0.85rem', margin: '0.5rem 0 0' }}>No standing slots.</p>}
+                {commitments.map(c => {
                   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                  return <option key={t.id} value={t.id}>{days[t.dayOfWeek]} {t.startTime}–{t.endTime}{t.type === 'DMT' ? ' · DMT' : ' · Trampoline'}</option>;
+                  const label = `${days[c.template.dayOfWeek]} ${c.template.startTime}–${c.template.endTime}`;
+                  const isFuture = c.status === 'ACTIVE' && c.startDate && new Date(c.startDate) > new Date();
+                  const startsBadge = isFuture
+                    ? new Date(c.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : null;
+                  return (
+                    <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.875rem' }}>
+                      <span>
+                        {label}
+                        {isFuture ? (
+                          <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: '#1565c0', background: '#e3f2fd', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>
+                            Starts {startsBadge}
+                          </span>
+                        ) : (
+                          <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: c.status === 'ACTIVE' ? 'var(--booking-success)' : c.status === 'WAITLISTED' ? '#e67e22' : 'var(--booking-text-muted)', fontWeight: 600 }}>
+                            {c.status === 'ACTIVE' ? 'Active' : c.status === 'WAITLISTED' ? 'Waitlisted' : 'Paused'}
+                          </span>
+                        )}
+                      </span>
+                      <div className="bk-row" style={{ gap: '0.3rem' }}>
+                        {c.status !== 'WAITLISTED' && !isFuture && (
+                          <button className="bk-btn bk-btn--sm" onClick={() => handleToggleCommitmentStatus(c)}>
+                            {c.status === 'ACTIVE' ? 'Pause' : 'Resume'}
+                          </button>
+                        )}
+                        <button
+                          className="bk-btn bk-btn--sm"
+                          style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+                          onClick={() => handleDeleteCommitment(c.id)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  );
                 })}
-              </select>
-              <button
-                className="bk-btn bk-btn--sm bk-btn--primary"
-                disabled={!addingTemplateId}
-                onClick={handleAddCommitment}
-              >
-                Add
-              </button>
-            </div>
+                {/* Add slot form */}
+                <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <select
+                    value={addingTemplateId}
+                    onChange={e => setAddingTemplateId(e.target.value)}
+                    className="bk-input"
+                    style={{ fontSize: '0.85rem', flex: 1 }}
+                  >
+                    <option value="">Add standing slot...</option>
+                    {(templates || []).filter(t => t.isActive && !commitments.some(c => c.templateId === t.id)).map(t => {
+                      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                      return <option key={t.id} value={t.id}>{days[t.dayOfWeek]} {t.startTime}–{t.endTime}{t.type === 'DMT' ? ' · DMT' : ' · Trampoline'}</option>;
+                    })}
+                  </select>
+                  <input
+                    type="date"
+                    className="bk-input"
+                    value={addingStartDate}
+                    onChange={e => setAddingStartDate(e.target.value)}
+                    style={{ fontSize: '0.85rem', width: '130px' }}
+                  />
+                  <button
+                    className="bk-btn bk-btn--sm bk-btn--primary"
+                    disabled={!addingTemplateId}
+                    onClick={handleAddCommitment}
+                  >
+                    Add
+                  </button>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
@@ -660,45 +706,10 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
         <BgActionBar gymnast={g} onUpdated={onUpdated} />
       )}
 
-      {/* Details expander */}
-      <button
-        onClick={() => setDetailsOpen(v => !v)}
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer', padding: '0.4rem 0 0',
-          color: 'var(--booking-accent)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem',
-        }}
-      >
-        <span style={{ display: 'inline-block', transition: 'transform 0.15s', transform: detailsOpen ? 'rotate(90deg)' : 'none' }}>▸</span>
-        {detailsLabel}
-      </button>
-
-      {detailsOpen && (
-        <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-          {/* Emergency contact details (adult participants only) */}
-          {g.isSelf && g.emergencyContactName && (
-            <div style={{ marginBottom: '0.75rem', fontSize: '0.82rem' }}>
-              <p style={{ margin: '0 0 0.15rem', fontWeight: 600 }}>{g.emergencyContactName}{g.emergencyContactRelationship && ` (${g.emergencyContactRelationship})`}</p>
-              <a href={`tel:${g.emergencyContactPhone}`} style={{ color: 'var(--booking-accent)' }}>{g.emergencyContactPhone}</a>
-            </div>
-          )}
-
-          {/* Health notes */}
-          <div style={{ marginBottom: '0.75rem', fontSize: '0.82rem' }}>
-            <p style={{ margin: '0 0 0.2rem', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--booking-text-muted)', fontWeight: 600 }}>
-              Health notes
-            </p>
-            <p style={{ margin: 0, color: g.healthNotes === 'none' ? 'var(--booking-text-muted)' : 'inherit' }}>
-              {g.healthNotes === 'none'
-                ? 'No known health issues or learning differences'
-                : g.healthNotes || <em style={{ color: 'var(--booking-text-muted)' }}>Not recorded</em>}
-            </p>
-          </div>
-
-          {/* Membership management */}
-          <GymnastMembership gymnast={g} membership={membership} onRefresh={onUpdated} />
-
-          {/* Remove child */}
-          {!g.isSelf && <RemoveChild gymnast={g} onUpdated={onUpdated} />}
+      {/* Remove gymnast */}
+      {!g.isSelf && (
+        <div style={{ marginTop: '0.75rem' }}>
+          <RemoveChild gymnast={g} onUpdated={onUpdated} />
         </div>
       )}
     </div>
@@ -764,57 +775,67 @@ function GymnastMembership({ gymnast, membership, onRefresh }) {
     }
   };
 
-  const style = membership ? STATUS_STYLES[membership.status] : null;
-
   return (
-    <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--booking-bg-light)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--booking-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Membership</span>
-        {membership ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 600, padding: '1px 8px', borderRadius: 4, background: style.bg, color: style.color }}>
-              {membership.status}
+    <div>
+      {membership && membership.status !== 'CANCELLED' ? (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
+              {membership.status === 'ACTIVE' && (
+                <>Active since <strong>{new Date(membership.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</strong> · £{(membership.monthlyAmount / 100).toFixed(2)}/mo</>
+              )}
+              {membership.status === 'PAUSED' && (
+                <>Paused · £{(membership.monthlyAmount / 100).toFixed(2)}/mo</>
+              )}
+              {membership.status === 'SCHEDULED' && (
+                <>Scheduled — starts <strong>{new Date(membership.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</strong> · £{(membership.monthlyAmount / 100).toFixed(2)}/mo</>
+              )}
             </span>
-            <span style={{ fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>£{(membership.monthlyAmount / 100).toFixed(2)}/mo</span>
+            <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+              {membership.status === 'ACTIVE' && (
+                <button className="bk-btn bk-btn--sm" disabled={saving}
+                  style={{ border: '1px solid var(--booking-border)' }}
+                  onClick={() => handleStatus('PAUSED')}>Pause</button>
+              )}
+              {membership.status === 'PAUSED' && (
+                <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={saving}
+                  onClick={() => handleStatus('ACTIVE')}>Resume</button>
+              )}
+              {membership.status !== 'SCHEDULED' && (
+                <button className="bk-btn bk-btn--sm" disabled={saving}
+                  style={{ border: '1px solid var(--booking-border)' }}
+                  onClick={() => { setEditAmount((membership.monthlyAmount / 100).toFixed(2)); setShowEditAmount(v => !v); }}>
+                  Edit amount
+                </button>
+              )}
+              <button className="bk-btn bk-btn--sm" disabled={saving}
+                style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+                onClick={async () => {
+                  if (!window.confirm('Cancel this membership? This will stop Stripe billing immediately.')) return;
+                  setSaving(true);
+                  try { await bookingApi.deleteMembership(membership.id); onRefresh(); }
+                  catch (err) { setError(err.response?.data?.error || 'Failed to cancel.'); setSaving(false); }
+                }}>Cancel</button>
+            </div>
           </div>
-        ) : (
-          <span style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)' }}>Ad-hoc</span>
-        )}
-      </div>
-
-      {error && <p className="bk-error" style={{ marginTop: '0.3rem' }}>{error}</p>}
-
-      {membership && membership.status !== 'CANCELLED' && (
-        <div className="bk-row" style={{ marginTop: '0.4rem', gap: '0.3rem' }}>
-          {membership.status === 'ACTIVE' && (
-            <button className="bk-btn bk-btn--sm" disabled={saving}
-              style={{ border: '1px solid var(--booking-border)' }}
-              onClick={() => handleStatus('PAUSED')}>Pause</button>
+        </>
+      ) : (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>No membership</span>
+          {!showForm && (
+            <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
+              onClick={() => setShowForm(true)}>+ Add monthly membership</button>
           )}
-          {membership.status === 'PAUSED' && (
-            <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={saving}
-              onClick={() => handleStatus('ACTIVE')}>Resume</button>
-          )}
-          <button className="bk-btn bk-btn--sm" disabled={saving}
-            style={{ border: '1px solid var(--booking-border)' }}
-            onClick={() => { setEditAmount((membership.monthlyAmount / 100).toFixed(2)); setShowEditAmount(v => !v); }}>
-            Edit amount
-          </button>
-          <button className="bk-btn bk-btn--sm" disabled={saving}
-            style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
-            onClick={async () => {
-              if (!window.confirm('Cancel this membership? This will stop Stripe billing immediately.')) return;
-              setSaving(true);
-              try { await bookingApi.deleteMembership(membership.id); onRefresh(); }
-              catch (err) { setError(err.response?.data?.error || 'Failed to cancel.'); setSaving(false); }
-            }}>Cancel membership</button>
         </div>
       )}
 
+      {error && <p className="bk-error" style={{ marginTop: '0.3rem' }}>{error}</p>}
+
       {membership && showEditAmount && (
+        // existing edit-amount form — unchanged
         <div style={{ marginTop: '0.5rem' }}>
           <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem' }}>New monthly amount (£)
-            <input type="number" step="0.01" min="0" className="bk-input"
+            <input type="number" step="0.01" min="0.01" className="bk-input"
               value={editAmount} onChange={e => setEditAmount(e.target.value)}
               style={{ marginTop: '0.2rem' }} />
           </label>
@@ -829,16 +850,12 @@ function GymnastMembership({ gymnast, membership, onRefresh }) {
         </div>
       )}
 
-      {!membership && !showForm && (
-        <button className="bk-btn bk-btn--sm" style={{ marginTop: '0.4rem', border: '1px solid var(--booking-border)' }}
-          onClick={() => setShowForm(true)}>+ Add monthly membership</button>
-      )}
-
       {showForm && (
+        // existing add-membership form — unchanged
         <form onSubmit={handleCreate} style={{ marginTop: '0.5rem' }}>
           <div className="bk-grid-2">
             <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem' }}>Monthly amount (£)
-              <input type="number" step="0.01" min="0" className="bk-input"
+              <input type="number" step="0.01" min="0.01" className="bk-input"
                 value={form.monthlyAmount}
                 onChange={e => setForm(f => ({ ...f, monthlyAmount: e.target.value }))}
                 required style={{ marginTop: '0.2rem' }} />
