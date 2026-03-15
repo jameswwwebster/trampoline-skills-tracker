@@ -67,6 +67,7 @@ import AdminShopOrders from './pages/booking/admin/AdminShopOrders';
 import AdminRecipientGroups from './pages/booking/admin/AdminRecipientGroups';
 import AdminCharges from './pages/booking/admin/AdminCharges';
 import AdminHelpPage from './pages/booking/admin/AdminHelpPage';
+import AdminRegister from './pages/booking/admin/AdminRegister';
 import PublicHome from './pages/public/PublicHome';
 import PublicPolicies from './pages/public/PublicPolicies';
 import './App.css';
@@ -226,6 +227,7 @@ function AppContent() {
           <Route path="admin/recipient-groups" element={<AdminRecipientGroups />} />
           <Route path="admin/charges" element={<AdminCharges />} />
           <Route path="admin/help" element={<AdminHelpPage />} />
+          <Route path="admin/register/:instanceId" element={<AdminRegister />} />
         </Route>
       </Routes>
     </div>

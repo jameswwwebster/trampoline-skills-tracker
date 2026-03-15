@@ -221,6 +221,13 @@ export const bookingApi = {
     axios.post(`${API_URL}/booking/charges`, data, { headers: getHeaders() }),
   deleteCharge: (id) =>
     axios.delete(`${API_URL}/booking/charges/${id}`, { headers: getHeaders() }),
+
+  // Attendance register
+  getAttendance: (instanceId) =>
+    axios.get(`${API_URL}/booking/attendance/${instanceId}`, { headers: getHeaders() }),
+
+  createAttendance: (instanceId, data) =>
+    axios.post(`${API_URL}/booking/attendance/${instanceId}`, data, { headers: getHeaders() }),
 };
 
 // Audit log
