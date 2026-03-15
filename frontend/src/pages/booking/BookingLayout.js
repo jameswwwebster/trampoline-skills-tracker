@@ -30,6 +30,8 @@ export default function BookingLayout() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [noticeBanner, setNoticeBanner] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null); // null | 'sessions' | 'members' | 'tools'
+  const [activeSessions, setActiveSessions] = useState([]);
+  const [showRegisterPicker, setShowRegisterPicker] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -94,6 +96,34 @@ export default function BookingLayout() {
       navigate('/booking/admin', { replace: true });
     }
   }, [isAdmin, location.pathname, navigate, location.state]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+
+    bookingApi.getSessions(y, m)
+      .then(res => {
+        const todayStr = now.toISOString().split('T')[0];
+        const todays = res.data.filter(s => {
+          const d = new Date(s.date);
+          return d.toISOString().split('T')[0] === todayStr;
+        });
+
+        const nowMins = now.getHours() * 60 + now.getMinutes();
+        const active = todays.filter(s => {
+          const [sh, sm] = s.startTime.split(':').map(Number);
+          const [eh, em] = s.endTime.split(':').map(Number);
+          const startMins = sh * 60 + sm - 15;
+          const endMins = eh * 60 + em;
+          return nowMins >= startMins && nowMins <= endMins;
+        });
+        setActiveSessions(active);
+      })
+      .catch(() => {});
+  }, [isAdmin]);
 
   return (
     <div className="booking-layout">
@@ -224,6 +254,45 @@ export default function BookingLayout() {
                   <div className="booking-layout__dropdown-menu">
                     <NavLink to="/booking/admin/members" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Members</NavLink>
                     <NavLink to="/booking/admin/bg-numbers" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>BG Numbers</NavLink>
+                  </div>
+                )}
+              </div>
+              <div style={{ position: 'relative' }}>
+                <button
+                  className="booking-layout__admin-link"
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                    fontWeight: activeSessions.length > 0 ? 700 : undefined,
+                    color: activeSessions.length > 0 ? 'var(--booking-accent)' : undefined,
+                  }}
+                  onClick={() => {
+                    setOpenDropdown(null);
+                    if (activeSessions.length === 0) {
+                      navigate('/booking/admin');
+                    } else if (activeSessions.length === 1) {
+                      navigate(`/booking/admin/register/${activeSessions[0].id}`);
+                    } else {
+                      setShowRegisterPicker(p => !p);
+                    }
+                  }}
+                >
+                  Register{activeSessions.length > 0 ? ` (${activeSessions.length})` : ''}
+                </button>
+                {showRegisterPicker && activeSessions.length > 1 && (
+                  <div className="booking-layout__dropdown-menu" style={{ minWidth: '180px' }}>
+                    {activeSessions.map(s => (
+                      <button
+                        key={s.id}
+                        className="booking-layout__dropdown-item"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+                        onClick={() => {
+                          setShowRegisterPicker(false);
+                          navigate(`/booking/admin/register/${s.id}`);
+                        }}
+                      >
+                        {s.startTime}–{s.endTime}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
