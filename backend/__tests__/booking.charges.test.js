@@ -2,6 +2,7 @@ const request = require('supertest');
 const { createTestApp } = require('./helpers/create-test-app');
 const { prisma, cleanDatabase } = require('./helpers/db');
 const { createTestClub, createParent, tokenFor } = require('./helpers/seed');
+const emailService = require('../services/emailService');
 
 const app = createTestApp();
 let club, admin, adminToken, parent, parentToken, parent2, parent2Token;
@@ -94,6 +95,37 @@ describe('POST /api/booking/charges', () => {
     expect(log).toBeDefined();
     expect(log.metadata).toMatchObject({ userId: parent.id });
   });
+
+  it('sends charge created email when emailEnabled is true', async () => {
+    await prisma.club.update({ where: { id: club.id }, data: { emailEnabled: true } });
+    const spy = jest.spyOn(emailService, 'sendChargeCreatedEmail').mockResolvedValue({ success: true });
+    try {
+      await request(app)
+        .post('/api/booking/charges')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ userId: parent.id, amount: 1500, description: 'Test charge', dueDate: new Date(Date.now() + 7 * 86400000).toISOString() });
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy.mock.calls[0][0]).toBe(parent.email);
+    } finally {
+      spy.mockRestore();
+      await prisma.club.update({ where: { id: club.id }, data: { emailEnabled: false } });
+      await prisma.charge.deleteMany({ where: { clubId: club.id } });
+    }
+  });
+
+  it('does not send email when emailEnabled is false', async () => {
+    const spy = jest.spyOn(emailService, 'sendChargeCreatedEmail').mockResolvedValue({ success: true });
+    try {
+      await request(app)
+        .post('/api/booking/charges')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ userId: parent.id, amount: 1500, description: 'Test charge', dueDate: new Date(Date.now() + 7 * 86400000).toISOString() });
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+      await prisma.charge.deleteMany({ where: { clubId: club.id } });
+    }
+  });
 });
 
 describe('GET /api/booking/charges/my', () => {
@@ -153,6 +185,23 @@ describe('GET /api/booking/charges', () => {
       .set('Authorization', `Bearer ${parentToken}`);
     expect(res.status).toBe(403);
   });
+
+  it('filters by userId when query param provided', async () => {
+    const res = await request(app)
+      .get(`/api/booking/charges?userId=${parent.id}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.every(c => c.userId === parent.id)).toBe(true);
+  });
+
+  it('returns empty array for userId with no charges', async () => {
+    const res = await request(app)
+      .get(`/api/booking/charges?userId=${parent2.id}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
 });
 
 describe('DELETE /api/booking/charges/:id', () => {
@@ -194,6 +243,22 @@ describe('DELETE /api/booking/charges/:id', () => {
       orderBy: { createdAt: 'desc' },
     });
     expect(log).toBeDefined();
+  });
+
+  it('sends charge deleted email when emailEnabled is true', async () => {
+    await prisma.club.update({ where: { id: club.id }, data: { emailEnabled: true } });
+    const charge = await seedCharge();
+    const spy = jest.spyOn(emailService, 'sendChargeDeletedEmail').mockResolvedValue({ success: true });
+    try {
+      await request(app)
+        .delete(`/api/booking/charges/${charge.id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy.mock.calls[0][0]).toBe(parent.email);
+    } finally {
+      spy.mockRestore();
+      await prisma.club.update({ where: { id: club.id }, data: { emailEnabled: false } });
+    }
   });
 });
 

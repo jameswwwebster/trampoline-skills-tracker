@@ -3,6 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const Joi = require('joi');
 const { audit } = require('../../services/auditLogService');
+const emailService = require('../../services/emailService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -32,8 +33,9 @@ router.get('/my', auth, async (req, res) => {
 // GET /api/booking/charges — admin/coach: all club charges
 router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
+    const { userId } = req.query;
     const charges = await prisma.charge.findMany({
-      where: { clubId: req.user.clubId },
+      where: { clubId: req.user.clubId, ...(userId ? { userId } : {}) },
       include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -52,6 +54,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
 
     const targetUser = await prisma.user.findFirst({
       where: { id: value.userId, clubId: req.user.clubId },
+      include: { club: { select: { emailEnabled: true } } },
     });
     if (!targetUser) return res.status(404).json({ error: 'User not found' });
 
@@ -71,6 +74,16 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       metadata: { userId: value.userId, amount: value.amount, description: value.description },
     });
 
+    if (targetUser.club.emailEnabled) {
+      await emailService.sendChargeCreatedEmail(
+        targetUser.email,
+        targetUser.firstName,
+        value.description,
+        value.amount,
+        value.dueDate,
+      );
+    }
+
     res.status(201).json(charge);
   } catch (err) {
     console.error(err);
@@ -83,6 +96,11 @@ router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
   try {
     const charge = await prisma.charge.findFirst({
       where: { id: req.params.id, clubId: req.user.clubId },
+      include: {
+        user: {
+          select: { clubId: true, email: true, firstName: true, club: { select: { emailEnabled: true } } },
+        },
+      },
     });
     if (!charge) return res.status(404).json({ error: 'Charge not found' });
     if (charge.paidAt) return res.status(400).json({ error: 'Cannot delete a paid charge' });
@@ -94,6 +112,15 @@ router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
       action: 'charge.delete', entityType: 'Charge', entityId: req.params.id,
       metadata: { userId: charge.userId, amount: charge.amount },
     });
+
+    if (charge.user.club.emailEnabled) {
+      await emailService.sendChargeDeletedEmail(
+        charge.user.email,
+        charge.user.firstName,
+        charge.description,
+        charge.amount,
+      );
+    }
 
     res.json({ success: true });
   } catch (err) {
