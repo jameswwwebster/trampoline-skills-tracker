@@ -387,6 +387,52 @@ router.patch('/:id/emergency-contact', auth, async (req, res) => {
   }
 });
 
+// PATCH /api/gymnasts/:id/health-notes
+// Any guardian (or club admin/coach) can update health notes
+router.patch('/:id/health-notes', auth, async (req, res) => {
+  try {
+    const gymnast = await prisma.gymnast.findUnique({
+      where: { id: req.params.id },
+      include: { guardians: { select: { id: true } } },
+    });
+    if (!gymnast || gymnast.clubId !== req.user.clubId) {
+      return res.status(404).json({ error: 'Gymnast not found' });
+    }
+
+    const isGuardian = gymnast.guardians.some(g => g.id === req.user.id);
+    const isStaff = ['CLUB_ADMIN', 'COACH'].includes(req.user.role);
+    if (!isGuardian && !isStaff) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { error, value } = Joi.object({
+      healthNotes: Joi.string().allow('', null).optional(),
+    }).validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    // Normalise: empty string or null → null; otherwise store as-is
+    const healthNotes = value.healthNotes === '' || value.healthNotes == null
+      ? null
+      : value.healthNotes;
+
+    await prisma.gymnast.update({
+      where: { id: req.params.id },
+      data: { healthNotes },
+    });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'gymnast.updateHealthNotes', entityType: 'Gymnast', entityId: req.params.id,
+      metadata: { gymnastId: req.params.id, healthNotes },
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get children for current parent/guardian
 router.get('/my-children', auth, requireRole(['PARENT']), async (req, res) => {
   try {
