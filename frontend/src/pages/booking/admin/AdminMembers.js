@@ -1210,18 +1210,6 @@ function MemberDetail({ userId, onRemoved }) {
                   val: new Date(member.createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
                 },
                 {
-                  key: 'Credits', val: totalCredits > 0
-                    ? (
-                      <button
-                        onClick={() => setCreditsOpen(v => !v)}
-                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--booking-accent)', fontWeight: 600, fontSize: '0.875rem' }}
-                      >
-                        £{(totalCredits / 100).toFixed(2)} {creditsOpen ? '▴' : '▾'}
-                      </button>
-                    )
-                    : <span className="bk-muted">No credits</span>
-                },
-                {
                   key: 'Charges',
                   val: (
                     <button
@@ -1254,6 +1242,36 @@ function MemberDetail({ userId, onRemoved }) {
               ))}
             </ul>
 
+            {/* Credits row — standalone li with flex header */}
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              <li
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)',
+                  gap: '0.75rem', fontSize: '0.875rem', cursor: 'pointer',
+                }}
+                onClick={() => setCreditsOpen(v => !v)}
+              >
+                <span style={{ color: 'var(--booking-text-muted)', flexShrink: 0 }}>Credits</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }}>
+                  {totalCredits > 0
+                    ? <span style={{ color: 'var(--booking-accent)', fontWeight: 600 }}>£{(totalCredits / 100).toFixed(2)}</span>
+                    : <span className="bk-muted">No credits</span>
+                  }
+                </span>
+                <button
+                  className="bk-btn bk-btn--sm bk-btn--primary"
+                  style={{ flexShrink: 0 }}
+                  onClick={e => { e.stopPropagation(); setCreditsOpen(true); setAssigningCredit(true); }}
+                >
+                  + Assign credit
+                </button>
+                <span style={{ flexShrink: 0, color: 'var(--booking-text-muted)', fontSize: '0.75rem' }}>
+                  {creditsOpen ? '▴' : '▾'}
+                </span>
+              </li>
+            </ul>
+
             {member.isArchived && (
               <span style={{
                 display: 'inline-block', marginTop: '0.5rem',
@@ -1264,13 +1282,16 @@ function MemberDetail({ userId, onRemoved }) {
               </span>
             )}
 
-            {/* Credits inline expand — only when there are credits to show */}
-            {creditsOpen && totalCredits > 0 && (
+            {/* Credits inline expand */}
+            {creditsOpen && (
               <div style={{
                 marginTop: '0.5rem', background: 'rgba(124,53,232,0.05)',
                 border: '1px solid rgba(124,53,232,0.15)', borderRadius: 'var(--booking-radius)',
                 padding: '0.65rem 0.75rem',
               }}>
+                {totalCredits === 0 && !assigningCredit && (
+                  <p style={{ color: 'var(--booking-text-muted)', fontSize: '0.875rem', margin: '0 0 0.5rem' }}>No credits.</p>
+                )}
                 {member.credits.map(c => (
                   <div key={c.id} style={{
                     display: 'flex', justifyContent: 'space-between',
@@ -1281,6 +1302,9 @@ function MemberDetail({ userId, onRemoved }) {
                     <span className="bk-muted">Expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
                   </div>
                 ))}
+                {assigningCredit && (
+                  <AssignCreditForm userId={member.id} onDone={() => { setAssigningCredit(false); load(); }} />
+                )}
               </div>
             )}
 
@@ -1346,17 +1370,6 @@ function MemberDetail({ userId, onRemoved }) {
                 )}
               </div>
             )}
-
-            {/* Assign credit — always accessible regardless of current balance */}
-            <div style={{ marginTop: '0.5rem' }}>
-              {assigningCredit ? (
-                <AssignCreditForm userId={member.id} onDone={() => { setAssigningCredit(false); load(); }} />
-              ) : (
-                <button className="bk-btn bk-btn--sm bk-btn--primary" onClick={() => setAssigningCredit(true)}>
-                  + Assign credit
-                </button>
-              )}
-            </div>
 
             {/* Role change inline */}
             {editingRole && (
