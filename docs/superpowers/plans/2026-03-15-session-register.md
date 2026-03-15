@@ -541,7 +541,7 @@ router.get('/:instanceId', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (re
       session: {
         id: instance.id,
         date: instance.date,
-        templateName: instance.template.type,
+        templateName: `${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][instance.template.dayOfWeek]} ${instance.template.startTime} (${instance.template.type})`,
         startTime: instance.template.startTime,
         endTime: instance.template.endTime,
       },
@@ -680,7 +680,7 @@ git commit -m "feat: add getAttendance and createAttendance to bookingApi"
 **Files:**
 - Create: `frontend/src/pages/booking/admin/AdminRegister.js`
 
-This is a full-screen mobile-optimised page. Tapping a gymnast row cycles UNMARKED → PRESENT → ABSENT → UNMARKED and auto-saves each tap.
+This is a full-screen mobile-optimised page. Tapping a gymnast row cycles UNMARKED → PRESENT → ABSENT and auto-saves each tap. ABSENT is terminal — a third tap does nothing.
 
 - [ ] **Step 1: Create the component**
 
@@ -691,7 +691,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { bookingApi } from '../../../utils/bookingApi';
 import '../booking-shared.css';
 
-const STATUS_CYCLE = { UNMARKED: 'PRESENT', PRESENT: 'ABSENT', ABSENT: 'UNMARKED' };
+const STATUS_CYCLE = { UNMARKED: 'PRESENT', PRESENT: 'ABSENT', ABSENT: 'ABSENT' };
 
 const STATUS_STYLE = {
   PRESENT: { background: '#d4edda', color: '#155724', border: '2px solid #28a745' },
@@ -735,23 +735,15 @@ export default function AdminRegister() {
 
   const handleTap = useCallback(async (gymnast) => {
     const next = STATUS_CYCLE[gymnast.status];
-    // Optimistically update
-    setAttendees(prev =>
-      prev.map(a => a.gymnastId === gymnast.gymnastId ? { ...a, status: next } : a)
-    );
-    setSaving(s => ({ ...s, [gymnast.gymnastId]: true }));
+    if (next === gymnast.status) return; // already at terminal state (ABSENT)
+    setAttendees(prev => prev.map(a => a.gymnastId === gymnast.gymnastId ? { ...a, status: next } : a));
+    setSaving(prev => ({ ...prev, [gymnast.gymnastId]: true }));
     try {
-      await bookingApi.createAttendance(instanceId, {
-        gymnastId: gymnast.gymnastId,
-        status: next === 'UNMARKED' ? 'ABSENT' : next, // UNMARKED not a valid POST value — treat cycle-back to UNMARKED as ABSENT
-      });
-    } catch (err) {
-      // Revert on failure
-      setAttendees(prev =>
-        prev.map(a => a.gymnastId === gymnast.gymnastId ? { ...a, status: gymnast.status } : a)
-      );
+      await bookingApi.createAttendance(instanceId, { gymnastId: gymnast.gymnastId, status: next });
+    } catch {
+      setAttendees(prev => prev.map(a => a.gymnastId === gymnast.gymnastId ? { ...a, status: gymnast.status } : a));
     } finally {
-      setSaving(s => ({ ...s, [gymnast.gymnastId]: false }));
+      setSaving(prev => ({ ...prev, [gymnast.gymnastId]: false }));
     }
   }, [instanceId]);
 
@@ -850,39 +842,27 @@ export default function AdminRegister() {
 }
 ```
 
-Note on the UNMARKED cycle: tapping back to UNMARKED sends `ABSENT` to the API (since the API only accepts PRESENT/ABSENT, not UNMARKED). If you want true "clear the mark" behaviour you can implement a DELETE endpoint later. For now the cycle is: tap once = PRESENT, tap twice = ABSENT, tap three times = ABSENT (no change). Adjust `STATUS_CYCLE` if desired — the simplest approach is to stop the cycle at ABSENT: `UNMARKED → PRESENT → ABSENT → ABSENT`.
+Note on the UNMARKED cycle: Tapping cycles UNMARKED → PRESENT → ABSENT. ABSENT is terminal — a third tap does nothing. To reset, the coach must reload the page (a DELETE/clear endpoint can be added later).
 
-Actually, to avoid confusion let's keep the cycle true to the spec (UNMARKED → PRESENT → ABSENT → UNMARKED) but recognise that cycling back to UNMARKED from ABSENT sends ABSENT again (no visual change from server's perspective, but the UI shows UNMARKED optimistically). Update the `handleTap` function to only POST when next !== 'UNMARKED':
-
-Replace the `handleTap` function body in the file above with this version:
+The corrected `handleTap` (write this version into the file — it supersedes the inline version above):
 
 ```js
   const handleTap = useCallback(async (gymnast) => {
     const next = STATUS_CYCLE[gymnast.status];
-    // Optimistically update UI
-    setAttendees(prev =>
-      prev.map(a => a.gymnastId === gymnast.gymnastId ? { ...a, status: next } : a)
-    );
-    // Only POST to API for PRESENT/ABSENT (not UNMARKED — API doesn't accept it)
-    if (next === 'UNMARKED') return;
-    setSaving(s => ({ ...s, [gymnast.gymnastId]: true }));
+    if (next === gymnast.status) return; // already at terminal state (ABSENT)
+    setAttendees(prev => prev.map(a => a.gymnastId === gymnast.gymnastId ? { ...a, status: next } : a));
+    setSaving(prev => ({ ...prev, [gymnast.gymnastId]: true }));
     try {
-      await bookingApi.createAttendance(instanceId, {
-        gymnastId: gymnast.gymnastId,
-        status: next,
-      });
+      await bookingApi.createAttendance(instanceId, { gymnastId: gymnast.gymnastId, status: next });
     } catch {
-      // Revert on failure
-      setAttendees(prev =>
-        prev.map(a => a.gymnastId === gymnast.gymnastId ? { ...a, status: gymnast.status } : a)
-      );
+      setAttendees(prev => prev.map(a => a.gymnastId === gymnast.gymnastId ? { ...a, status: gymnast.status } : a));
     } finally {
-      setSaving(s => ({ ...s, [gymnast.gymnastId]: false }));
+      setSaving(prev => ({ ...prev, [gymnast.gymnastId]: false }));
     }
   }, [instanceId]);
 ```
 
-Write the final file with the corrected `handleTap` (not the intermediate version).
+Write the final file using the corrected `handleTap` above.
 
 - [ ] **Step 2: Register the route in `frontend/src/App.js`**
 
@@ -1108,7 +1088,7 @@ Manual test checklist:
 - [ ] Log in as CLUB_ADMIN
 - [ ] Navigate to `/booking/admin`, click a session, confirm "Open register" button appears
 - [ ] Click "Open register" — verify it opens `/booking/admin/register/:instanceId`
-- [ ] Tap a gymnast row — confirm it cycles UNMARKED → PRESENT → ABSENT → UNMARKED
+- [ ] Tap a gymnast row — confirm: tap once → PRESENT (green), tap again → ABSENT (red), tap again → no change (ABSENT is terminal)
 - [ ] Verify PRESENT is green, ABSENT is red/muted, UNMARKED is grey
 - [ ] Reload the page — confirm marks are persisted (loaded from API)
 - [ ] When a session is active (within 15 min of start through end), confirm "Register" nav link appears highlighted
