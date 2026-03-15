@@ -110,7 +110,9 @@ Apply the same filter to the equivalent `activeCount` query in `PATCH /:id/statu
 
 ### `memberships.js` — atomic commitment creation
 
-Commitments are created inside a `prisma.$transaction` using `tx.commitment.create`. Add `startDate` to each create call inside the existing `for...of` loop, using the transaction variable `tx`:
+Commitments are created inside a `prisma.$transaction` using `tx.commitment.create`. Add `startDate` to each create call inside the existing `for...of` loop, using the transaction variable `tx`.
+
+`value.startDate` is always present here — the membership Joi schema declares `startDate: Joi.date().required()`, so the unconditional `new Date(value.startDate)` is safe:
 
 ```js
 await tx.commitment.create({
