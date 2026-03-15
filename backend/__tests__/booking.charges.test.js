@@ -334,3 +334,57 @@ describe('Overdue charge blocks POST /api/booking/bookings', () => {
     expect(res.body.error).toMatch(/overdue charge/);
   });
 });
+
+describe('POST /api/booking/credits/assign — email', () => {
+  afterEach(() => prisma.credit.deleteMany({}));
+
+  it('sends credit assigned email when emailEnabled is true', async () => {
+    await prisma.club.update({ where: { id: club.id }, data: { emailEnabled: true } });
+    const spy = jest.spyOn(emailService, 'sendCreditAssignedEmail').mockResolvedValue({ success: true });
+    try {
+      await request(app)
+        .post('/api/booking/credits/assign')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ userId: parent.id, amount: 500, expiresInDays: 30 });
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy.mock.calls[0][0]).toBe(parent.email);
+    } finally {
+      spy.mockRestore();
+      await prisma.club.update({ where: { id: club.id }, data: { emailEnabled: false } });
+    }
+  });
+
+  it('does not send email when emailEnabled is false', async () => {
+    const spy = jest.spyOn(emailService, 'sendCreditAssignedEmail').mockResolvedValue({ success: true });
+    try {
+      await request(app)
+        .post('/api/booking/credits/assign')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ userId: parent.id, amount: 500, expiresInDays: 30 });
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
+describe('DELETE /api/booking/credits/:id — email', () => {
+  it('sends credit deleted email when emailEnabled is true', async () => {
+    const expiresAt = new Date(Date.now() + 30 * 86400000);
+    const credit = await prisma.credit.create({
+      data: { userId: parent.id, amount: 500, expiresAt },
+    });
+    await prisma.club.update({ where: { id: club.id }, data: { emailEnabled: true } });
+    const spy = jest.spyOn(emailService, 'sendCreditDeletedEmail').mockResolvedValue({ success: true });
+    try {
+      await request(app)
+        .delete(`/api/booking/credits/${credit.id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy.mock.calls[0][0]).toBe(parent.email);
+    } finally {
+      spy.mockRestore();
+      await prisma.club.update({ where: { id: club.id }, data: { emailEnabled: false } });
+    }
+  });
+});

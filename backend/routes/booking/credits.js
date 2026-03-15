@@ -3,6 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const Joi = require('joi');
 const { audit } = require('../../services/auditLogService');
+const emailService = require('../../services/emailService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -68,6 +69,7 @@ router.post('/assign', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
     // Verify user is in same club
     const targetUser = await prisma.user.findFirst({
       where: { id: value.userId, clubId: req.user.clubId },
+      include: { club: { select: { emailEnabled: true } } },
     });
     if (!targetUser) return res.status(404).json({ error: 'User not found' });
 
@@ -88,6 +90,15 @@ router.post('/assign', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
       action: 'credit.create', entityType: 'Credit', entityId: credit.id,
       metadata: { memberId: value.userId, note: value.note },
     });
+
+    if (targetUser.club.emailEnabled) {
+      await emailService.sendCreditAssignedEmail(
+        targetUser.email,
+        targetUser.firstName,
+        value.amount,
+        credit.expiresAt,
+      );
+    }
 
     res.status(201).json(credit);
   } catch (err) {
@@ -156,7 +167,11 @@ router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
   try {
     const credit = await prisma.credit.findUnique({
       where: { id: req.params.id },
-      include: { user: { select: { clubId: true } } },
+      include: {
+        user: {
+          select: { clubId: true, email: true, firstName: true, club: { select: { emailEnabled: true } } },
+        },
+      },
     });
     if (!credit) return res.status(404).json({ error: 'Credit not found' });
     if (credit.user.clubId !== req.user.clubId) return res.status(403).json({ error: 'Forbidden' });
@@ -169,6 +184,14 @@ router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
       action: 'credit.delete', entityType: 'Credit', entityId: credit.id,
       metadata: { userId: credit.userId, sessionTemplateId: credit.sessionTemplateId },
     });
+
+    if (credit.user.club.emailEnabled) {
+      await emailService.sendCreditDeletedEmail(
+        credit.user.email,
+        credit.user.firstName,
+        credit.amount,
+      );
+    }
 
     res.json({ success: true });
   } catch (err) {
