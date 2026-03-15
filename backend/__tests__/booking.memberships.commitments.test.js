@@ -92,6 +92,19 @@ describe('POST /api/booking/memberships with templateIds', () => {
     expect(count).toBe(1);
   });
 
+  it('commitments inherit membership startDate', async () => {
+    const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const res = await request(app)
+      .post('/api/booking/memberships')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ gymnastId: gymnast.id, monthlyAmount: 4000, startDate: futureDate, templateIds: [template.id] });
+    expect(res.status).toBe(201);
+    const commitments = await prisma.commitment.findMany({ where: { gymnastId: gymnast.id, templateId: template.id } });
+    expect(commitments).toHaveLength(1);
+    expect(commitments[0].startDate).not.toBeNull();
+    expect(new Date(commitments[0].startDate).toISOString().split('T')[0]).toBe(futureDate);
+  });
+
   it('creates membership without commitments when templateIds is empty', async () => {
     const res = await request(app)
       .post('/api/booking/memberships')

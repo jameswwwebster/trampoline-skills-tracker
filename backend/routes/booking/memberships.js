@@ -322,7 +322,12 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
 
       for (const templateId of value.templateIds) {
         await tx.commitment.create({
-          data: { gymnastId: value.gymnastId, templateId, createdById: req.user.id },
+          data: {
+            gymnastId: value.gymnastId,
+            templateId,
+            createdById: req.user.id,
+            startDate: new Date(value.startDate),
+          },
         });
       }
 
