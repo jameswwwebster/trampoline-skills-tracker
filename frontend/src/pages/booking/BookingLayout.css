@@ -243,6 +243,15 @@
   line-height: 1;
 }
 
+.booking-layout__unread-badge--dot {
+  width: 8px;
+  height: 8px;
+  min-width: unset;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--booking-danger);
+}
+
 .booking-layout__notice-banner {
   display: flex;
   align-items: center;

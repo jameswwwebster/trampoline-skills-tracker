@@ -26,6 +26,7 @@ export default function BookingLayout() {
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
   const [paymentBanner, setPaymentBanner] = useState(null); // null | 'pending' | 'needs_method'
   const [hasOverdueCharge, setHasOverdueCharge] = useState(false);
+  const [hasOutstandingCharge, setHasOutstandingCharge] = useState(false);
   const [cartCount, setCartCount] = useState(getTotalCartCount);
   const [unreadCount, setUnreadCount] = useState(0);
   const [noticeBanner, setNoticeBanner] = useState(false);
@@ -86,6 +87,7 @@ export default function BookingLayout() {
       .then(r => {
         const now = new Date();
         setHasOverdueCharge(r.data.some(c => new Date(c.dueDate) < now));
+        setHasOutstandingCharge(r.data.length > 0);
       })
       .catch(() => {});
   }, [user, isAdmin]);
@@ -201,14 +203,17 @@ export default function BookingLayout() {
               </NavLink>
 
               {/* Account */}
-              <NavLink to="/booking/my-account" onClick={() => setOpenDropdown(null)}>
+              <NavLink to="/booking/my-account" style={{ position: 'relative' }} onClick={() => setOpenDropdown(null)}>
                 Account
+                {hasOutstandingCharge && (
+                  <span className="booking-layout__unread-badge booking-layout__unread-badge--dot" />
+                )}
               </NavLink>
 
               {/* Cart — standalone, conditional, visually inverted */}
-              {cartCount > 0 && (
+              {(cartCount > 0 || hasOutstandingCharge) && (
                 <NavLink to="/booking/cart" className="booking-layout__cart-link" onClick={() => setOpenDropdown(null)}>
-                  Cart ({cartCount})
+                  Cart{cartCount > 0 ? ` (${cartCount})` : ''}
                 </NavLink>
               )}
             </>
