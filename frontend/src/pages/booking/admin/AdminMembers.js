@@ -1255,7 +1255,7 @@ function MemberDetail({ userId, onRemoved }) {
                 <span style={{ color: 'var(--booking-text-muted)', flexShrink: 0 }}>Credits</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }}>
                   {totalCredits > 0
-                    ? <span style={{ color: 'var(--booking-accent)', fontWeight: 600 }}>£{(totalCredits / 100).toFixed(2)}</span>
+                    ? <span style={{ color: 'var(--booking-accent)', fontWeight: 600 }}>£{(totalCredits / 100).toFixed(2)} total</span>
                     : <span className="bk-muted">No credits</span>
                   }
                 </span>
