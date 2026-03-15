@@ -260,7 +260,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
   try {
     const { error, value } = Joi.object({
       gymnastId: Joi.string().required(),
-      monthlyAmount: Joi.number().integer().min(1).required(),
+      monthlyAmount: Joi.number().integer().min(0).required(),
       startDate: Joi.date().required(),
       templateIds: Joi.array().items(Joi.string()).optional().default([]),
     }).validate(req.body);

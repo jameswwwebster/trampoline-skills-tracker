@@ -32,7 +32,9 @@ async function activateMembership(membershipId, prisma) {
   let stripeSubscriptionId = null;
   let needsPaymentMethod = false;
 
-  if (process.env.STRIPE_SECRET_KEY) {
+  if (membership.monthlyAmount === 0) {
+    // No Stripe subscription for free memberships — defaults already correct
+  } else if (process.env.STRIPE_SECRET_KEY) {
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
     // Create or retrieve Stripe customer
