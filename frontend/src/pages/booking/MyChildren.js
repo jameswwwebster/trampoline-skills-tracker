@@ -203,6 +203,27 @@ function EmergencyContactForm({ gymnast, onSaved }) {
 
 function GymnastCard({ gymnast, onUpdated }) {
   const [editingEC, setEditingEC] = useState(false);
+  const [editingHealthNotes, setEditingHealthNotes] = useState(false);
+  const [healthNotesValue, setHealthNotesValue] = useState(gymnast.healthNotes === 'none' ? '' : gymnast.healthNotes || '');
+  const [healthNotesNone, setHealthNotesNone] = useState(gymnast.healthNotes === 'none');
+  const [healthNotesSaving, setHealthNotesSaving] = useState(false);
+  const [healthNotesError, setHealthNotesError] = useState(null);
+
+  const handleSaveHealthNotes = async () => {
+    setHealthNotesSaving(true);
+    setHealthNotesError(null);
+    try {
+      const healthNotes = healthNotesNone ? 'none' : healthNotesValue || null;
+      await bookingApi.updateHealthNotes(gymnast.id, { healthNotes });
+      setEditingHealthNotes(false);
+      onUpdated();
+    } catch (err) {
+      setHealthNotesError(err.response?.data?.error || 'Failed to save.');
+    } finally {
+      setHealthNotesSaving(false);
+    }
+  };
+
   const hasEC = !!gymnast.emergencyContactName;
 
   return (
@@ -251,11 +272,72 @@ function GymnastCard({ gymnast, onUpdated }) {
 
       <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
         <span className="bk-muted" style={{ display: 'block', marginBottom: '0.2rem' }}>Health notes</span>
-        <span style={{ color: gymnast.healthNotes === 'none' ? 'var(--booking-text-muted)' : 'inherit' }}>
-          {gymnast.healthNotes === 'none'
-            ? 'No known health issues or learning differences'
-            : gymnast.healthNotes || <em style={{ color: 'var(--booking-text-muted)' }}>Not recorded</em>}
-        </span>
+        {editingHealthNotes ? (
+          <div style={{ marginTop: '0.25rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem', fontSize: '0.875rem' }}>
+              <input
+                type="checkbox"
+                checked={healthNotesNone}
+                onChange={e => {
+                  setHealthNotesNone(e.target.checked);
+                  if (e.target.checked) setHealthNotesValue('');
+                }}
+              />
+              No known health issues
+            </label>
+            {!healthNotesNone && (
+              <textarea
+                className="bk-input"
+                rows={3}
+                style={{ width: '100%', marginBottom: '0.4rem', fontSize: '0.875rem' }}
+                value={healthNotesValue}
+                onChange={e => setHealthNotesValue(e.target.value)}
+                placeholder="Describe any health issues or learning differences"
+              />
+            )}
+            {healthNotesError && <p className="bk-error">{healthNotesError}</p>}
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <button
+                className="bk-btn bk-btn--primary bk-btn--sm"
+                disabled={healthNotesSaving}
+                onClick={handleSaveHealthNotes}
+              >
+                {healthNotesSaving ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                className="bk-btn bk-btn--sm"
+                style={{ border: '1px solid var(--booking-border)' }}
+                onClick={() => {
+                  setEditingHealthNotes(false);
+                  setHealthNotesValue(gymnast.healthNotes === 'none' ? '' : gymnast.healthNotes || '');
+                  setHealthNotesNone(gymnast.healthNotes === 'none');
+                  setHealthNotesError(null);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+            <span style={{ color: gymnast.healthNotes === 'none' ? 'var(--booking-text-muted)' : 'inherit' }}>
+              {gymnast.healthNotes === 'none'
+                ? 'No known health issues or learning differences'
+                : gymnast.healthNotes || <em style={{ color: 'var(--booking-text-muted)' }}>Not recorded</em>}
+            </span>
+            <button
+              className="bk-btn bk-btn--sm"
+              style={{ fontSize: '0.75rem', border: '1px solid var(--booking-border)', flexShrink: 0 }}
+              onClick={() => {
+                setHealthNotesValue(gymnast.healthNotes === 'none' ? '' : gymnast.healthNotes || '');
+                setHealthNotesNone(gymnast.healthNotes === 'none');
+                setEditingHealthNotes(true);
+              }}
+            >
+              Edit
+            </button>
+          </div>
+        )}
       </div>
 
       <ConsentToggles gymnast={gymnast} onUpdated={onUpdated} />
