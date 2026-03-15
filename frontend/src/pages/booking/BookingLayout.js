@@ -146,6 +146,10 @@ export default function BookingLayout() {
           >
             Having trouble?
           </a>
+            {isAdmin && (
+              <Link to="/booking/help" className="booking-layout__help" style={{ marginLeft: '0.5rem' }}>Member help</Link>
+            )}
+            <Link to={isAdmin ? '/booking/admin/help' : '/booking/help'} className="booking-layout__help" style={{ marginLeft: '0.5rem' }}>Help</Link>
             <button className="booking-layout__logout" onClick={() => { logout(); navigate('/'); }}>Log out</button>
           </div>
         </div>
@@ -356,14 +360,6 @@ export default function BookingLayout() {
         <Outlet />
       </main>
 
-      <footer className="booking-layout__footer">
-        {!isAdmin && (
-          <Link to="/booking/help" style={{ color: 'var(--booking-text-muted)', textDecoration: 'none', fontSize: '0.82rem' }}>Help</Link>
-        )}
-        {isAdmin && (
-          <Link to="/booking/admin/help" style={{ color: 'var(--booking-text-muted)', textDecoration: 'none', fontSize: '0.82rem' }}>Help</Link>
-        )}
-      </footer>
     </div>
   );
 }

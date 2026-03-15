@@ -81,6 +81,29 @@ export default function HelpPage() {
           notices.
         </p>
       </section>
+
+      <section style={{ marginBottom: '2rem' }}>
+        <h3 style={{ marginBottom: '0.5rem' }}>Refunds &amp; cancellations</h3>
+        <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
+          <strong>Session bookings:</strong> You can cancel a booking at any time from <strong>My Bookings</strong>.
+          Cancellations made at least 48 hours before the session start time are eligible for a full refund or
+          credit to your account. Cancellations within 48 hours of the session are non-refundable, except in
+          exceptional circumstances at the club's discretion.
+        </p>
+        <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
+          <strong>Memberships:</strong> Memberships can be cancelled at any time and will not renew after
+          cancellation. Payments already taken are non-refundable. If you cancel part-way through a month, your
+          membership remains active until the end of the period already paid for.
+        </p>
+        <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
+          <strong>Shop orders:</strong> Refunds on shop items are considered on a case-by-case basis. Please
+          contact the club if there is a problem with your order.
+        </p>
+        <p style={{ color: 'var(--booking-text-muted)' }}>
+          If you have a question about a specific charge or would like to request a refund, please use the{' '}
+          <strong>Having trouble?</strong> button at the top of the page to message us directly.
+        </p>
+      </section>
     </div>
   );
 }
