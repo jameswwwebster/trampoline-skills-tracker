@@ -63,6 +63,8 @@ model User {
   commitmentsPaused             Commitment[]      @relation("CommitmentPausedBy")
   charges               Charge[]
   attendances           Attendance[]
+  recurringCredits         RecurringCredit[]
+  createdRecurringCredits  RecurringCredit[]  @relation("RecurringCreditCreatedBy")
 
   @@map("users")
 }
@@ -146,6 +148,7 @@ model Club {
   noticeboardPosts      NoticeboardPost[]
   recipientGroups       RecipientGroup[]
   charges               Charge[]
+  recurringCredits  RecurringCredit[]
 
   @@map("clubs")
 }
@@ -607,6 +610,24 @@ model Attendance {
 
   @@unique([sessionInstanceId, gymnastId])
   @@map("attendances")
+}
+
+model RecurringCredit {
+  id            String    @id @default(cuid())
+  club          Club      @relation(fields: [clubId], references: [id])
+  clubId        String
+  user          User      @relation(fields: [userId], references: [id])
+  userId        String
+  amountPence   Int
+  endDate       DateTime?
+  isActive      Boolean   @default(true)
+  lastIssuedAt  DateTime?
+  createdBy     User      @relation("RecurringCreditCreatedBy", fields: [createdById], references: [id])
+  createdById   String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("recurring_credits")
 }
 
 model ShopOrder {
