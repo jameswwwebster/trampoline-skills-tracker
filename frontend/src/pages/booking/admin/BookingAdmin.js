@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { bookingApi } from '../../../utils/bookingApi';
 import CalendarNav from '../CalendarNav';
 import '../booking-shared.css';
@@ -166,6 +167,7 @@ const CONSENT_BADGES = [
 ];
 
 function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, setShowManualAdd, onAdded }) {
+  const navigate = useNavigate();
   const [confirmingRemove, setConfirmingRemove] = useState(null);
   const [removing, setRemoving] = useState(null);
   const [removeError, setRemoveError] = useState(null);
@@ -360,6 +362,14 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
           ))
         )}
       </div>
+
+      <button
+        className="bk-btn bk-btn--primary"
+        style={{ width: '100%', marginBottom: '0.5rem' }}
+        onClick={() => navigate(`/booking/admin/register/${selectedSession}`)}
+      >
+        Open register
+      </button>
 
       <button
         className="bk-btn bk-btn--primary"
