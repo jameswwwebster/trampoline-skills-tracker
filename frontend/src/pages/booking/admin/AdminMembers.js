@@ -1244,6 +1244,16 @@ function MemberDetail({ userId, onRemoved }) {
     }
   };
 
+  const handleDeleteCredit = async (creditId) => {
+    if (!window.confirm('Delete this credit?')) return;
+    try {
+      await bookingApi.deleteCredit(creditId);
+      await load();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete credit');
+    }
+  };
+
   const handleDeleteCharge = async (chargeId) => {
     if (!window.confirm('Delete this charge?')) return;
     try {
@@ -1404,12 +1414,21 @@ function MemberDetail({ userId, onRemoved }) {
                 )}
                 {member.credits.map(c => (
                   <div key={c.id} style={{
-                    display: 'flex', justifyContent: 'space-between',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     fontSize: '0.875rem', padding: '0.2rem 0',
                     borderBottom: '1px solid var(--booking-bg-light)',
                   }}>
                     <span>£{(c.amount / 100).toFixed(2)}</span>
                     <span className="bk-muted">Expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
+                    {!c.usedOnBookingId && (
+                      <button
+                        className="bk-btn bk-btn--sm"
+                        style={{ fontSize: '0.75rem', color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+                        onClick={() => handleDeleteCredit(c.id)}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 ))}
                 {assigningCredit && (

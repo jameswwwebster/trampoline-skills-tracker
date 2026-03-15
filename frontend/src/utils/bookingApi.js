@@ -224,6 +224,8 @@ export const bookingApi = {
     axios.post(`${API_URL}/booking/charges`, data, { headers: getHeaders() }),
   deleteCharge: (id) =>
     axios.delete(`${API_URL}/booking/charges/${id}`, { headers: getHeaders() }),
+  deleteCredit: (id) =>
+    axios.delete(`${API_URL}/booking/credits/${id}`, { headers: getHeaders() }),
 
   // Attendance register
   getAttendance: (instanceId) =>
