@@ -1127,6 +1127,7 @@ function MemberDetail({ userId, onRemoved }) {
     const opening = !chargesOpen;
     setChargesOpen(opening);
     if (opening && memberCharges === null) loadCharges();
+    if (!opening) setAddingCharge(false);
   };
 
   const handleCreateCharge = async (e) => {
