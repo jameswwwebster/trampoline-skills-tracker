@@ -1209,26 +1209,6 @@ function MemberDetail({ userId, onRemoved }) {
                   key: 'Member since',
                   val: new Date(member.createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
                 },
-                {
-                  key: 'Charges',
-                  val: (
-                    <button
-                      onClick={handleToggleCharges}
-                      style={{
-                        background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.875rem',
-                        color: outstandingChargesTotal > 0 ? 'var(--booking-danger)' : 'var(--booking-text-muted)',
-                        fontWeight: outstandingChargesTotal > 0 ? 600 : 'normal',
-                      }}
-                    >
-                      {memberCharges === null
-                        ? 'View charges'
-                        : outstandingChargesTotal > 0
-                          ? `£${(outstandingChargesTotal / 100).toFixed(2)} outstanding`
-                          : 'No outstanding charges'
-                      } {chargesOpen ? '▴' : '▾'}
-                    </button>
-                  ),
-                },
                               ].map(({ key, val }) => (
                 <li key={key} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
@@ -1270,6 +1250,46 @@ function MemberDetail({ userId, onRemoved }) {
                 </button>
                 <span style={{ flexShrink: 0, color: 'var(--booking-text-muted)', fontSize: '0.75rem' }}>
                   {creditsOpen ? '▴' : '▾'}
+                </span>
+              </li>
+            </ul>
+
+            {/* Charges row — standalone li with flex header */}
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              <li
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)',
+                  gap: '0.75rem', fontSize: '0.875rem', cursor: 'pointer',
+                }}
+                onClick={handleToggleCharges}
+              >
+                <span style={{ color: 'var(--booking-text-muted)', flexShrink: 0 }}>Charges</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto',
+                  color: outstandingChargesTotal > 0 ? 'var(--booking-danger)' : 'var(--booking-text-muted)',
+                  fontWeight: outstandingChargesTotal > 0 ? 600 : 'normal',
+                }}>
+                  {memberCharges === null
+                    ? 'View charges'
+                    : outstandingChargesTotal > 0
+                      ? `£${(outstandingChargesTotal / 100).toFixed(2)} outstanding`
+                      : 'No outstanding charges'
+                  }
+                </span>
+                <button
+                  className="bk-btn bk-btn--sm bk-btn--primary"
+                  style={{ flexShrink: 0 }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setChargesOpen(true);
+                    setAddingCharge(true);
+                    if (memberCharges === null) loadCharges();
+                  }}
+                >
+                  + Add charge
+                </button>
+                <span style={{ flexShrink: 0, color: 'var(--booking-text-muted)', fontSize: '0.75rem' }}>
+                  {chargesOpen ? '▴' : '▾'}
                 </span>
               </li>
             </ul>
