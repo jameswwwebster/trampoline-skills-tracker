@@ -231,6 +231,16 @@ export const bookingApi = {
 
   deleteAttendance: (instanceId, gymnastId) =>
     axios.delete(`${API_URL}/booking/attendance/${instanceId}/${gymnastId}`, { headers: getHeaders() }),
+
+  // Recurring credits
+  getRecurringCredits: () =>
+    axios.get(`${API_URL}/booking/recurring-credits`, { headers: getHeaders() }),
+
+  createRecurringCredit: (data) =>
+    axios.post(`${API_URL}/booking/recurring-credits`, data, { headers: getHeaders() }),
+
+  deleteRecurringCredit: (id) =>
+    axios.delete(`${API_URL}/booking/recurring-credits/${id}`, { headers: getHeaders() }),
 };
 
 // Audit log
