@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { bookingApi } from '../../../utils/bookingApi';
 import '../booking-shared.css';
 
-const STATUS_CYCLE = { UNMARKED: 'PRESENT', PRESENT: 'ABSENT', ABSENT: 'ABSENT' };
+const STATUS_CYCLE = { UNMARKED: 'PRESENT', PRESENT: 'ABSENT', ABSENT: 'PRESENT' };
 
 const STATUS_STYLE = {
   PRESENT:  { background: '#d4edda', color: '#155724', border: '2px solid #28a745' },
@@ -48,7 +48,6 @@ export default function AdminRegister() {
 
   const handleTap = useCallback(async (gymnast) => {
     const next = STATUS_CYCLE[gymnast.status];
-    if (next === gymnast.status) return;
     setAttendees(prev => prev.map(a => a.gymnastId === gymnast.gymnastId ? { ...a, status: next } : a));
     setSaving(prev => ({ ...prev, [gymnast.gymnastId]: true }));
     try {

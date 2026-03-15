@@ -31,7 +31,6 @@ export default function BookingLayout() {
   const [noticeBanner, setNoticeBanner] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null); // null | 'sessions' | 'members' | 'tools'
   const [activeSessions, setActiveSessions] = useState([]);
-  const [showRegisterPicker, setShowRegisterPicker] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -234,7 +233,8 @@ export default function BookingLayout() {
               <span className="booking-layout__admin-label">Admin</span>
               <div className="booking-layout__dropdown">
                 <button
-                  className={`booking-layout__admin-link booking-layout__dropdown-btn${openDropdown === 'sessions' ? ' active' : ''}`}
+                  className={`booking-layout__admin-link booking-layout__dropdown-btn${openDropdown === 'sessions' ? ' active' : ''}${activeSessions.length > 0 ? ' booking-layout__admin-link--register-active' : ''}`}
+                  style={{ fontWeight: activeSessions.length > 0 ? 700 : undefined, color: activeSessions.length > 0 ? 'var(--booking-accent)' : undefined }}
                   onClick={() => toggleDropdown('sessions')}
                 >
                   Sessions ▾
@@ -244,6 +244,34 @@ export default function BookingLayout() {
                     <NavLink to="/booking/admin" end className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Sessions</NavLink>
                     <NavLink to="/booking/admin/closures" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Closures</NavLink>
                     <NavLink to="/booking/admin/session-management" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Session Management</NavLink>
+                    {activeSessions.length === 0 && (
+                      <button
+                        className="booking-layout__dropdown-item"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', color: 'var(--booking-text-muted)' }}
+                        onClick={() => setOpenDropdown(null)}
+                      >
+                        Register (no active session)
+                      </button>
+                    )}
+                    {activeSessions.length === 1 && (
+                      <button
+                        className="booking-layout__dropdown-item"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontWeight: 700, color: 'var(--booking-accent)' }}
+                        onClick={() => { setOpenDropdown(null); navigate(`/booking/admin/register/${activeSessions[0].id}`); }}
+                      >
+                        Register — {activeSessions[0].startTime}–{activeSessions[0].endTime}
+                      </button>
+                    )}
+                    {activeSessions.length > 1 && activeSessions.map(s => (
+                      <button
+                        key={s.id}
+                        className="booking-layout__dropdown-item"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontWeight: 700, color: 'var(--booking-accent)' }}
+                        onClick={() => { setOpenDropdown(null); navigate(`/booking/admin/register/${s.id}`); }}
+                      >
+                        Register — {s.startTime}–{s.endTime}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
@@ -258,45 +286,6 @@ export default function BookingLayout() {
                   <div className="booking-layout__dropdown-menu">
                     <NavLink to="/booking/admin/members" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Members</NavLink>
                     <NavLink to="/booking/admin/bg-numbers" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>BG Numbers</NavLink>
-                  </div>
-                )}
-              </div>
-              <div style={{ position: 'relative' }}>
-                <button
-                  className="booking-layout__admin-link"
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    fontWeight: activeSessions.length > 0 ? 700 : undefined,
-                    color: activeSessions.length > 0 ? 'var(--booking-accent)' : undefined,
-                  }}
-                  onClick={() => {
-                    setOpenDropdown(null);
-                    if (activeSessions.length === 0) {
-                      navigate('/booking/admin');
-                    } else if (activeSessions.length === 1) {
-                      navigate(`/booking/admin/register/${activeSessions[0].id}`);
-                    } else {
-                      setShowRegisterPicker(p => !p);
-                    }
-                  }}
-                >
-                  Register{activeSessions.length > 0 ? ` (${activeSessions.length})` : ''}
-                </button>
-                {showRegisterPicker && activeSessions.length > 1 && (
-                  <div className="booking-layout__dropdown-menu" style={{ minWidth: '180px' }}>
-                    {activeSessions.map(s => (
-                      <button
-                        key={s.id}
-                        className="booking-layout__dropdown-item"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
-                        onClick={() => {
-                          setShowRegisterPicker(false);
-                          navigate(`/booking/admin/register/${s.id}`);
-                        }}
-                      >
-                        {s.startTime}–{s.endTime}
-                      </button>
-                    ))}
                   </div>
                 )}
               </div>
