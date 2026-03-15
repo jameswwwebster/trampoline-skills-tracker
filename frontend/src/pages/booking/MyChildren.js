@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { bookingApi } from '../../utils/bookingApi';
 import { useAuth } from '../../contexts/AuthContext';
 import './booking-shared.css';
@@ -689,9 +690,6 @@ export default function MyChildren() {
       {charges.length > 0 && (
         <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
           <p style={{ margin: '0 0 0.25rem', fontSize: '0.85rem', fontWeight: 600 }}>Outstanding charges</p>
-          <p style={{ margin: '0 0 0.5rem', fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>
-            Settled automatically at checkout — go to your cart to pay.
-          </p>
           <p style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 700, color: 'var(--booking-danger)' }}>
             £{(charges.reduce((s, c) => s + c.amount, 0) / 100).toFixed(2)} outstanding
           </p>
@@ -703,6 +701,13 @@ export default function MyChildren() {
               </div>
             ))}
           </div>
+          <Link
+            to="/booking/cart"
+            className="bk-btn bk-btn--primary"
+            style={{ display: 'inline-block', marginTop: '0.75rem' }}
+          >
+            Pay now →
+          </Link>
         </div>
       )}
 
