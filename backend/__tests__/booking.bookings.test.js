@@ -200,6 +200,81 @@ describe('DMT booking gate', () => {
   });
 });
 
+describe('POST /api/booking/bookings — double-booking prevention', () => {
+  it('returns 400 "Already booked: <name>" when gymnast is already CONFIRMED in that session', async () => {
+    const { instance } = await createSession(club);
+    await prisma.booking.create({
+      data: {
+        userId: parent.id,
+        sessionInstanceId: instance.id,
+        status: 'CONFIRMED',
+        totalAmount: 0,
+        lines: { create: [{ gymnastId: gymnast.id, amount: 0 }] },
+      },
+    });
+    const expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + 30);
+    await prisma.credit.create({ data: { userId: parent.id, amount: 800, expiresAt } });
+
+    const res = await request(testApp)
+      .post('/api/booking/bookings')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ sessionInstanceId: instance.id, gymnastIds: [gymnast.id] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Already booked/);
+  });
+});
+
+describe('POST /api/booking/bookings/batch — double-booking prevention', () => {
+  it('returns 400 when gymnast already has a CONFIRMED booking for a session in the batch', async () => {
+    const { instance } = await createSession(club);
+    await prisma.booking.create({
+      data: {
+        userId: parent.id,
+        sessionInstanceId: instance.id,
+        status: 'CONFIRMED',
+        totalAmount: 0,
+        lines: { create: [{ gymnastId: gymnast.id, amount: 0 }] },
+      },
+    });
+    const expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + 30);
+    await prisma.credit.create({ data: { userId: parent.id, amount: 800, expiresAt } });
+
+    const res = await request(testApp)
+      .post('/api/booking/bookings/batch')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ items: [{ sessionInstanceId: instance.id, gymnastIds: [gymnast.id] }] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Already booked/);
+  });
+});
+
+describe('POST /api/booking/bookings/combined — double-booking prevention', () => {
+  it('returns 400 when gymnast already has a CONFIRMED booking for a session in the combined request', async () => {
+    const { instance } = await createSession(club);
+    await prisma.booking.create({
+      data: {
+        userId: parent.id,
+        sessionInstanceId: instance.id,
+        status: 'CONFIRMED',
+        totalAmount: 0,
+        lines: { create: [{ gymnastId: gymnast.id, amount: 0 }] },
+      },
+    });
+    const expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + 30);
+    await prisma.credit.create({ data: { userId: parent.id, amount: 800, expiresAt } });
+
+    const res = await request(testApp)
+      .post('/api/booking/bookings/combined')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ sessions: [{ sessionInstanceId: instance.id, gymnastIds: [gymnast.id] }], shopItems: [] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Already booked/);
+  });
+});
+
 describe('Commitment enforcement in booking', () => {
   let club3, coach3, parent3, gymnast3, template3, instance3, coachToken3, parentToken3;
 

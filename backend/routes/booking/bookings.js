@@ -103,6 +103,19 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: 'Bookings are not allowed after a session has started' });
     }
 
+    // Prevent duplicate booking for the same gymnast
+    const alreadyBooked = await prisma.bookingLine.findMany({
+      where: {
+        gymnastId: { in: gymnastIds },
+        booking: { sessionInstanceId, status: 'CONFIRMED' },
+      },
+      include: { gymnast: { select: { firstName: true } } },
+    });
+    if (alreadyBooked.length > 0) {
+      const names = alreadyBooked.map(l => l.gymnast.firstName).join(', ');
+      return res.status(400).json({ error: `Already booked: ${names}` });
+    }
+
     // Check availability
     const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
     const activeCommitments = await prisma.commitment.count({
@@ -357,6 +370,19 @@ router.post('/batch', auth, async (req, res) => {
       sessionStart.setHours(sh, sm, 0, 0);
       if (now >= sessionStart) {
         return res.status(400).json({ error: 'Bookings are not allowed after a session has started' });
+      }
+
+      // Prevent duplicate booking for the same gymnast
+      const alreadyBookedBatch = await prisma.bookingLine.findMany({
+        where: {
+          gymnastId: { in: gymnastIds },
+          booking: { sessionInstanceId, status: 'CONFIRMED' },
+        },
+        include: { gymnast: { select: { firstName: true } } },
+      });
+      if (alreadyBookedBatch.length > 0) {
+        const names = alreadyBookedBatch.map(l => l.gymnast.firstName).join(', ');
+        return res.status(400).json({ error: `Already booked: ${names}` });
       }
 
       const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
@@ -764,6 +790,19 @@ router.post('/combined', auth, async (req, res) => {
         sessionStartC.setHours(shC, smC, 0, 0);
         if (now >= sessionStartC) {
           return res.status(400).json({ error: 'Bookings are not allowed after a session has started' });
+        }
+
+        // Prevent duplicate booking for the same gymnast
+        const alreadyBookedCombined = await prisma.bookingLine.findMany({
+          where: {
+            gymnastId: { in: gymnastIds },
+            booking: { sessionInstanceId, status: 'CONFIRMED' },
+          },
+          include: { gymnast: { select: { firstName: true } } },
+        });
+        if (alreadyBookedCombined.length > 0) {
+          const names = alreadyBookedCombined.map(l => l.gymnast.firstName).join(', ');
+          return res.status(400).json({ error: `Already booked: ${names}` });
         }
 
         const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
