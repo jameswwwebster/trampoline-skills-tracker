@@ -245,16 +245,26 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
           {!slotsLoading && standingSlots && standingSlots.length === 0 && (
             <p className="bk-muted" style={{ margin: 0 }}>No standing slots.</p>
           )}
-          {!slotsLoading && standingSlots && standingSlots.filter(c => c.status !== 'WAITLISTED').map(c => (
-            <div key={c.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--booking-bg-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.9rem' }}>{c.gymnast.firstName} {c.gymnast.lastName}</span>
-              {c.status === 'PAUSED' && (
-                <span style={{ fontSize: '0.75rem', padding: '1px 6px', borderRadius: 4, background: 'rgba(0,0,0,0.06)', color: 'var(--booking-text-muted)' }}>
-                  Paused
-                </span>
-              )}
-            </div>
-          ))}
+          {!slotsLoading && standingSlots && standingSlots.filter(c => c.status !== 'WAITLISTED').map(c => {
+            const isFuture = c.status === 'ACTIVE' && c.startDate && new Date(c.startDate) > new Date();
+            const startsBadge = isFuture
+              ? new Date(c.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+              : null;
+            return (
+              <div key={c.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--booking-bg-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.9rem' }}>{c.gymnast.firstName} {c.gymnast.lastName}</span>
+                {isFuture ? (
+                  <span style={{ fontSize: '0.75rem', padding: '1px 6px', borderRadius: 4, background: '#e3f2fd', color: '#1565c0', fontWeight: 600 }}>
+                    Starts {startsBadge}
+                  </span>
+                ) : c.status === 'PAUSED' ? (
+                  <span style={{ fontSize: '0.75rem', padding: '1px 6px', borderRadius: 4, background: 'rgba(0,0,0,0.06)', color: 'var(--booking-text-muted)' }}>
+                    Paused
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       )}
 

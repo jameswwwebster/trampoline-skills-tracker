@@ -414,15 +414,28 @@ export default function SessionTemplates() {
                         {active.length > 0 && (
                           <div style={{ marginBottom: '0.5rem' }}>
                             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--booking-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>Active</div>
-                            {active.map(c => (
-                              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.85rem' }}>
-                                <span>{c.gymnast.firstName} {c.gymnast.lastName}</span>
-                                <div style={{ display: 'flex', gap: '0.3rem' }}>
-                                  <button className="bk-btn bk-btn--sm" onClick={() => handlePauseCommitment(t.id, c.id)}>Pause</button>
-                                  <button className="bk-btn bk-btn--sm" style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }} onClick={() => handleRemoveCommitment(t.id, c.id)}>Remove</button>
+                            {active.map(c => {
+                              const isFuture = c.status === 'ACTIVE' && c.startDate && new Date(c.startDate) > new Date();
+                              const startsBadge = isFuture
+                                ? new Date(c.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                                : null;
+                              return (
+                                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.85rem' }}>
+                                  <span>
+                                    {c.gymnast.firstName} {c.gymnast.lastName}
+                                    {isFuture && (
+                                      <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', color: '#1565c0', background: '#e3f2fd', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>
+                                        Starts {startsBadge}
+                                      </span>
+                                    )}
+                                  </span>
+                                  <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                    {!isFuture && <button className="bk-btn bk-btn--sm" onClick={() => handlePauseCommitment(t.id, c.id)}>Pause</button>}
+                                    <button className="bk-btn bk-btn--sm" style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }} onClick={() => handleRemoveCommitment(t.id, c.id)}>Remove</button>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                         {paused.length > 0 && (
