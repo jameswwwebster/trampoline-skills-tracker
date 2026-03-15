@@ -215,6 +215,8 @@ export const bookingApi = {
     axios.get(`${API_URL}/booking/charges/my`, { headers: getHeaders() }),
   getAdminCharges: () =>
     axios.get(`${API_URL}/booking/charges`, { headers: getHeaders() }),
+  getChargesForUser: (userId) =>
+    axios.get(`${API_URL}/booking/charges?userId=${encodeURIComponent(userId)}`, { headers: getHeaders() }),
   createCharge: (data) =>
     axios.post(`${API_URL}/booking/charges`, data, { headers: getHeaders() }),
   deleteCharge: (id) =>
