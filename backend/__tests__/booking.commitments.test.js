@@ -96,7 +96,38 @@ describe('POST /api/commitments', () => {
       .set('Authorization', `Bearer ${coachToken}`)
       .send({ gymnastId: noMembershipGymnast.id, templateId: template.id });
     expect(res.status).toBe(422);
-    expect(res.body.error).toMatch(/active membership/);
+    expect(res.body.error).toMatch(/active or scheduled membership/);
+  });
+
+  it('succeeds with a SCHEDULED membership', async () => {
+    const scheduledGymnast = await createGymnast(club, parent);
+    const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    await prisma.membership.create({
+      data: {
+        gymnastId: scheduledGymnast.id,
+        clubId: club.id,
+        monthlyAmount: 5000,
+        status: 'SCHEDULED',
+        startDate: new Date(futureDate),
+      },
+    });
+    const res = await request(app)
+      .post('/api/commitments')
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ gymnastId: scheduledGymnast.id, templateId: template.id });
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('ACTIVE');
+  });
+
+  it('stores startDate when provided', async () => {
+    const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const res = await request(app)
+      .post('/api/commitments')
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ gymnastId: gymnast.id, templateId: template.id, startDate: futureDate });
+    expect(res.status).toBe(201);
+    expect(res.body.startDate).toBeDefined();
+    expect(new Date(res.body.startDate).toISOString().split('T')[0]).toBe(futureDate);
   });
 
   it('returns 422 if gymnast BG number is not verified', async () => {
@@ -261,6 +292,48 @@ describe('GET /api/commitments/gymnast/:gymnastId', () => {
     expect(res.status).toBe(200);
     expect(res.body[0].id).toBe(commitment.id);
     expect(res.body[0].template.dayOfWeek).toBeDefined();
+  });
+});
+
+describe('POST /api/commitments competitive slots cap', () => {
+  let capTemplate;
+  beforeAll(async () => {
+    const sess = await createSession(club, null, { competitiveSlots: 1 });
+    capTemplate = sess.template;
+  });
+  afterEach(async () => {
+    await prisma.commitment.deleteMany({ where: { templateId: capTemplate.id } });
+  });
+
+  it('future-dated ACTIVE commitment does not count toward competitive slots cap', async () => {
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const otherGymnast = await createGymnast(club, parent);
+    await prisma.commitment.create({
+      data: { gymnastId: otherGymnast.id, templateId: capTemplate.id, createdById: admin.id, status: 'ACTIVE', startDate: tomorrow },
+    });
+    const res = await request(app)
+      .post('/api/commitments')
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ gymnastId: gymnast.id, templateId: capTemplate.id });
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('ACTIVE');
+  });
+
+  it('PATCH /:id/status: future-dated ACTIVE commitment does not block reactivation of a WAITLISTED slot', async () => {
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const otherGymnast = await createGymnast(club, parent);
+    await prisma.commitment.create({
+      data: { gymnastId: otherGymnast.id, templateId: capTemplate.id, createdById: admin.id, status: 'ACTIVE', startDate: tomorrow },
+    });
+    const waitlisted = await prisma.commitment.create({
+      data: { gymnastId: gymnast.id, templateId: capTemplate.id, createdById: admin.id, status: 'WAITLISTED' },
+    });
+    const res = await request(app)
+      .patch(`/api/commitments/${waitlisted.id}/status`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ status: 'ACTIVE' });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ACTIVE');
   });
 });
 

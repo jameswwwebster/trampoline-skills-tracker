@@ -80,7 +80,7 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
 // POST /api/commitments — admin/coach only
 router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
-    const { gymnastId, templateId } = req.body;
+    const { gymnastId, templateId, startDate } = req.body;
     if (!gymnastId || !templateId) {
       return res.status(400).json({ error: 'gymnastId and templateId are required' });
     }
@@ -92,12 +92,12 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     });
     if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
 
-    // Validate gymnast has an active membership
+    // Validate gymnast has an active or scheduled membership
     const activeMembership = await prisma.membership.findFirst({
-      where: { gymnastId, status: 'ACTIVE' },
+      where: { gymnastId, status: { in: ['ACTIVE', 'SCHEDULED'] } },
     });
     if (!activeMembership) {
-      return res.status(422).json({ error: `${gymnast.firstName} must have an active membership to be given a standing slot` });
+      return res.status(422).json({ error: `${gymnast.firstName} must have an active or scheduled membership to be given a standing slot` });
     }
 
     // Validate gymnast has a verified BG number
@@ -121,8 +121,13 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     // Determine status: WAITLISTED if competitive slots cap is reached
     let commitmentStatus = 'ACTIVE';
     if (template.competitiveSlots !== null) {
+      const today = new Date();
       const activeCount = await prisma.commitment.count({
-        where: { templateId, status: 'ACTIVE' },
+        where: {
+          templateId,
+          status: 'ACTIVE',
+          OR: [{ startDate: null }, { startDate: { lte: today } }],
+        },
       });
       if (activeCount >= template.competitiveSlots) {
         commitmentStatus = 'WAITLISTED';
@@ -130,7 +135,13 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     }
 
     const commitment = await prisma.commitment.create({
-      data: { gymnastId, templateId, createdById: req.user.id, status: commitmentStatus },
+      data: {
+        gymnastId,
+        templateId,
+        createdById: req.user.id,
+        status: commitmentStatus,
+        ...(startDate ? { startDate: new Date(startDate) } : {}),
+      },
     });
 
     await audit({
@@ -201,8 +212,13 @@ router.patch('/:id/status', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (r
         select: { competitiveSlots: true },
       });
       if (template && template.competitiveSlots !== null) {
+        const today = new Date();
         const activeCount = await prisma.commitment.count({
-          where: { templateId: commitment.templateId, status: 'ACTIVE' },
+          where: {
+            templateId: commitment.templateId,
+            status: 'ACTIVE',
+            OR: [{ startDate: null }, { startDate: { lte: today } }],
+          },
         });
         if (activeCount >= template.competitiveSlots) {
           const msg = current === 'WAITLISTED'
