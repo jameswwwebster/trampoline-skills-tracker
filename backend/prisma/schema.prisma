@@ -519,6 +519,7 @@ model Commitment {
   pausedAt     DateTime?
   pausedById   String?
   pausedBy     User?            @relation("CommitmentPausedBy", fields: [pausedById], references: [id])
+  startDate    DateTime?
   createdById  String
   createdBy    User             @relation("CommitmentCreatedBy", fields: [createdById], references: [id])
   createdAt    DateTime         @default(now())
