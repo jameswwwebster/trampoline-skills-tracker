@@ -8,11 +8,12 @@ Surface charges alongside credits in the member detail card in `AdminMembers.js`
 
 ## Architecture
 
-Three independent concerns addressed together:
+Four independent concerns addressed together:
 
 1. **Member card charges row** — a new collapsible row below the existing credits row in `AdminMembers.js`, showing outstanding (unpaid) charges for that member with inline create and delete actions.
 2. **Club-wide overview** — `AdminCharges.js` gains a credits section above the existing charges section; the create-charge form is removed (creation moves to the member card). Nav link renamed to "Credits & Charges".
 3. **Notification emails** — four new email functions in `emailService.js` triggered from `charges.js` and `credits.js` routes, gated behind `club.emailEnabled`.
+4. **My Account page** — `MyChildren.js` gains an outstanding charges card directly below the existing credits card, so parents see both in one place.
 
 ## Files Changed
 
@@ -28,6 +29,7 @@ Three independent concerns addressed together:
 - **`frontend/src/pages/booking/admin/AdminMembers.js`** — add charges collapsible row below the credits row in the member detail panel
 - **`frontend/src/pages/booking/admin/AdminCharges.js`** — add credits section above charges section; remove create-charge form
 - **`frontend/src/pages/booking/BookingLayout.js`** — rename "Admin Charges" nav link to "Credits & Charges"
+- **`frontend/src/pages/booking/MyChildren.js`** — add outstanding charges card below the credits card
 
 No schema changes. No migration required.
 
@@ -164,6 +166,36 @@ The page heading updates to "Credits & Charges".
 
 In `BookingLayout.js`, the existing NavLink with text "Admin Charges" is renamed to "Credits & Charges". The route (`/booking/admin/charges`) and component are unchanged.
 
+### My Account page (`MyChildren.js`)
+
+Fetch `bookingApi.getMyCharges()` in the existing `useEffect` alongside the credits and memberships fetches. Store in a `charges` state variable.
+
+Render a charges card directly below the credits card. Unlike the credits card (which is hidden when there are no credits), the charges card is always shown when there are outstanding charges and hidden when there are none — mirroring the credits card's conditional render.
+
+```jsx
+{charges.length > 0 && (
+  <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
+    <p style={{ margin: '0 0 0.25rem', fontSize: '0.85rem', fontWeight: 600 }}>Outstanding charges</p>
+    <p style={{ margin: '0 0 0.5rem', fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>
+      Settled automatically at checkout — go to your cart to pay.
+    </p>
+    <p style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 700, color: 'var(--booking-danger)' }}>
+      £{(charges.reduce((s, c) => s + c.amount, 0) / 100).toFixed(2)} outstanding
+    </p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+      {charges.map(c => (
+        <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+          <span>{c.description}</span>
+          <span className="bk-muted">Due {new Date(c.dueDate).toLocaleDateString('en-GB')}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+```
+
+Read-only — no payment button here. The existing "My Charges" page and cart handle payment. `bookingApi.getMyCharges()` already returns only unpaid charges, so no client-side filter is needed.
+
 ## Testing
 
 Backend:
@@ -180,3 +212,5 @@ Frontend (manual):
 - Delete removes the row and updates the total
 - `AdminCharges.js` shows credits section above charges, no create form
 - Nav link reads "Credits & Charges"
+- `MyChildren.js` shows outstanding charges card when charges exist, hidden when none
+- Charges card on My Account shows description and due date per row, total in red
