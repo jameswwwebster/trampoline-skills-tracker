@@ -31,9 +31,13 @@ export default function MyCharges() {
         <p style={{ color: 'var(--booking-text-muted)' }}>No outstanding charges.</p>
       ) : (
         <>
-          <p style={{ color: 'var(--booking-text-muted)', marginBottom: '1rem' }}>
-            Outstanding charges are settled through the <Link to="/booking/cart">cart</Link>.
-          </p>
+          <Link
+            to="/booking/cart"
+            className="bk-btn bk-btn--primary"
+            style={{ display: 'inline-block', marginBottom: '1rem' }}
+          >
+            Pay now →
+          </Link>
           <table className="bk-table" style={{ width: '100%' }}>
             <thead>
               <tr>
