@@ -453,6 +453,76 @@ class EmailService {
     });
   }
 
+  async sendChargeCreatedEmail(email, firstName, description, amountPence, dueDate) {
+    const amount = `£${(amountPence / 100).toFixed(2)}`;
+    const due = new Date(dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject: 'A charge has been added to your account',
+      html: brandedHtml('Charge added', `
+        <p style="margin-top:0">Hi ${firstName},</p>
+        <p>A charge of <strong style="color:#e74c3c">${amount}</strong> has been added to your account.</p>
+        ${infoBox(`
+          <p style="margin:0.2rem 0"><strong>Description:</strong> ${description}</p>
+          <p style="margin:0.2rem 0"><strong>Due by:</strong> ${due}</p>
+        `)}
+        <p>You can pay this via the cart when you next book.</p>
+        ${muted('If you have any questions, please contact the club.')}
+      `),
+      text: `Hi ${firstName},\n\nA charge of ${amount} has been added to your account.\n\nDescription: ${description}\nDue by: ${due}\n\nYou can pay this via the cart when you next book.\n\nIf you have any questions, please contact the club.`,
+    }, { to: email, amount, description });
+  }
+
+  async sendChargeDeletedEmail(email, firstName, description, amountPence) {
+    const amount = `£${(amountPence / 100).toFixed(2)}`;
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject: 'A charge on your account has been cancelled',
+      html: brandedHtml('Charge cancelled', `
+        <p style="margin-top:0">Hi ${firstName},</p>
+        <p>A charge of <strong>${amount}</strong> (${description}) has been cancelled.</p>
+        <p>No payment is required.</p>
+        ${muted('If you have any questions, please contact the club.')}
+      `),
+      text: `Hi ${firstName},\n\nA charge of ${amount} (${description}) has been cancelled. No payment is required.\n\nIf you have any questions, please contact the club.`,
+    }, { to: email, amount, description });
+  }
+
+  async sendCreditAssignedEmail(email, firstName, amountPence, expiresAt) {
+    const amount = `£${(amountPence / 100).toFixed(2)}`;
+    const expiry = new Date(expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject: 'A credit has been added to your account',
+      html: brandedHtml('Credit added', `
+        <p style="margin-top:0">Hi ${firstName},</p>
+        <p>A credit of <strong style="color:#7c35e8">${amount}</strong> has been added to your account.</p>
+        ${infoBox(`<p style="margin:0">Expires: <strong>${expiry}</strong></p>`)}
+        <p>Credits are applied automatically at checkout.</p>
+        ${muted('If you have any questions, please contact the club.')}
+      `),
+      text: `Hi ${firstName},\n\nA credit of ${amount} has been added to your account. It expires on ${expiry}.\n\nCredits are applied automatically at checkout.\n\nIf you have any questions, please contact the club.`,
+    }, { to: email, amount });
+  }
+
+  async sendCreditDeletedEmail(email, firstName, amountPence) {
+    const amount = `£${(amountPence / 100).toFixed(2)}`;
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject: 'A credit has been removed from your account',
+      html: brandedHtml('Credit removed', `
+        <p style="margin-top:0">Hi ${firstName},</p>
+        <p>A credit of <strong>${amount}</strong> has been removed from your account.</p>
+        ${muted('If you have any questions, please contact the club.')}
+      `),
+      text: `Hi ${firstName},\n\nA credit of ${amount} has been removed from your account.\n\nIf you have any questions, please contact the club.`,
+    }, { to: email, amount });
+  }
+
   async sendGuardianConnectionNotification(guardianEmail, guardianName, gymnastName, clubName, relationship) {
     return this._send({
       from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
