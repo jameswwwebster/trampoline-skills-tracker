@@ -571,6 +571,7 @@ export default function MyChildren() {
   const [showSelfForm, setShowSelfForm] = useState(false);
   const [selfDob, setSelfDob] = useState('');
   const [credits, setCredits] = useState([]);
+  const [charges, setCharges] = useState([]);
   const [memberships, setMemberships] = useState([]);
   const [setupClientSecret, setSetupClientSecret] = useState(null);
   const [loadingSetup, setLoadingSetup] = useState(false);
@@ -593,6 +594,7 @@ export default function MyChildren() {
   useEffect(() => {
     load();
     bookingApi.getMyCredits().then(r => setCredits(r.data)).catch(() => {});
+    bookingApi.getMyCharges().then(r => setCharges(r.data)).catch(() => {});
     bookingApi.getMyMemberships().then(r => setMemberships(r.data)).catch(() => {});
   }, []);
 
@@ -678,6 +680,26 @@ export default function MyChildren() {
               <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                 <span>£{(c.amount / 100).toFixed(2)}</span>
                 <span className="bk-muted">Expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {charges.length > 0 && (
+        <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
+          <p style={{ margin: '0 0 0.25rem', fontSize: '0.85rem', fontWeight: 600 }}>Outstanding charges</p>
+          <p style={{ margin: '0 0 0.5rem', fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>
+            Settled automatically at checkout — go to your cart to pay.
+          </p>
+          <p style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 700, color: 'var(--booking-danger)' }}>
+            £{(charges.reduce((s, c) => s + c.amount, 0) / 100).toFixed(2)} outstanding
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            {charges.map(c => (
+              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span>{c.description}</span>
+                <span className="bk-muted">Due {new Date(c.dueDate).toLocaleDateString('en-GB')}</span>
               </div>
             ))}
           </div>
