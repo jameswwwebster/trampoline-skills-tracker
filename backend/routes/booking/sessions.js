@@ -37,8 +37,14 @@ router.get('/', auth, async (req, res) => {
     const result = await Promise.all(instances.map(async instance => {
       const confirmedBookings = instance.bookings;
       const bookingCount = confirmedBookings.reduce((sum, b) => sum + b.lines.length, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const activeCommitments = await prisma.commitment.count({
-        where: { templateId: instance.templateId, status: 'ACTIVE' },
+        where: {
+          templateId: instance.templateId,
+          status: 'ACTIVE',
+          OR: [{ startDate: null }, { startDate: { lte: today } }],
+        },
       });
       const bookedCount = bookingCount + activeCommitments;
       const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
@@ -123,8 +129,14 @@ router.get('/:instanceId', auth, async (req, res) => {
     }
 
     const bookingCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const activeCommitments = await prisma.commitment.count({
-      where: { templateId: instance.templateId, status: 'ACTIVE' },
+      where: {
+        templateId: instance.templateId,
+        status: 'ACTIVE',
+        OR: [{ startDate: null }, { startDate: { lte: today } }],
+      },
     });
     const bookedCount = bookingCount + activeCommitments;
     const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
