@@ -22,6 +22,7 @@ export default function BookingLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const isBookingsActive = location.pathname === '/booking' || location.pathname.startsWith('/booking/my-bookings');
+  const isAccountActive = location.pathname.startsWith('/booking/my-account') || location.pathname.startsWith('/booking/my-charges');
   const isShopActive = location.pathname.startsWith('/booking/shop') || location.pathname.startsWith('/booking/my-orders');
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
   const [paymentBanner, setPaymentBanner] = useState(null); // null | 'pending' | 'needs_method'
@@ -161,11 +162,6 @@ export default function BookingLayout() {
                     <NavLink to="/booking/my-bookings" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
                       My Bookings
                     </NavLink>
-                    {!isAdmin && (
-                      <NavLink to="/booking/my-charges" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
-                        My Charges
-                      </NavLink>
-                    )}
                   </div>
                 )}
               </div>
@@ -203,12 +199,30 @@ export default function BookingLayout() {
               </NavLink>
 
               {/* Account */}
-              <NavLink to="/booking/my-account" style={{ position: 'relative' }} onClick={() => setOpenDropdown(null)}>
-                Account
-                {hasOutstandingCharge && (
-                  <span className="booking-layout__unread-badge booking-layout__unread-badge--dot" />
+              <div className="booking-layout__dropdown">
+                <button
+                  className={`booking-layout__dropdown-btn${openDropdown === 'account' || isAccountActive ? ' active' : ''}`}
+                  onClick={() => toggleDropdown('account')}
+                  style={{ position: 'relative' }}
+                >
+                  Account ▾
+                  {hasOutstandingCharge && (
+                    <span className="booking-layout__unread-badge booking-layout__unread-badge--dot" />
+                  )}
+                </button>
+                {openDropdown === 'account' && (
+                  <div className="booking-layout__dropdown-menu">
+                    <NavLink to="/booking/my-account" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
+                      My Account
+                    </NavLink>
+                    {!isAdmin && (
+                      <NavLink to="/booking/my-charges" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
+                        My Charges
+                      </NavLink>
+                    )}
+                  </div>
                 )}
-              </NavLink>
+              </div>
 
               {/* Cart — standalone, conditional, visually inverted */}
               {(cartCount > 0 || hasOutstandingCharge) && (
