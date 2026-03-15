@@ -62,6 +62,7 @@ model User {
   commitmentsCreated            Commitment[]      @relation("CommitmentCreatedBy")
   commitmentsPaused             Commitment[]      @relation("CommitmentPausedBy")
   charges               Charge[]
+  attendances           Attendance[]
 
   @@map("users")
 }
@@ -191,6 +192,7 @@ model Gymnast {
   memberships      Membership[]
   consents         Consent[]
   commitments      Commitment[]
+  attendances      Attendance[]
 
   @@map("gymnasts")
 }
@@ -556,6 +558,7 @@ model SessionInstance {
   template           SessionTemplate  @relation(fields: [templateId], references: [id])
   bookings           Booking[]
   waitlistEntries    WaitlistEntry[]
+  attendances        Attendance[]
 
   @@unique([templateId, date])
   @@map("session_instances")
@@ -589,6 +592,21 @@ model BookingLine {
   gymnast    Gymnast  @relation(fields: [gymnastId], references: [id])
 
   @@map("booking_lines")
+}
+
+model Attendance {
+  id                String           @id @default(cuid())
+  sessionInstance   SessionInstance  @relation(fields: [sessionInstanceId], references: [id], onDelete: Cascade)
+  sessionInstanceId String
+  gymnast           Gymnast          @relation(fields: [gymnastId], references: [id], onDelete: Cascade)
+  gymnastId         String
+  status            AttendanceStatus
+  markedBy          User             @relation(fields: [markedById], references: [id])
+  markedById        String
+  markedAt          DateTime         @default(now())
+
+  @@unique([sessionInstanceId, gymnastId])
+  @@map("attendances")
 }
 
 model ShopOrder {
@@ -911,4 +929,9 @@ enum CommitmentStatus {
   ACTIVE
   PAUSED
   WAITLISTED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
 }
