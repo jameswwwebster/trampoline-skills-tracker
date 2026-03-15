@@ -177,6 +177,22 @@ export default function AdminHelpPage() {
           </table>
         </div>
       </section>
+
+      <section style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--booking-border)' }}>
+        <h3 style={{ marginBottom: '0.5rem' }}>Still having trouble?</h3>
+        <p style={{ color: 'var(--booking-text-muted)' }}>
+          Message us directly on WhatsApp and we'll get back to you as soon as we can.
+        </p>
+        <a
+          href="https://wa.me/447700149040"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bk-btn bk-btn--primary"
+          style={{ display: 'inline-block', marginTop: '0.5rem' }}
+        >
+          Message us on WhatsApp
+        </a>
+      </section>
     </div>
   );
 }

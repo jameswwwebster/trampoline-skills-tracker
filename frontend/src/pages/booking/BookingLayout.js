@@ -131,20 +131,6 @@ export default function BookingLayout() {
         <div className="booking-layout__topbar">
           <span className="booking-layout__brand">Trampoline Life</span>
           <div className="booking-layout__user">
-            {user && (
-              <span className="booking-layout__username">
-                {user.firstName} {user.lastName}
-              </span>
-            )}
-            <a
-            href="https://wa.me/447700149040"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="booking-layout__help"
-            title="Having trouble? Message us on WhatsApp"
-          >
-            Having trouble?
-          </a>
             {isAdmin && (
               <Link to="/booking/help" className="booking-layout__help" style={{ marginLeft: '0.5rem' }}>Member help</Link>
             )}
