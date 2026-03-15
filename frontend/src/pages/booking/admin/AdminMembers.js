@@ -353,6 +353,27 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
       : new Date().toISOString().slice(0, 10);
   const [addingStartDate, setAddingStartDate] = useState(defaultStartDate);
 
+  const [editingHealthNotes, setEditingHealthNotes] = useState(false);
+  const [healthNotesValue, setHealthNotesValue] = useState(g.healthNotes === 'none' ? '' : g.healthNotes || '');
+  const [healthNotesNone, setHealthNotesNone] = useState(g.healthNotes === 'none');
+  const [healthNotesSaving, setHealthNotesSaving] = useState(false);
+  const [healthNotesError, setHealthNotesError] = useState(null);
+
+  const handleSaveHealthNotes = async () => {
+    setHealthNotesSaving(true);
+    setHealthNotesError(null);
+    try {
+      const healthNotes = healthNotesNone ? 'none' : healthNotesValue || null;
+      await bookingApi.updateHealthNotes(g.id, { healthNotes });
+      setEditingHealthNotes(false);
+      onUpdated();
+    } catch (err) {
+      setHealthNotesError(err.response?.data?.error || 'Failed to save.');
+    } finally {
+      setHealthNotesSaving(false);
+    }
+  };
+
   const handleSaveDob = async () => {
     if (!dobValue) return;
     setDobSaving(true);
@@ -587,11 +608,77 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
         <li style={{ ...infoItemStyle, ...(!g.isSelf ? { borderBottom: 'none' } : {}) }}>
           <span style={keyStyle}>Health notes</span>
           <span style={{ textAlign: 'right' }}>
-            {g.healthNotes === 'none'
-              ? <span style={{ color: 'var(--booking-text-muted)' }}>None</span>
-              : g.healthNotes
-                ? g.healthNotes
-                : <em style={{ color: 'var(--booking-text-muted)' }}>Not recorded</em>}
+            {editingHealthNotes ? (
+              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={healthNotesNone}
+                    onChange={e => {
+                      setHealthNotesNone(e.target.checked);
+                      if (e.target.checked) setHealthNotesValue('');
+                    }}
+                  />
+                  No known health issues
+                </label>
+                {!healthNotesNone && (
+                  <textarea
+                    className="bk-input"
+                    rows={3}
+                    style={{ width: '100%', fontSize: '0.82rem' }}
+                    value={healthNotesValue}
+                    onChange={e => setHealthNotesValue(e.target.value)}
+                    placeholder="Describe any health issues or learning differences"
+                  />
+                )}
+                {healthNotesError && (
+                  <span style={{ color: 'var(--booking-danger)', fontSize: '0.75rem' }}>{healthNotesError}</span>
+                )}
+                <span style={{ display: 'flex', gap: '0.35rem' }}>
+                  <button
+                    className="bk-btn bk-btn--sm bk-btn--primary"
+                    style={{ fontSize: '0.75rem' }}
+                    disabled={healthNotesSaving}
+                    onClick={handleSaveHealthNotes}
+                  >
+                    {healthNotesSaving ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    className="bk-btn bk-btn--sm"
+                    style={{ fontSize: '0.75rem', border: '1px solid var(--booking-border)' }}
+                    onClick={() => {
+                      setEditingHealthNotes(false);
+                      setHealthNotesValue(g.healthNotes === 'none' ? '' : g.healthNotes || '');
+                      setHealthNotesNone(g.healthNotes === 'none');
+                      setHealthNotesError(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </span>
+              </span>
+            ) : (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                <span>
+                  {g.healthNotes === 'none'
+                    ? <span style={{ color: 'var(--booking-text-muted)' }}>None</span>
+                    : g.healthNotes
+                      ? g.healthNotes
+                      : <em style={{ color: 'var(--booking-text-muted)' }}>Not recorded</em>}
+                </span>
+                <button
+                  className="bk-btn bk-btn--sm"
+                  style={{ fontSize: '0.75rem', border: '1px solid var(--booking-border)' }}
+                  onClick={() => {
+                    setHealthNotesValue(g.healthNotes === 'none' ? '' : g.healthNotes || '');
+                    setHealthNotesNone(g.healthNotes === 'none');
+                    setEditingHealthNotes(true);
+                  }}
+                >
+                  Edit
+                </button>
+              </span>
+            )}
           </span>
         </li>
         {/* Emergency contact (adult participants only) — full details */}
