@@ -27,6 +27,7 @@ export default function SessionDetail({
   const [waitlistBusy, setWaitlistBusy] = useState(false);
   const [pendingMemberId, setPendingMemberId] = useState(null); // gymnast awaiting member confirmation
   const [myCommitments, setMyCommitments] = useState([]); // [{ gymnastId, status }]
+  const [conflictingGymnastIds, setConflictingGymnastIds] = useState(new Set());
 
   const loadGymnasts = () =>
     bookingApi.getBookableGymnasts().then(r => setMyGymnasts(r.data)).catch(() => setMyGymnasts([]));
@@ -36,16 +37,30 @@ export default function SessionDetail({
       bookingApi.getSession(instanceId),
       bookingApi.getMyCredits().catch(() => ({ data: [] })),
       bookingApi.getMyWaitlist().catch(() => ({ data: [] })),
-    ]).then(([sessRes, credRes, waitRes]) => {
-      setSession(sessRes.data);
+      bookingApi.getMyBookings().catch(() => ({ data: [] })),
+    ]).then(([sessRes, credRes, waitRes, bookingsRes]) => {
+      const sess = sessRes.data;
+      setSession(sess);
       setTotalCreditsAvailable(credRes.data.reduce((s, c) => s + c.amount, 0));
       const entry = waitRes.data.find(e => e.sessionInstanceId === instanceId);
       setWaitlistEntry(entry || null);
-      if (sessRes.data.templateId) {
-        bookingApi.getMyCommitmentsForTemplate(sessRes.data.templateId)
+      if (sess.templateId) {
+        bookingApi.getMyCommitmentsForTemplate(sess.templateId)
           .then(r => setMyCommitments(r.data))
           .catch(() => {});
       }
+      // Compute gymnasts with time-overlapping bookings on the same day
+      const sessDate = new Date(sess.date).toDateString();
+      const conflictIds = new Set();
+      for (const booking of bookingsRes.data) {
+        if (booking.sessionInstance.id === instanceId) continue;
+        if (new Date(booking.sessionInstance.date).toDateString() !== sessDate) continue;
+        const { startTime, endTime } = booking.sessionInstance.template;
+        if (sess.startTime < endTime && startTime < sess.endTime) {
+          booking.lines.forEach(l => conflictIds.add(l.gymnast.id));
+        }
+      }
+      setConflictingGymnastIds(conflictIds);
     }).catch(console.error).finally(() => setLoading(false));
 
     loadGymnasts();
@@ -246,6 +261,7 @@ export default function SessionDetail({
               const myCommitment = myCommitments.find(c => c.gymnastId === g.id);
               const hasActiveCommitment = myCommitment?.status === 'ACTIVE';
               const alreadyBooked = alreadyBookedGymnastIds.has(g.id);
+              const hasTimeConflict = conflictingGymnastIds.has(g.id);
               const selected = selectedGymnastIds.includes(g.id);
               const now = Date.now();
               const bgBlocked = (() => {
@@ -258,7 +274,7 @@ export default function SessionDetail({
                 return false;
               })();
               const atCapacity = !selected && selectedGymnastIds.length >= session.availableSlots;
-              const blocked = bgBlocked || dmtBlocked || hasActiveCommitment || alreadyBooked;
+              const blocked = bgBlocked || dmtBlocked || hasActiveCommitment || alreadyBooked || hasTimeConflict;
               return (
                 <div key={g.id}>
                   <div
@@ -298,6 +314,11 @@ export default function SessionDetail({
                       Already booked for this session.
                     </p>
                   )}
+                  {hasTimeConflict && !alreadyBooked && !hasActiveCommitment && (
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--booking-text-muted)', fontWeight: 500 }}>
+                      Already booked into another session at this time.
+                    </p>
+                  )}
                 </div>
               );
             })}
@@ -305,6 +326,7 @@ export default function SessionDetail({
               const selected = selectedGymnastIds.includes(g.id);
               const isPending = pendingMemberId === g.id;
               const alreadyBooked = alreadyBookedGymnastIds.has(g.id);
+              const hasTimeConflict = conflictingGymnastIds.has(g.id);
               const atCapacity = !selected && selectedGymnastIds.length >= session.availableSlots;
               return (
                 <div key={g.id} style={{ marginBottom: '0.25rem' }}>
@@ -314,10 +336,10 @@ export default function SessionDetail({
                     className={[
                       'session-detail__gymnast-option',
                       selected ? 'session-detail__gymnast-option--selected' : '',
-                      (atCapacity && !selected) || alreadyBooked ? 'session-detail__gymnast-option--disabled' : '',
+                      (atCapacity && !selected) || alreadyBooked || hasTimeConflict ? 'session-detail__gymnast-option--disabled' : '',
                     ].join(' ')}
                     onClick={() => {
-                      if (alreadyBooked) return;
+                      if (alreadyBooked || hasTimeConflict) return;
                       if (selected) {
                         toggleGymnast(g.id);
                         setPendingMemberId(null);
@@ -352,6 +374,11 @@ export default function SessionDetail({
                   {alreadyBooked && (
                     <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--booking-text-muted)', fontWeight: 500 }}>
                       Already booked for this session.
+                    </p>
+                  )}
+                  {hasTimeConflict && !alreadyBooked && (
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--booking-text-muted)', fontWeight: 500 }}>
+                      Already booked into another session at this time.
                     </p>
                   )}
                 </div>

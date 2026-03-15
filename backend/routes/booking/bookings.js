@@ -189,25 +189,28 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // Cross-type conflict check — cannot book DMT and Standard sessions on the same day
-    const crossTypeConflicts = await prisma.bookingLine.findMany({
+    // Time-overlap conflict check — cannot book two sessions that run at the same time
+    const sameDayLines = await prisma.bookingLine.findMany({
       where: {
         gymnastId: { in: gymnastIds },
         booking: {
           status: 'CONFIRMED',
-          sessionInstance: {
-            date: instance.date,
-            template: { type: { not: instance.template.type } },
-          },
+          sessionInstance: { date: instance.date, id: { not: sessionInstanceId } },
         },
       },
-      include: { gymnast: { select: { firstName: true } } },
-      distinct: ['gymnastId'],
+      include: {
+        gymnast: { select: { firstName: true } },
+        booking: { include: { sessionInstance: { include: { template: { select: { startTime: true, endTime: true } } } } } },
+      },
     });
-    if (crossTypeConflicts.length > 0) {
-      const names = crossTypeConflicts.map(l => l.gymnast.firstName).join(', ');
+    const timeConflicts = sameDayLines.filter(line => {
+      const { startTime, endTime } = line.booking.sessionInstance.template;
+      return instance.template.startTime < endTime && startTime < instance.template.endTime;
+    });
+    if (timeConflicts.length > 0) {
+      const names = [...new Set(timeConflicts.map(l => l.gymnast.firstName))].join(', ');
       return res.status(400).json({
-        error: `The following gymnasts already have a booking for a different session type on this day: ${names}`,
+        error: `The following gymnasts already have a booking that overlaps with this session's time: ${names}`,
       });
     }
 
@@ -434,25 +437,45 @@ router.post('/batch', auth, async (req, res) => {
         });
       }
 
-      // Cross-type conflict check
-      const crossTypeBatch = await prisma.bookingLine.findMany({
+      // Time-overlap conflict check — check against existing DB bookings
+      const sameDayLinesBatch = await prisma.bookingLine.findMany({
         where: {
           gymnastId: { in: gymnastIds },
           booking: {
             status: 'CONFIRMED',
-            sessionInstance: {
-              date: instance.date,
-              template: { type: { not: instance.template.type } },
-            },
+            sessionInstance: { date: instance.date, id: { not: sessionInstanceId } },
           },
         },
-        include: { gymnast: { select: { firstName: true } } },
-        distinct: ['gymnastId'],
+        include: {
+          gymnast: { select: { firstName: true } },
+          booking: { include: { sessionInstance: { include: { template: { select: { startTime: true, endTime: true } } } } } },
+        },
       });
-      if (crossTypeBatch.length > 0) {
-        const names = crossTypeBatch.map(l => l.gymnast.firstName).join(', ');
+      const timeConflictsBatch = sameDayLinesBatch.filter(line => {
+        const { startTime, endTime } = line.booking.sessionInstance.template;
+        return instance.template.startTime < endTime && startTime < instance.template.endTime;
+      });
+      if (timeConflictsBatch.length > 0) {
+        const names = [...new Set(timeConflictsBatch.map(l => l.gymnast.firstName))].join(', ');
         return res.status(400).json({
-          error: `The following gymnasts already have a booking for a different session type on this day: ${names}`,
+          error: `The following gymnasts already have a booking that overlaps with this session's time: ${names}`,
+        });
+      }
+
+      // Time-overlap conflict check — check against other sessions in this batch
+      const withinBatchConflicts = validatedItems.filter(prev => {
+        if (prev.date.getTime() !== new Date(instance.date).getTime()) return false;
+        const overlaps = prev.startTime < instance.template.endTime && instance.template.startTime < prev.endTime;
+        return overlaps && prev.gymnastIds.some(id => gymnastIds.includes(id));
+      });
+      if (withinBatchConflicts.length > 0) {
+        const conflictingIds = new Set(withinBatchConflicts.flatMap(p => p.gymnastIds.filter(id => gymnastIds.includes(id))));
+        const gymnasts = await prisma.gymnast.findMany({
+          where: { id: { in: [...conflictingIds] } },
+          select: { firstName: true },
+        });
+        return res.status(400).json({
+          error: `The following gymnasts have overlapping sessions in your cart: ${gymnasts.map(g => g.firstName).join(', ')}`,
         });
       }
 
@@ -469,6 +492,9 @@ router.post('/batch', auth, async (req, res) => {
       validatedItems.push({
         sessionInstanceId,
         gymnastIds,
+        date: new Date(instance.date),
+        startTime: instance.template.startTime,
+        endTime: instance.template.endTime,
         pricePerGymnast: instance.template.pricePerGymnast,
         itemAmount: instance.template.pricePerGymnast * gymnastIds.length,
       });
@@ -862,29 +888,49 @@ router.post('/combined', auth, async (req, res) => {
           });
         }
 
-        // Cross-type conflict check
-        const crossTypeCombined = await prisma.bookingLine.findMany({
+        // Time-overlap conflict check — check against existing DB bookings
+        const sameDayLinesCombined = await prisma.bookingLine.findMany({
           where: {
             gymnastId: { in: gymnastIds },
             booking: {
               status: 'CONFIRMED',
-              sessionInstance: {
-                date: instance.date,
-                template: { type: { not: instance.template.type } },
-              },
+              sessionInstance: { date: instance.date, id: { not: sessionInstanceId } },
             },
           },
-          include: { gymnast: { select: { firstName: true } } },
-          distinct: ['gymnastId'],
+          include: {
+            gymnast: { select: { firstName: true } },
+            booking: { include: { sessionInstance: { include: { template: { select: { startTime: true, endTime: true } } } } } },
+          },
         });
-        if (crossTypeCombined.length > 0) {
-          const names = crossTypeCombined.map(l => l.gymnast.firstName).join(', ');
+        const timeConflictsCombined = sameDayLinesCombined.filter(line => {
+          const { startTime, endTime } = line.booking.sessionInstance.template;
+          return instance.template.startTime < endTime && startTime < instance.template.endTime;
+        });
+        if (timeConflictsCombined.length > 0) {
+          const names = [...new Set(timeConflictsCombined.map(l => l.gymnast.firstName))].join(', ');
           return res.status(400).json({
-            error: `The following gymnasts already have a booking for a different session type on this day: ${names}`,
+            error: `The following gymnasts already have a booking that overlaps with this session's time: ${names}`,
           });
         }
 
-        validatedSessions.push({ sessionInstanceId, gymnastIds, pricePerGymnast: instance.template.pricePerGymnast, itemAmount: instance.template.pricePerGymnast * gymnastIds.length });
+        // Time-overlap conflict check — check against other sessions in this cart
+        const withinCartConflicts = validatedSessions.filter(prev => {
+          if (prev.date.getTime() !== new Date(instance.date).getTime()) return false;
+          const overlaps = prev.startTime < instance.template.endTime && instance.template.startTime < prev.endTime;
+          return overlaps && prev.gymnastIds.some(id => gymnastIds.includes(id));
+        });
+        if (withinCartConflicts.length > 0) {
+          const conflictingIds = new Set(withinCartConflicts.flatMap(p => p.gymnastIds.filter(id => gymnastIds.includes(id))));
+          const gymnasts = await prisma.gymnast.findMany({
+            where: { id: { in: [...conflictingIds] } },
+            select: { firstName: true },
+          });
+          return res.status(400).json({
+            error: `The following gymnasts have overlapping sessions in your cart: ${gymnasts.map(g => g.firstName).join(', ')}`,
+          });
+        }
+
+        validatedSessions.push({ sessionInstanceId, gymnastIds, date: new Date(instance.date), startTime: instance.template.startTime, endTime: instance.template.endTime, pricePerGymnast: instance.template.pricePerGymnast, itemAmount: instance.template.pricePerGymnast * gymnastIds.length });
       }
     }
 
