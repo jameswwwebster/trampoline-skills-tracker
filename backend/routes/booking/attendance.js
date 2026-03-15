@@ -151,4 +151,40 @@ router.post('/:instanceId', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (r
   }
 });
 
+// DELETE /api/booking/attendance/:instanceId/:gymnastId — reset to UNMARKED
+router.delete('/:instanceId/:gymnastId', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const result = await buildExpectedList(req.params.instanceId, req.user.clubId);
+    if (!result) return res.status(404).json({ error: 'Session not found' });
+
+    const { instance, list } = result;
+
+    const onList = list.find(g => g.gymnastId === req.params.gymnastId);
+    if (!onList) return res.status(422).json({ error: 'Gymnast is not expected at this session' });
+
+    await prisma.attendance.deleteMany({
+      where: { sessionInstanceId: instance.id, gymnastId: req.params.gymnastId },
+    });
+
+    await audit({
+      userId: req.user.id,
+      clubId: req.user.clubId,
+      action: 'attendance.reset',
+      entityType: 'Attendance',
+      entityId: instance.id,
+      metadata: { gymnastId: req.params.gymnastId, instanceId: instance.id },
+    });
+
+    res.json({
+      gymnastId: onList.gymnastId,
+      firstName: onList.firstName,
+      lastName: onList.lastName,
+      status: 'UNMARKED',
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { bookingApi } from '../../../utils/bookingApi';
 import '../booking-shared.css';
 
-const STATUS_CYCLE = { UNMARKED: 'PRESENT', PRESENT: 'ABSENT', ABSENT: 'PRESENT' };
+const STATUS_CYCLE = { UNMARKED: 'PRESENT', PRESENT: 'ABSENT', ABSENT: 'UNMARKED' };
 
 const STATUS_STYLE = {
   PRESENT:  { background: '#d4edda', color: '#155724', border: '2px solid #28a745' },
@@ -51,7 +51,11 @@ export default function AdminRegister() {
     setAttendees(prev => prev.map(a => a.gymnastId === gymnast.gymnastId ? { ...a, status: next } : a));
     setSaving(prev => ({ ...prev, [gymnast.gymnastId]: true }));
     try {
-      await bookingApi.createAttendance(instanceId, { gymnastId: gymnast.gymnastId, status: next });
+      if (next === 'UNMARKED') {
+        await bookingApi.deleteAttendance(instanceId, gymnast.gymnastId);
+      } else {
+        await bookingApi.createAttendance(instanceId, { gymnastId: gymnast.gymnastId, status: next });
+      }
     } catch {
       setAttendees(prev => prev.map(a => a.gymnastId === gymnast.gymnastId ? { ...a, status: gymnast.status } : a));
     } finally {

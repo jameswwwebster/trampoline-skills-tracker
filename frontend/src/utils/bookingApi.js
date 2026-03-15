@@ -228,6 +228,9 @@ export const bookingApi = {
 
   createAttendance: (instanceId, data) =>
     axios.post(`${API_URL}/booking/attendance/${instanceId}`, data, { headers: getHeaders() }),
+
+  deleteAttendance: (instanceId, gymnastId) =>
+    axios.delete(`${API_URL}/booking/attendance/${instanceId}/${gymnastId}`, { headers: getHeaders() }),
 };
 
 // Audit log
