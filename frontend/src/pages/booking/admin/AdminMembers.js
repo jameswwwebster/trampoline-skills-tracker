@@ -1229,8 +1229,7 @@ function MemberDetail({ userId, onRemoved }) {
                     </button>
                   ),
                 },
-                // Note: + Assign credit button is rendered below the list always (see below)
-              ].map(({ key, val }) => (
+                              ].map(({ key, val }) => (
                 <li key={key} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
                   padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)',
@@ -1250,7 +1249,10 @@ function MemberDetail({ userId, onRemoved }) {
                   padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)',
                   gap: '0.75rem', fontSize: '0.875rem', cursor: 'pointer',
                 }}
-                onClick={() => setCreditsOpen(v => !v)}
+                onClick={() => setCreditsOpen(v => {
+                  if (v) setAssigningCredit(false);
+                  return !v;
+                })}
               >
                 <span style={{ color: 'var(--booking-text-muted)', flexShrink: 0 }}>Credits</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }}>
