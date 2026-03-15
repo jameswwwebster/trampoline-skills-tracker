@@ -167,7 +167,18 @@ export default function BookingCalendar() {
                         </span>
                       )}
                     </span>
-                    <span className="booking-calendar__day-session-status">{sessionLabel(s)}</span>
+                    <span
+                      className="booking-calendar__day-session-status"
+                      style={
+                        !s.isBooked && !s.cancelledAt && s.availableSlots > 0 && s.availableSlots <= 3
+                          ? { color: 'var(--booking-danger)', fontWeight: 700 }
+                          : !s.isBooked && !s.cancelledAt && s.availableSlots > 3 && s.availableSlots <= 5
+                          ? { color: '#e67e22', fontWeight: 600 }
+                          : undefined
+                      }
+                    >
+                      {sessionLabel(s)}
+                    </span>
                   </button>
                 ))}
               </>

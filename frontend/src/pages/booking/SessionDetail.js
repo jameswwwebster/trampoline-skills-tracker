@@ -159,7 +159,15 @@ export default function SessionDetail({
         <h2>{dateStr}</h2>
         <p>{session.startTime} – {session.endTime}</p>
         {session.minAge && <p className="session-detail__age-restriction">{session.minAge}+ only</p>}
-        <p>{session.availableSlots} of {session.capacity} slots available</p>
+        <p>
+          <strong style={{
+            color: !session.cancelledAt && session.availableSlots <= 3 ? 'var(--booking-danger)'
+                 : !session.cancelledAt && session.availableSlots <= 5 ? '#e67e22'
+                 : undefined
+          }}>
+            {session.availableSlots}
+          </strong>{' '}of {session.capacity} slots available
+        </p>
         {session.cancelledAt && (
           <p className="session-detail__cancelled">This session has been cancelled.</p>
         )}
