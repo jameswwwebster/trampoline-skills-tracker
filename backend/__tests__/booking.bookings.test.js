@@ -223,6 +223,35 @@ describe('POST /api/booking/bookings — double-booking prevention', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/Already booked/);
   });
+
+  it('does not block booking when existing booking is PENDING', async () => {
+    const { instance } = await createSession(club);
+    // Create a PENDING booking for the gymnast
+    const pendingBooking = await prisma.booking.create({
+      data: {
+        userId: parent.id,
+        sessionInstanceId: instance.id,
+        status: 'PENDING',
+        totalAmount: 0,
+        lines: { create: [{ gymnastId: gymnast.id, amount: 0 }] },
+      },
+    });
+    // Create a credit so checkout won't fail on payment
+    const expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + 30);
+    await prisma.credit.create({ data: { userId: parent.id, amount: 800, expiresAt } });
+
+    // Attempt to book the same gymnast for the same session
+    const res = await request(testApp)
+      .post('/api/booking/bookings')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ sessionInstanceId: instance.id, gymnastIds: [gymnast.id] });
+
+    // Should succeed (not blocked by PENDING booking)
+    expect(res.status).not.toBe(400);
+
+    // Cleanup
+    await prisma.booking.deleteMany({ where: { id: pendingBooking.id } });
+  });
 });
 
 describe('POST /api/booking/bookings/batch — double-booking prevention', () => {
