@@ -48,6 +48,8 @@ describe('Zero-amount memberships', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.membership.status).toBe('SCHEDULED');
+    expect(res.body.membership.stripeSubscriptionId).toBeNull();
+    expect(res.body.membership.needsPaymentMethod).toBe(false);
   });
 
   it('POST with monthlyAmount: -1 returns 400', async () => {
@@ -73,5 +75,6 @@ describe('Zero-amount memberships', () => {
       .send({ monthlyAmount: 0 });
 
     expect(res.status).toBe(400);
+    expect(res.body.error).toBeDefined();
   });
 });
