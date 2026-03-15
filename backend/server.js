@@ -184,6 +184,7 @@ app.use('/api/commitments', require('./routes/booking/commitments'));
 app.use('/api/booking/waitlist', require('./routes/booking/waitlist'));
 app.use('/api/booking/admin', require('./routes/booking/admin'));
 app.use('/api/booking/templates', require('./routes/booking/templates'));
+app.use('/api/booking/attendance', require('./routes/booking/attendance'));
 app.use('/api/booking/shop/admin', require('./routes/booking/shopAdmin'));
 app.use('/api/booking/shop', require('./routes/booking/shop'));
 
