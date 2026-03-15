@@ -22,30 +22,38 @@ model RecurringCredit {
   createdBy     User      @relation("RecurringCreditCreatedBy", fields: [createdById], references: [id])
   createdById   String
   createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@map("recurring_credits")
 }
 ```
 
-Back-relations on `Club` and `User`:
+Back-relations to add to existing models:
+
 ```prisma
-// Club
+// In model Club — add alongside other relation fields:
 recurringCredits  RecurringCredit[]
 
-// User
+// In model User — add alongside other relation fields:
 recurringCredits         RecurringCredit[]
 createdRecurringCredits  RecurringCredit[]  @relation("RecurringCreditCreatedBy")
 ```
 
-**Credit issuance:** uses the existing `Credit` model unchanged — `prisma.credit.create({ data: { userId, amount, expiresAt } })`. `expiresAt` is set to 23:59:59 on the last day of the month in which the credit is issued.
+**Credit issuance:** uses the existing `Credit` model unchanged — `prisma.credit.create({ data: { userId, amount, expiresAt } })`.
+
+`expiresAt` is computed as UTC: last second of the calendar month in which the credit is issued — `new Date(Date.UTC(year, month, 0, 23, 59, 59, 999))` where `month` is the 1-indexed next month (i.e. for March, `month = 4`, `day = 0` gives 31 Mar).
+
+All date comparisons in the cron and route use UTC throughout.
+
+**Duplicate rules:** Multiple active rules for the same user are permitted. This is intentional — a member could receive more than one type of recurring credit simultaneously.
 
 ## Backend Routes (`backend/routes/booking/recurringCredits.js`)
 
-All routes require `CLUB_ADMIN` or `COACH`. All validate that the target user belongs to `req.user.clubId`.
+All routes require `CLUB_ADMIN` or `COACH` (403 on wrong role, 401 on no token). Club scoping via `req.user.clubId`.
 
 ### `GET /api/booking/recurring-credits`
 
-Returns all active (`isActive: true`) recurring credit rules for the club, ordered by `createdAt` descending.
+Returns all active (`isActive: true`) recurring credit rules for the club, ordered by `createdAt` descending. Include `user: { select: { firstName: true, lastName: true } }`.
 
 **Response:**
 ```json
@@ -62,100 +70,138 @@ Returns all active (`isActive: true`) recurring credit rules for the club, order
 ]
 ```
 
+`userName` is constructed server-side as `` `${user.firstName} ${user.lastName}` ``.
+
 ### `POST /api/booking/recurring-credits`
 
 Create a rule and issue the first credit immediately.
 
 **Body (Joi-validated):**
-```json
-{ "userId": "string (required)", "amountPence": "integer min 1 (required)", "endDate": "ISO date string (optional)" }
+```js
+{
+  userId: Joi.string().required(),
+  amountPence: Joi.number().integer().min(1).required(),
+  endDate: Joi.string().isoDate().optional(),
+}
 ```
 
-1. Validate `endDate`, if present, is today or in the future (400 if past).
-2. Create the `RecurringCredit` record.
-3. Issue a `Credit` record: `amount = amountPence`, `expiresAt = last second of current month`.
-4. Update `recurringCredit.lastIssuedAt = now()`.
-5. Call `audit()` with `action: 'recurringCredit.create'`.
-6. Send `sendCreditAssignedEmail` if club `emailEnabled`.
+Steps:
+1. Validate `endDate`, if present, is today or in the future (400 if in the past).
+2. Fetch target user: `prisma.user.findFirst({ where: { id: userId, clubId: req.user.clubId, isArchived: false }, include: { club: { select: { emailEnabled: true } } } })` — return 404 if not found.
+3. Create the `RecurringCredit` record.
+4. Issue a `Credit` record: `{ userId, amount: amountPence, expiresAt: <last second of current month UTC> }`.
+5. Update `recurringCredit.lastIssuedAt = new Date()`.
+6. Call `audit()` with `action: 'recurringCredit.create'`.
+7. If `targetUser.club.emailEnabled`: call `sendCreditAssignedEmail(email, firstName, amountPence, expiresAt)`.
 
-**Response:** `201` with the created rule (same shape as GET list item).
+**Response:** `201` with the rule in the same shape as the GET list (construct `userName` from the fetched user).
 
 ### `DELETE /api/booking/recurring-credits/:id`
 
 Cancel a rule. Sets `isActive = false`. Already-issued credits are unaffected.
 
-- Returns `404` if rule not found or belongs to different club.
-- Call `audit()` with `action: 'recurringCredit.cancel'`.
+Returns `404` if the rule is not found or `clubId` does not match `req.user.clubId` (404 is intentional — does not reveal whether the rule exists in another club).
+
+Call `audit()` with `action: 'recurringCredit.cancel'`.
 
 **Response:** `200 { "ok": true }`
+
+### Mount in `backend/server.js`
+
+After the existing credits route mount, add:
+```js
+app.use('/api/booking/recurring-credits', require('./routes/booking/recurringCredits'));
+```
 
 ## Cron Job (`backend/server.js`)
 
 ```
-Schedule: 0 9 1 * *   (09:00 on the 1st of every month)
+Schedule: 0 9 1 * *   (09:00 UTC on the 1st of every month)
 ```
 
-Finds all `RecurringCredit` where:
-- `isActive: true`
-- `clubId` matches (iterate all clubs)
-- `endDate` is null OR `endDate >= start of today`
-- `lastIssuedAt` is null OR `lastIssuedAt < start of current month`
+Query: all `RecurringCredit` where `isActive: true`, with `include: { user: { select: { email, firstName, club: { select: { emailEnabled } } } } }`.
 
-For each matching rule:
-1. Create a `Credit`: `amount = amountPence`, `expiresAt = last second of current month`.
-2. Update `lastIssuedAt = now()`.
-3. Send `sendCreditAssignedEmail` if club `emailEnabled`.
+Filter in-process (or in the `where` clause):
+- `endDate` is null OR `endDate >= start of today UTC`
+- `lastIssuedAt` is null OR `lastIssuedAt < start of current month UTC`
+- `user.isArchived === false` (skip archived users)
 
-Log `Issued N recurring credit(s)` on completion.
+For each matching rule, wrapped in its own `try/catch` so one failure does not abort the rest:
+1. Create a `Credit`: `{ userId, amount: amountPence, expiresAt: <last second of current month UTC> }`.
+2. Update `lastIssuedAt = new Date()`.
+3. If `user.club.emailEnabled`: send `sendCreditAssignedEmail`.
 
-## Frontend
+Log `Issued N recurring credit(s)` on completion. Log individual errors per failed rule without rethrowing.
 
-### `AdminCreditsCharges.js` (existing credits & charges page)
+**Known limitation:** Cancelled rules are not surfaced in the admin UI — history is available only in the audit log.
+
+## Frontend (`frontend/src/pages/booking/admin/AdminCredits.js`)
 
 Add a **Recurring credits** section below the existing one-time credit assignment form.
 
-**Recurring credits section contains:**
+### Add recurring credit form (always visible)
 
-1. **Active rules table** (shown if any rules exist):
+Fields:
+- **Member** — `<select>` populated from the same members list already loaded on this page
+- **Monthly amount (£)** — `<input type="number" min="0.01" step="0.01">`. Convert to pence before submitting: `Math.round(parseFloat(amount) * 100)`.
+- **End date (optional)** — `<input type="date">`. Submit as ISO string if set, omit the field if empty.
 
-| Member | Monthly amount | End date | Last issued | Actions |
-|--------|---------------|----------|-------------|---------|
-| Chris Owens | £10.00 | Indefinite | 15 Mar 2026 | Cancel |
+On save: `POST /api/booking/recurring-credits`, refresh the rules list, clear the form.
 
-   The Cancel button prompts a `window.confirm` before calling `DELETE`.
+### Active rules table (shown only if rules exist)
 
-2. **Add recurring credit form** (inline, always visible):
-   - Member picker: same `<select>` of club members used in the existing credit form
-   - Monthly amount (£): number input, min 0.01, step 0.01
-   - End date (optional): date input
-   - Save button
+Columns: Member | Monthly amount | End date | Last issued | Actions
 
-On save: calls `POST /api/booking/recurring-credits`, refreshes the rules list, and clears the form.
+- **End date**: show `Indefinite` if null, otherwise formatted date.
+- **Last issued**: formatted date.
+- **Cancel** button: `window.confirm` prompt, then `DELETE /api/booking/recurring-credits/:id`, then refresh list.
 
-### `bookingApi.js`
+### `bookingApi.js` additions
 
-Add three methods:
 ```js
-getRecurringCredits: ()
-createRecurringCredit: (data)
-deleteRecurringCredit: (id)
+getRecurringCredits: () =>
+  axios.get(`${API_URL}/booking/recurring-credits`, { headers: getHeaders() }),
+
+createRecurringCredit: (data) =>
+  axios.post(`${API_URL}/booking/recurring-credits`, data, { headers: getHeaders() }),
+
+deleteRecurringCredit: (id) =>
+  axios.delete(`${API_URL}/booking/recurring-credits/${id}`, { headers: getHeaders() }),
 ```
+
+## Files
+
+| Action | Path |
+|--------|------|
+| Create | `backend/routes/booking/recurringCredits.js` |
+| Modify | `backend/prisma/schema.prisma` |
+| Create | `backend/prisma/migrations/<timestamp>_add_recurring_credits/migration.sql` |
+| Modify | `backend/server.js` |
+| Create | `backend/__tests__/booking.recurringCredits.test.js` |
+| Modify | `frontend/src/pages/booking/admin/AdminCredits.js` |
+| Modify | `frontend/src/utils/bookingApi.js` |
 
 ## Testing
 
-Backend:
-- `POST` creates rule and issues a Credit expiring end of current month
-- `POST` with `endDate` in the past returns 400
-- `GET` returns active rules for the club; excludes cancelled rules
-- `GET` by user from a different club returns no results (club scoping)
-- `DELETE` sets `isActive = false`; Credit records are unchanged
-- Cron logic: issues credit for active rule where `lastIssuedAt` is previous month
-- Cron logic: skips rule where `endDate` is in the past
-- Cron logic: skips rule where `lastIssuedAt` is already in the current month (idempotent)
-- `401` / `403` auth checks on all routes
+Backend (`booking.recurringCredits.test.js`):
+- `POST` creates rule and issues a Credit expiring end of current month (UTC)
+- `POST` with past `endDate` returns 400
+- `POST` for archived user returns 404
+- `POST` for user in different club returns 404
+- `GET` returns active rules for the club with `userName` field
+- `GET` excludes cancelled (`isActive: false`) rules
+- `GET` by admin from different club returns empty array (club scoping)
+- `DELETE` sets `isActive = false`; the associated Credit record is unchanged
+- `DELETE` for rule in different club returns 404
+- Cron helper (exported pure function): issues credit for active rule where `lastIssuedAt` is in the previous month
+- Cron helper: skips rule where `endDate` is in the past
+- Cron helper: skips rule where `lastIssuedAt` is already in the current month (idempotent)
+- Cron helper: skips rule where user is archived
+- `401` / `403` auth checks on all three routes
 
 Manual frontend verification:
 - Recurring credits section visible on Credits & Charges admin page
-- Add form issues credit immediately and shows rule in table
-- Cancel removes rule from table; existing credits unaffected
-- End date field optional; leaving blank results in `endDate: null`
+- Add form submits pence correctly (£10.00 → 1000 in DB)
+- Saving shows rule in table immediately
+- Cancel prompts confirmation, removes rule from table; existing credits unaffected
+- End date field: leaving blank results in `endDate: null` in DB
