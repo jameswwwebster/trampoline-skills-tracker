@@ -470,7 +470,7 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
 
   const detailsLabel = g.isSelf
     ? 'Emergency contact, health notes, membership'
-    : 'Health notes, membership, remove';
+    : 'Health notes, membership';
 
   return (
     <div style={{
@@ -1016,6 +1016,16 @@ function MemberDetail({ userId, onRemoved }) {
   const [sendingReset, setSendingReset] = useState(false);
   const [resetMessage, setResetMessage] = useState(null);
   const [creditsOpen, setCreditsOpen] = useState(false);
+  const [chargesOpen, setChargesOpen] = useState(false);
+  const [memberCharges, setMemberCharges] = useState(null); // null = not yet fetched
+  const [chargesLoading, setChargesLoading] = useState(false);
+  const [addingCharge, setAddingCharge] = useState(false);
+  const [chargeForm, setChargeForm] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() + 7);
+    return { description: '', amount: '', dueDate: d.toISOString().split('T')[0] };
+  });
+  const [chargeFormError, setChargeFormError] = useState(null);
+  const [submittingCharge, setSubmittingCharge] = useState(false);
   const [templates, setTemplates] = useState([]);
 
   useEffect(() => { getTemplates().then(r => setTemplates(r.data)).catch(() => {}); }, []);
@@ -1084,12 +1094,69 @@ function MemberDetail({ userId, onRemoved }) {
     }).finally(() => setLoading(false));
   };
 
+  const loadCharges = async () => {
+    setChargesLoading(true);
+    try {
+      const res = await bookingApi.getChargesForUser(userId);
+      setMemberCharges(res.data.filter(c => !c.paidAt)); // outstanding only
+    } catch {
+      setMemberCharges([]);
+    } finally {
+      setChargesLoading(false);
+    }
+  };
+
+  const handleToggleCharges = () => {
+    const opening = !chargesOpen;
+    setChargesOpen(opening);
+    if (opening && memberCharges === null) loadCharges();
+  };
+
+  const handleCreateCharge = async (e) => {
+    e.preventDefault();
+    setChargeFormError(null);
+    setSubmittingCharge(true);
+    try {
+      const amountPence = Math.round(parseFloat(chargeForm.amount) * 100);
+      if (isNaN(amountPence) || amountPence < 1) {
+        setChargeFormError('Amount must be a positive number');
+        return;
+      }
+      await bookingApi.createCharge({
+        userId,
+        amount: amountPence,
+        description: chargeForm.description,
+        dueDate: new Date(chargeForm.dueDate).toISOString(),
+      });
+      const d = new Date(); d.setDate(d.getDate() + 7);
+      setAddingCharge(false);
+      setChargeForm({ description: '', amount: '', dueDate: d.toISOString().split('T')[0] });
+      await loadCharges();
+    } catch (err) {
+      setChargeFormError(err.response?.data?.error || 'Failed to create charge');
+    } finally {
+      setSubmittingCharge(false);
+    }
+  };
+
+  const handleDeleteCharge = async (chargeId) => {
+    if (!window.confirm('Delete this charge?')) return;
+    try {
+      await bookingApi.deleteCharge(chargeId);
+      await loadCharges();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete charge');
+    }
+  };
+
   useEffect(() => { load(); }, [userId]);
 
   if (loading) return <p className="bk-muted" style={{ padding: '1rem' }}>Loading...</p>;
   if (!member) return null;
 
   const totalCredits = member.credits.reduce((s, c) => s + c.amount, 0);
+  const outstandingChargesTotal = memberCharges ? memberCharges.reduce((s, c) => s + c.amount, 0) : 0;
+  // Note: memberCharges is filtered to unpaid only in loadCharges, so no further filter needed here.
 
   return (
     <div>
@@ -1137,6 +1204,26 @@ function MemberDetail({ userId, onRemoved }) {
                     )
                     : <span className="bk-muted">No credits</span>
                 },
+                {
+                  key: 'Charges',
+                  val: (
+                    <button
+                      onClick={handleToggleCharges}
+                      style={{
+                        background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.875rem',
+                        color: outstandingChargesTotal > 0 ? 'var(--booking-danger)' : 'var(--booking-text-muted)',
+                        fontWeight: outstandingChargesTotal > 0 ? 600 : 'normal',
+                      }}
+                    >
+                      {memberCharges === null
+                        ? 'View charges'
+                        : outstandingChargesTotal > 0
+                          ? `£${(outstandingChargesTotal / 100).toFixed(2)} outstanding`
+                          : 'No outstanding charges'
+                      } {chargesOpen ? '▴' : '▾'}
+                    </button>
+                  ),
+                },
                 // Note: + Assign credit button is rendered below the list always (see below)
               ].map(({ key, val }) => (
                 <li key={key} style={{
@@ -1177,6 +1264,69 @@ function MemberDetail({ userId, onRemoved }) {
                     <span className="bk-muted">Expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {chargesOpen && (
+              <div style={{
+                marginTop: '0.5rem',
+                background: 'rgba(231,76,60,0.03)',
+                border: '1px solid rgba(231,76,60,0.15)',
+                borderRadius: 'var(--booking-radius)',
+                padding: '0.65rem 0.75rem',
+              }}>
+                {chargesLoading && <p style={{ color: 'var(--booking-text-muted)', fontSize: '0.875rem', margin: 0 }}>Loading...</p>}
+                {!chargesLoading && memberCharges !== null && (
+                  <>
+                    {memberCharges.length === 0 && !addingCharge && (
+                      <p style={{ color: 'var(--booking-text-muted)', fontSize: '0.875rem', margin: '0 0 0.5rem' }}>No outstanding charges.</p>
+                    )}
+                    {memberCharges.map(c => (
+                      <div key={c.id} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        fontSize: '0.875rem', padding: '0.2rem 0', borderBottom: '1px solid var(--booking-bg-light)',
+                      }}>
+                        <div>
+                          <span>{c.description}</span>
+                          <span className="bk-muted" style={{ marginLeft: '0.5rem', fontSize: '0.8rem' }}>
+                            £{(c.amount / 100).toFixed(2)} · Due {new Date(c.dueDate).toLocaleDateString('en-GB')}
+                          </span>
+                        </div>
+                        <button
+                          className="bk-btn bk-btn--sm"
+                          style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+                          onClick={() => handleDeleteCharge(c.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))}
+                    {addingCharge ? (
+                      <form onSubmit={handleCreateCharge} style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <input className="bk-input" placeholder="Description" required value={chargeForm.description}
+                          onChange={e => setChargeForm(f => ({ ...f, description: e.target.value }))} style={{ fontSize: '0.85rem' }} />
+                        <input type="number" step="0.01" min="0.01" className="bk-input" placeholder="Amount (£)" required value={chargeForm.amount}
+                          onChange={e => setChargeForm(f => ({ ...f, amount: e.target.value }))} style={{ fontSize: '0.85rem' }} />
+                        <input type="date" className="bk-input" required value={chargeForm.dueDate}
+                          onChange={e => setChargeForm(f => ({ ...f, dueDate: e.target.value }))} style={{ fontSize: '0.85rem' }} />
+                        {chargeFormError && <p style={{ color: 'var(--booking-danger)', fontSize: '0.82rem', margin: 0 }}>{chargeFormError}</p>}
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          <button type="submit" className="bk-btn bk-btn--sm bk-btn--primary" disabled={submittingCharge}>
+                            {submittingCharge ? 'Adding...' : 'Add charge'}
+                          </button>
+                          <button type="button" className="bk-btn bk-btn--sm" onClick={() => { setAddingCharge(false); setChargeFormError(null); }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <button className="bk-btn bk-btn--sm bk-btn--primary" style={{ marginTop: '0.5rem' }}
+                        onClick={() => setAddingCharge(true)}>
+                        + Add charge
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
