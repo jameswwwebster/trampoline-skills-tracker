@@ -814,7 +814,7 @@ function GymnastMembership({ gymnast, membership, onRefresh }) {
       {membership && showEditAmount && (
         <div style={{ marginTop: '0.5rem' }}>
           <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem' }}>New monthly amount (£)
-            <input type="number" step="0.01" min="0.01" className="bk-input"
+            <input type="number" step="0.01" min="0" className="bk-input"
               value={editAmount} onChange={e => setEditAmount(e.target.value)}
               style={{ marginTop: '0.2rem' }} />
           </label>
@@ -838,7 +838,7 @@ function GymnastMembership({ gymnast, membership, onRefresh }) {
         <form onSubmit={handleCreate} style={{ marginTop: '0.5rem' }}>
           <div className="bk-grid-2">
             <label className="bk-label" style={{ fontWeight: 'normal', fontSize: '0.82rem' }}>Monthly amount (£)
-              <input type="number" step="0.01" min="0.01" className="bk-input"
+              <input type="number" step="0.01" min="0" className="bk-input"
                 value={form.monthlyAmount}
                 onChange={e => setForm(f => ({ ...f, monthlyAmount: e.target.value }))}
                 required style={{ marginTop: '0.2rem' }} />
