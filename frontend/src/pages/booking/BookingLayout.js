@@ -287,11 +287,14 @@ export default function BookingLayout() {
         <Outlet />
       </main>
 
-      {!isAdmin && (
-        <footer className="booking-layout__footer">
+      <footer className="booking-layout__footer">
+        {!isAdmin && (
           <Link to="/booking/help" style={{ color: 'var(--booking-text-muted)', textDecoration: 'none', fontSize: '0.82rem' }}>Help</Link>
-        </footer>
-      )}
+        )}
+        {isAdmin && (
+          <Link to="/booking/admin/help" style={{ color: 'var(--booking-text-muted)', textDecoration: 'none', fontSize: '0.82rem' }}>Help</Link>
+        )}
+      </footer>
     </div>
   );
 }
