@@ -177,6 +177,7 @@ app.use('/api/recipient-groups', recipientGroupsRouter);
 app.use('/api/booking/sessions', require('./routes/booking/sessions'));
 app.use('/api/booking/bookings', require('./routes/booking/bookings'));
 app.use('/api/booking/credits', require('./routes/booking/credits'));
+app.use('/api/booking/recurring-credits', require('./routes/booking/recurringCredits'));
 app.use('/api/booking/charges', require('./routes/booking/charges'));
 app.use('/api/booking/closures', require('./routes/booking/closures'));
 app.use('/api/booking/memberships', require('./routes/booking/memberships'));
@@ -505,6 +506,16 @@ cron.schedule('0 8 * * *', async () => {
     console.log(`New member digest: sent to ${staff.length} staff (${newMembers.length} new member(s))`);
   } catch (err) {
     console.error('New member digest cron error:', err);
+  }
+});
+
+// Recurring credits — runs at 09:00 UTC on the 1st of every month
+cron.schedule('0 9 1 * *', async () => {
+  try {
+    const { processRecurringCredits } = require('./routes/booking/recurringCredits');
+    await processRecurringCredits();
+  } catch (err) {
+    console.error('Recurring credits cron error:', err);
   }
 });
 
