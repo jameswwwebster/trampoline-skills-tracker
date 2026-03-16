@@ -141,8 +141,8 @@ export default function AdminMessages() {
           {FILTER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
         {ft === 'role' && (
-          <select className="bk-input" value={form.recipientFilter.role || 'PARENT'} onChange={e => setFilterField('role', e.target.value)}>
-            <option value="PARENT">Parents</option>
+          <select className="bk-input" value={form.recipientFilter.role || 'ADULT'} onChange={e => setFilterField('role', e.target.value)}>
+            <option value="ADULT">Adults</option>
             <option value="COACH">Coaches</option>
           </select>
         )}

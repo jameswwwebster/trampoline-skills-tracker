@@ -24,7 +24,7 @@ const Parents = () => {
         const allGymnasts = gymnastsResponse.data;
         
         // Filter for parents only
-        const parentUsers = allUsers.filter(user => user.role === 'PARENT');
+        const parentUsers = allUsers.filter(user => user.role === 'ADULT');
         
         // Add children information to each parent
         const parentsWithChildren = parentUsers.map(parent => {

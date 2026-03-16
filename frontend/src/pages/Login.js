@@ -76,7 +76,7 @@ const Login = () => {
             {[
               { email: 'admin@test.com', label: 'Admin' },
               { email: 'dev@test.com', label: 'Coach' },
-              { email: 'parent@test.com', label: 'Parent' },
+              { email: 'parent@test.com', label: 'Adult' },
             ].map(({ email, label }) => (
               <button key={email} type="button" className="auth-dev__btn"
                 onClick={() => handleDevLogin(email)} disabled={isDevLoading}>

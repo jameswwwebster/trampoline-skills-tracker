@@ -171,7 +171,7 @@ const ChildLogin = () => {
               title="Access code should be 6 digits"
             />
             <small className="form-help">
-              💡 Ask your parent, guardian, or coach for the 6-digit access code
+              💡 Ask your adult, guardian, or coach for the 6-digit access code
             </small>
           </div>
 
@@ -192,10 +192,10 @@ const ChildLogin = () => {
 
         <div className="auth-footer">
           <p>
-            <Link to="/login">👨‍👩‍👧‍👦 Parent/Guardian/Coach Login</Link>
+            <Link to="/login">👨‍👩‍👧‍👦 Adult/Guardian/Coach Login</Link>
           </p>
           <p>
-            <small>Don't have an access code? Ask your parent, guardian, or coach to generate one!</small>
+            <small>Don't have an access code? Ask your adult, guardian, or coach to generate one!</small>
           </p>
         </div>
       </div>

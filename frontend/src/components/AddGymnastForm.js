@@ -171,7 +171,7 @@ const AddGymnastForm = ({ onSuccess, onCancel }) => {
             </button>
           </div>
           <small className="form-text">
-            Add email addresses of parents/guardians who should have access to this gymnast's progress.
+            Add email addresses of adults/guardians who should have access to this gymnast's progress.
             The guardian accounts must already exist in the system.
           </small>
         </div>

@@ -47,7 +47,7 @@ export default function AdminBgNumbers() {
           <thead>
             <tr>
               <th style={{ textAlign: 'left' }}>Gymnast</th>
-              <th style={{ textAlign: 'left' }}>Parent</th>
+              <th style={{ textAlign: 'left' }}>Adult</th>
               <th style={{ textAlign: 'left' }}>BG Number</th>
               <th style={{ textAlign: 'right' }}>Days pending</th>
               <th>Actions</th>
@@ -104,7 +104,7 @@ export default function AdminBgNumbers() {
           <thead>
             <tr>
               <th style={{ textAlign: 'left' }}>Gymnast</th>
-              <th style={{ textAlign: 'left' }}>Parent</th>
+              <th style={{ textAlign: 'left' }}>Adult</th>
               <th style={{ textAlign: 'right' }}>Sessions</th>
             </tr>
           </thead>

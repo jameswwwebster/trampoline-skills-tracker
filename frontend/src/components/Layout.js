@@ -24,7 +24,7 @@ const MobileNestedMenu = ({ title, children, isOpen, onToggle }) => {
 };
 
 const Layout = () => {
-  const { user, logout, canManageGymnasts, isClubAdmin, canReadCompetitions, needsProgressNavigation, isChild, isParent, canEditLevels, isSuperAdmin } = useAuth();
+  const { user, logout, canManageGymnasts, isClubAdmin, canReadCompetitions, needsProgressNavigation, isChild, isAdult, canEditLevels, isSuperAdmin } = useAuth();
   const { branding } = useBranding();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -37,7 +37,7 @@ const Layout = () => {
   // Dynamic navigation text based on user type
   const getProgressNavText = () => {
     if (isChild) return "My Progress";
-    if (isParent) return "Children's Progress";
+    if (isAdult) return "Children's Progress";
     return "Progress";
   };
 
@@ -107,8 +107,8 @@ const Layout = () => {
             </Link>
           )}
           
-          {/* My Certificates for Parents and Gymnasts */}
-          {(user?.role === 'PARENT' || user?.role === 'GYMNAST') && (
+          {/* My Certificates for Adults and Gymnasts */}
+          {(user?.role === 'ADULT' || user?.role === 'GYMNAST') && (
             <Link to="/my-certificates" className={isActive('/my-certificates')}>
               🏆 My Certificates
             </Link>
@@ -180,8 +180,8 @@ const Layout = () => {
                 <Link to="/invites" className={isActive('/invites')}>
                   Invitations
                 </Link>
-                <Link to="/parent-requests" className={isActive('/parent-requests')}>
-                  Parent Requests
+                <Link to="/adult-requests" className={isActive('/adult-requests')}>
+                  Adult Requests
                 </Link>
                 <Link to="/import" className={isActive('/import')}>
                   Import Gymnasts
@@ -254,8 +254,8 @@ const Layout = () => {
             </Link>
           )}
           
-          {/* My Certificates for Parents and Gymnasts */}
-          {(user?.role === 'PARENT' || user?.role === 'GYMNAST') && (
+          {/* My Certificates for Adults and Gymnasts */}
+          {(user?.role === 'ADULT' || user?.role === 'GYMNAST') && (
             <Link to="/my-certificates" className={isActive('/my-certificates')}>
               🏆 My Certificates
             </Link>

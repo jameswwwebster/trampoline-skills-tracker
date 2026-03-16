@@ -21,7 +21,7 @@ const MyCertificates = () => {
       setLoading(true);
       setError(null);
 
-      if (user?.role === 'PARENT') {
+      if (user?.role === 'ADULT') {
         // For parents, fetch all their children's certificates
         const gymnastsResponse = await axios.get('/api/gymnasts');
         const allGymnasts = gymnastsResponse.data;
@@ -93,7 +93,7 @@ const MyCertificates = () => {
         <div className="alert alert-info">
           <h4>No Gymnasts Found</h4>
           <p>
-            {user?.role === 'PARENT' 
+            {user?.role === 'ADULT' 
               ? 'No gymnasts found that you are guardian for. Please contact your club administrator if this is incorrect.'
               : 'No gymnast profile found for your account. Please contact your club administrator.'
             }
@@ -111,7 +111,7 @@ const MyCertificates = () => {
       </div>
 
       {/* Gymnast Selection for Parents with Multiple Children */}
-      {user?.role === 'PARENT' && gymnasts.length > 1 && (
+      {user?.role === 'ADULT' && gymnasts.length > 1 && (
         <div className="card mb-4">
           <div className="card-header">
             <h5 className="card-title">Select Gymnast</h5>

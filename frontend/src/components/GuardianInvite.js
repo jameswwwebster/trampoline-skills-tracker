@@ -114,7 +114,7 @@ const GuardianInvite = () => {
         <h3>Invite a Guardian</h3>
       </div>
       <div className="card-body">
-        <p>Since you're under 18, you can invite a parent or guardian to connect with your account.</p>
+        <p>Since you're under 18, you can invite an adult or guardian to connect with your account.</p>
         
         {error && (
           <div className="alert alert-error">

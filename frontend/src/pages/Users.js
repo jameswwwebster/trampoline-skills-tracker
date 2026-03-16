@@ -249,8 +249,8 @@ const Users = () => {
         return 'Club Admin';
       case 'COACH':
         return 'Coach';
-      case 'PARENT':
-        return 'Parent';
+      case 'ADULT':
+        return 'Adult';
       case 'GYMNAST':
         return 'Gymnast';
       default:
@@ -264,7 +264,7 @@ const Users = () => {
         return 'badge badge-primary';
       case 'COACH':
         return 'badge badge-secondary';
-      case 'PARENT':
+      case 'ADULT':
         return 'badge badge-success';
       case 'GYMNAST':
         return 'badge badge-info';
@@ -350,8 +350,8 @@ const Users = () => {
 
   // Add children information to users
   const usersWithChildren = users.map(userData => {
-    if (userData.role === 'PARENT') {
-      const children = gymnasts.filter(gymnast => 
+    if (userData.role === 'ADULT') {
+      const children = gymnasts.filter(gymnast =>
         gymnast.guardians && gymnast.guardians.some(guardian => guardian.id === userData.id)
       );
       return { ...userData, children };
@@ -374,8 +374,8 @@ const Users = () => {
                        email.includes(search) || 
                        role.includes(search);
     
-    // For parents, also search children names
-    if (userData.role === 'PARENT' && userData.children) {
+    // For adults, also search children names
+    if (userData.role === 'ADULT' && userData.children) {
       const childrenNames = userData.children.map(child => 
         `${child.firstName} ${child.lastName}`.toLowerCase()
       ).join(' ');
@@ -610,7 +610,7 @@ const Users = () => {
                 style={{ fontSize: '0.875rem', padding: '0.25rem 0.5rem' }}
               >
                 <option value="">All Roles</option>
-                <option value="PARENT">Parents Only</option>
+                <option value="ADULT">Adults Only</option>
                 <option value="COACH">Coaches Only</option>
                 <option value="CLUB_ADMIN">Club Admins Only</option>
                 <option value="GYMNAST">Gymnasts Only</option>
@@ -756,7 +756,7 @@ const Users = () => {
                           className="form-control"
                           style={{ width: 'auto', minWidth: '120px' }}
                         >
-                          <option value="PARENT">Parent</option>
+                          <option value="ADULT">Adult</option>
                           <option value="COACH">Coach</option>
                           <option value="CLUB_ADMIN">Club Admin</option>
                           <option value="GYMNAST">Gymnast</option>
@@ -782,7 +782,7 @@ const Users = () => {
                     )}
                   </td>
                   <td>
-                    {userData.role === 'PARENT' && userData.children ? (
+                    {userData.role === 'ADULT' && userData.children ? (
                       userData.children.length > 0 ? (
                         <div>
                           {userData.children.map(child => (
@@ -1119,7 +1119,7 @@ const Users = () => {
                           className="form-control"
                           style={{ width: '100%', maxWidth: '150px' }}
                         >
-                          <option value="PARENT">Parent</option>
+                          <option value="ADULT">Adult</option>
                           <option value="COACH">Coach</option>
                           <option value="CLUB_ADMIN">Club Admin</option>
                           <option value="GYMNAST">Gymnast</option>
@@ -1132,7 +1132,7 @@ const Users = () => {
                     </span>
                   </div>
                   
-                  {userData.role === 'PARENT' && (
+                  {userData.role === 'ADULT' && (
                     <div className="mobile-card-row">
                       <span className="mobile-card-label">Children:</span>
                       <span className="mobile-card-value">

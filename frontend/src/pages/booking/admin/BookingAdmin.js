@@ -335,13 +335,13 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
               {l.gymnast.userId !== b.user.id ? (
                 b.user.phone ? (
                   <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
-                    Parent: <strong style={{ color: 'var(--booking-text-on-light)' }}>{b.user.firstName} {b.user.lastName}</strong>
+                    Booked by: <strong style={{ color: 'var(--booking-text-on-light)' }}>{b.user.firstName} {b.user.lastName}</strong>
                     {' · '}
                     <a href={`tel:${b.user.phone}`} style={{ color: 'var(--booking-accent)' }}>{b.user.phone}</a>
                   </p>
                 ) : (
                   <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>
-                    Parent {b.user.firstName} {b.user.lastName} has no phone number
+                    {b.user.firstName} {b.user.lastName} has no phone number
                   </p>
                 )
               ) : l.gymnast.emergencyContactName ? (

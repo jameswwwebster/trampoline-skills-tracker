@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import GymnastProgress from '../components/GymnastProgress';
 
 const MyProgress = () => {
-  const { user, isParent, isChild } = useAuth();
+  const { user, isAdult, isChild } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [children, setChildren] = useState([]);
@@ -26,8 +26,8 @@ const MyProgress = () => {
             lastName: user.lastName,
             club: user.club
           });
-        } else if (isParent) {
-          // For parents, get their children using the dedicated endpoint
+        } else if (isAdult) {
+          // For adults, get their children using the dedicated endpoint
           const response = await axios.get('/api/gymnasts/my-children');
           const myChildren = response.data;
 
@@ -53,7 +53,7 @@ const MyProgress = () => {
     };
 
     fetchData();
-  }, [user, isParent, isChild]);
+  }, [user, isAdult, isChild]);
 
   const handleChildSelect = (child) => {
     setSelectedChild(child);
@@ -106,8 +106,8 @@ const MyProgress = () => {
     );
   }
 
-  // Show children selection for parents with multiple children
-  if (isParent && children.length > 1) {
+  // Show children selection for adults with multiple children
+  if (isAdult && children.length > 1) {
     return (
       <div>
         <h1>Children's Progress</h1>

@@ -126,7 +126,7 @@ export default function AdminHelpPage() {
           <li style={S.li}>British Gymnastics membership numbers and their verification status</li>
           <li style={S.li}>Active memberships, standing slots, and booking history per gymnast</li>
           <li style={S.li}>Outstanding and paid charges on the account</li>
-          <li style={S.li}>The member's current role (Parent, Coach, or Club Admin)</li>
+          <li style={S.li}>The member's current role (Adult, Coach, or Club Admin)</li>
         </ul>
 
         <Divider />
@@ -147,7 +147,7 @@ export default function AdminHelpPage() {
           From a member's profile, use the role selector to promote or demote them. Roles and what they unlock:
         </p>
         <dl style={{ marginBottom: '0.5rem' }}>
-          <dt style={S.dt}>Parent</dt>
+          <dt style={S.dt}>Adult</dt>
           <dd style={S.dd}>Default role. Can book sessions, manage their gymnasts, view their account, and read the noticeboard.</dd>
           <dt style={S.dt}>Coach</dt>
           <dd style={S.dd}>Full access to admin tools — sessions, members, register, credits, charges, messages, and shop. Cannot create or delete closures.</dd>
@@ -247,8 +247,8 @@ export default function AdminHelpPage() {
         <p style={S.pLast}>
           Sessions are typed as <strong>Trampoline</strong> or <strong>DMT</strong> (Double Mini Trampoline).
           DMT sessions require each gymnast to have DMT approval on their profile before they can be booked.
-          Approval is granted by a coach from the gymnast's profile page. Parents cannot override this — if
-          a parent tries to book a DMT session without approval, they will see an access error.
+          Approval is granted by a coach from the gymnast's profile page. Adults cannot override this — if
+          an adult tries to book a DMT session without approval, they will see an access error.
         </p>
       </Section>
 
@@ -265,9 +265,9 @@ export default function AdminHelpPage() {
           <dt style={S.dt}>Day of week</dt>
           <dd style={S.dd}>The day this session repeats. A template creates one session instance per week on that day.</dd>
           <dt style={S.dt}>Start and end time</dt>
-          <dd style={S.dd}>Shown to parents on the booking calendar, in confirmation emails, and in the register header.</dd>
+          <dd style={S.dd}>Shown to adults on the booking calendar, in confirmation emails, and in the register header.</dd>
           <dt style={S.dt}>Capacity</dt>
-          <dd style={S.dd}>Maximum gymnasts per session. Once reached, the session shows as full and parents are offered the waitlist instead.</dd>
+          <dd style={S.dd}>Maximum gymnasts per session. Once reached, the session shows as full and adults are offered the waitlist instead.</dd>
           <dt style={S.dt}>Price</dt>
           <dd style={S.dd}>Per-gymnast price charged at checkout, in pounds. Stored internally in pence to avoid rounding errors.</dd>
           <dt style={S.dt}>Session type</dt>
@@ -280,7 +280,7 @@ export default function AdminHelpPage() {
         <h4 style={S.h4}>How far ahead are sessions generated?</h4>
         <p style={S.p}>
           The session generator creates instances for a rolling window of upcoming weeks. A newly created
-          template will have its first instances visible to parents the morning after you save it. If you need
+          template will have its first instances visible to adults the morning after you save it. If you need
           sessions to appear immediately (e.g. for same-week bookings), contact your system administrator to
           trigger a manual run.
         </p>
@@ -289,7 +289,7 @@ export default function AdminHelpPage() {
         <h4 style={S.h4}>Deactivating a template (temporary pause)</h4>
         <p style={S.p}>
           Toggle a template inactive to stop new instances being generated. Existing future instances remain
-          in the system — parents can still book them and standing-slot gymnasts still appear on the register
+          in the system — adults can still book them and standing-slot gymnasts still appear on the register
           for those dates. Use this when a session is pausing for a few weeks but will resume.
         </p>
         <Tip>
@@ -303,7 +303,7 @@ export default function AdminHelpPage() {
           When you delete a template you are asked whether to also delete all future session instances:
         </p>
         <ul style={{ paddingLeft: '1.2rem', marginBottom: '0.75rem' }}>
-          <li style={S.li}><strong>Delete future instances</strong> — all future instances are removed, confirmed bookings are cancelled, and credits are issued to affected parents. Choose this when the session is stopping for good.</li>
+          <li style={S.li}><strong>Delete future instances</strong> — all future instances are removed, confirmed bookings are cancelled, and credits are issued to affected adults. Choose this when the session is stopping for good.</li>
           <li style={S.li}><strong>Keep future instances</strong> — existing instances remain bookable and the template is removed so no new instances are generated. Use this if you want to let the session naturally wind down.</li>
         </ul>
         <Note>
@@ -338,9 +338,9 @@ export default function AdminHelpPage() {
         <ul style={{ paddingLeft: '1.2rem', marginBottom: '0.75rem' }}>
           <li style={S.li}>Marks every session instance within the date range as cancelled</li>
           <li style={S.li}>Cancels every confirmed booking on those sessions</li>
-          <li style={S.li}>Issues a credit to every affected parent for each cancelled booking, valid for one month</li>
+          <li style={S.li}>Issues a credit to every affected adult for each cancelled booking, valid for one month</li>
           <li style={S.li}>Hides those session dates from the member-facing booking calendar</li>
-          <li style={S.li}>Sends no individual cancellation emails — parents will see the closure reason if they check their bookings</li>
+          <li style={S.li}>Sends no individual cancellation emails — adults will see the closure reason if they check their bookings</li>
         </ul>
         <Tip>
           <strong>Tip:</strong> If you want to notify members about the closure, send a Message or post to the
@@ -369,7 +369,7 @@ export default function AdminHelpPage() {
           Deleting a closure removes the closure record from the list but does <strong>not</strong> restore
           the cancelled sessions, reinstate the bookings, or revoke the credits that were issued. The only
           effect is that the date range is no longer shown as a closure in the admin list. If sessions were
-          cancelled in error, they need to be recreated manually and parents re-booked — contact your
+          cancelled in error, they need to be recreated manually and adults re-booked — contact your
           system administrator.
         </p>
       </Section>
@@ -437,7 +437,7 @@ export default function AdminHelpPage() {
         <p style={S.p}>
           British Gymnastics (BG) membership provides insurance cover for gymnasts during sessions. Each
           gymnast's BG number needs to be on file and verified before they are fully covered. The system
-          enforces this with a grace period system that allows parents time to provide the number without
+          enforces this with a grace period system that allows adults time to provide the number without
           immediately blocking bookings.
         </p>
 
@@ -446,11 +446,11 @@ export default function AdminHelpPage() {
           <dt style={S.dt}>Not set</dt>
           <dd style={S.dd}>No number has been entered for this gymnast. They begin with a 14-day grace period from the date of their first session booking. During grace, bookings are allowed.</dd>
           <dt style={S.dt}>PENDING</dt>
-          <dd style={S.dd}>The parent has entered a number and it is waiting for a coach or admin to verify it. The gymnast retains a grace period — 14 days from entry if this is their first submission, or 3 days if they are re-submitting after an INVALID.</dd>
+          <dd style={S.dd}>The adult has entered a number and it is waiting for a coach or admin to verify it. The gymnast retains a grace period — 14 days from entry if this is their first submission, or 3 days if they are re-submitting after an INVALID.</dd>
           <dt style={S.dt}>VERIFIED</dt>
           <dd style={S.dd}>A coach or admin has confirmed the number is correct and current. No further action is needed unless the membership expires and is renewed with a new number.</dd>
           <dt style={S.dt}>INVALID</dt>
-          <dd style={S.dd}>A coach or admin has rejected the number. The parent is notified by email and prompted to re-enter. A 3-day grace period begins from the moment the number is marked invalid.</dd>
+          <dd style={S.dd}>A coach or admin has rejected the number. The adult is notified by email and prompted to re-enter. A 3-day grace period begins from the moment the number is marked invalid.</dd>
         </dl>
 
         <Divider />
@@ -460,12 +460,12 @@ export default function AdminHelpPage() {
           rules are:
         </p>
         <ul style={{ paddingLeft: '1.2rem', marginBottom: '0.75rem' }}>
-          <li style={S.li}><strong>First submission</strong> — 14-day grace from the date the parent enters the number. Bookings are allowed while PENDING.</li>
-          <li style={S.li}><strong>After INVALID</strong> — 3-day grace once the parent re-enters a number. Shorter window as it is a correction, not an initial submission.</li>
+          <li style={S.li}><strong>First submission</strong> — 14-day grace from the date the adult enters the number. Bookings are allowed while PENDING.</li>
+          <li style={S.li}><strong>After INVALID</strong> — 3-day grace once the adult re-enters a number. Shorter window as it is a correction, not an initial submission.</li>
           <li style={S.li}><strong>Grace expired with no number</strong> — new bookings for that gymnast are blocked until a number is verified. Existing confirmed bookings are not affected.</li>
         </ul>
         <Tip>
-          <strong>Tip:</strong> Encourage parents to enter their BG number at registration and tell them to
+          <strong>Tip:</strong> Encourage adults to enter their BG number at registration and tell them to
           renew it each membership year. Remind members at the start of the gymnastics season.
         </Tip>
 
@@ -483,15 +483,15 @@ export default function AdminHelpPage() {
         </p>
         <ul style={{ paddingLeft: '1.2rem', marginBottom: '0.75rem' }}>
           <li style={S.li}><strong>Verify</strong> — sets status to VERIFIED. The gymnast's insurance is confirmed. No email is sent.</li>
-          <li style={S.li}><strong>Invalidate</strong> — sets status to INVALID. An email is sent to the parent asking them to re-enter the correct number. A 3-day grace period begins.</li>
+          <li style={S.li}><strong>Invalidate</strong> — sets status to INVALID. An email is sent to the adult asking them to re-enter the correct number. A 3-day grace period begins.</li>
         </ul>
 
         <Divider />
         <h4 style={S.h4}>Staff-entered numbers</h4>
         <p style={S.p}>
-          If a coach or admin enters a BG number directly from a gymnast's profile (rather than the parent
+          If a coach or admin enters a BG number directly from a gymnast's profile (rather than the adult
           entering it), the number is set to <strong>VERIFIED immediately</strong> — no pending review or grace
-          period. Use this when a parent gives you the number verbally or when correcting an obvious typo on
+          period. Use this when an adult gives you the number verbally or when correcting an obvious typo on
           their behalf.
         </p>
 
@@ -507,13 +507,13 @@ export default function AdminHelpPage() {
       {/* ── CREDITS & CHARGES ───────────────────────────────────────── */}
       <Section title="Credits &amp; charges">
         <p style={S.p}>
-          Go to <strong>Credits &amp; Charges</strong> under the Tools Admin menu. Credits reduce what a parent
+          Go to <strong>Credits &amp; Charges</strong> under the Tools Admin menu. Credits reduce what an adult
           pays at checkout; charges add to it.
         </p>
 
         <h4 style={S.h4}>How credits work at checkout</h4>
         <p style={S.p}>
-          Credits are applied automatically when a parent checks out. The system uses the soonest-expiring
+          Credits are applied automatically when an adult checks out. The system uses the soonest-expiring
           credit first to reduce waste. If the total credit exceeds the basket amount, the remainder is
           preserved as a new credit with the same expiry date. Credits are visible to the member on their
           Account page.
@@ -533,7 +533,7 @@ export default function AdminHelpPage() {
           Credits are also issued automatically by the system in three situations:
         </p>
         <ul style={{ paddingLeft: '1.2rem', marginBottom: '0.75rem' }}>
-          <li style={S.li}>A parent cancels a booking for a session that is not today (same-day cancellations receive no credit by default)</li>
+          <li style={S.li}>An adult cancels a booking for a session that is not today (same-day cancellations receive no credit by default)</li>
           <li style={S.li}>A closure is created that cancels sessions with confirmed bookings</li>
           <li style={S.li}>A coach or admin cancels a booking and chooses to issue a credit</li>
         </ul>
@@ -577,7 +577,7 @@ export default function AdminHelpPage() {
         </p>
         <ul style={{ paddingLeft: '1.2rem', marginBottom: '0.75rem' }}>
           <li style={S.li}><strong>Amount (£)</strong> — the amount owed</li>
-          <li style={S.li}><strong>Description</strong> — shown to the parent in their cart, on their charges page, and on receipts. Be specific (e.g. "Private coaching session 14 March" rather than "Extra session").</li>
+          <li style={S.li}><strong>Description</strong> — shown to the adult in their cart, on their charges page, and on receipts. Be specific (e.g. "Private coaching session 14 March" rather than "Extra session").</li>
           <li style={S.li}><strong>Due date</strong> — the date by which payment is expected</li>
         </ul>
         <p style={S.p}>
@@ -607,16 +607,16 @@ export default function AdminHelpPage() {
           <dt style={S.dt}>CONFIRMED</dt>
           <dd style={S.dd}>The booking is active. The gymnast has a reserved place and will appear on the session register.</dd>
           <dt style={S.dt}>PENDING</dt>
-          <dd style={S.dd}>The parent started checkout but has not yet completed payment. The place is held temporarily. Abandoned checkouts are cleared automatically after 2 hours and the place is released.</dd>
+          <dd style={S.dd}>The adult started checkout but has not yet completed payment. The place is held temporarily. Abandoned checkouts are cleared automatically after 2 hours and the place is released.</dd>
           <dt style={S.dt}>CANCELLED</dt>
-          <dd style={S.dd}>The booking was cancelled — by the parent, by the system (during a closure), or by an admin. The gymnast is removed from the session and the place becomes available again.</dd>
+          <dd style={S.dd}>The booking was cancelled — by the adult, by the system (during a closure), or by an admin. The gymnast is removed from the session and the place becomes available again.</dd>
         </dl>
 
         <Divider />
-        <h4 style={S.h4}>How parents book</h4>
+        <h4 style={S.h4}>How adults book</h4>
         <p style={S.p}>
-          Parents book from the main booking calendar. They select a session, choose which gymnasts to bring
-          (from their linked gymnasts), and proceed to checkout. The combined checkout lets a parent book
+          Adults book from the main booking calendar. They select a session, choose which gymnasts to bring
+          (from their linked gymnasts), and proceed to checkout. The combined checkout lets an adult book
           multiple gymnasts across multiple sessions in one transaction, with credits and charges applied to
           the total.
         </p>
@@ -629,7 +629,7 @@ export default function AdminHelpPage() {
         <Divider />
         <h4 style={S.h4}>Waitlist</h4>
         <p style={S.pLast}>
-          When a session reaches capacity, parents can join the waitlist. Positions are first-come first-served.
+          When a session reaches capacity, adults can join the waitlist. Positions are first-come first-served.
           When a booking is cancelled, the first waitlisted member receives an automated offer by email with a
           time-limited link to accept the place. If they do not accept within the offer window, the place is
           offered to the next person. The waitlist offer window expires automatically — no manual action needed.
@@ -708,7 +708,7 @@ export default function AdminHelpPage() {
         </p>
         <ul style={{ paddingLeft: '1.2rem', marginBottom: '0.75rem' }}>
           <li style={S.li}>Write the subject and body (plain text or basic formatting)</li>
-          <li style={S.li}>Choose the audience: all members, parents only, or a specific recipient group</li>
+          <li style={S.li}>Choose the audience: all members, adults only, or a specific recipient group</li>
           <li style={S.li}>Use <strong>Preview recipients</strong> to see exactly who will receive it before you send</li>
           <li style={S.li}>Send immediately or schedule for a specific date and time</li>
         </ul>
@@ -751,7 +751,7 @@ export default function AdminHelpPage() {
                 { job: 'Waitlist expiry', schedule: 'Every 15 min', description: 'Expires waitlist offers not accepted within the offer window and automatically offers the place to the next person in the queue.' },
                 { job: 'Stale booking cleanup', schedule: 'Every hour', description: 'Cancels PENDING bookings (abandoned checkouts) older than 2 hours. Any credits that were held against the booking are restored to the member.' },
                 { job: 'BG number digest', schedule: 'Daily 07:30', description: 'Emails all coaches and admins a list of gymnasts with PENDING BG numbers awaiting verification, and gymnasts who have attended 2+ sessions with no number at all. Only sent when there are gymnasts in the queue.' },
-                { job: 'Weekly session reminder', schedule: 'Monday 08:00', description: 'Emails parents (without an active membership) about sessions with available spots in the coming week, to encourage ad-hoc bookings.' },
+                { job: 'Weekly session reminder', schedule: 'Monday 08:00', description: 'Emails adults (without an active membership) about sessions with available spots in the coming week, to encourage ad-hoc bookings.' },
                 { job: 'Membership payment reminder', schedule: 'Daily 09:00', description: 'Emails members whose membership is PENDING_PAYMENT, reminding them to add a payment method so their membership can activate.' },
                 { job: 'Scheduled message delivery', schedule: 'Every minute', description: 'Sends noticeboard messages and emails that were written with a future scheduled send time.' },
                 { job: 'Inactivity warning & deletion', schedule: 'Daily 02:30', description: 'Sends a warning email to accounts inactive for ~5.75 months. Permanently deletes accounts that reach 6 months of inactivity with no logins or bookings.' },

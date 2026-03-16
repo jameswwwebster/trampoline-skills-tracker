@@ -3,11 +3,11 @@ import { bookingApi, getTemplates } from '../../../utils/bookingApi';
 import AdminRemovedMembers from './AdminRemovedMembers';
 import '../booking-shared.css';
 
-const ROLE_LABELS = { CLUB_ADMIN: 'Admin', COACH: 'Coach', PARENT: 'Parent', GYMNAST: 'Gymnast' };
+const ROLE_LABELS = { CLUB_ADMIN: 'Admin', COACH: 'Coach', ADULT: 'Adult', GYMNAST: 'Gymnast' };
 const ROLE_COLORS = {
   CLUB_ADMIN: { background: 'rgba(124,53,232,0.12)', color: 'var(--booking-accent)' },
   COACH:      { background: 'rgba(41,128,185,0.12)', color: '#2980b9' },
-  PARENT:     { background: 'rgba(39,174,96,0.12)',  color: '#27ae60' },
+  ADULT:      { background: 'rgba(39,174,96,0.12)',  color: '#27ae60' },
   GYMNAST:    { background: 'rgba(230,126,34,0.12)', color: '#e67e22' },
 };
 
@@ -118,7 +118,7 @@ function EditProfileForm({ member, onDone }) {
 const ASSIGNABLE_ROLES = [
   { value: 'CLUB_ADMIN', label: 'Admin' },
   { value: 'COACH', label: 'Coach' },
-  { value: 'PARENT', label: 'Parent' },
+  { value: 'ADULT', label: 'Adult' },
   { value: 'GYMNAST', label: 'Gymnast' },
 ];
 
@@ -1668,13 +1668,13 @@ function MemberDetail({ userId, onRemoved }) {
 }
 
 const ASSIGNABLE_ROLES_CREATE = [
-  { value: 'PARENT', label: 'Parent' },
+  { value: 'ADULT', label: 'Adult' },
   { value: 'COACH', label: 'Coach' },
   { value: 'GYMNAST', label: 'Gymnast' },
   { value: 'CLUB_ADMIN', label: 'Admin' },
 ];
 
-const EMPTY_CREATE = { firstName: '', lastName: '', email: '', phone: '', role: 'PARENT' };
+const EMPTY_CREATE = { firstName: '', lastName: '', email: '', phone: '', role: 'ADULT' };
 
 export default function AdminMembers() {
   const [members, setMembers] = useState([]);
@@ -1787,8 +1787,8 @@ export default function AdminMembers() {
           <label className="bk-label" style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>Email
             <input type="email" className="bk-input" value={createForm.email} onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))} required />
           </label>
-          <label className="bk-label" style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>Phone{createForm.role === 'PARENT' ? '' : ' (optional)'}
-            <input type="tel" className="bk-input" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} required={createForm.role === 'PARENT'} />
+          <label className="bk-label" style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>Phone{createForm.role === 'ADULT' ? '' : ' (optional)'}
+            <input type="tel" className="bk-input" value={createForm.phone} onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))} required={createForm.role === 'ADULT'} />
           </label>
           <label className="bk-label" style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>Role
             <select className="bk-select" value={createForm.role} onChange={e => setCreateForm(f => ({ ...f, role: e.target.value }))}>
@@ -1813,7 +1813,7 @@ export default function AdminMembers() {
 
       {/* Role filter */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
-        {[{ value: '', label: 'All roles' }, { value: 'CLUB_ADMIN', label: 'Admin' }, { value: 'COACH', label: 'Coach' }, { value: 'PARENT', label: 'Parent' }].map(opt => (
+        {[{ value: '', label: 'All roles' }, { value: 'CLUB_ADMIN', label: 'Admin' }, { value: 'COACH', label: 'Coach' }, { value: 'ADULT', label: 'Adult' }].map(opt => (
           <button
             key={opt.value}
             className="bk-btn bk-btn--sm"

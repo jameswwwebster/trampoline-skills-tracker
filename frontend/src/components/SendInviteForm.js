@@ -77,7 +77,7 @@ const SendInviteForm = ({ onInviteSent }) => {
         <h3 className="card-title">Send Invitation</h3>
       </div>
       <div>
-        <p>Invite coaches and parents to join your club by entering their email address.</p>
+        <p>Invite coaches and adults to join your club by entering their email address.</p>
         
         {error && (
           <div className="alert alert-error">
@@ -118,7 +118,7 @@ const SendInviteForm = ({ onInviteSent }) => {
               required
             >
               <option value="COACH">Coach</option>
-              <option value="PARENT">Parent/Guardian</option>
+              <option value="ADULT">Adult/Guardian</option>
             </select>
           </div>
 

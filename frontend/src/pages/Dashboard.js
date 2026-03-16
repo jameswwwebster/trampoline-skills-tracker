@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import CreateClubForm from '../components/CreateClubForm';
 
 const Dashboard = () => {
-  const { user, isClubAdmin, isParent, isChild, isCoach, generateShareCode, generateCodeOfTheDay, getCodeOfTheDay, clearCodeOfTheDay, updateUser } = useAuth();
+  const { user, isClubAdmin, isAdult, isChild, isCoach, generateShareCode, generateCodeOfTheDay, getCodeOfTheDay, clearCodeOfTheDay, updateUser } = useAuth();
   const [shareCodeModal, setShareCodeModal] = useState(false);
   const [codeOfDayModal, setCodeOfDayModal] = useState(false);
   const [generatedCode, setGeneratedCode] = useState(null);

@@ -424,7 +424,7 @@ const SuperAdmin = () => {
                       >
                         <option value="CLUB_ADMIN">Club Admin</option>
                         <option value="COACH">Coach</option>
-                        <option value="PARENT">Parent</option>
+                        <option value="ADULT">Adult</option>
                         <option value="GYMNAST">Gymnast</option>
                         <option value="SUPER_ADMIN">Super Admin</option>
                       </select>

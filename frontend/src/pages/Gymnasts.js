@@ -1056,7 +1056,7 @@ const Gymnasts = () => {
                             {gymnast.guardians.map(guardian => (
                               <div key={guardian.id}>
                                 <Link 
-                                  to={`/parents?highlight=${guardian.id}`}
+                                  to={`/adults?highlight=${guardian.id}`}
                                   className="text-link"
                                   onClick={(e) => e.stopPropagation()}
                                 >
@@ -1149,7 +1149,7 @@ const Gymnasts = () => {
                               {gymnast.guardians.map(guardian => (
                                 <div key={guardian.id}>
                                   <Link 
-                                    to={`/parents?highlight=${guardian.id}`}
+                                    to={`/adults?highlight=${guardian.id}`}
                                     className="text-link"
                                     onClick={(e) => e.stopPropagation()}
                                   >

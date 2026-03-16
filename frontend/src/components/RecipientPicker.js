@@ -3,7 +3,7 @@ import { bookingApi } from '../utils/bookingApi';
 
 const STANDARD_PRESETS = [
   { label: 'All members', filter: { type: 'all' } },
-  { label: 'Parents only', filter: { type: 'role', role: 'PARENT' } },
+  { label: 'Adults only', filter: { type: 'role', role: 'ADULT' } },
   { label: 'Coaches only', filter: { type: 'role', role: 'COACH' } },
   { label: 'Active membership', filter: { type: 'active_membership' } },
   { label: 'Expiring credits', filter: { type: 'expiring_credits' } },

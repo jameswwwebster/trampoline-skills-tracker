@@ -255,7 +255,7 @@ export const AuthProvider = ({ children }) => {
 
   // Helper functions for checking user roles
   const isClubAdmin = user?.role === 'CLUB_ADMIN';
-  const isParent = user?.role === 'PARENT';
+  const isAdult = user?.role === 'ADULT';
   const isChild = user?.role === 'CHILD';
   const isCoach = user?.role === 'COACH';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
@@ -268,7 +268,7 @@ export const AuthProvider = ({ children }) => {
     error,
     loading,
     isClubAdmin,
-    isParent,
+    isAdult,
     isChild,
     isCoach,
     isSuperAdmin,
@@ -289,9 +289,9 @@ export const AuthProvider = ({ children }) => {
     canReadCompetitions: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
     canReadLevels: true, // All authenticated users can read levels
     canViewProgress: true, // All authenticated users can view progress (with backend access controls)
-    canViewOwnProgress: user?.role === 'PARENT' || user?.role === 'CHILD', // Parents and children can view progress
-    needsProgressNavigation: user?.role === 'PARENT' || user?.role === 'CHILD', // Parents and children need progress navigation
-    needsShareCodeManagement: user?.role === 'PARENT', // Only parents need share code management
+    canViewOwnProgress: user?.role === 'ADULT' || user?.role === 'CHILD', // Adults and children can view progress
+    needsProgressNavigation: user?.role === 'ADULT' || user?.role === 'CHILD', // Adults and children need progress navigation
+    needsShareCodeManagement: user?.role === 'ADULT', // Only adults need share code management
     needsCodeOfDayManagement: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH' // Club admins and coaches can manage code of the day
   };
 

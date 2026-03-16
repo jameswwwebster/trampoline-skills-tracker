@@ -100,8 +100,8 @@ const Profile = () => {
         return 'Club Administrator';
       case 'COACH':
         return 'Coach';
-      case 'PARENT':
-        return 'Parent/Guardian';
+      case 'ADULT':
+        return 'Adult/Guardian';
       case 'GYMNAST':
         return 'Gymnast';
       default:
