@@ -325,7 +325,8 @@
 
 /* ── Cart bar ── */
 .booking-calendar__cart-bar {
-  margin-top: 0.75rem;
+  max-width: 600px;
+  margin: 0.75rem auto 0;
   background: var(--booking-accent-gradient);
   color: var(--booking-text-on-dark);
   border-radius: var(--booking-radius);
