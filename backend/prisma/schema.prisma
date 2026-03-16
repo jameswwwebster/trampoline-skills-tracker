@@ -711,7 +711,7 @@ model ClosurePeriod {
 enum UserRole {
   CLUB_ADMIN
   COACH
-  PARENT
+  ADULT
   GYMNAST
   SUPER_ADMIN
 }
