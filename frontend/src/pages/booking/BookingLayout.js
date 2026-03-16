@@ -307,7 +307,8 @@ export default function BookingLayout() {
                     <NavLink to="/booking/admin/messages" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Messages</NavLink>
                     <NavLink to="/booking/admin/recipient-groups" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Recipient Groups</NavLink>
                     <NavLink to="/booking/admin/audit-log" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Audit Log</NavLink>
-                    <NavLink to="/booking/admin/charges" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Credits &amp; Charges</NavLink>
+                    <NavLink to="/booking/admin/credits" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Credits</NavLink>
+                    <NavLink to="/booking/admin/charges" className="booking-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Charges</NavLink>
                   </div>
                 )}
               </div>
