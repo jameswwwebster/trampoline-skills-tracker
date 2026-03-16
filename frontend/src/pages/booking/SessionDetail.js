@@ -71,7 +71,7 @@ export default function SessionDetail({
     : myGymnasts;
 
   const alreadyBookedGymnastIds = new Set(
-    session?.bookings?.flatMap(b => b.lines.map(l => l.gymnast.id)) ?? []
+    session?.bookings?.filter(b => b.status === 'CONFIRMED').flatMap(b => b.lines.map(l => l.gymnast.id)) ?? []
   );
 
   const bookableGymnasts = eligibleGymnasts.filter(g => !g.hasMembership);
