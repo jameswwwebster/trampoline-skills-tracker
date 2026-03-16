@@ -153,6 +153,7 @@ router.get('/:instanceId', auth, async (req, res) => {
       activeCommitments,
       availableSlots: Math.max(0, capacity - bookedCount),
       cancelledAt: instance.cancelledAt,
+      pricePerGymnast: instance.template.pricePerGymnast,
       type: instance.template.type,
       templateId: instance.templateId,
       bookings: instance.bookings,
