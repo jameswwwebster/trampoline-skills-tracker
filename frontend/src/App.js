@@ -72,6 +72,7 @@ import AdminHelpPage from './pages/booking/admin/AdminHelpPage';
 import AdminRegister from './pages/booking/admin/AdminRegister';
 import PublicHome from './pages/public/PublicHome';
 import PublicPolicies from './pages/public/PublicPolicies';
+import PublicTimetable from './pages/public/PublicTimetable';
 import './App.css';
 
 function PageMeta() {
@@ -158,6 +159,7 @@ function AppContent() {
         {/* Public website routes — no authentication required */}
         <Route path="/" element={<PublicHome />} />
         <Route path="/policies" element={<PublicPolicies />} />
+        <Route path="/timetable" element={<PublicTimetable />} />
         <Route path="/login" element={<Login />} />
         <Route path="/child-login" element={<ChildLogin />} />
         <Route path="/register" element={<Register />} />

@@ -1,0 +1,213 @@
+/* ─── Timetable hero ─────────────────────────────────────────────────────── */
+.tt-hero {
+  background: var(--secondary-color);
+  background: linear-gradient(135deg, #1e1e2e 0%, var(--secondary-color) 100%);
+  color: #fff;
+  padding: 3rem 1rem 2.5rem;
+  text-align: center;
+}
+
+.tt-hero-inner {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.tt-hero-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0 0 0.5rem;
+}
+
+.tt-hero-title {
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  line-height: 1.15;
+}
+
+.tt-hero-sub {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+/* ─── Content section ────────────────────────────────────────────────────── */
+.tt-section {
+  padding: 2rem 1rem 3rem;
+  background: var(--background-color);
+  flex: 1;
+}
+
+.tt-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* ─── Discipline key ─────────────────────────────────────────────────────── */
+.tt-key {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: #555;
+  margin-bottom: 1.25rem;
+}
+
+/* ─── Day tabs ───────────────────────────────────────────────────────────── */
+.tt-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #d4d4d8;
+}
+
+.tt-tab {
+  padding: 0.55rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: var(--font-family);
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tt-tab:hover {
+  color: var(--secondary-color);
+}
+
+.tt-tab--active {
+  color: var(--secondary-color);
+  border-bottom-color: var(--secondary-color);
+}
+
+/* ─── Discipline tags ────────────────────────────────────────────────────── */
+.tt-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.tt-tag--tri {
+  background: rgba(124, 53, 232, 0.12);
+  color: #6a1fd4;
+}
+
+.tt-tag--dmt {
+  background: rgba(230, 126, 34, 0.12);
+  color: #c0661a;
+}
+
+.tt-tag--trs {
+  background: rgba(39, 174, 96, 0.12);
+  color: #1a7a4a;
+}
+
+/* ─── Scrollable table wrapper ───────────────────────────────────────────── */
+.tt-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 8px;
+  border: 1px solid #d4d4d8;
+  background: #fff;
+}
+
+/* ─── Table ──────────────────────────────────────────────────────────────── */
+.tt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.tt-table thead tr {
+  background: #f4f4f6;
+  border-bottom: 2px solid #d4d4d8;
+}
+
+.tt-table th {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #555;
+  white-space: nowrap;
+}
+
+.tt-table td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid #ebebed;
+  vertical-align: middle;
+}
+
+.tt-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tt-table tbody tr:hover {
+  background: #f9f9fb;
+}
+
+/* ─── Cell variants ──────────────────────────────────────────────────────── */
+.tt-competitor {
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.tt-event {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.tt-event-name {
+  color: #444;
+}
+
+.tt-center {
+  text-align: center;
+  color: #555;
+}
+
+.tt-time {
+  color: #444;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tt-time--compete {
+  font-weight: 600;
+  color: var(--secondary-color);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .tt-hero {
+    padding: 2rem 1rem 1.75rem;
+  }
+
+  .tt-table {
+    font-size: 0.8rem;
+  }
+
+  .tt-table th,
+  .tt-table td {
+    padding: 0.5rem 0.65rem;
+  }
+}
