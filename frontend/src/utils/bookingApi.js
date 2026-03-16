@@ -146,6 +146,9 @@ export const bookingApi = {
   adminAddChild: (data) =>
     axios.post(`${API_URL}/gymnasts/admin-add-child`, data, { headers: getHeaders() }),
 
+  markAdultAsGymnast: (userId) =>
+    axios.post(`${API_URL}/gymnasts/admin-mark-adult`, { userId }, { headers: getHeaders() }),
+
   deleteGymnast: (id) =>
     axios.delete(`${API_URL}/booking/admin/gymnasts/${id}`, { headers: getHeaders() }),
 

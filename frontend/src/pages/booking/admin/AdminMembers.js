@@ -1270,6 +1270,15 @@ function MemberDetail({ userId, onRemoved }) {
     }
   };
 
+  const handleMarkAsGymnast = async (userId) => {
+    try {
+      await bookingApi.markAdultAsGymnast(userId);
+      load(); // refresh the member list
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to create gymnast record');
+    }
+  };
+
   useEffect(() => { load(); }, [userId]);
 
   if (loading) return <p className="bk-muted" style={{ padding: '1rem' }}>Loading...</p>;
@@ -1594,6 +1603,16 @@ function MemberDetail({ userId, onRemoved }) {
 
         {member.gymnasts.length === 0 && !showAddChild && (
           <p className="bk-muted" style={{ margin: '0 0 0.5rem' }}>No gymnasts linked.</p>
+        )}
+
+        {!member.gymnasts.some(g => g.isSelf) && (
+          <button
+            className="bk-btn bk-btn--sm"
+            style={{ marginTop: '0.5rem' }}
+            onClick={() => handleMarkAsGymnast(member.id)}
+          >
+            Mark as gymnast
+          </button>
         )}
 
         {[...member.gymnasts].sort((a, b) => (b.isSelf ? 1 : 0) - (a.isSelf ? 1 : 0)).map(g => (
