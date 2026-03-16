@@ -319,12 +319,21 @@ function BgActionBar({ gymnast, onUpdated }) {
             Edit
           </button>
         </div>
-      ) : (
-        /* INVALID state */
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {gymnast.bgNumber && <span style={{ fontFamily: 'monospace', color: 'var(--booking-danger)' }}>{gymnast.bgNumber}</span>}
-          <button className="bk-btn bk-btn--sm bk-btn--primary" style={{ fontSize: '0.75rem' }} onClick={() => { setInput(gymnast.bgNumber || ''); setEditing(true); }}>
+      ) : gymnast.bgNumberStatus === 'INVALID' ? (
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+          <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>{gymnast.bgNumber}</span>
+          <button className="bk-btn bk-btn--sm bk-btn--primary" style={{ fontSize: '0.75rem' }} onClick={() => setEditing(true)}>
             Edit BG number
+          </button>
+        </div>
+      ) : (
+        // null (no number) or VERIFIED — show enter/edit option
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+          {gymnast.bgNumberStatus === 'VERIFIED' && (
+            <span style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}>{gymnast.bgNumber}</span>
+          )}
+          <button className="bk-btn bk-btn--sm" style={{ fontSize: '0.75rem' }} onClick={() => setEditing(true)}>
+            {gymnast.bgNumber ? 'Edit BG number' : 'Enter BG number'}
           </button>
         </div>
       )}
@@ -794,10 +803,8 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
         )}
       </div>
 
-      {/* BG action bar (PENDING or INVALID) */}
-      {(g.bgNumberStatus === 'PENDING' || g.bgNumberStatus === 'INVALID') && (
-        <BgActionBar gymnast={g} onUpdated={onUpdated} />
-      )}
+      {/* BG action bar */}
+      <BgActionBar gymnast={g} onUpdated={onUpdated} />
 
       {/* Remove gymnast */}
       {!g.isSelf && (
