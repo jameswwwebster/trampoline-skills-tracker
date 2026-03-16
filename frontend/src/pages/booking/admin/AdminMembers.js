@@ -1271,6 +1271,7 @@ function MemberDetail({ userId, onRemoved }) {
   };
 
   const handleMarkAsGymnast = async (userId) => {
+    if (!window.confirm('Create a gymnast record for this adult member?')) return;
     try {
       await bookingApi.markAdultAsGymnast(userId);
       load(); // refresh the member list
