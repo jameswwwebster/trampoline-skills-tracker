@@ -53,22 +53,107 @@ This is fragile (JS bundle could change), but accepted as a known trade-off.
 }
 ```
 
+### Searching by gymnast name
+
+`fetchSearchResults` also accepts a gymnast name directly (not just club name):
+
+```
+GET /api/fetchSearchResults?db=British2025&searchTerm=Jake%20Westgarth
+```
+
+Returns all results for that competitor across all disciplines. Works for paired TRS competitors too — searching either name returns the pair (e.g. searching "Tristan Scott" returns "Hector Shipley / Tristan Scott").
+
+### Videos
+
+Each exercise in the result has a `Videos` array. Videos are served from a public Cloudflare CDN — no auth required:
+
+```
+https://cdn.scorebase.co.uk/{db}/{Variant}/{Filename}
+```
+
+Example:
+```
+https://cdn.scorebase.co.uk/British2025/HQ/Trampoline Tumbling and DMT British Championships - DMT - Senior Men - WESTGARTH Jake - Apollo Trampoline Club - Exercise 1 - Angle 1 (158).mp4
+```
+
+- `Variant`: `HQ` or `LQ`
+- `Filename`: taken directly from `Videos[].Filename` in the result JSON
+- Videos can be linked to or inlined with a `<video>` tag
+
 ### Event discovery
 
 There is no "list all events" API endpoint. Event `db` codes must be manually entered by admin. Known codes: `British2025`, `NAGF2025`. The `db` value is the event's `EventShortName` on Scorebase.
 
 ---
 
+## Gymdata (English Series)
+
+Gymdata (`gymdata.co.uk`) is a traditional server-rendered ASP.NET site with **no JSON API**. Results are published as PDF downloads only.
+
+### Document list endpoint
+
+```
+GET https://www.gymdata.co.uk/events/download-documents.aspx?eid={eventId}
+```
+
+Returns an HTML page listing all downloadable documents for the event. Result PDFs are identifiable by filename (e.g. "All DMT Results.pdf", "All TRI Results.pdf", "All TRS Results.pdf"). Document IDs can be scraped from `DocumentID=` occurrences in the HTML (each ID appears 3 times; de-duplicate to get ordered list).
+
+### PDF download endpoint
+
+```
+GET https://www.gymdata.co.uk/Download.ashx?ProcessType=document&EventID={eid}&DocumentID={did}
+```
+
+Returns the PDF directly (`Content-Type: application/pdf`). No auth required.
+
+### PDF structure
+
+Each PDF covers one discipline across all categories. Text extraction with `pdfplumber` works cleanly. Example result rows:
+
+```
+357 Troy Holliday Liverpool DMT Silver 9-10 Male 38.900 5 =
+357 Troy Holliday Liverpool DMT Silver 9-10 Male Final 1 3 1.700 8 6 20 16.600 18.300 18.300 7
+```
+
+Format: `{entryNo} {Name} {Club} {Category} {TotalScore} {Rank}`
+Final rows add: `{round} {exerciseNo} {diff} {deductions...} {total} {rank}`
+
+### Fetch approach
+
+1. Fetch the document list page for the event ID
+2. Scrape DocumentIDs and filenames — pick all files containing "Results"
+3. Download each results PDF
+4. Extract all text, search for gymnast name
+5. Parse surrounding lines for rank and score
+
+This finds a gymnast across all disciplines and categories in one pass — no need to know which category they competed in.
+
+### Known event IDs
+
+| Event | EventID |
+|---|---|
+| 2025 EG TRA+DMT Championships | 2565 |
+
+Event IDs must be manually configured (no list endpoint found).
+
+### No videos
+
+Gymdata PDFs contain no video links.
+
+---
+
 ## Competition Series
 
-There are four competition series, each with their own scoring representations:
+There are four competition series, each with their own data source:
 
-- **British** — e.g., `British2025`
-- **English**
-- **League**
-- **Regional**
+| Series | Platform | Method |
+|---|---|---|
+| British | Scorebase | JSON API (`fetchSearchResults` by name) |
+| English | Gymdata | PDF download + text parse |
+| League | TBD | TBD |
+| Regional | TBD | TBD |
 
-Scoring structures are assumed to be significantly different between series. The solution is to store raw JSON + a small set of normalised fields rather than a per-series schema.
+Scoring structures differ significantly between series. The solution is to store raw data (JSON or parsed text) + a small set of normalised fields rather than a per-series schema.
 
 ---
 
@@ -77,7 +162,7 @@ Scoring structures are assumed to be significantly different between series. The
 ### Data model
 
 - **`CompetitionSeries`** — "British", "English", "League", "Regional"; name + description
-- **`CompetitionEvent`** — belongs to a series; `dbCode` (e.g. `British2025`), event name, date, location (fetched from Scorebase on creation), `lastFetchedAt`
+- **`CompetitionEvent`** — belongs to a series; source-specific identifier (Scorebase `dbCode` or Gymdata `eventId`), event name, date, location, `lastFetchedAt`
 - **`CompetitionResult`** — belongs to event + gymnast (nullable for unmatched); `discipline`, `category`, `rank`, `totalScore`, `scorebaseCompetitorId`, `rawData` (JSON blob), `matchStatus` (MATCHED / UNMATCHED / IGNORED)
 - **`Gymnast.scorebaseClubName`** — the gymnast's registered club name on Scorebase (may differ from the app's club name)
 
@@ -106,7 +191,8 @@ The admin coaches gymnasts from multiple clubs. Each gymnast stores their own `s
 
 ## Open Questions
 
-- Exact scoring field differences between British / English / League / Regional — to be explored when resuming
+- League and Regional data sources not yet investigated
+- Exact scoring field differences between series — to be explored when resuming
 - Whether to store `scorebaseCompetitorId` on the `Gymnast` record directly (for future matching) or only on `CompetitionResult`
 - UI detail not yet designed
 
