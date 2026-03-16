@@ -202,11 +202,19 @@
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--booking-radius);
   min-width: 140px;
+  max-width: calc(100vw - 1rem);
   z-index: 200;
   display: flex;
   flex-direction: column;
   padding: 0.25rem 0;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+@media (max-width: 480px) {
+  .booking-layout__dropdown-menu {
+    left: auto;
+    right: 0;
+  }
 }
 
 .booking-layout__dropdown-item {

@@ -139,6 +139,9 @@
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 2rem;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .bk-table thead tr {
@@ -162,6 +165,12 @@
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .bk-grid-2 {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Flex row */
