@@ -1352,6 +1352,41 @@ function MemberDetail({ userId, onRemoved }) {
               </li>
             </ul>
 
+            {/* Credits inline expand */}
+            {creditsOpen && (
+              <div style={{
+                marginTop: '0.5rem', background: 'rgba(124,53,232,0.05)',
+                border: '1px solid rgba(124,53,232,0.15)', borderRadius: 'var(--booking-radius)',
+                padding: '0.65rem 0.75rem',
+              }}>
+                {totalCredits === 0 && !assigningCredit && (
+                  <p style={{ color: 'var(--booking-text-muted)', fontSize: '0.875rem', margin: '0 0 0.5rem' }}>No credits.</p>
+                )}
+                {member.credits.map(c => (
+                  <div key={c.id} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    fontSize: '0.875rem', padding: '0.2rem 0',
+                    borderBottom: '1px solid var(--booking-bg-light)',
+                  }}>
+                    <span>£{(c.amount / 100).toFixed(2)}</span>
+                    <span className="bk-muted">Expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
+                    {!c.usedOnBookingId && (
+                      <button
+                        className="bk-btn bk-btn--sm"
+                        style={{ fontSize: '0.75rem', color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+                        onClick={() => handleDeleteCredit(c.id)}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {assigningCredit && (
+                  <AssignCreditForm userId={member.id} onDone={() => { setAssigningCredit(false); load(); }} />
+                )}
+              </div>
+            )}
+
             {/* Charges row — standalone li with flex header */}
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               <li
@@ -1400,41 +1435,6 @@ function MemberDetail({ userId, onRemoved }) {
               }}>
                 Archived
               </span>
-            )}
-
-            {/* Credits inline expand */}
-            {creditsOpen && (
-              <div style={{
-                marginTop: '0.5rem', background: 'rgba(124,53,232,0.05)',
-                border: '1px solid rgba(124,53,232,0.15)', borderRadius: 'var(--booking-radius)',
-                padding: '0.65rem 0.75rem',
-              }}>
-                {totalCredits === 0 && !assigningCredit && (
-                  <p style={{ color: 'var(--booking-text-muted)', fontSize: '0.875rem', margin: '0 0 0.5rem' }}>No credits.</p>
-                )}
-                {member.credits.map(c => (
-                  <div key={c.id} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    fontSize: '0.875rem', padding: '0.2rem 0',
-                    borderBottom: '1px solid var(--booking-bg-light)',
-                  }}>
-                    <span>£{(c.amount / 100).toFixed(2)}</span>
-                    <span className="bk-muted">Expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
-                    {!c.usedOnBookingId && (
-                      <button
-                        className="bk-btn bk-btn--sm"
-                        style={{ fontSize: '0.75rem', color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
-                        onClick={() => handleDeleteCredit(c.id)}
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {assigningCredit && (
-                  <AssignCreditForm userId={member.id} onDone={() => { setAssigningCredit(false); load(); }} />
-                )}
-              </div>
             )}
 
             {chargesOpen && (
