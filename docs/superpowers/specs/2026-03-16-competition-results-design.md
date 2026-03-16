@@ -142,6 +142,76 @@ Gymdata PDFs contain no video links.
 
 ---
 
+## Trampoline League (League Series)
+
+The League series uses `results.trampolineleague.com` — a **Meteor 2.16 + Angular SPA** with a public DDP (WebSocket) backend. No authentication required.
+
+- **Backend:** `https://league-score-results.osc-fr1.scalingo.io/`
+- **Protocol:** DDP over SockJS (`/sockjs/{server}/{session}/xhr`)
+- **No REST API** — data is only accessible via DDP subscriptions
+
+### DDP subscriptions
+
+| Subscription | Parameters | Returns |
+|---|---|---|
+| `CompetitionEvents` | `'trampolineleague.com'` | All events (41 events, 2015–2025) |
+| `CompetitionGroups_ByCompetitionEvent` | `domain`, `eventId` (OID) | Categories/groups for one event |
+| `Scores_ByCompetitionEventAndCompetitionGroup` | `domain`, `eventId` (OID), `groupId` (OID) | All scores for one category |
+| `LeaguePoints` | `eventId` (OID) | League point standings |
+
+MongoDB ObjectIDs are passed as EJSON: `{"$type": "oid", "$value": "24-char-hex"}`.
+
+### Score data shape (key fields)
+
+```json
+{
+  "competitorName": "Jake Westgarth",
+  "club": "Apollo Trampoline Club",
+  "bgNumber": "12345",
+  "totalScore": 82.6,
+  "rank": 1,
+  "rounds": [
+    { "execution": 18.3, "difficulty": 9.2, "penalties": 0, "total": 27.5 }
+  ],
+  "videos": ["https://vimeo.com/..."]
+}
+```
+
+### Event discovery
+
+Subscribe to `CompetitionEvents` with `'trampolineleague.com'` once to get all 41 events with their MongoDB ObjectIDs. Events can be automatically fetched — no manual ID entry needed.
+
+### Videos
+
+Video links are Vimeo URLs embedded directly in the score data. No CDN path construction needed.
+
+---
+
+## TScore (Regional Series)
+
+Regional competitions use **TScore Live** (`tscore.co.uk/Live/`) — a flat HTML results site with no API. Results are scrapable HTML tables.
+
+- **Index:** `https://tscore.co.uk/Live/index.html`
+- **Event URL pattern:** `https://tscore.co.uk/Live/YYYY-mmm-CODE/index.html`
+- **Category pages:** `E132.html`, `D143.html` etc. (separate HTML file per category)
+- **Format:** HTML tables with competitor name, club, judge scores (S1–S10), execution, difficulty, penalties, total, rank
+
+Regions confirmed using TScore: South East, East Midlands, East, Welsh, North, Central Zone.
+Some northern regions (NWGA, NETTC) also publish results as PDF/Excel on their own sites independently of TScore.
+
+### Fetch approach
+
+1. Fetch the index page to discover event URLs
+2. Fetch the event's `index.html` to discover category page filenames
+3. Fetch each category HTML, search for gymnast name, extract score row
+4. No videos
+
+### No videos
+
+TScore has no video content.
+
+---
+
 ## Competition Series
 
 There are four competition series, each with their own data source:
@@ -150,8 +220,8 @@ There are four competition series, each with their own data source:
 |---|---|---|
 | British | Scorebase | JSON API (`fetchSearchResults` by name) |
 | English | Gymdata | PDF download + text parse |
-| League | TBD | TBD |
-| Regional | TBD | TBD |
+| League | Trampoline League (Meteor DDP) | WebSocket DDP subscriptions |
+| Regional | TScore Live | HTML scraping |
 
 Scoring structures differ significantly between series. The solution is to store raw data (JSON or parsed text) + a small set of normalised fields rather than a per-series schema.
 
@@ -191,10 +261,11 @@ The admin coaches gymnasts from multiple clubs. Each gymnast stores their own `s
 
 ## Open Questions
 
-- League and Regional data sources not yet investigated
 - Exact scoring field differences between series — to be explored when resuming
 - Whether to store `scorebaseCompetitorId` on the `Gymnast` record directly (for future matching) or only on `CompetitionResult`
+- For League: how to match gymnasts — BG number is present in score data, so `Gymnast.bgNumber` could be used as a reliable match key (better than name matching)
 - UI detail not yet designed
+- Regional: which specific events to track — needs admin input on relevant regions
 
 ---
 
