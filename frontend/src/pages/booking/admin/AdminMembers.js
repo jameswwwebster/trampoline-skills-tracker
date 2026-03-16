@@ -1813,7 +1813,7 @@ export default function AdminMembers() {
 
       {/* Role filter */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
-        {[{ value: '', label: 'All roles' }, { value: 'CLUB_ADMIN', label: 'Admin' }, { value: 'COACH', label: 'Coach' }, { value: 'PARENT', label: 'Parent' }, { value: 'GYMNAST', label: 'Gymnast' }].map(opt => (
+        {[{ value: '', label: 'All roles' }, { value: 'CLUB_ADMIN', label: 'Admin' }, { value: 'COACH', label: 'Coach' }, { value: 'PARENT', label: 'Parent' }].map(opt => (
           <button
             key={opt.value}
             className="bk-btn bk-btn--sm"
