@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
 import '../booking-shared.css';
 
 // ── Shared style tokens ────────────────────────────────────────────────────────
@@ -98,6 +100,10 @@ function Divider() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminHelpPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
+  if (!isAdmin) return <Navigate to="/booking/help" replace />;
+
   return (
     <div className="bk-page bk-page--md">
       <h2 style={{ marginBottom: '0.4rem' }}>Coach &amp; Admin Help</h2>
