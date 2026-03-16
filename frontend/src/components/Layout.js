@@ -180,6 +180,9 @@ const Layout = () => {
                 <Link to="/invites" className={isActive('/invites')}>
                   Invitations
                 </Link>
+                <Link to="/adults" className={isActive('/adults')}>
+                  Adults
+                </Link>
                 <Link to="/adult-requests" className={isActive('/adult-requests')}>
                   Adult Requests
                 </Link>
@@ -321,6 +324,9 @@ const Layout = () => {
               </Link>
               <Link to="/invites" className={isActive('/invites')}>
                 Invitations
+              </Link>
+              <Link to="/adults" className={isActive('/adults')}>
+                Adults
               </Link>
               <Link to="/adult-requests" className={isActive('/adult-requests')}>
                 Adult Requests
