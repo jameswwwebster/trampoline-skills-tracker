@@ -484,6 +484,22 @@ class EmailService {
     }, { to: email, amount, description });
   }
 
+  async sendChargePaidWithCreditEmail(email, firstName, description, amountPence) {
+    const amount = `£${(amountPence / 100).toFixed(2)}`;
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject: 'A charge on your account has been paid using your credit',
+      html: brandedHtml('Charge paid with credit', `
+        <p style="margin-top:0">Hi ${firstName},</p>
+        <p>A charge of <strong>${amount}</strong> (${description}) has been added to your account and automatically paid using your available credit balance.</p>
+        <p style="color:#27ae60;font-weight:600">No further payment is required.</p>
+        ${muted('If you have any questions, please contact the club.')}
+      `),
+      text: `Hi ${firstName},\n\nA charge of ${amount} (${description}) has been added to your account and automatically paid using your available credit balance.\n\nNo further payment is required.\n\nIf you have any questions, please contact the club.`,
+    }, { to: email, amount, description });
+  }
+
   async sendChargeDeletedEmail(email, firstName, description, amountPence) {
     const amount = `£${(amountPence / 100).toFixed(2)}`;
     return this._send({

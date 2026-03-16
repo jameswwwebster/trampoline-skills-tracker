@@ -38,7 +38,11 @@ export default function AdminCharges() {
                 <td>{c.description}</td>
                 <td>£{(c.amount / 100).toFixed(2)}</td>
                 <td>{new Date(c.dueDate).toLocaleDateString('en-GB')}</td>
-                <td>{c.paidAt ? <span style={{ color: 'var(--booking-success)' }}>Paid</span> : 'Unpaid'}</td>
+                <td>
+                  {c.paidAt
+                    ? <span style={{ color: 'var(--booking-success)' }}>{c.paidWithCredit ? 'Paid (credit)' : 'Paid'}</span>
+                    : 'Unpaid'}
+                </td>
               </tr>
             ))}
           </tbody>

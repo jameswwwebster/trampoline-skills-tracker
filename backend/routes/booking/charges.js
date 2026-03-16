@@ -74,17 +74,71 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       metadata: { userId: value.userId, amount: value.amount, description: value.description },
     });
 
-    if (targetUser.club.emailEnabled) {
-      await emailService.sendChargeCreatedEmail(
-        targetUser.email,
-        targetUser.firstName,
-        value.description,
-        value.amount,
-        value.dueDate,
-      );
+    // Auto-pay with credit if the user has enough
+    const now = new Date();
+    const availableCredits = await prisma.credit.findMany({
+      where: { userId: value.userId, usedAt: null, expiresAt: { gt: now } },
+      orderBy: { expiresAt: 'asc' },
+    });
+    const totalCredit = availableCredits.reduce((s, c) => s + c.amount, 0);
+
+    let paidWithCredit = false;
+    if (totalCredit >= value.amount) {
+      let remaining = value.amount;
+      for (const credit of availableCredits) {
+        if (remaining <= 0) break;
+        if (credit.amount <= remaining) {
+          // Consume whole credit
+          await prisma.credit.update({
+            where: { id: credit.id },
+            data: { usedAt: now, usedOnChargeId: charge.id },
+          });
+          remaining -= credit.amount;
+        } else {
+          // Credit overshoots — consume it and return change as a new credit
+          await prisma.credit.update({
+            where: { id: credit.id },
+            data: { usedAt: now, usedOnChargeId: charge.id },
+          });
+          await prisma.credit.create({
+            data: {
+              userId: value.userId,
+              amount: credit.amount - remaining,
+              expiresAt: credit.expiresAt,
+            },
+          });
+          remaining = 0;
+        }
+      }
+      await prisma.charge.update({
+        where: { id: charge.id },
+        data: { paidAt: now, paidWithCredit: true },
+      });
+      paidWithCredit = true;
+
+      await audit({
+        userId: req.user.id, clubId: req.user.clubId,
+        action: 'charge.paidWithCredit', entityType: 'Charge', entityId: charge.id,
+        metadata: { userId: value.userId, amount: value.amount },
+      });
     }
 
-    res.status(201).json(charge);
+    if (targetUser.club.emailEnabled) {
+      if (paidWithCredit) {
+        emailService.sendChargePaidWithCreditEmail(
+          targetUser.email, targetUser.firstName, value.description, value.amount,
+        ).catch(err => console.error('sendChargePaidWithCreditEmail failed:', err));
+      } else {
+        emailService.sendChargeCreatedEmail(
+          targetUser.email, targetUser.firstName, value.description, value.amount, value.dueDate,
+        ).catch(err => console.error('sendChargeCreatedEmail failed:', err));
+      }
+    }
+
+    const finalCharge = paidWithCredit
+      ? await prisma.charge.findUnique({ where: { id: charge.id } })
+      : charge;
+    res.status(201).json(finalCharge);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

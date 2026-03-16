@@ -542,10 +542,12 @@ model Charge {
   dueDate               DateTime
   paidAt                DateTime?
   paidOnPaymentIntentId String?
+  paidWithCredit        Boolean   @default(false)
   createdAt             DateTime  @default(now())
 
-  user  User  @relation(fields: [userId], references: [id])
-  club  Club  @relation(fields: [clubId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+  club    Club     @relation(fields: [clubId], references: [id])
+  credits Credit[] @relation("UsedOnCharge")
 
   @@map("charges")
 }
@@ -666,10 +668,12 @@ model Credit {
   expiresAt       DateTime
   usedAt          DateTime?
   usedOnBookingId String?
+  usedOnChargeId  String?
   sourceBookingId String?
   createdAt       DateTime  @default(now())
   user            User      @relation(fields: [userId], references: [id])
   usedOnBooking   Booking?  @relation("UsedOnBooking", fields: [usedOnBookingId], references: [id])
+  usedOnCharge    Charge?   @relation("UsedOnCharge", fields: [usedOnChargeId], references: [id])
   sourceBooking   Booking?  @relation("SourceBooking", fields: [sourceBookingId], references: [id])
 
   @@map("credits")
