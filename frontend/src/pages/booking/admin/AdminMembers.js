@@ -4,6 +4,12 @@ import AdminRemovedMembers from './AdminRemovedMembers';
 import '../booking-shared.css';
 
 const ROLE_LABELS = { CLUB_ADMIN: 'Admin', COACH: 'Coach', PARENT: 'Parent', GYMNAST: 'Gymnast' };
+const ROLE_COLORS = {
+  CLUB_ADMIN: { background: 'rgba(124,53,232,0.12)', color: 'var(--booking-accent)' },
+  COACH:      { background: 'rgba(41,128,185,0.12)', color: '#2980b9' },
+  PARENT:     { background: 'rgba(39,174,96,0.12)',  color: '#27ae60' },
+  GYMNAST:    { background: 'rgba(230,126,34,0.12)', color: '#e67e22' },
+};
 
 function AssignCreditForm({ userId, onDone }) {
   const [form, setForm] = useState({ amount: '', expiresInDays: 90 });
@@ -1688,8 +1694,9 @@ export default function AdminMembers() {
   const [showMemberships, setShowMemberships] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
   const [showRemovedMembers, setShowRemovedMembers] = useState(false);
+  const [roleFilter, setRoleFilter] = useState('');
 
-  useEffect(() => { setPage(1); }, [search, letterFilter]);
+  useEffect(() => { setPage(1); }, [search, letterFilter, roleFilter]);
 
   const load = () =>
     bookingApi.getMembers()
@@ -1747,7 +1754,8 @@ export default function AdminMembers() {
   const filtered = members.filter(u => {
     const matchesSearch = `${u.firstName} ${u.lastName} ${u.email} ${childrenByUser[u.id] || ''}`.toLowerCase().includes(q);
     const matchesLetter = !letterFilter || (u.lastName || u.firstName || '').toUpperCase().startsWith(letterFilter);
-    return matchesSearch && matchesLetter;
+    const matchesRole = !roleFilter || u.role === roleFilter;
+    return matchesSearch && matchesLetter && matchesRole;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -1803,6 +1811,23 @@ export default function AdminMembers() {
         style={{ marginBottom: '0.75rem' }}
       />
 
+      {/* Role filter */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
+        {[{ value: '', label: 'All roles' }, { value: 'CLUB_ADMIN', label: 'Admin' }, { value: 'COACH', label: 'Coach' }, { value: 'PARENT', label: 'Parent' }, { value: 'GYMNAST', label: 'Gymnast' }].map(opt => (
+          <button
+            key={opt.value}
+            className="bk-btn bk-btn--sm"
+            style={{
+              border: '1px solid var(--booking-border)',
+              fontWeight: roleFilter === opt.value ? 700 : 400,
+              ...(roleFilter === opt.value && opt.value ? ROLE_COLORS[opt.value] : {}),
+              ...(roleFilter === opt.value && !opt.value ? { background: 'var(--booking-accent)', color: '#fff' } : {}),
+            }}
+            onClick={() => setRoleFilter(opt.value)}
+          >{opt.label}</button>
+        ))}
+      </div>
+
       {/* A–Z filter */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', margin: '0.5rem 0' }}>
         <button
@@ -1851,7 +1876,7 @@ export default function AdminMembers() {
                     <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{u.firstName} {u.lastName}</span>
                     <span style={{
                       fontSize: '0.7rem', fontWeight: 600, padding: '1px 7px', borderRadius: 4,
-                      background: 'rgba(124,53,232,0.1)', color: 'var(--booking-accent)',
+                      ...(ROLE_COLORS[u.role] || { background: 'rgba(0,0,0,0.08)', color: 'inherit' }),
                     }}>
                       {ROLE_LABELS[u.role] ?? u.role}
                     </span>

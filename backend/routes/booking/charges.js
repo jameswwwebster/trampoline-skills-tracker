@@ -114,12 +114,12 @@ router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
     });
 
     if (charge.user.club.emailEnabled) {
-      await emailService.sendChargeDeletedEmail(
+      emailService.sendChargeDeletedEmail(
         charge.user.email,
         charge.user.firstName,
         charge.description,
         charge.amount,
-      );
+      ).catch(err => console.error('sendChargeDeletedEmail failed:', err));
     }
 
     res.json({ success: true });

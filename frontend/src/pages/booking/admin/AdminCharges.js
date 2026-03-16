@@ -3,18 +3,11 @@ import { bookingApi } from '../../../utils/bookingApi';
 
 export default function AdminCharges() {
   const [charges, setCharges] = useState([]);
-  const [credits, setCredits] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      bookingApi.getAdminCharges(),
-      bookingApi.getAllCredits(),
-    ])
-      .then(([chargesRes, creditsRes]) => {
-        setCharges(chargesRes.data);
-        setCredits(creditsRes.data.filter(u => u.totalCredits > 0));
-      })
+    bookingApi.getAdminCharges()
+      .then(r => setCharges(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -33,35 +26,7 @@ export default function AdminCharges() {
 
   return (
     <div className="bk-page">
-      <h2>Credits &amp; Charges</h2>
-
-      <section style={{ marginBottom: '2.5rem' }}>
-        <h3>Credits</h3>
-        {credits.length === 0 ? (
-          <p style={{ color: 'var(--booking-text-muted)' }}>No active credits.</p>
-        ) : (
-          <table className="bk-table" style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th>Member</th>
-                <th>Email</th>
-                <th style={{ textAlign: 'right' }}>Total credits</th>
-              </tr>
-            </thead>
-            <tbody>
-              {credits.map(u => (
-                <tr key={u.id}>
-                  <td>{u.firstName} {u.lastName}</td>
-                  <td>{u.email}</td>
-                  <td style={{ textAlign: 'right', color: 'var(--booking-accent)', fontWeight: 600 }}>
-                    £{(u.totalCredits / 100).toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+      <h2>Charges</h2>
 
       <section>
         <h3>Charges</h3>
