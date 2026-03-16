@@ -29,8 +29,9 @@ import ImportGymnasts from './pages/ImportGymnasts';
 import AcceptInvite from './pages/AcceptInvite';
 import ClubSettings from './pages/ClubSettings';
 import Branding from './pages/Branding';
-import ParentConnectionRequest from './pages/ParentConnectionRequest';
-import ParentRequests from './pages/ParentRequests';
+import Adults from './pages/Adults';
+import AdultConnectionRequest from './pages/AdultConnectionRequest';
+import AdultRequests from './pages/AdultRequests';
 import CustomFields from './pages/CustomFields';
 import MyCertificates from './pages/MyCertificates';
 import Health from './pages/Health';
@@ -100,7 +101,7 @@ function PageMeta() {
       pathname.startsWith('/club-settings') ||
       pathname.startsWith('/branding') ||
       pathname.startsWith('/custom-fields') ||
-      pathname.startsWith('/parent-requests')
+      pathname.startsWith('/adult-requests')
     ) {
       document.title = 'Tracker | Trampoline Life';
       if (favicon) favicon.href = '/tl-favicon.png';
@@ -162,7 +163,7 @@ function AppContent() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/parent-connection-request" element={<ParentConnectionRequest />} />
+        <Route path="/adult-connection-request" element={<AdultConnectionRequest />} />
         <Route path="/invite/:token" element={<AcceptInvite />} />
         {/* Public cheatsheet routes - no authentication required */}
         <Route path="/cheatsheets" element={<Cheatsheets />} />
@@ -190,7 +191,8 @@ function AppContent() {
           <Route path="club-settings" element={<ClubSettings />} />
           <Route path="branding" element={<Branding />} />
           <Route path="custom-fields" element={<CustomFields />} />
-          <Route path="parent-requests" element={<ParentRequests />} />
+          <Route path="adults" element={<Adults />} />
+          <Route path="adult-requests" element={<AdultRequests />} />
           <Route path="health" element={<Health />} />
           <Route path="super-admin" element={<SuperAdmin />} />
         </Route>

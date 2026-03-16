@@ -322,8 +322,8 @@ const Layout = () => {
               <Link to="/invites" className={isActive('/invites')}>
                 Invitations
               </Link>
-              <Link to="/parent-requests" className={isActive('/parent-requests')}>
-                Parent Requests
+              <Link to="/adult-requests" className={isActive('/adult-requests')}>
+                Adult Requests
               </Link>
               <Link to="/import" className={isActive('/import')}>
                 Import Gymnasts
