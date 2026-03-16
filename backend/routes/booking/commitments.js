@@ -13,7 +13,7 @@ router.get('/mine', auth, async (req, res) => {
     const { templateId } = req.query;
     if (!templateId) return res.status(400).json({ error: 'templateId query param required' });
 
-    // Support both PARENT (gymnasts linked via guardians) and GYMNAST (userId field)
+    // Support both ADULT (gymnasts linked via guardians) and GYMNAST (userId field)
     const myGymnasts = await prisma.gymnast.findMany({
       where: {
         OR: [

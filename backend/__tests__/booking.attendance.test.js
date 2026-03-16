@@ -211,7 +211,7 @@ describe('GET /api/booking/attendance/:instanceId', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 403 for PARENT role', async () => {
+  it('returns 403 for ADULT role', async () => {
     const res = await request(app)
       .get(`/api/booking/attendance/${instance.id}`)
       .set('Authorization', `Bearer ${parentToken}`);
@@ -301,7 +301,7 @@ describe('POST /api/booking/attendance/:instanceId', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 403 for PARENT role', async () => {
+  it('returns 403 for ADULT role', async () => {
     const res = await request(app)
       .post(`/api/booking/attendance/${instance.id}`)
       .set('Authorization', `Bearer ${parentToken}`)

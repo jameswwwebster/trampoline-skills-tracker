@@ -592,7 +592,7 @@ router.post('/gymnasts', auth, requireRole(['CLUB_ADMIN']), upload.single('csvFi
             email,
             firstName,
             lastName,
-            role: 'PARENT',
+            role: 'ADULT',
             clubId: req.user.clubId,
             password: null // Will be set when they first log in
           };

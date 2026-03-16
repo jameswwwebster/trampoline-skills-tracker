@@ -68,7 +68,7 @@ router.get('/', auth, async (req, res) => {
 
     // Filter DMT sessions for parents with no approved gymnasts
     let visibleResult = result;
-    if (req.user.role === 'PARENT') {
+    if (req.user.role === 'ADULT') {
       const myGymnasts = await prisma.gymnast.findMany({
         where: {
           clubId,

@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
  *
  * Filter shapes:
  *   { type: 'all' }
- *   { type: 'role', role: 'PARENT' | 'COACH' }
+ *   { type: 'role', role: 'ADULT' | 'COACH' }
  *   { type: 'session', instanceId: string }
  *   { type: 'active_membership' }
  *   { type: 'expiring_credits', withinDays: number }

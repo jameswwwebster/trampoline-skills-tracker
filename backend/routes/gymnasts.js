@@ -434,7 +434,7 @@ router.patch('/:id/health-notes', auth, async (req, res) => {
 });
 
 // Get children for current parent/guardian
-router.get('/my-children', auth, requireRole(['PARENT']), async (req, res) => {
+router.get('/my-children', auth, requireRole(['ADULT']), async (req, res) => {
   try {
     const myChildren = await prisma.gymnast.findMany({
       where: {
@@ -749,7 +749,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       guardians = await prisma.user.findMany({
         where: {
           email: { in: guardianEmails },
-          role: 'PARENT'
+          role: 'ADULT'
         }
       });
 
@@ -885,7 +885,7 @@ router.get('/:id', auth, async (req, res) => {
     }
 
     // Check if user has permission to view this gymnast
-    if (req.user.role === 'PARENT' && !gymnast.guardians.some(g => g.id === req.user.id)) {
+    if (req.user.role === 'ADULT' && !gymnast.guardians.some(g => g.id === req.user.id)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 

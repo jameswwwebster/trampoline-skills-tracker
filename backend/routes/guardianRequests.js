@@ -388,7 +388,7 @@ router.post('/:requestId/process', auth, requireRole(['CLUB_ADMIN', 'COACH']), a
             email: request.requesterEmail,
             firstName: request.requesterFirstName,
             lastName: request.requesterLastName,
-            role: 'PARENT',
+            role: 'ADULT',
             clubId: req.user.clubId,
             password: await bcrypt.hash(tempPassword, 10),
             mustChangePassword: true

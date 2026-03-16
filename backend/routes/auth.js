@@ -48,7 +48,7 @@ router.post('/register', async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create user as PARENT in Trampoline Life club
+    // Create user as ADULT in Trampoline Life club
     const user = await prisma.user.create({
       data: {
         email,
@@ -56,7 +56,7 @@ router.post('/register', async (req, res) => {
         password: hashedPassword,
         firstName,
         lastName,
-        role: 'PARENT',
+        role: 'ADULT',
         clubId: club.id,
       },
       include: {
@@ -156,7 +156,7 @@ router.get('/validate', auth, (req, res) => {
 });
 
 // Generate or regenerate share access code for parents only
-router.post('/generate-share-code', auth, requireRole(['PARENT']), async (req, res) => {
+router.post('/generate-share-code', auth, requireRole(['ADULT']), async (req, res) => {
   try {
     // Generate a 6-digit share access code
     const shareCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -194,7 +194,7 @@ router.post('/child-login', async (req, res) => {
     const parentOrCoach = await prisma.user.findFirst({
       where: {
         shareCode: accessCode,
-        role: { in: ['PARENT', 'COACH'] }
+        role: { in: ['ADULT', 'COACH'] }
       },
       include: {
         club: true,
@@ -310,7 +310,7 @@ router.post('/child-login-disambiguate', async (req, res) => {
     const parentOrCoach = await prisma.user.findFirst({
       where: {
         shareCode: accessCode,
-        role: { in: ['PARENT', 'COACH'] }
+        role: { in: ['ADULT', 'COACH'] }
       },
       include: {
         club: true

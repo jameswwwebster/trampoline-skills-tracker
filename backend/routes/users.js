@@ -24,7 +24,7 @@ const changePasswordSchema = Joi.object({
 });
 
 const updateUserRoleSchema = Joi.object({
-  role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'PARENT', 'GYMNAST').required()
+  role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'ADULT', 'GYMNAST').required()
 });
 
 const updateOtherUserProfileSchema = Joi.object({
@@ -601,7 +601,7 @@ router.put('/gymnast/:gymnastId/email', auth, requireRole(['CLUB_ADMIN']), async
           password: hashedPassword,
           firstName: gymnast.firstName,
           lastName: gymnast.lastName,
-          role: 'PARENT', // Default role for gymnast accounts
+          role: 'ADULT', // Default role for gymnast accounts
           clubId: gymnast.clubId,
           mustChangePassword: true // Flag to force password change on first login
         },
@@ -711,11 +711,11 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
       lastName: Joi.string().min(1).max(50).required(),
       email: Joi.string().email().required(),
       phone: Joi.string().when('role', {
-        is: 'PARENT',
+        is: 'ADULT',
         then: Joi.string().min(1).required(),
         otherwise: Joi.string().allow('').optional(),
       }),
-      role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'PARENT', 'GYMNAST').default('PARENT'),
+      role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'ADULT', 'GYMNAST').default('ADULT'),
     });
     const { error, value } = schema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });

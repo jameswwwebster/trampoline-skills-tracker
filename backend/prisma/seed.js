@@ -157,7 +157,7 @@ async function main() {
       password: hashedPassword,
       firstName: 'Sarah',
       lastName: 'Johnson',
-      role: 'PARENT',
+      role: 'ADULT',
       clubId: devClub.id,
       shareCode: '123456' // Test share code for development
     }
@@ -166,7 +166,7 @@ async function main() {
   console.log('✅ Test parent user created:');
   console.log(`   Email: parent@test.com`);
   console.log(`   Password: password123`);
-  console.log(`   Role: PARENT`);
+  console.log(`   Role: ADULT`);
   console.log(`   Share Code: 123456`);
   console.log(`   Club: ${devClub.name}`);
 

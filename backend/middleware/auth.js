@@ -190,7 +190,7 @@ const requireGymnastAccess = async (req, res, next) => {
       }
     }
     // Parents can only access their guarded gymnasts
-    else if (req.user.role === 'PARENT') {
+    else if (req.user.role === 'ADULT') {
       const hasAccess = gymnast.guardians.some(guardian => guardian.id === req.user.id);
       if (!hasAccess) {
         return res.status(403).json({ error: 'Access denied to this gymnast' });

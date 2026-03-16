@@ -49,7 +49,7 @@ describe('POST /api/auth/register', () => {
     expect(res.status).toBe(201);
     expect(res.body.token).toBeDefined();
     expect(res.body.user.email).toBe(email);
-    expect(res.body.user.role).toBe('PARENT');
+    expect(res.body.user.role).toBe('ADULT');
     expect(res.body.user.password).toBeUndefined();
   });
 

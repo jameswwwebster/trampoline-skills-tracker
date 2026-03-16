@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 // Validation schemas
 const createInviteSchema = Joi.object({
   email: Joi.string().email().required(),
-  role: Joi.string().valid('COACH', 'PARENT').optional().default('COACH')
+  role: Joi.string().valid('COACH', 'ADULT').optional().default('COACH')
 });
 
 // Create new invite (only club admins)

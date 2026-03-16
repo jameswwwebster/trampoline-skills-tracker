@@ -32,7 +32,7 @@ async function createParent(club, overrides = {}) {
       password: HASHED_PASSWORD,
       firstName: 'Test',
       lastName: 'Parent',
-      role: 'PARENT',
+      role: 'ADULT',
       clubId: club.id,
       ...overrides,
     },

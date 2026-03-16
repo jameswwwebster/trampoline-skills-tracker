@@ -37,7 +37,7 @@ beforeAll(async () => {
       password: await bcrypt.hash('password', 10),
       firstName: 'Shop',
       lastName: 'Test',
-      role: 'PARENT',
+      role: 'ADULT',
     },
   });
   userId = user.id;

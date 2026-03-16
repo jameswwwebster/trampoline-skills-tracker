@@ -576,7 +576,7 @@ router.get('/skill/:skillId/gymnast/:gymnastId/history', auth, async (req, res) 
     }
 
     // Check if user has permission to view this gymnast's progress
-    if (req.user.role === 'PARENT' && !gymnast.guardians.some(g => g.id === req.user.id)) {
+    if (req.user.role === 'ADULT' && !gymnast.guardians.some(g => g.id === req.user.id)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -649,7 +649,7 @@ router.get('/gymnast/:gymnastId/history', auth, async (req, res) => {
     }
 
     // Check if user has permission to view this gymnast's progress
-    if (req.user.role === 'PARENT' && !gymnast.guardians.some(g => g.id === req.user.id)) {
+    if (req.user.role === 'ADULT' && !gymnast.guardians.some(g => g.id === req.user.id)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -1201,7 +1201,7 @@ async function awardCertificateForLevel(gymnastId, levelId, userId) {
         
         // Send notification to each guardian who is a parent
         for (const guardian of gymnast.guardians) {
-          if (guardian.role === 'PARENT' && guardian.email) {
+          if (guardian.role === 'ADULT' && guardian.email) {
             try {
               await emailService.sendCertificateAwardNotification(
                 guardian.email,

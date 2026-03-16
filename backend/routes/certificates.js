@@ -375,7 +375,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       
       // Send notification to each guardian who is a parent
       for (const guardian of gymnastForCertificate.guardians) {
-        if (guardian.role === 'PARENT' && guardian.email) {
+        if (guardian.role === 'ADULT' && guardian.email) {
           try {
             await emailService.sendCertificateAwardNotification(
               guardian.email,
@@ -662,7 +662,7 @@ router.get('/:certificateId/download', auth, async (req, res) => {
       req.user.role === 'ADMIN' ||
       req.user.clubId === certificate.clubId ||
       // Parents can access their children's certificates
-      (req.user.role === 'PARENT' && certificate.gymnast.guardians && 
+      (req.user.role === 'ADULT' && certificate.gymnast.guardians && 
        certificate.gymnast.guardians.some(guardian => guardian.id === req.user.id)) ||
       // Gymnasts can access their own certificates
       (req.user.role === 'GYMNAST' && certificate.gymnast.userId === req.user.id)
@@ -741,7 +741,7 @@ router.get('/:certificateId/preview', auth, async (req, res) => {
       req.user.role === 'ADMIN' ||
       req.user.clubId === certificate.clubId ||
       // Parents can access their children's certificates
-      (req.user.role === 'PARENT' && certificate.gymnast.guardians && 
+      (req.user.role === 'ADULT' && certificate.gymnast.guardians && 
        certificate.gymnast.guardians.some(guardian => guardian.id === req.user.id)) ||
       // Gymnasts can access their own certificates
       (req.user.role === 'GYMNAST' && certificate.gymnast.userId === req.user.id)

@@ -215,7 +215,7 @@ router.post('/', auth, async (req, res) => {
     }
 
     // Verify parent owns these gymnasts
-    if (req.user.role === 'PARENT') {
+    if (req.user.role === 'ADULT') {
       const myGymnasts = await prisma.gymnast.findMany({
         where: {
           id: { in: gymnastIds },
@@ -480,7 +480,7 @@ router.post('/batch', auth, async (req, res) => {
       }
 
       // Parent ownership check
-      if (req.user.role === 'PARENT') {
+      if (req.user.role === 'ADULT') {
         const myGymnasts = await prisma.gymnast.findMany({
           where: { id: { in: gymnastIds }, guardians: { some: { id: req.user.id } } },
         });
@@ -853,7 +853,7 @@ router.post('/combined', auth, async (req, res) => {
           }
         }
 
-        if (req.user.role === 'PARENT') {
+        if (req.user.role === 'ADULT') {
           const myGymnasts = await prisma.gymnast.findMany({
             where: { id: { in: gymnastIds }, guardians: { some: { id: req.user.id } } },
           });
