@@ -619,6 +619,7 @@ model RecurringCredit {
   user          User      @relation(fields: [userId], references: [id])
   userId        String
   amountPence   Int
+  startDate     DateTime?
   endDate       DateTime?
   isActive      Boolean   @default(true)
   lastIssuedAt  DateTime?

@@ -8,7 +8,15 @@ const BASE_URL = () => process.env.FRONTEND_URL || 'http://localhost:3000';
 
 function brandedHtml(subtitle, bodyHtml) {
   const base = BASE_URL();
-  return `<div style="font-family:'Exo 2',Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #d4d4d8">
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:16px;background:#f4f4f6">
+<div style="font-family:'Exo 2',Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #d4d4d8">
     <div style="background-color:#6a1fd4;padding:28px 32px">
       <h1 style="margin:0;color:#ffffff;font-size:1.4rem;font-weight:800;letter-spacing:0.01em">Trampoline Life</h1>
       <p style="margin:6px 0 0;color:#e0d0f8;font-size:0.9rem">${subtitle}</p>
@@ -19,7 +27,9 @@ function brandedHtml(subtitle, bodyHtml) {
     <div style="background-color:#eaeaec;padding:16px 32px;text-align:center">
       <p style="margin:0;font-size:0.78rem;color:#888888">Trampoline Life &middot; <a href="${base}/booking" style="color:#7c35e8;text-decoration:none">Log in</a></p>
     </div>
-  </div>`;
+  </div>
+</body>
+</html>`;
 }
 
 function ctaButton(url, label) {

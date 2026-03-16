@@ -14,7 +14,7 @@ export default function AdminCredits() {
   // ── Recurring credits ─────────────────────────────────────────────────────
   const [members, setMembers] = useState([]);
   const [rules, setRules] = useState([]);
-  const [rcForm, setRcForm] = useState({ userId: '', amount: '', endDate: '' });
+  const [rcForm, setRcForm] = useState({ userId: '', amount: '', startDate: '', endDate: '' });
   const [rcSubmitting, setRcSubmitting] = useState(false);
   const [rcError, setRcError] = useState(null);
 
@@ -45,9 +45,10 @@ export default function AdminCredits() {
         userId: rcForm.userId,
         amountPence: Math.round(parseFloat(rcForm.amount) * 100),
       };
+      if (rcForm.startDate) payload.startDate = rcForm.startDate;
       if (rcForm.endDate) payload.endDate = rcForm.endDate;
       await bookingApi.createRecurringCredit(payload);
-      setRcForm({ userId: '', amount: '', endDate: '' });
+      setRcForm({ userId: '', amount: '', startDate: '', endDate: '' });
       loadRecurring();
     } catch (err) {
       setRcError(err.response?.data?.error || 'Failed to create recurring credit.');
@@ -132,6 +133,15 @@ export default function AdminCredits() {
                 style={{ marginTop: '0.25rem' }}
               />
             </label>
+            <label className="bk-label">Start date (optional)
+              <input
+                type="date"
+                className="bk-input"
+                value={rcForm.startDate}
+                onChange={e => setRcForm(f => ({ ...f, startDate: e.target.value }))}
+                style={{ marginTop: '0.25rem' }}
+              />
+            </label>
             <label className="bk-label">End date (optional)
               <input
                 type="date"
@@ -155,6 +165,7 @@ export default function AdminCredits() {
             <tr>
               <th>Member</th>
               <th style={{ textAlign: 'right' }}>Monthly amount</th>
+              <th>Start date</th>
               <th>End date</th>
               <th>Last issued</th>
               <th></th>
@@ -165,6 +176,7 @@ export default function AdminCredits() {
               <tr key={r.id}>
                 <td>{r.userName}</td>
                 <td style={{ textAlign: 'right' }}>£{(r.amountPence / 100).toFixed(2)}</td>
+                <td>{r.startDate ? formatDate(r.startDate) : '—'}</td>
                 <td>{formatDate(r.endDate)}</td>
                 <td>{r.lastIssuedAt ? formatDate(r.lastIssuedAt) : '—'}</td>
                 <td>

@@ -21,6 +21,7 @@ function formatRule(rule, user) {
     userId: rule.userId,
     userName: `${user.firstName} ${user.lastName}`,
     amountPence: rule.amountPence,
+    startDate: rule.startDate ?? null,
     endDate: rule.endDate ?? null,
     lastIssuedAt: rule.lastIssuedAt ?? null,
     createdAt: rule.createdAt,
@@ -46,6 +47,7 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
 const createSchema = Joi.object({
   userId: Joi.string().required(),
   amountPence: Joi.number().integer().min(1).required(),
+  startDate: Joi.string().isoDate().optional(),
   endDate: Joi.string().isoDate().optional(),
 });
 
@@ -69,26 +71,38 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     });
     if (!targetUser) return res.status(404).json({ error: 'User not found' });
 
-    const expiresAt = endOfMonthUtc();
-
     const rule = await prisma.recurringCredit.create({
       data: {
         clubId: req.user.clubId,
         userId: value.userId,
         amountPence: value.amountPence,
+        startDate: value.startDate ? new Date(value.startDate) : null,
         endDate: value.endDate ? new Date(value.endDate) : null,
         createdById: req.user.id,
       },
     });
 
-    await prisma.credit.create({
-      data: { userId: value.userId, amount: value.amountPence, expiresAt },
-    });
+    // Only issue first credit immediately if startDate is today or in the past (or unset)
+    const startOfToday = new Date();
+    startOfToday.setUTCHours(0, 0, 0, 0);
+    const startsNow = !value.startDate || new Date(value.startDate) <= startOfToday;
 
-    const updatedRule = await prisma.recurringCredit.update({
-      where: { id: rule.id },
-      data: { lastIssuedAt: new Date() },
-    });
+    let updatedRule = rule;
+    if (startsNow) {
+      const expiresAt = endOfMonthUtc();
+      await prisma.credit.create({
+        data: { userId: value.userId, amount: value.amountPence, expiresAt },
+      });
+      updatedRule = await prisma.recurringCredit.update({
+        where: { id: rule.id },
+        data: { lastIssuedAt: new Date() },
+      });
+      if (targetUser.club.emailEnabled) {
+        emailService.sendCreditAssignedEmail(
+          targetUser.email, targetUser.firstName, value.amountPence, expiresAt,
+        ).catch(err => console.error('sendCreditAssignedEmail failed:', err));
+      }
+    }
 
     await audit({
       userId: req.user.id,
@@ -98,15 +112,6 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       entityId: rule.id,
       metadata: { targetUserId: value.userId, amountPence: value.amountPence },
     });
-
-    if (targetUser.club.emailEnabled) {
-      await emailService.sendCreditAssignedEmail(
-        targetUser.email,
-        targetUser.firstName,
-        value.amountPence,
-        expiresAt,
-      );
-    }
 
     res.status(201).json(formatRule(updatedRule, targetUser));
   } catch (err) {
@@ -174,6 +179,7 @@ async function processRecurringCredits(db) {
   for (const rule of rules) {
     try {
       if (rule.user.isArchived) continue;
+      if (rule.startDate && rule.startDate > startOfToday) continue;
       if (rule.endDate && rule.endDate < startOfToday) continue;
       if (rule.lastIssuedAt && rule.lastIssuedAt >= startOfMonth) continue;
 
