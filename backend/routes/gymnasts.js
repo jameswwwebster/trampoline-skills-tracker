@@ -184,6 +184,52 @@ router.post('/admin-add-child', auth, requireRole(['CLUB_ADMIN', 'COACH']), asyn
   }
 });
 
+// POST /api/gymnasts/admin-mark-adult
+// Coach/admin creates a gymnast record for an existing adult user (no DOB required)
+router.post('/admin-mark-adult', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const { error, value } = Joi.object({
+      userId: Joi.string().required(),
+    }).validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    const user = await prisma.user.findUnique({
+      where: { id: value.userId },
+      select: { id: true, clubId: true, firstName: true, lastName: true },
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
+
+    // Prevent duplicate: check if user already has a gymnast record linked to them
+    const existing = await prisma.gymnast.findFirst({
+      where: { userId: value.userId, clubId: req.user.clubId },
+    });
+    if (existing) return res.status(409).json({ error: 'This user already has a gymnast record' });
+
+    const gymnast = await prisma.gymnast.create({
+      data: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        dateOfBirth: null,
+        clubId: req.user.clubId,
+        userId: value.userId,
+        guardians: { connect: { id: value.userId } },
+      },
+    });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'member.create', entityType: 'Gymnast', entityId: gymnast.id,
+      metadata: { name: `${gymnast.firstName} ${gymnast.lastName}`, adultUserId: value.userId },
+    });
+
+    res.status(201).json(gymnast);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // PATCH /api/gymnasts/:id/dmt-approval  (coach/admin only)
 router.patch('/:id/dmt-approval', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
