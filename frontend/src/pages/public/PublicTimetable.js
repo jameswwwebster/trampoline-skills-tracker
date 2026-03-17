@@ -5,10 +5,10 @@ import './public.css';
 import './PublicTimetable.css';
 
 const SATURDAY = [
-  { competitor: 'Danny',    event: 'DMT - 17+ Male League 1',          panel: 8,  flight: 2, no: 9,  warmUp: '10:00 – 10:20', compete: '10:20 – 10:55' },
-  { competitor: 'Leo',      event: 'DMT - 9+ Male Super League',        panel: 8,  flight: 3, no: 2,  warmUp: '10:55 – 11:10', compete: '11:10 – 11:25' },
-  { competitor: 'Danny',    event: 'DMT - 9+ Male Super League',        panel: 8,  flight: 3, no: 14, warmUp: '10:55 – 11:10', compete: '11:10 – 11:25' },
+  { competitor: 'Danny',    event: 'DMT - 17+ Male League 1',          panel: 8,  flight: 2, no: 9,  warmUp: '10:55 – 11:10', compete: '11:10 – 11:25' },
   { competitor: 'Abigail',  event: 'TRI - 13-14 Female League 3',       panel: 1,  flight: 2, no: 19, warmUp: '11:10 – 11:35', compete: '11:35 – 12:05' },
+  { competitor: 'Leo',      event: 'DMT - 9+ Male Super League',        panel: 8,  flight: 3, no: 2,  warmUp: '11:25 – 11:35', compete: '11:35 – 11:55' },
+  { competitor: 'Danny',    event: 'DMT - 9+ Male Super League',        panel: 8,  flight: 3, no: 14, warmUp: '11:25 – 11:35', compete: '11:35 – 11:55' },
   { competitor: 'Alex',     event: 'TRI - 19+ Male League 2',           panel: 3,  flight: 4, no: 4,  warmUp: '13:45 – 14:15', compete: '14:15 – 14:50' },
   { competitor: 'Victoria', event: 'TRI - 19+ Female League 3',         panel: 2,  flight: 4, no: 14, warmUp: '14:10 – 14:40', compete: '14:40 – 15:25' },
   { competitor: 'Ben',      event: 'TRI - 13-14 Male League 3',         panel: 4,  flight: 4, no: 12, warmUp: '14:40 – 15:10', compete: '15:10 – 15:55' },
