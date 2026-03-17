@@ -287,8 +287,8 @@ class EmailService {
         ${h3('How your fee is calculated')}
         <p style="margin-top:0">Your monthly fee is based on a training year of <strong>46 weeks</strong>, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.</p>
 
-        ${h3('Flexibility')}
-        <p style="margin-top:0">Your membership covers your agreed number of sessions each week, but you have flexibility in how you use them. If you normally train on a Tuesday but a Thursday works better one week, that's absolutely fine — just attend the session you need. As a member, you no longer need to sign up to individual sessions in advance.</p>
+        ${h3('Commitments')}
+        <p style="margin-top:0">Your membership is tied to a specific session or sessions each week. Please attend your committed session — if you need to change which session you train at, speak to your coach.</p>
 
         ${h3('Your first payment')}
         <p style="margin-top:0">Your first payment will be a pro-rated amount covering the remainder of the current month. From the 1st of next month you'll be charged the full ${amount} each month.</p>
