@@ -123,6 +123,92 @@
   color: #1a7a4a;
 }
 
+/* ─── Filters ────────────────────────────────────────────────────────────── */
+.cf-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+}
+
+.cf-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cf-filter-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #888;
+}
+
+.cf-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.cf-pill {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-family);
+  background: #f4f4f6;
+  border: 1px solid #d4d4d8;
+  border-radius: 20px;
+  cursor: pointer;
+  color: #555;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.cf-pill:hover {
+  background: #ebebed;
+  color: #333;
+}
+
+.cf-pill--active {
+  background: var(--secondary-color);
+  border-color: var(--secondary-color);
+  color: #fff;
+}
+
+.cf-pill--active:hover {
+  background: var(--secondary-color);
+  color: #fff;
+}
+
+.cf-clear {
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-family);
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  align-self: flex-end;
+  margin-bottom: 0.1rem;
+}
+
+.cf-clear:hover { color: #444; }
+
+.cf-empty {
+  text-align: center;
+  color: #888;
+  font-size: 0.9rem;
+  padding: 1.5rem 0;
+}
+
 /* ─── Mobile cards (shown below 700px) ──────────────────────────────────── */
 .cf-cards {
   display: flex;

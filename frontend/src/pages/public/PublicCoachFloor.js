@@ -118,10 +118,33 @@ function TableRow({ r }) {
   );
 }
 
+function discipline(event) {
+  if (event.startsWith('TRS')) return 'TRS';
+  if (event.startsWith('DMT')) return 'DMT';
+  return 'TRI';
+}
+
 export default function PublicCoachFloor() {
-  const [day, setDay] = useState('saturday');
-  const rows = day === 'saturday' ? SATURDAY : SUNDAY;
+  const [day, setDay]         = useState('saturday');
+  const [club, setClub]       = useState('all');
+  const [disc, setDisc]       = useState('all');
+  const [flight, setFlight]   = useState('all');
+
+  const allRows = day === 'saturday' ? SATURDAY : SUNDAY;
   const dateLabel = day === 'saturday' ? 'Saturday 21 March 2026' : 'Sunday 22 March 2026';
+
+  // Derive available flight numbers from current day's data
+  const flights = [...new Set(allRows.map(r => r.flight))].sort((a, b) => a - b);
+
+  // Reset flight filter when day changes if the current value no longer exists
+  const rows = allRows.filter(r => {
+    if (club !== 'all' && r.club !== club) return false;
+    if (disc !== 'all' && discipline(r.event) !== disc) return false;
+    if (flight !== 'all' && r.flight !== Number(flight)) return false;
+    return true;
+  });
+
+  const activeCount = (club !== 'all' ? 1 : 0) + (disc !== 'all' ? 1 : 0) + (flight !== 'all' ? 1 : 0);
 
   return (
     <div className="public-page">
@@ -141,7 +164,7 @@ export default function PublicCoachFloor() {
             <div className="cf-tabs" role="tablist">
               <button
                 className={`cf-tab${day === 'saturday' ? ' cf-tab--active' : ''}`}
-                onClick={() => setDay('saturday')}
+                onClick={() => { setDay('saturday'); setFlight('all'); }}
                 role="tab"
                 aria-selected={day === 'saturday'}
               >
@@ -149,7 +172,7 @@ export default function PublicCoachFloor() {
               </button>
               <button
                 className={`cf-tab${day === 'sunday' ? ' cf-tab--active' : ''}`}
-                onClick={() => setDay('sunday')}
+                onClick={() => { setDay('sunday'); setFlight('all'); }}
                 role="tab"
                 aria-selected={day === 'sunday'}
               >
@@ -158,6 +181,50 @@ export default function PublicCoachFloor() {
             </div>
 
             <p className="cf-date">{dateLabel}</p>
+
+            {/* Filters */}
+            <div className="cf-filters">
+              <div className="cf-filter-group">
+                <label className="cf-filter-label">Club</label>
+                <div className="cf-filter-pills">
+                  {['all', 'tl', 'apollo'].map(v => (
+                    <button key={v} className={`cf-pill${club === v ? ' cf-pill--active' : ''}`} onClick={() => setClub(v)}>
+                      {v === 'all' ? 'All' : v === 'tl' ? 'TL' : 'Apollo'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="cf-filter-group">
+                <label className="cf-filter-label">Discipline</label>
+                <div className="cf-filter-pills">
+                  {['all', 'TRI', 'DMT', 'TRS'].map(v => (
+                    <button key={v} className={`cf-pill${disc === v ? ' cf-pill--active' : ''}`} onClick={() => setDisc(v)}>
+                      {v === 'all' ? 'All' : v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="cf-filter-group">
+                <label className="cf-filter-label">Flight</label>
+                <div className="cf-filter-pills">
+                  <button className={`cf-pill${flight === 'all' ? ' cf-pill--active' : ''}`} onClick={() => setFlight('all')}>All</button>
+                  {flights.map(f => (
+                    <button key={f} className={`cf-pill${flight === String(f) ? ' cf-pill--active' : ''}`} onClick={() => setFlight(String(f))}>
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {activeCount > 0 && (
+                <button className="cf-clear" onClick={() => { setClub('all'); setDisc('all'); setFlight('all'); }}>
+                  Clear filters
+                </button>
+              )}
+            </div>
+
+            {rows.length === 0 && (
+              <p className="cf-empty">No entries match the selected filters.</p>
+            )}
 
             {/* Mobile cards */}
             <div className="cf-cards">
