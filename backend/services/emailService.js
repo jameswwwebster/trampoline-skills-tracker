@@ -145,7 +145,7 @@ class EmailService {
       subject: 'Welcome to Trampoline Life',
       html: brandedHtml('Welcome!', `
         <p style="margin-top:0">Hi ${userName},</p>
-        <p>Your account has been created by your club administrator. You can now log in to Trampoline Life to manage bookings and track progress.</p>
+        <p>Your account has been created by your club administrator. You can now log in to Trampoline Life to manage your membership and track progress.</p>
         ${infoBox(`
           <p style="margin:0 0 0.5rem;font-weight:700">Your login details</p>
           <p style="margin:0.25rem 0"><strong>Email:</strong> ${email}</p>
@@ -207,7 +207,7 @@ class EmailService {
   }
 
   async sendGuardianInvitationEmail(guardianEmail, guardianFirstName, guardianLastName, gymnastName, clubName, relationship, requestId) {
-    const acceptUrl = `${BASE_URL()}/parent-connection-request?requestId=${requestId}`;
+    const acceptUrl = `${BASE_URL()}/adult-connection-request?requestId=${requestId}`;
     return this._send({
       from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
       to: guardianEmail,
@@ -220,7 +220,7 @@ class EmailService {
           <p style="margin:0.2rem 0"><strong>Club:</strong> ${clubName}</p>
           <p style="margin:0.2rem 0"><strong>Relationship:</strong> ${relationship}</p>
         `)}
-        <p>As a guardian you'll be able to view ${gymnastName}'s progress, receive certificate notifications, and manage bookings.</p>
+        <p>As a guardian you'll be able to view ${gymnastName}'s progress, receive certificate notifications, and manage your account and membership.</p>
         ${ctaButton(acceptUrl, 'Accept invitation')}
         ${muted(`If you're not ${gymnastName}'s guardian or this was sent in error, you can safely ignore this email.`)}
       `),
@@ -298,7 +298,7 @@ class EmailService {
         ${ctaButton(loginUrl, 'Set up payment')}
         ${muted('If you have any questions, please contact the club.')}
       `),
-      text: `Hi ${guardianName},\n\nA monthly membership of ${amount}/month has been set up for ${gymnast.firstName} ${gymnast.lastName}.\n\nHOW YOUR FEE IS CALCULATED\nYour monthly fee is based on a training year of 46 weeks, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment.\n\nFLEXIBILITY\nYou have flexibility in how you use your sessions. If you normally train on a Tuesday but a Thursday works better one week, that's fine — just attend the session you need. As a member, you no longer need to sign up to individual sessions in advance.\n\nYOUR FIRST PAYMENT\nYour first payment will be a pro-rated amount covering the remainder of the current month. From the 1st of next month you'll be charged the full ${amount} each month.\n\nGETTING STARTED\nTo activate your membership, log in and complete the payment setup:\n${loginUrl}\n\nIf you have any questions, please contact the club.`,
+      text: `Hi ${guardianName},\n\nA monthly membership of ${amount}/month has been set up for ${gymnast.firstName} ${gymnast.lastName}.\n\nHOW YOUR FEE IS CALCULATED\nYour monthly fee is based on a training year of 46 weeks, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment.\n\nCOMMITMENTS\nYour membership is tied to a specific session or sessions each week. Please attend your committed session — if you need to change which session you train at, speak to your coach.\n\nYOUR FIRST PAYMENT\nYour first payment will be a pro-rated amount covering the remainder of the current month. From the 1st of next month you'll be charged the full ${amount} each month.\n\nGETTING STARTED\nTo activate your membership, log in and complete the payment setup:\n${loginUrl}\n\nIf you have any questions, please contact the club.`,
     }, { to: email, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount, loginUrl });
   }
 
@@ -319,7 +319,7 @@ class EmailService {
       subject: 'Sessions available this week — Trampoline Life',
       html: brandedHtml('Sessions this week', `
         <p style="margin-top:0">Hi ${firstName},</p>
-        <p>Here's a look at what's available to book this week:</p>
+        <p>Here's a look at the sessions running this week:</p>
         <table style="width:100%;border-collapse:collapse;font-size:0.9rem;margin-bottom:1rem">
           <thead>
             <tr style="background-color:#f3eefe">
@@ -330,10 +330,10 @@ class EmailService {
           </thead>
           <tbody>${rows}</tbody>
         </table>
-        ${ctaButton(`${base}/booking`, 'Book a session')}
+        ${ctaButton(`${base}/booking`, 'View sessions')}
         ${muted('To stop receiving these weekly emails, log in and update your notification preferences in My Account.')}
       `),
-      text: `Hi ${firstName},\n\nHere are the sessions available to book this week:\n\n${sessions.map(s => {
+      text: `Hi ${firstName},\n\nHere are the sessions running this week:\n\n${sessions.map(s => {
         const dateStr = new Date(s.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
         return `${dateStr} ${s.startTime}–${s.endTime} (${s.availableSlots} space${s.availableSlots !== 1 ? 's' : ''})`;
       }).join('\n')}\n\nBook at: ${base}/booking\n\nTo unsubscribe, log in and update your notification preferences in My Account.`,
@@ -562,7 +562,7 @@ class EmailService {
           <p style="margin:0.2rem 0"><strong>Club:</strong> ${clubName}</p>
           <p style="margin:0.2rem 0"><strong>Relationship:</strong> ${relationship}</p>
         `)}
-        <p>You can now view ${gymnastName}'s progress, receive certificate notifications, and manage bookings.</p>
+        <p>You can now view ${gymnastName}'s progress, receive certificate notifications, and manage your account and membership.</p>
         ${muted('Welcome to Trampoline Life!')}
       `),
       text: `Hello ${guardianName},\n\nYou have been connected as a guardian for ${gymnastName} at ${clubName}.\n\nRelationship: ${relationship}\n\nWelcome to Trampoline Life!`,

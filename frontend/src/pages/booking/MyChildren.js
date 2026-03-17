@@ -776,7 +776,7 @@ export default function MyChildren() {
       {credits.length > 0 && (
         <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
           <p style={{ margin: '0 0 0.25rem', fontSize: '0.85rem', fontWeight: 600 }}>Session credits</p>
-          <p style={{ margin: '0 0 0.5rem', fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>Applied automatically when you book a session.</p>
+          <p style={{ margin: '0 0 0.5rem', fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>Applied automatically at checkout.</p>
           <p style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 700, color: 'var(--booking-accent)' }}>
             £{(credits.reduce((s, c) => s + c.amount, 0) / 100).toFixed(2)} available
           </p>
