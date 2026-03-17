@@ -1,0 +1,256 @@
+/* ─── Hero ───────────────────────────────────────────────────────────────── */
+.cf-hero {
+  background: #1e1e2e;
+  color: #fff;
+  padding: 1.5rem 1rem 1.25rem;
+  text-align: center;
+}
+
+.cf-hero-inner {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.cf-hero-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 0 0.35rem;
+}
+
+.cf-hero-title {
+  font-size: clamp(1.25rem, 3.5vw, 1.75rem);
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.15;
+}
+
+/* ─── Section ────────────────────────────────────────────────────────────── */
+.cf-section {
+  padding: 1.25rem 1rem 2.5rem;
+  background: var(--background-color);
+  flex: 1;
+}
+
+.cf-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.cf-date {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 1rem;
+}
+
+/* ─── Tabs ───────────────────────────────────────────────────────────────── */
+.cf-tabs {
+  display: flex;
+  border-bottom: 2px solid #d4d4d8;
+  margin-bottom: 0.75rem;
+}
+
+.cf-tab {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: var(--font-family);
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.cf-tab:hover { color: var(--secondary-color); }
+
+.cf-tab--active {
+  color: var(--secondary-color);
+  border-bottom-color: var(--secondary-color);
+}
+
+/* ─── Club badges ────────────────────────────────────────────────────────── */
+.cf-club {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.cf-club--tl {
+  background: rgba(124, 53, 232, 0.12);
+  color: #6a1fd4;
+}
+
+.cf-club--apollo {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0369a1;
+}
+
+/* ─── Discipline tags ────────────────────────────────────────────────────── */
+.cf-tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.cf-tag--tri {
+  background: rgba(124, 53, 232, 0.1);
+  color: #6a1fd4;
+}
+
+.cf-tag--dmt {
+  background: rgba(230, 126, 34, 0.12);
+  color: #c0661a;
+}
+
+.cf-tag--trs {
+  background: rgba(39, 174, 96, 0.12);
+  color: #1a7a4a;
+}
+
+/* ─── Mobile cards (shown below 700px) ──────────────────────────────────── */
+.cf-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cf-card {
+  background: #fff;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+}
+
+.cf-card-top {
+  margin-bottom: 0.4rem;
+}
+
+.cf-card-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+
+.cf-card-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1a1a1a;
+  flex: 1;
+}
+
+.cf-card-category {
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.cf-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+.cf-dot {
+  color: #bbb;
+}
+
+.cf-card-times {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.cf-time-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.cf-time-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+}
+
+.cf-time-value {
+  font-size: 0.85rem;
+  color: #333;
+  font-variant-numeric: tabular-nums;
+}
+
+.cf-time-block--compete .cf-time-value {
+  font-weight: 700;
+  color: var(--secondary-color);
+}
+
+/* ─── Desktop table (hidden below 700px) ────────────────────────────────── */
+.cf-table-wrap {
+  display: none;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 8px;
+  border: 1px solid #d4d4d8;
+  background: #fff;
+}
+
+.cf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.cf-table thead tr {
+  background: #f4f4f6;
+  border-bottom: 2px solid #d4d4d8;
+}
+
+.cf-table th {
+  padding: 0.6rem 0.85rem;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #555;
+}
+
+.cf-table td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid #ebebed;
+  vertical-align: middle;
+}
+
+.cf-table tbody tr:last-child td { border-bottom: none; }
+.cf-table tbody tr:hover { background: #f9f9fb; }
+
+.cf-name { font-weight: 600; color: #1a1a1a; }
+.cf-center { text-align: center; color: #555; }
+.cf-nowrap { white-space: nowrap; color: #444; font-variant-numeric: tabular-nums; }
+.cf-compete-time { font-weight: 700; color: var(--secondary-color); }
+
+/* ─── Responsive switch ──────────────────────────────────────────────────── */
+@media (min-width: 700px) {
+  .cf-cards { display: none; }
+  .cf-table-wrap { display: block; }
+}
