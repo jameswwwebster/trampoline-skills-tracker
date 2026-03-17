@@ -409,7 +409,7 @@ export default function BookingLayout() {
 
           {isAdmin && (
             <>
-              <div className="booking-layout__mobile-section-label booking-layout__mobile-section-label--admin">Admin</div>
+              <div className="booking-layout__mobile-section-label booking-layout__mobile-section-label--admin">Admin — Sessions</div>
               <NavLink to="/booking/admin" end className="booking-layout__mobile-link">Sessions</NavLink>
               <NavLink to="/booking/admin/closures" className="booking-layout__mobile-link">Closures</NavLink>
               <NavLink to="/booking/admin/session-management" className="booking-layout__mobile-link">Session Management</NavLink>
@@ -430,9 +430,11 @@ export default function BookingLayout() {
                   Register — {s.startTime}–{s.endTime}
                 </button>
               ))}
+              <div className="booking-layout__mobile-section-label booking-layout__mobile-section-label--admin">Admin — Members</div>
               <NavLink to="/booking/admin/members" className="booking-layout__mobile-link">Members</NavLink>
               <NavLink to="/booking/admin/bg-numbers" className="booking-layout__mobile-link">BG Numbers</NavLink>
               <NavLink to="/booking/admin/shop-orders" className="booking-layout__mobile-link">Shop Orders</NavLink>
+              <div className="booking-layout__mobile-section-label booking-layout__mobile-section-label--admin">Admin — Tools</div>
               <NavLink to="/booking/admin/messages" className="booking-layout__mobile-link">Messages</NavLink>
               <NavLink to="/booking/admin/recipient-groups" className="booking-layout__mobile-link">Recipient Groups</NavLink>
               <NavLink to="/booking/admin/audit-log" className="booking-layout__mobile-link">Audit Log</NavLink>
