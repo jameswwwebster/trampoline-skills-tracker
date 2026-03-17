@@ -20,6 +20,27 @@ export default function HelpPage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
+        <h3 style={{ marginBottom: '0.5rem' }}>British Gymnastics membership number</h3>
+        <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
+          All gymnasts must have a valid <strong>British Gymnastics (BG) membership number</strong> to continue
+          booking sessions. Your first two sessions can be booked without one, but after that a BG number is
+          required before any further bookings can be made.
+        </p>
+        <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
+          To add a BG number, go to the <strong>Account</strong> page, find the gymnast, and enter their number
+          in the BG membership section. Once entered it will be checked against British Gymnastics records. While
+          verification is in progress you can continue booking for a short grace period.
+        </p>
+        <p style={{ color: 'var(--booking-text-muted)' }}>
+          If a gymnast is shown as blocked at the booking screen with a BG membership message, check their
+          number on the <strong>Account</strong> page. A status of <strong>Verified</strong> means everything
+          is fine. <strong>Pending</strong> means we're still checking it — if this has been pending for a
+          while, make sure the number was entered correctly. <strong>Invalid</strong> means the number could
+          not be matched and needs to be corrected before bookings can resume.
+        </p>
+      </section>
+
+      <section style={{ marginBottom: '2rem' }}>
         <h3 style={{ marginBottom: '0.5rem' }}>Memberships</h3>
         <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
           A membership gives a gymnast access to regular training sessions. Memberships are set up by the club

@@ -298,10 +298,23 @@ export default function SessionDetail({
                       )}
                     </span>
                   </div>
-                  {bgBlocked && (
-                    <p style={{ fontSize: '0.8rem', color: 'var(--booking-danger)', margin: '-0.25rem 0 0.5rem 0.5rem' }}>
-                      BG membership number required —{' '}
-                      <a href="/booking/my-account" style={{ color: 'var(--booking-danger)' }}>update in My Account</a>
+                  {bgBlocked && (() => {
+                    const s = { fontSize: '0.8rem', color: 'var(--booking-danger)', margin: '-0.25rem 0 0.5rem 0.5rem' };
+                    const a = { color: 'var(--booking-danger)' };
+                    if (g.bgNumberStatus === 'INVALID') return (
+                      <p style={s}>BG number couldn't be verified — <a href="/booking/my-account" style={a}>check it in My Account</a></p>
+                    );
+                    if (g.bgNumberStatus === 'PENDING') return (
+                      <p style={s}>BG number is still being verified — bookings are blocked until it's confirmed. <a href="/booking/my-account" style={a}>Check it in My Account</a></p>
+                    );
+                    return (
+                      <p style={s}>BG membership number required — <a href="/booking/my-account" style={a}>add it in My Account</a></p>
+                    );
+                  })()}
+                  {!bgBlocked && !g.bgNumber && g.pastSessionCount === 1 && (
+                    <p style={{ fontSize: '0.78rem', color: '#e67e22', margin: '-0.25rem 0 0.5rem 0.5rem' }}>
+                      1 free session remaining — a BG number will be required after this.{' '}
+                      <a href="/booking/my-account" style={{ color: '#e67e22' }}>Add it in My Account</a>
                     </p>
                   )}
                   {hasActiveCommitment && (
