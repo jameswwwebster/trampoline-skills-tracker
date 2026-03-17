@@ -33,6 +33,7 @@ export default function BookingLayout() {
   const [noticeBanner, setNoticeBanner] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null); // null | 'sessions' | 'members' | 'tools'
   const [activeSessions, setActiveSessions] = useState([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -94,6 +95,11 @@ export default function BookingLayout() {
   }, [user, isAdmin]);
 
   useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setOpenDropdown(null);
+  }, [location.pathname]);
+
+  useEffect(() => {
     if (isAdmin && location.pathname === '/booking' && !location.state?.skipAdminRedirect) {
       navigate('/booking/admin', { replace: true });
     }
@@ -139,6 +145,13 @@ export default function BookingLayout() {
             )}
             <Link to={isAdmin ? '/booking/admin/help' : '/booking/help'} className="booking-layout__help" style={{ marginLeft: '0.5rem' }}>Help</Link>
             <button className="booking-layout__logout" onClick={() => { logout(); navigate('/'); }}>Log out</button>
+          <button
+            className="booking-layout__hamburger"
+            onClick={() => setIsMobileMenuOpen(o => !o)}
+            aria-label="Toggle menu"
+          >
+            ☰
+          </button>
           </div>
         </div>
 
@@ -350,6 +363,98 @@ export default function BookingLayout() {
           <span className="booking-layout__payment-banner-cta">Pay now →</span>
         </Link>
       )}
+
+      {/* Mobile overlay */}
+      {isMobileMenuOpen && (
+        <div className="booking-layout__mobile-overlay" onClick={() => setIsMobileMenuOpen(false)} />
+      )}
+
+      {/* Mobile slide-in menu */}
+      <div className={`booking-layout__mobile-menu${isMobileMenuOpen ? ' open' : ''}`}>
+        <div className="booking-layout__mobile-header">
+          <span className="booking-layout__mobile-title">Menu</span>
+          <button
+            className="booking-layout__mobile-close"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-label="Close menu"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="booking-layout__mobile-links">
+          <div className="booking-layout__mobile-section-label">Bookings</div>
+          <NavLink to="/booking" end state={{ skipAdminRedirect: true }} className="booking-layout__mobile-link">Book</NavLink>
+          <NavLink to="/booking/my-bookings" className="booking-layout__mobile-link">My Bookings</NavLink>
+
+          <div className="booking-layout__mobile-section-label">Shop</div>
+          <NavLink to="/booking/shop" className="booking-layout__mobile-link">Shop</NavLink>
+          <NavLink to="/booking/my-orders" className="booking-layout__mobile-link">My Orders</NavLink>
+
+          <NavLink to="/booking/noticeboard" className="booking-layout__mobile-link" onClick={() => setNoticeBanner(false)}>
+            Noticeboard{unreadCount > 0 ? ` (${unreadCount})` : ''}
+          </NavLink>
+
+          <div className="booking-layout__mobile-section-label">Account</div>
+          <NavLink to="/booking/my-account" className="booking-layout__mobile-link">My Account</NavLink>
+          {!isAdmin && (
+            <NavLink to="/booking/my-charges" className="booking-layout__mobile-link">My Charges</NavLink>
+          )}
+
+          {(cartCount > 0 || hasOutstandingCharge) && (
+            <NavLink to="/booking/cart" className="booking-layout__mobile-link booking-layout__mobile-cart">
+              Cart{cartCount > 0 ? ` (${cartCount})` : ''}
+            </NavLink>
+          )}
+
+          {isAdmin && (
+            <>
+              <div className="booking-layout__mobile-section-label booking-layout__mobile-section-label--admin">Admin</div>
+              <NavLink to="/booking/admin" end className="booking-layout__mobile-link">Sessions</NavLink>
+              <NavLink to="/booking/admin/closures" className="booking-layout__mobile-link">Closures</NavLink>
+              <NavLink to="/booking/admin/session-management" className="booking-layout__mobile-link">Session Management</NavLink>
+              {activeSessions.length === 1 && (
+                <button
+                  className="booking-layout__mobile-link booking-layout__mobile-register"
+                  onClick={() => navigate(`/booking/admin/register/${activeSessions[0].id}`)}
+                >
+                  Register — {activeSessions[0].startTime}–{activeSessions[0].endTime}
+                </button>
+              )}
+              {activeSessions.length > 1 && activeSessions.map(s => (
+                <button
+                  key={s.id}
+                  className="booking-layout__mobile-link booking-layout__mobile-register"
+                  onClick={() => navigate(`/booking/admin/register/${s.id}`)}
+                >
+                  Register — {s.startTime}–{s.endTime}
+                </button>
+              ))}
+              <NavLink to="/booking/admin/members" className="booking-layout__mobile-link">Members</NavLink>
+              <NavLink to="/booking/admin/bg-numbers" className="booking-layout__mobile-link">BG Numbers</NavLink>
+              <NavLink to="/booking/admin/shop-orders" className="booking-layout__mobile-link">Shop Orders</NavLink>
+              <NavLink to="/booking/admin/messages" className="booking-layout__mobile-link">Messages</NavLink>
+              <NavLink to="/booking/admin/recipient-groups" className="booking-layout__mobile-link">Recipient Groups</NavLink>
+              <NavLink to="/booking/admin/audit-log" className="booking-layout__mobile-link">Audit Log</NavLink>
+              <NavLink to="/booking/admin/credits" className="booking-layout__mobile-link">Credits</NavLink>
+              <NavLink to="/booking/admin/charges" className="booking-layout__mobile-link">Charges</NavLink>
+            </>
+          )}
+        </div>
+
+        <div className="booking-layout__mobile-footer">
+          {isAdmin && (
+            <Link to="/booking/help" className="booking-layout__mobile-link">Member help</Link>
+          )}
+          <Link to={isAdmin ? '/booking/admin/help' : '/booking/help'} className="booking-layout__mobile-link">Help</Link>
+          <button
+            className="booking-layout__mobile-link booking-layout__mobile-logout"
+            onClick={() => { logout(); navigate('/'); }}
+          >
+            Log out
+          </button>
+        </div>
+      </div>
 
       <main className="booking-layout__main">
         <Outlet />
