@@ -354,8 +354,11 @@ function BgNumberSection({ gymnast, onUpdated }) {
   const [error, setError] = useState(null);
 
   const isInvalid = gymnast.bgNumberStatus === 'INVALID';
+  const isPending = gymnast.bgNumberStatus === 'PENDING';
   const hasNumber = !!gymnast.bgNumber;
-  const needs = gymnast.pastSessionCount >= 2 && !hasNumber;
+  const isRequired = gymnast.pastSessionCount >= 2 || gymnast.hasMembership;
+  const needs = isRequired && !hasNumber;
+  const approachingLimit = !hasNumber && !isRequired && gymnast.pastSessionCount === 1;
 
   const handleSave = async () => {
     if (!input.trim()) return;
@@ -432,7 +435,14 @@ function BgNumberSection({ gymnast, onUpdated }) {
         <>
           {needs && !isInvalid && (
             <p style={{ fontSize: '0.875rem', color: 'var(--booking-danger)', margin: '0 0 0.4rem' }}>
-              {gymnast.firstName} has attended 2 sessions and now requires a BG membership number to continue booking.
+              {gymnast.firstName} {gymnast.hasMembership && gymnast.pastSessionCount < 2
+                ? 'has a membership and requires a BG number before booking sessions.'
+                : 'has attended 2 sessions and now requires a BG membership number to continue booking.'}
+            </p>
+          )}
+          {approachingLimit && (
+            <p style={{ fontSize: '0.875rem', color: '#e67e22', margin: '0 0 0.4rem' }}>
+              {gymnast.firstName} has 1 free session remaining — a BG number will be required to book any further sessions.
             </p>
           )}
           {guidance}
@@ -441,16 +451,28 @@ function BgNumberSection({ gymnast, onUpdated }) {
         </>
       ) : (
         <>
-          <p style={{ margin: 0, fontSize: '0.875rem' }}>
-            <span style={{ fontFamily: 'monospace' }}>{gymnast.bgNumber}</span>{' '}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
+            <span style={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>{gymnast.bgNumber}</span>
+            {gymnast.bgNumberStatus === 'VERIFIED' && (
+              <span style={{ fontSize: '0.78rem', color: 'var(--booking-success)', fontWeight: 600 }}>✓ Verified</span>
+            )}
+            {isPending && (
+              <span style={{ fontSize: '0.78rem', color: '#e67e22', fontWeight: 600 }}>Pending verification</span>
+            )}
             <button
               onClick={() => setEditing(true)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--booking-accent)', fontSize: '0.78rem', padding: 0 }}
             >
               Update
             </button>
-          </p>
-          {gymnast.pastSessionCount < 2 && guidance}
+          </div>
+          {isPending && (
+            <p style={{ margin: '0 0 0.4rem', fontSize: '0.82rem', color: '#e67e22', lineHeight: 1.5 }}>
+              We're checking this number with British Gymnastics — this usually takes a few days. Bookings can continue in the meantime, but if it can't be confirmed they will be blocked until the number is corrected. Make sure you've added <strong>Trampoline Life</strong> as a club on{' '}
+              <a href="https://mybg.british-gymnastics.org/" target="_blank" rel="noreferrer" style={{ color: '#e67e22' }}>mybg.british-gymnastics.org</a>.
+            </p>
+          )}
+          {!isPending && gymnast.pastSessionCount < 2 && guidance}
         </>
       )}
     </div>
