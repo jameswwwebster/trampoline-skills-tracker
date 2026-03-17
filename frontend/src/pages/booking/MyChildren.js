@@ -838,8 +838,8 @@ export default function MyChildren() {
               Monthly fees are based on a training year of 46 weeks. We divide the total annual cost by 12 to give a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.
             </p>
             <p style={{ margin: 0 }}>
-              <strong style={{ color: 'var(--booking-text-on-light)' }}>Flexibility</strong><br />
-              Members have flexibility in how they use their sessions. If training on a Tuesday normally but a Thursday works better one week, that's absolutely fine — just attend the session needed. Members no longer need to sign up to individual sessions in advance.
+              <strong style={{ color: 'var(--booking-text-on-light)' }}>Commitments</strong><br />
+              Your membership is tied to a specific session or sessions each week. Please attend your committed session — if you need to change which session you train at, speak to your coach.
             </p>
           </div>
         </section>
