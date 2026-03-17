@@ -260,10 +260,10 @@ p, li, td, th {
 
 .nav-dropdown-arrow {
   font-size: 0.8rem;
-  transition: transform 0.3s;
+  transition: transform 0.2s;
 }
 
-.nav-dropdown:hover .nav-dropdown-arrow {
+.nav-dropdown-arrow.open {
   transform: rotate(180deg);
 }
 
@@ -280,10 +280,10 @@ p, li, td, th {
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
-.nav-dropdown:hover .nav-dropdown-menu {
+.nav-dropdown-menu.open {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);

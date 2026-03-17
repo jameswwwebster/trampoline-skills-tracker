@@ -33,6 +33,7 @@ const Layout = () => {
     configuration: false,
     administration: false
   });
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   // Dynamic navigation text based on user type
   const getProgressNavText = () => {
@@ -64,9 +65,14 @@ const Layout = () => {
     }));
   };
 
-  // Close mobile menu when route changes
+  const toggleDropdown = (name) => {
+    setOpenDropdown(prev => prev === name ? null : name);
+  };
+
+  // Close mobile menu and dropdowns when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setOpenDropdown(null);
   }, [location.pathname]);
 
   // Close mobile menu when clicking outside
@@ -75,11 +81,14 @@ const Layout = () => {
       if (isMobileMenuOpen && !event.target.closest('.mobile-nav-menu') && !event.target.closest('.mobile-menu-toggle')) {
         setIsMobileMenuOpen(false);
       }
+      if (openDropdown && !event.target.closest('.nav-dropdown')) {
+        setOpenDropdown(null);
+      }
     };
 
     document.addEventListener('click', handleOutsideClick);
     return () => document.removeEventListener('click', handleOutsideClick);
-  }, [isMobileMenuOpen]);
+  }, [isMobileMenuOpen, openDropdown]);
 
   return (
     <div className="App">
@@ -122,11 +131,11 @@ const Layout = () => {
           
           {canManageGymnasts && (
             <div className="nav-dropdown">
-              <button className="nav-dropdown-toggle">
+              <button className="nav-dropdown-toggle" onClick={() => toggleDropdown('certificates')}>
                 Certificates
-                <span className="nav-dropdown-arrow">▼</span>
+                <span className={`nav-dropdown-arrow${openDropdown === 'certificates' ? ' open' : ''}`}>▼</span>
               </button>
-              <div className="nav-dropdown-menu">
+              <div className={`nav-dropdown-menu${openDropdown === 'certificates' ? ' open' : ''}`}>
                 <Link to="/certificates" className={isActive('/certificates')}>
                   Certificate Management
                 </Link>
@@ -138,14 +147,14 @@ const Layout = () => {
               </div>
             </div>
           )}
-          
+
           {canEditLevels && (
             <div className="nav-dropdown">
-              <button className="nav-dropdown-toggle">
+              <button className="nav-dropdown-toggle" onClick={() => toggleDropdown('configuration')}>
                 Configuration
-                <span className="nav-dropdown-arrow">▼</span>
+                <span className={`nav-dropdown-arrow${openDropdown === 'configuration' ? ' open' : ''}`}>▼</span>
               </button>
-              <div className="nav-dropdown-menu">
+              <div className={`nav-dropdown-menu${openDropdown === 'configuration' ? ' open' : ''}`}>
                 <Link to="/levels" className={isActive('/levels')}>
                   Levels & Skills
                 </Link>
@@ -160,11 +169,11 @@ const Layout = () => {
 
           {isClubAdmin && (
             <div className="nav-dropdown">
-              <button className="nav-dropdown-toggle">
+              <button className="nav-dropdown-toggle" onClick={() => toggleDropdown('administration')}>
                 Administration
-                <span className="nav-dropdown-arrow">▼</span>
+                <span className={`nav-dropdown-arrow${openDropdown === 'administration' ? ' open' : ''}`}>▼</span>
               </button>
-              <div className="nav-dropdown-menu">
+              <div className={`nav-dropdown-menu${openDropdown === 'administration' ? ' open' : ''}`}>
                 <Link to="/club-settings" className={isActive('/club-settings')}>
                   Club Settings
                 </Link>
@@ -203,11 +212,11 @@ const Layout = () => {
 
         <div className="navbar-nav">
           <div className="nav-dropdown">
-            <button className="nav-dropdown-toggle">
+            <button className="nav-dropdown-toggle" onClick={() => toggleDropdown('user')}>
               {user?.firstName} {user?.lastName}
-              <span className="nav-dropdown-arrow">▼</span>
+              <span className={`nav-dropdown-arrow${openDropdown === 'user' ? ' open' : ''}`}>▼</span>
             </button>
-            <div className="nav-dropdown-menu">
+            <div className={`nav-dropdown-menu${openDropdown === 'user' ? ' open' : ''}`}>
               <Link to="/profile" className={isActive('/profile')}>
                 Profile
               </Link>
