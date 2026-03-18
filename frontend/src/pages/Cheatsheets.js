@@ -5,10 +5,40 @@ import './Cheatsheets.css';
 const Cheatsheets = () => {
   // SEO: Add structured data and meta tags
   useEffect(() => {
-    const baseUrl = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:3000' 
-      : 'https://trampoline-frontend.onrender.com';
+    const baseUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : 'https://trampoline.life';
     const pageUrl = `${baseUrl}/cheatsheets`;
+
+    // Override og: tags for cheatsheets page
+    const setMeta = (prop, val, isName = false) => {
+      const attr = isName ? 'name' : 'property';
+      let el = document.querySelector(`meta[${attr}="${prop}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, prop); document.head.appendChild(el); }
+      el.setAttribute('content', val);
+    };
+    setMeta('og:url', pageUrl);
+    setMeta('og:title', '2026 BG Rules Cheatsheets — Trampoline & DMT');
+    setMeta('og:description', 'One-page cheatsheets for trampoline and DMT requirements for British Gymnastics competitions — 2026 rules, regulations and qualification pathways.');
+    setMeta('og:image', `${baseUrl}/social-preview.png`);
+    setMeta('og:site_name', 'British Gymnastics Cheatsheets');
+    setMeta('twitter:url', pageUrl, true);
+    setMeta('twitter:title', '2026 BG Rules Cheatsheets — Trampoline & DMT', true);
+    setMeta('twitter:description', 'One-page cheatsheets for trampoline and DMT requirements for British Gymnastics competitions — 2026 rules, regulations and qualification pathways.', true);
+    setMeta('twitter:image', `${baseUrl}/social-preview.png`, true);
+
+    return () => {
+      // Restore Trampoline Life defaults on unmount
+      setMeta('og:url', 'https://trampoline.life');
+      setMeta('og:title', 'Trampoline Life');
+      setMeta('og:description', 'Trampoline gymnastics club — sessions, memberships, and skill tracking.');
+      setMeta('og:image', 'https://trampoline.life/social-preview-root.png');
+      setMeta('og:site_name', 'Trampoline Life');
+      setMeta('twitter:url', 'https://trampoline.life', true);
+      setMeta('twitter:title', 'Trampoline Life', true);
+      setMeta('twitter:description', 'Trampoline gymnastics club — sessions, memberships, and skill tracking.', true);
+      setMeta('twitter:image', 'https://trampoline.life/social-preview-root.png', true);
+    };
 
     // Update canonical URL
     let canonical = document.querySelector('link[rel="canonical"]');
