@@ -118,6 +118,11 @@
   color: #c0661a;
 }
 
+.cf-tag--dt {
+  background: rgba(20, 184, 166, 0.12);
+  color: #0f766e;
+}
+
 .cf-tag--trs {
   background: rgba(39, 174, 96, 0.12);
   color: #1a7a4a;
