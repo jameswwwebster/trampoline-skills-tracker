@@ -31,12 +31,12 @@ const Cheatsheets = () => {
       // Restore Trampoline Life defaults on unmount
       setMeta('og:url', 'https://trampoline.life');
       setMeta('og:title', 'Trampoline Life');
-      setMeta('og:description', 'Trampoline gymnastics club — sessions, memberships, and skill tracking.');
+      setMeta('og:description', 'Trampoline and DMT club based in Newcastle. Sessions for all ages and abilities and competitive pathways.');
       setMeta('og:image', 'https://trampoline.life/social-preview-root.png');
       setMeta('og:site_name', 'Trampoline Life');
       setMeta('twitter:url', 'https://trampoline.life', true);
       setMeta('twitter:title', 'Trampoline Life', true);
-      setMeta('twitter:description', 'Trampoline gymnastics club — sessions, memberships, and skill tracking.', true);
+      setMeta('twitter:description', 'Trampoline and DMT club based in Newcastle. Sessions for all ages and abilities and competitive pathways.', true);
       setMeta('twitter:image', 'https://trampoline.life/social-preview-root.png', true);
     };
 
