@@ -66,7 +66,21 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
 
     const commitments = await prisma.commitment.findMany({
       where: { templateId, gymnast: { clubId: req.user.clubId } },
-      include: { gymnast: { select: { id: true, firstName: true, lastName: true } } },
+      include: {
+        gymnast: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            memberships: {
+              where: { clubId: req.user.clubId, status: { not: 'CANCELLED' } },
+              select: { id: true, status: true, monthlyAmount: true },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
+          },
+        },
+      },
       orderBy: { createdAt: 'asc' },
     });
 

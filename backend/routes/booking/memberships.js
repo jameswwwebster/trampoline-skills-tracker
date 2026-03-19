@@ -43,7 +43,19 @@ router.get('/my', auth, async (req, res) => {
         clubId: req.user.clubId,
         status: { not: 'CANCELLED' },
       },
-      include: { gymnast: true },
+      include: {
+        gymnast: {
+          include: {
+            commitments: {
+              where: { status: { not: 'WAITLISTED' } },
+              include: {
+                template: { select: { id: true, dayOfWeek: true, startTime: true, endTime: true, type: true } },
+              },
+              orderBy: [{ template: { dayOfWeek: 'asc' } }, { template: { startTime: 'asc' } }],
+            },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
     res.json(memberships);

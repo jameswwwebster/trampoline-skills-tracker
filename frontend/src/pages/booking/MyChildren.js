@@ -565,6 +565,28 @@ function MembershipCard({ membership }) {
         <span>Monthly (from {firstOfNextMonth.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })})</span>
         <span style={{ color: 'var(--booking-text-on-light)', fontWeight: 600 }}>£{(membership.monthlyAmount / 100).toFixed(2)}</span>
         <span>Start date</span><span style={{ color: 'var(--booking-text-on-light)' }}>{startDate.toLocaleDateString('en-GB')}</span>
+        {membership.gymnast.commitments && membership.gymnast.commitments.length > 0 && (
+          <>
+            <span style={{ paddingTop: '0.1rem' }}>Standing slots</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+              {membership.gymnast.commitments.map(c => {
+                const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                const isPaused = c.status === 'PAUSED';
+                return (
+                  <span key={c.id} style={{
+                    fontSize: '0.78rem', fontWeight: 600, padding: '1px 7px', borderRadius: 4,
+                    background: isPaused ? 'var(--booking-bg-light)' : 'rgba(var(--booking-accent-rgb, 90,60,200),0.1)',
+                    color: isPaused ? 'var(--booking-text-muted)' : 'var(--booking-accent)',
+                    border: `1px solid ${isPaused ? 'var(--booking-border)' : 'var(--booking-accent)'}`,
+                    opacity: isPaused ? 0.7 : 1,
+                  }}>
+                    {DAY_SHORT[c.template.dayOfWeek]} {c.template.startTime}{isPaused ? ' (paused)' : ''}
+                  </span>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {membership.status === 'PENDING_PAYMENT' && (
