@@ -89,11 +89,11 @@ router.get('/delinquent', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req
   }
 });
 
-// POST /api/booking/memberships/notify-scheduled — send "scheduled" email to all SCHEDULED memberships
+// POST /api/booking/memberships/notify-scheduled — send "scheduled" email to all not-yet-notified SCHEDULED memberships
 router.post('/notify-scheduled', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
     const memberships = await prisma.membership.findMany({
-      where: { clubId: req.user.clubId, status: 'SCHEDULED' },
+      where: { clubId: req.user.clubId, status: 'SCHEDULED', scheduledNotifiedAt: null },
       include: {
         gymnast: {
           include: { guardians: { select: { email: true, firstName: true }, orderBy: { createdAt: 'asc' }, take: 1 } },
@@ -114,6 +114,10 @@ router.post('/notify-scheduled', auth, requireRole(['CLUB_ADMIN', 'COACH']), asy
           m.monthlyAmount,
           m.startDate,
         );
+        await prisma.membership.update({
+          where: { id: m.id },
+          data: { scheduledNotifiedAt: new Date() },
+        });
         sent++;
       } catch {
         skipped++;
@@ -410,6 +414,10 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
             value.monthlyAmount,
             startDate,
           );
+          await prisma.membership.update({
+            where: { id: membership.id },
+            data: { scheduledNotifiedAt: new Date() },
+          });
         } catch (emailErr) {
           console.error('Failed to send membership scheduled email:', emailErr);
         }

@@ -95,7 +95,7 @@ export default function AdminMemberships() {
   };
 
   const handleNotifyScheduled = async () => {
-    const scheduled = memberships.filter(m => m.status === 'SCHEDULED');
+    const scheduled = memberships.filter(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt);
     if (!window.confirm(`Send a "membership scheduled" email to ${scheduled.length} guardian${scheduled.length !== 1 ? 's' : ''}?`)) return;
     setNotifying(true);
     setNotifyResult(null);
@@ -160,7 +160,7 @@ export default function AdminMemberships() {
         </button>
       </form>
 
-      {memberships.some(m => m.status === 'SCHEDULED') && (
+      {memberships.some(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt) && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           <button
             className="bk-btn bk-btn--ghost"
@@ -168,7 +168,7 @@ export default function AdminMemberships() {
             disabled={notifying}
             onClick={handleNotifyScheduled}
           >
-            {notifying ? 'Sending…' : `Notify scheduled members (${memberships.filter(m => m.status === 'SCHEDULED').length})`}
+            {notifying ? 'Sending…' : `Notify scheduled members (${memberships.filter(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt).length})`}
           </button>
           {notifyResult && <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>{notifyResult}</span>}
         </div>
