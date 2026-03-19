@@ -145,6 +145,10 @@ async function deleteGymnast(gymnastId) {
 
   await prisma.consent.deleteMany({ where: { gymnastId } });
   await prisma.membership.deleteMany({ where: { gymnastId } });
+  await prisma.skillProgress.deleteMany({ where: { gymnastId } });
+  await prisma.levelProgress.deleteMany({ where: { gymnastId } });
+  await prisma.routineProgress.deleteMany({ where: { gymnastId } });
+  await prisma.certificate.deleteMany({ where: { gymnastId } });
   await prisma.gymnast.delete({ where: { id: gymnastId } });
 }
 
