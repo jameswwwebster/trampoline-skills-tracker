@@ -82,7 +82,7 @@ router.post('/assign', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
     expiresAt.setDate(expiresAt.getDate() + value.expiresInDays);
 
     const credit = await prisma.credit.create({
-      data: { userId: value.userId, amount: value.amount, expiresAt },
+      data: { userId: value.userId, amount: value.amount, expiresAt, note: value.note || null },
     });
 
     await audit({

@@ -12,7 +12,7 @@ const ROLE_COLORS = {
 };
 
 function AssignCreditForm({ userId, onDone }) {
-  const [form, setForm] = useState({ amount: '', expiresInDays: 90 });
+  const [form, setForm] = useState({ amount: '', expiresInDays: 90, note: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -25,6 +25,7 @@ function AssignCreditForm({ userId, onDone }) {
         userId,
         amount: Math.round(parseFloat(form.amount) * 100),
         expiresInDays: parseInt(form.expiresInDays),
+        note: form.note || undefined,
       });
       onDone();
     } catch (err) {
@@ -47,6 +48,11 @@ function AssignCreditForm({ userId, onDone }) {
             required style={{ marginTop: '0.25rem' }} />
         </label>
       </div>
+      <label className="bk-label" style={{ fontWeight: 'normal', marginTop: '0.5rem' }}>Note (optional)
+        <input type="text" maxLength={200} className="bk-input"
+          value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+          placeholder="e.g. Missed session refund" style={{ marginTop: '0.25rem' }} />
+      </label>
       {error && <p className="bk-error">{error}</p>}
       <div className="bk-row">
         <button type="submit" disabled={submitting} className="bk-btn bk-btn--primary bk-btn--sm">

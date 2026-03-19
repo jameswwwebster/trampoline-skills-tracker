@@ -82,6 +82,7 @@ export default function AdminCredits() {
               <th>Member</th>
               <th style={{ textAlign: 'right' }}>Amount</th>
               <th>Expires</th>
+              <th>Note</th>
             </tr>
           </thead>
           <tbody>
@@ -93,6 +94,7 @@ export default function AdminCredits() {
                     £{(c.amount / 100).toFixed(2)}
                   </td>
                   <td>{formatDate(c.expiresAt)}</td>
+                  <td style={{ color: 'var(--booking-text-muted)', fontSize: '0.85rem' }}>{c.note || '—'}</td>
                 </tr>
               ))
             )}

@@ -23,7 +23,10 @@ export default function MyCredits() {
           <p style={{ fontWeight: 600 }}>Total available: £{(total / 100).toFixed(2)}</p>
           {credits.map(c => (
             <div key={c.id} className="bk-card bk-row bk-row--between">
-              <span>£{(c.amount / 100).toFixed(2)}</span>
+              <div>
+                <span>£{(c.amount / 100).toFixed(2)}</span>
+                {c.note && <span className="bk-muted" style={{ fontSize: '0.85rem', marginLeft: '0.5rem' }}>{c.note}</span>}
+              </div>
               <span className="bk-muted" style={{ fontSize: '0.85rem' }}>
                 Expires {new Date(c.expiresAt).toLocaleDateString('en-GB')}
               </span>

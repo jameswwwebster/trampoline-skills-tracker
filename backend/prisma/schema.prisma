@@ -668,6 +668,7 @@ model Credit {
   amount          Int       // in pence
   expiresAt       DateTime
   usedAt          DateTime?
+  note            String?
   usedOnBookingId String?
   usedOnChargeId  String?
   sourceBookingId String?
