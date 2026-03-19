@@ -426,13 +426,26 @@ export default function SessionTemplates() {
                               const startsBadge = isFuture
                                 ? new Date(c.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                                 : null;
+                              const membership = c.gymnast.memberships?.[0];
+                              const memBadge = !membership
+                                ? { label: 'No membership', bg: 'rgba(231,76,60,0.1)', color: 'var(--booking-danger)', border: 'rgba(231,76,60,0.3)' }
+                                : membership.status === 'PAUSED'
+                                  ? { label: 'Membership paused', bg: 'var(--booking-bg-light)', color: 'var(--booking-text-muted)', border: 'var(--booking-border)' }
+                                  : membership.status === 'PENDING_PAYMENT'
+                                    ? { label: 'Payment pending', bg: 'rgba(231,76,60,0.1)', color: 'var(--booking-danger)', border: 'rgba(231,76,60,0.3)' }
+                                    : null;
                               return (
                                 <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.85rem' }}>
-                                  <span>
+                                  <span style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.3rem' }}>
                                     {c.gymnast.firstName} {c.gymnast.lastName}
                                     {isFuture && (
-                                      <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', color: '#1565c0', background: '#e3f2fd', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>
+                                      <span style={{ fontSize: '0.75rem', color: '#1565c0', background: '#e3f2fd', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>
                                         Starts {startsBadge}
+                                      </span>
+                                    )}
+                                    {memBadge && (
+                                      <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '1px 6px', borderRadius: 4, background: memBadge.bg, color: memBadge.color, border: `1px solid ${memBadge.border}` }}>
+                                        {memBadge.label}
                                       </span>
                                     )}
                                   </span>
@@ -448,35 +461,68 @@ export default function SessionTemplates() {
                         {paused.length > 0 && (
                           <div style={{ marginBottom: '0.5rem' }}>
                             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--booking-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>Paused</div>
-                            {paused.map(c => (
-                              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.85rem' }}>
-                                <span>{c.gymnast.firstName} {c.gymnast.lastName}</span>
-                                <div style={{ display: 'flex', gap: '0.3rem' }}>
-                                  <button className="bk-btn bk-btn--sm" onClick={() => handleActivateCommitment(t.id, c.id)}>Activate</button>
-                                  <button className="bk-btn bk-btn--sm" style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }} onClick={() => handleRemoveCommitment(t.id, c.id)}>Remove</button>
+                            {paused.map(c => {
+                              const membership = c.gymnast.memberships?.[0];
+                              const memBadge = !membership
+                                ? { label: 'No membership', bg: 'rgba(231,76,60,0.1)', color: 'var(--booking-danger)', border: 'rgba(231,76,60,0.3)' }
+                                : membership.status === 'PENDING_PAYMENT'
+                                  ? { label: 'Payment pending', bg: 'rgba(231,76,60,0.1)', color: 'var(--booking-danger)', border: 'rgba(231,76,60,0.3)' }
+                                  : null;
+                              return (
+                                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.85rem' }}>
+                                  <span style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.3rem' }}>
+                                    {c.gymnast.firstName} {c.gymnast.lastName}
+                                    {memBadge && (
+                                      <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '1px 6px', borderRadius: 4, background: memBadge.bg, color: memBadge.color, border: `1px solid ${memBadge.border}` }}>
+                                        {memBadge.label}
+                                      </span>
+                                    )}
+                                  </span>
+                                  <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                    <button className="bk-btn bk-btn--sm" onClick={() => handleActivateCommitment(t.id, c.id)}>Activate</button>
+                                    <button className="bk-btn bk-btn--sm" style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }} onClick={() => handleRemoveCommitment(t.id, c.id)}>Remove</button>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                         {waitlisted.length > 0 && (
                           <div>
                             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--booking-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>Waitlist</div>
-                            {waitlisted.map((c, idx) => (
-                              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.85rem' }}>
-                                <span><span style={{ color: 'var(--booking-text-muted)', marginRight: '0.4rem' }}>#{idx + 1}</span>{c.gymnast.firstName} {c.gymnast.lastName}</span>
-                                <div style={{ display: 'flex', gap: '0.3rem' }}>
-                                  <button
-                                    className="bk-btn bk-btn--sm"
-                                    disabled={!hasSlotAvailable && !(t.competitiveSlots === null)}
-                                    onClick={() => handleActivateCommitment(t.id, c.id)}
-                                  >
-                                    Promote
-                                  </button>
-                                  <button className="bk-btn bk-btn--sm" style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }} onClick={() => handleRemoveCommitment(t.id, c.id)}>Remove</button>
+                            {waitlisted.map((c, idx) => {
+                              const membership = c.gymnast.memberships?.[0];
+                              const memBadge = !membership
+                                ? { label: 'No membership', bg: 'rgba(231,76,60,0.1)', color: 'var(--booking-danger)', border: 'rgba(231,76,60,0.3)' }
+                                : membership.status === 'PAUSED'
+                                  ? { label: 'Membership paused', bg: 'var(--booking-bg-light)', color: 'var(--booking-text-muted)', border: 'var(--booking-border)' }
+                                  : membership.status === 'PENDING_PAYMENT'
+                                    ? { label: 'Payment pending', bg: 'rgba(231,76,60,0.1)', color: 'var(--booking-danger)', border: 'rgba(231,76,60,0.3)' }
+                                    : null;
+                              return (
+                                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)', fontSize: '0.85rem' }}>
+                                  <span style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.3rem' }}>
+                                    <span style={{ color: 'var(--booking-text-muted)', marginRight: '0.1rem' }}>#{idx + 1}</span>
+                                    {c.gymnast.firstName} {c.gymnast.lastName}
+                                    {memBadge && (
+                                      <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '1px 6px', borderRadius: 4, background: memBadge.bg, color: memBadge.color, border: `1px solid ${memBadge.border}` }}>
+                                        {memBadge.label}
+                                      </span>
+                                    )}
+                                  </span>
+                                  <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                    <button
+                                      className="bk-btn bk-btn--sm"
+                                      disabled={!hasSlotAvailable && !(t.competitiveSlots === null)}
+                                      onClick={() => handleActivateCommitment(t.id, c.id)}
+                                    >
+                                      Promote
+                                    </button>
+                                    <button className="bk-btn bk-btn--sm" style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }} onClick={() => handleRemoveCommitment(t.id, c.id)}>Remove</button>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </>

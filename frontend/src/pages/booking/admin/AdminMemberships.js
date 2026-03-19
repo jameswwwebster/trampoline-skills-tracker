@@ -3,6 +3,7 @@ import { bookingApi, getTemplates } from '../../../utils/bookingApi';
 import '../booking-shared.css';
 
 const STATUS_LABELS = {
+  SCHEDULED: { label: 'Scheduled', color: '#1565c0' },
   PENDING_PAYMENT: { label: 'Awaiting payment setup', color: 'var(--booking-warning, #e67e22)' },
   ACTIVE: { label: 'Active', color: 'var(--booking-success)' },
   PAUSED: { label: 'Paused', color: 'var(--booking-text-muted)' },
@@ -19,6 +20,8 @@ export default function AdminMemberships() {
   const [error, setError] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editAmount, setEditAmount] = useState('');
+  const [notifying, setNotifying] = useState(false);
+  const [notifyResult, setNotifyResult] = useState(null);
 
   const load = () => {
     bookingApi.getMemberships().then(res => setMemberships(res.data));
@@ -91,6 +94,21 @@ export default function AdminMemberships() {
     }
   };
 
+  const handleNotifyScheduled = async () => {
+    const scheduled = memberships.filter(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt);
+    if (!window.confirm(`Send a "membership scheduled" email to ${scheduled.length} guardian${scheduled.length !== 1 ? 's' : ''}?`)) return;
+    setNotifying(true);
+    setNotifyResult(null);
+    try {
+      const res = await bookingApi.notifyScheduledMemberships();
+      setNotifyResult(`Sent ${res.data.sent} email${res.data.sent !== 1 ? 's' : ''}${res.data.skipped > 0 ? `, ${res.data.skipped} skipped (no guardian email)` : ''}.`);
+    } catch (err) {
+      setNotifyResult('Failed to send notifications.');
+    } finally {
+      setNotifying(false);
+    }
+  };
+
   return (
     <div className="bk-page bk-page--lg">
       <h2>Memberships</h2>
@@ -141,6 +159,20 @@ export default function AdminMemberships() {
           {submitting ? 'Creating...' : 'Add member'}
         </button>
       </form>
+
+      {memberships.some(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <button
+            className="bk-btn bk-btn--ghost"
+            style={{ fontSize: '0.85rem' }}
+            disabled={notifying}
+            onClick={handleNotifyScheduled}
+          >
+            {notifying ? 'Sending…' : `Notify scheduled members (${memberships.filter(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt).length})`}
+          </button>
+          {notifyResult && <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>{notifyResult}</span>}
+        </div>
+      )}
 
       {memberships.length === 0 && <p className="bk-muted">No memberships.</p>}
       {memberships.length > 0 && (

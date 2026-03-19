@@ -565,6 +565,28 @@ function MembershipCard({ membership }) {
         <span>Monthly (from {firstOfNextMonth.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })})</span>
         <span style={{ color: 'var(--booking-text-on-light)', fontWeight: 600 }}>£{(membership.monthlyAmount / 100).toFixed(2)}</span>
         <span>Start date</span><span style={{ color: 'var(--booking-text-on-light)' }}>{startDate.toLocaleDateString('en-GB')}</span>
+        {membership.gymnast.commitments && membership.gymnast.commitments.length > 0 && (
+          <>
+            <span style={{ paddingTop: '0.1rem' }}>Standing slots</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+              {membership.gymnast.commitments.map(c => {
+                const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                const isPaused = c.status === 'PAUSED';
+                return (
+                  <span key={c.id} style={{
+                    fontSize: '0.78rem', fontWeight: 600, padding: '1px 7px', borderRadius: 4,
+                    background: isPaused ? 'var(--booking-bg-light)' : 'rgba(var(--booking-accent-rgb, 90,60,200),0.1)',
+                    color: isPaused ? 'var(--booking-text-muted)' : 'var(--booking-accent)',
+                    border: `1px solid ${isPaused ? 'var(--booking-border)' : 'var(--booking-accent)'}`,
+                    opacity: isPaused ? 0.7 : 1,
+                  }}>
+                    {DAY_SHORT[c.template.dayOfWeek]} {c.template.startTime}{isPaused ? ' (paused)' : ''}
+                  </span>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {membership.status === 'PENDING_PAYMENT' && (
@@ -619,15 +641,14 @@ function NotificationPreferences({ user, onSaved }) {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
-  const toggle = async () => {
+  const savePreference = async (field, value) => {
     setSaving(true);
     setSaved(false);
     setSaveError(null);
-    const newValue = user.weeklySessionReminder === false;
     try {
       const res = await axios.put(
         `${API_URL}/users/profile`,
-        { weeklySessionReminder: newValue },
+        { [field]: value },
         { headers: getHeaders() }
       );
       onSaved(res.data.user);
@@ -643,12 +664,12 @@ function NotificationPreferences({ user, onSaved }) {
   return (
     <section style={{ marginBottom: '2rem' }}>
       <h3>Notifications</h3>
-      <div className="bk-card">
+      <div className="bk-card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
           <input
             type="checkbox"
             checked={user?.weeklySessionReminder !== false}
-            onChange={toggle}
+            onChange={() => savePreference('weeklySessionReminder', user?.weeklySessionReminder === false)}
             disabled={saving}
           />
           <span>
@@ -658,8 +679,22 @@ function NotificationPreferences({ user, onSaved }) {
             </span>
           </span>
         </label>
-        {saved && <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: 'var(--booking-success)' }}>Saved</p>}
-        {saveError && <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: 'var(--booking-danger)' }}>{saveError}</p>}
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={user?.bookingReceiptEmail !== false}
+            onChange={() => savePreference('bookingReceiptEmail', user?.bookingReceiptEmail === false)}
+            disabled={saving}
+          />
+          <span>
+            <strong>Booking confirmation emails</strong>
+            <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--booking-text-muted)', marginTop: '0.1rem' }}>
+              Receive an email when a booking is confirmed, listing the sessions and gymnasts booked.
+            </span>
+          </span>
+        </label>
+        {saved && <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--booking-success)' }}>Saved</p>}
+        {saveError && <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--booking-danger)' }}>{saveError}</p>}
       </div>
     </section>
   );

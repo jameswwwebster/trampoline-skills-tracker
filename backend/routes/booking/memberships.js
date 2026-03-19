@@ -43,7 +43,19 @@ router.get('/my', auth, async (req, res) => {
         clubId: req.user.clubId,
         status: { not: 'CANCELLED' },
       },
-      include: { gymnast: true },
+      include: {
+        gymnast: {
+          include: {
+            commitments: {
+              where: { status: { not: 'WAITLISTED' } },
+              include: {
+                template: { select: { id: true, dayOfWeek: true, startTime: true, endTime: true, type: true } },
+              },
+              orderBy: [{ template: { dayOfWeek: 'asc' } }, { template: { startTime: 'asc' } }],
+            },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
     res.json(memberships);
@@ -71,6 +83,48 @@ router.get('/delinquent', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req
       guardian: m.gymnast.guardians[0] || null,
     }));
     res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/booking/memberships/notify-scheduled — send "scheduled" email to all not-yet-notified SCHEDULED memberships
+router.post('/notify-scheduled', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const memberships = await prisma.membership.findMany({
+      where: { clubId: req.user.clubId, status: 'SCHEDULED', scheduledNotifiedAt: null },
+      include: {
+        gymnast: {
+          include: { guardians: { select: { email: true, firstName: true }, orderBy: { createdAt: 'asc' }, take: 1 } },
+        },
+      },
+    });
+
+    let sent = 0;
+    let skipped = 0;
+    for (const m of memberships) {
+      const guardian = m.gymnast.guardians[0];
+      if (!guardian?.email) { skipped++; continue; }
+      try {
+        await emailService.sendMembershipScheduledEmail(
+          guardian.email,
+          guardian.firstName,
+          m.gymnast,
+          m.monthlyAmount,
+          m.startDate,
+        );
+        await prisma.membership.update({
+          where: { id: m.id },
+          data: { scheduledNotifiedAt: new Date() },
+        });
+        sent++;
+      } catch {
+        skipped++;
+      }
+    }
+
+    res.json({ sent, skipped });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -344,6 +398,30 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       // Start date is today or in the past — activate immediately (creates Stripe sub, sends email)
       const { activateMembership } = require('../../services/membershipActivationService');
       await activateMembership(membership.id, prisma);
+    } else {
+      // Future start date — notify guardian now so they know it's been scheduled
+      const guardian = await prisma.user.findFirst({
+        where: { guardedGymnasts: { some: { id: membership.gymnast.id } } },
+        select: { email: true, firstName: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (guardian?.email) {
+        try {
+          await emailService.sendMembershipScheduledEmail(
+            guardian.email,
+            guardian.firstName,
+            membership.gymnast,
+            value.monthlyAmount,
+            startDate,
+          );
+          await prisma.membership.update({
+            where: { id: membership.id },
+            data: { scheduledNotifiedAt: new Date() },
+          });
+        } catch (emailErr) {
+          console.error('Failed to send membership scheduled email:', emailErr);
+        }
+      }
     }
 
     // Re-fetch to return up-to-date status

@@ -5,6 +5,7 @@ const Joi = require('joi');
 const getStripe = () => require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { processWaitlist } = require('../../services/waitlistService');
 const { audit } = require('../../services/auditLogService');
+const emailService = require('../../services/emailService');
 const { SHOP_PRODUCTS } = require('../../data/shopProducts');
 
 const router = express.Router();
@@ -310,6 +311,10 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
+    if (chargeAmount === 0) {
+      emailService.trySendBookingReceipt(req.user.id, [booking.id], prisma);
+    }
+
     res.json({ booking, clientSecret });
   } catch (err) {
     console.error(err);
@@ -572,6 +577,10 @@ router.post('/batch', auth, async (req, res) => {
           data: { userId: req.user.id, amount: c.remainder, expiresAt: c.expiresAt },
         });
       }
+    }
+
+    if (chargeAmount === 0) {
+      emailService.trySendBookingReceipt(req.user.id, bookings.map(b => b.id), prisma);
     }
 
     res.json({ bookings, clientSecret });
