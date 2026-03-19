@@ -449,7 +449,12 @@ router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
 
     if (membership.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
       const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-      await stripe.subscriptions.cancel(membership.stripeSubscriptionId);
+      try {
+        await stripe.subscriptions.cancel(membership.stripeSubscriptionId);
+      } catch (stripeErr) {
+        // Subscription may already be cancelled/expired in Stripe — proceed with local cancellation
+        console.warn('Stripe cancel skipped:', stripeErr.message);
+      }
     }
 
     await prisma.membership.update({ where: { id: membership.id }, data: { status: 'CANCELLED' } });
