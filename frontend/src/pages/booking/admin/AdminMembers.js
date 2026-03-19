@@ -980,6 +980,8 @@ function MembershipsPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState({});
   const [error, setError] = useState(null);
+  const [notifying, setNotifying] = useState(false);
+  const [notifyResult, setNotifyResult] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -989,6 +991,22 @@ function MembershipsPanel() {
       .finally(() => setLoading(false));
   };
   useEffect(load, []);
+
+  const handleNotifyScheduled = async () => {
+    const count = memberships.filter(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt).length;
+    if (!window.confirm(`Send a "membership scheduled" email to ${count} guardian${count !== 1 ? 's' : ''}?`)) return;
+    setNotifying(true);
+    setNotifyResult(null);
+    try {
+      const res = await bookingApi.notifyScheduledMemberships();
+      setNotifyResult(`Sent ${res.data.sent} email${res.data.sent !== 1 ? 's' : ''}.`);
+      load();
+    } catch {
+      setNotifyResult('Failed to send notifications.');
+    } finally {
+      setNotifying(false);
+    }
+  };
 
   const handleStatus = async (id, status) => {
     setSaving(s => ({ ...s, [id]: true }));
@@ -1020,9 +1038,19 @@ function MembershipsPanel() {
   if (loading) return <p className="bk-muted">Loading...</p>;
   if (visible.length === 0) return <p className="bk-muted">No active memberships.</p>;
 
+  const unnotifiedCount = memberships.filter(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt).length;
+
   return (
     <>
       {error && <p className="bk-error">{error}</p>}
+      {unnotifiedCount > 0 && (
+        <div style={{ marginBottom: '0.75rem' }}>
+          <button className="bk-btn bk-btn--ghost" style={{ fontSize: '0.85rem' }} disabled={notifying} onClick={handleNotifyScheduled}>
+            {notifying ? 'Sending…' : `Notify scheduled members (${unnotifiedCount})`}
+          </button>
+          {notifyResult && <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem' }}>{notifyResult}</span>}
+        </div>
+      )}
       <table className="bk-table">
         <thead>
           <tr>
