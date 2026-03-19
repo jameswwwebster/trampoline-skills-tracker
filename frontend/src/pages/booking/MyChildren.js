@@ -523,6 +523,10 @@ function MembershipCard({ membership }) {
   const [hostedUrl, setHostedUrl] = useState(null);
   const [loadingSecret, setLoadingSecret] = useState(false);
   const [secretError, setSecretError] = useState(null);
+  const [setupClientSecret, setSetupClientSecret] = useState(null);
+  const [loadingSetup, setLoadingSetup] = useState(false);
+  const [setupError, setSetupError] = useState(null);
+  const [paymentSaved, setPaymentSaved] = useState(false);
 
   const loadPaymentLink = async () => {
     setLoadingSecret(true);
@@ -537,10 +541,24 @@ function MembershipCard({ membership }) {
     }
   };
 
+  const loadScheduledSetupIntent = async () => {
+    setLoadingSetup(true);
+    setSetupError(null);
+    try {
+      const res = await bookingApi.getMembershipSetupIntent(membership.id);
+      setSetupClientSecret(res.data.clientSecret);
+    } catch (err) {
+      setSetupError(err.response?.data?.error || 'Failed to load payment form. Please try again.');
+    } finally {
+      setLoadingSetup(false);
+    }
+  };
+
   const STATUS_DISPLAY = {
     PENDING_PAYMENT: { label: 'Payment setup required', color: 'var(--booking-danger)' },
     ACTIVE: { label: 'Active', color: 'var(--booking-success)' },
     PAUSED: { label: 'Paused', color: 'var(--booking-text-muted)' },
+    SCHEDULED: { label: 'Scheduled', color: 'var(--booking-accent)' },
   };
   const s = STATUS_DISPLAY[membership.status] || { label: membership.status, color: 'inherit' };
 
@@ -630,6 +648,40 @@ function MembershipCard({ membership }) {
       {membership.status === 'PAUSED' && (
         <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>
           Your membership is currently paused. Contact the club to resume.
+        </p>
+      )}
+
+      {membership.status === 'SCHEDULED' && !paymentSaved && (
+        <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.85rem', background: 'var(--booking-bg-light)', borderRadius: 'var(--booking-radius)', fontSize: '0.85rem' }}>
+          <p style={{ margin: '0 0 0.5rem', color: 'var(--booking-text-on-light)' }}>
+            Add a payment method now so your membership starts smoothly on {startDate.toLocaleDateString('en-GB')}.
+          </p>
+          {!setupClientSecret ? (
+            <>
+              <button
+                className="bk-btn bk-btn--primary"
+                style={{ width: '100%' }}
+                disabled={loadingSetup}
+                onClick={loadScheduledSetupIntent}
+              >
+                {loadingSetup ? 'Loading...' : 'Set up payment method'}
+              </button>
+              {setupError && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{setupError}</p>}
+            </>
+          ) : (
+            <Elements stripe={stripePromise} options={{ clientSecret: setupClientSecret }}>
+              <SetupPaymentMethodForm
+                membershipId={membership.id}
+                onDone={() => { setSetupClientSecret(null); setPaymentSaved(true); }}
+              />
+            </Elements>
+          )}
+        </div>
+      )}
+
+      {membership.status === 'SCHEDULED' && paymentSaved && (
+        <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--booking-success)' }}>
+          Payment method saved. You're all set for {startDate.toLocaleDateString('en-GB')}.
         </p>
       )}
     </div>

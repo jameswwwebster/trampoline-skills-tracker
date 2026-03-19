@@ -224,12 +224,23 @@ router.post('/:id/setup-intent', auth, async (req, res) => {
       include: { guardians: { orderBy: { createdAt: 'asc' }, take: 1 } },
     });
     const guardian = gymnast?.guardians[0];
-    if (!guardian?.stripeCustomerId) {
-      return res.status(400).json({ error: 'No Stripe customer for this membership' });
+    if (!guardian) {
+      return res.status(400).json({ error: 'No guardian found for this membership' });
+    }
+
+    let stripeCustomerId = guardian.stripeCustomerId;
+    if (!stripeCustomerId) {
+      const customer = await stripe.customers.create({
+        email: guardian.email,
+        name: `${guardian.firstName} ${guardian.lastName}`,
+        metadata: { userId: guardian.id },
+      });
+      stripeCustomerId = customer.id;
+      await prisma.user.update({ where: { id: guardian.id }, data: { stripeCustomerId } });
     }
 
     const setupIntent = await stripe.setupIntents.create({
-      customer: guardian.stripeCustomerId,
+      customer: stripeCustomerId,
       usage: 'off_session',
       automatic_payment_methods: { enabled: true },
       metadata: { membershipId: membership.id, subscriptionId: membership.stripeSubscriptionId || '' },
