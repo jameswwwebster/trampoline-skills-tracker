@@ -59,6 +59,7 @@ async function generateRollingInstances(clubId) {
     const dates = getNextNWeeksDates(template.dayOfWeek, today, 4);
     for (const date of dates) {
       if (isDateInClosure(date, closures)) continue;
+      if (template.startDate && date < new Date(template.startDate)) continue;
 
       const dateOnly = new Date(date);
       dateOnly.setHours(0, 0, 0, 0);

@@ -504,6 +504,7 @@ model SessionTemplate {
   type            SessionType       @default(TRAMPOLINE)
   minAge          Int?              // null = no restriction, 16 = 16+ only
   information String?
+  startDate   DateTime?         @db.Date
   isActive    Boolean           @default(true)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt

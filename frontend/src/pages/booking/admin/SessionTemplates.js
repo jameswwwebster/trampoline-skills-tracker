@@ -6,7 +6,7 @@ import { bookingApi, getTemplates, createTemplate, updateTemplate, toggleTemplat
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const EMPTY_FORM = { dayOfWeek: '1', startTime: '', endTime: '', openSlots: '12', minAge: '', competitiveSlots: '', pricePerGymnast: '6', information: '', type: 'TRAMPOLINE' };
+const EMPTY_FORM = { dayOfWeek: '1', startTime: '', endTime: '', openSlots: '12', minAge: '', competitiveSlots: '', pricePerGymnast: '6', information: '', type: 'TRAMPOLINE', startDate: '' };
 
 // Minimal TipTap toolbar
 function Toolbar({ editor }) {
@@ -177,6 +177,7 @@ export default function SessionTemplates() {
       pricePerGymnast: String(t.pricePerGymnast / 100),
       information: t.information || '',
       type: t.type,
+      startDate: t.startDate ? t.startDate.split('T')[0] : '',
     });
   };
 
@@ -192,6 +193,7 @@ export default function SessionTemplates() {
     competitiveSlots: form.competitiveSlots !== '' ? parseInt(form.competitiveSlots) : null,
     information: form.information || null,
     type: form.type,
+    startDate: form.startDate || null,
   });
 
   const handleSave = async (applyToFutureInstances) => {
@@ -309,6 +311,10 @@ export default function SessionTemplates() {
                 <option value="DMT">DMT</option>
               </select>
             </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600 }}>
+              Start date (optional)
+              <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="bk-input" />
+            </label>
           </div>
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, marginBottom: '1rem' }}>
             Session information (optional)
@@ -372,6 +378,7 @@ export default function SessionTemplates() {
                 <div style={{ fontSize: '0.82rem', color: 'var(--booking-text-muted)', marginTop: '0.15rem' }}>
                   {t.openSlots} slots &middot; £{(t.pricePerGymnast / 100).toFixed(2)}{t.minAge ? ` \u00b7 ${t.minAge}+` : ''}
                   {t.information && <span> &middot; <em>Has info text</em></span>}
+                  {t.startDate && <span> &middot; from {new Date(t.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                   {t.type === 'DMT' && <span style={{ marginLeft: '0.4rem', fontSize: '0.72rem', fontWeight: 700, color: '#fff', background: '#e67e22', borderRadius: 3, padding: '0 5px' }}>DMT</span>}
                   {t.type === 'TRAMPOLINE' && <span style={{ marginLeft: '0.4rem', fontSize: '0.72rem', fontWeight: 700, color: '#fff', background: 'var(--booking-accent)', borderRadius: 3, padding: '0 5px' }}>Trampoline</span>}
                 </div>
