@@ -3,6 +3,8 @@ import { bookingApi, getTemplates } from '../../../utils/bookingApi';
 import AdminRemovedMembers from './AdminRemovedMembers';
 import '../booking-shared.css';
 
+const waLink = (phone) => `https://wa.me/${phone.replace(/\D/g, '').replace(/^0/, '44')}`;
+
 const ROLE_LABELS = { CLUB_ADMIN: 'Admin', COACH: 'Coach', ADULT: 'Adult', GYMNAST: 'Gymnast' };
 const ROLE_COLORS = {
   CLUB_ADMIN: { background: 'rgba(124,53,232,0.12)', color: 'var(--booking-accent)' },
@@ -674,7 +676,7 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
                 ? <>
                     <span style={{ fontWeight: 500 }}>{g.emergencyContactName}</span>
                     {g.emergencyContactRelationship && <span style={{ color: 'var(--booking-text-muted)' }}> ({g.emergencyContactRelationship})</span>}
-                    {g.emergencyContactPhone && <><br /><a href={`tel:${g.emergencyContactPhone}`} style={{ color: 'var(--booking-accent)' }}>{g.emergencyContactPhone}</a></>}
+                    {g.emergencyContactPhone && <><br /><a href={waLink(g.emergencyContactPhone)} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--booking-accent)' }}>{g.emergencyContactPhone}</a></>}
                   </>
                 : <span style={{ color: 'var(--booking-danger)' }}>✗ Missing</span>}
             </span>
@@ -1275,7 +1277,7 @@ function MemberDetail({ userId, onRemoved }) {
                 { key: 'Email', val: member.email },
                 {
                   key: 'Phone', val: member.phone
-                    ? <a href={`tel:${member.phone}`} style={{ color: 'var(--booking-accent)' }}>{member.phone}</a>
+                    ? <a href={waLink(member.phone)} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--booking-accent)' }}>{member.phone}</a>
                     : <span style={{ color: 'var(--booking-danger)' }}>No phone number</span>
                 },
                 {

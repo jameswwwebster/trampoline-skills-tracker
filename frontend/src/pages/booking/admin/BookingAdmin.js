@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+const waLink = (phone) => `https://wa.me/${phone.replace(/\D/g, '').replace(/^0/, '44')}`;
 import { useNavigate } from 'react-router-dom';
 import { bookingApi } from '../../../utils/bookingApi';
 import CalendarNav from '../CalendarNav';
@@ -337,7 +338,7 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
                   <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
                     Booked by: <strong style={{ color: 'var(--booking-text-on-light)' }}>{b.user.firstName} {b.user.lastName}</strong>
                     {' · '}
-                    <a href={`tel:${b.user.phone}`} style={{ color: 'var(--booking-accent)' }}>{b.user.phone}</a>
+                    <a href={waLink(b.user.phone)} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--booking-accent)' }}>{b.user.phone}</a>
                   </p>
                 ) : (
                   <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>
@@ -349,7 +350,7 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
                   Emergency: <strong style={{ color: 'var(--booking-text-on-light)' }}>{l.gymnast.emergencyContactName}</strong>
                   {l.gymnast.emergencyContactRelationship && ` (${l.gymnast.emergencyContactRelationship})`}
                   {' · '}
-                  <a href={`tel:${l.gymnast.emergencyContactPhone}`} style={{ color: 'var(--booking-accent)' }}>
+                  <a href={waLink(l.gymnast.emergencyContactPhone)} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--booking-accent)' }}>
                     {l.gymnast.emergencyContactPhone}
                   </a>
                 </p>
