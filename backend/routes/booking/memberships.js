@@ -89,6 +89,44 @@ router.get('/delinquent', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req
   }
 });
 
+// POST /api/booking/memberships/notify-scheduled — send "scheduled" email to all SCHEDULED memberships
+router.post('/notify-scheduled', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const memberships = await prisma.membership.findMany({
+      where: { clubId: req.user.clubId, status: 'SCHEDULED' },
+      include: {
+        gymnast: {
+          include: { guardians: { select: { email: true, firstName: true }, orderBy: { createdAt: 'asc' }, take: 1 } },
+        },
+      },
+    });
+
+    let sent = 0;
+    let skipped = 0;
+    for (const m of memberships) {
+      const guardian = m.gymnast.guardians[0];
+      if (!guardian?.email) { skipped++; continue; }
+      try {
+        await emailService.sendMembershipScheduledEmail(
+          guardian.email,
+          guardian.firstName,
+          m.gymnast,
+          m.monthlyAmount,
+          m.startDate,
+        );
+        sent++;
+      } catch {
+        skipped++;
+      }
+    }
+
+    res.json({ sent, skipped });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST /api/booking/memberships/:id/remind — resend payment setup email to guardian
 router.post('/:id/remind', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {

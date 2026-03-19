@@ -134,6 +134,9 @@ export const bookingApi = {
   sendMembershipReminder: (id) =>
     axios.post(`${API_URL}/booking/memberships/${id}/remind`, {}, { headers: getHeaders() }),
 
+  notifyScheduledMemberships: () =>
+    axios.post(`${API_URL}/booking/memberships/notify-scheduled`, {}, { headers: getHeaders() }),
+
   joinWaitlist: (instanceId) =>
     axios.post(`${API_URL}/booking/waitlist/${instanceId}`, {}, { headers: getHeaders() }),
 
