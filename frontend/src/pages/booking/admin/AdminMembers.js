@@ -253,100 +253,6 @@ function RemoveChild({ gymnast: g, onUpdated }) {
   );
 }
 
-function BgActionBar({ gymnast, onUpdated }) {
-  const [editing, setEditing] = useState(false);
-  const [input, setInput] = useState(gymnast.bgNumber || '');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
-
-  const handleSet = async () => {
-    if (!input.trim()) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await bookingApi.setBgNumber(gymnast.id, input.trim());
-      setEditing(false);
-      onUpdated();
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleVerify = async (action) => {
-    setSaving(true);
-    setError(null);
-    try {
-      await bookingApi.verifyBgNumber(gymnast.id, action);
-      onUpdated();
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div style={{
-      background: 'rgba(230,126,34,0.08)', border: '1px solid rgba(230,126,34,0.25)',
-      borderRadius: 'var(--booking-radius)', padding: '0.4rem 0.6rem',
-      marginTop: '0.35rem', fontSize: '0.75rem',
-    }}>
-      {editing ? (
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <input
-            className="bk-input"
-            style={{ flex: 1, minWidth: 0, fontSize: '0.82rem', padding: '0.2rem 0.4rem' }}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="BG number"
-            autoFocus
-          />
-          <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={saving || !input.trim()} onClick={handleSet} style={{ fontSize: '0.75rem' }}>
-            {saving ? 'Saving…' : 'Save'}
-          </button>
-          <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)', fontSize: '0.75rem' }} onClick={() => setEditing(false)}>
-            Cancel
-          </button>
-        </div>
-      ) : gymnast.bgNumberStatus === 'PENDING' ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'monospace' }}>{gymnast.bgNumber}</span>
-          <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={saving} onClick={() => handleVerify('verify')} style={{ fontSize: '0.75rem' }}>
-            Verify
-          </button>
-          <button className="bk-btn bk-btn--sm" disabled={saving}
-            style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)', fontSize: '0.75rem' }}
-            onClick={() => handleVerify('invalidate')}>
-            Mark invalid
-          </button>
-          <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)', fontSize: '0.75rem' }} onClick={() => setEditing(true)}>
-            Edit
-          </button>
-        </div>
-      ) : gymnast.bgNumberStatus === 'INVALID' ? (
-        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-          <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>{gymnast.bgNumber}</span>
-          <button className="bk-btn bk-btn--sm bk-btn--primary" style={{ fontSize: '0.75rem' }} onClick={() => setEditing(true)}>
-            Edit BG number
-          </button>
-        </div>
-      ) : (
-        // null (no number) or VERIFIED — show enter/edit option
-        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-          {gymnast.bgNumberStatus === 'VERIFIED' && (
-            <span style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}>{gymnast.bgNumber}</span>
-          )}
-          <button className="bk-btn bk-btn--sm" style={{ fontSize: '0.75rem' }} onClick={() => setEditing(true)}>
-            {gymnast.bgNumber ? 'Edit BG number' : 'Enter BG number'}
-          </button>
-        </div>
-      )}
-      {error && <p style={{ color: 'var(--booking-danger)', fontSize: '0.78rem', margin: '0.3rem 0 0' }}>{error}</p>}
-    </div>
-  );
-}
 
 const MEMBERSHIP_BADGE = {
   ACTIVE:          (m) => ({ label: `Active £${(m.monthlyAmount/100).toFixed(2)}/mo`,  color: 'var(--booking-success)', bg: 'rgba(39,174,96,0.12)' }),
@@ -379,6 +285,11 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
   const [healthNotesNone, setHealthNotesNone] = useState(g.healthNotes === 'none');
   const [healthNotesSaving, setHealthNotesSaving] = useState(false);
   const [healthNotesError, setHealthNotesError] = useState(null);
+
+  const [editingBgNumber, setEditingBgNumber] = useState(false);
+  const [bgInput, setBgInput] = useState(g.bgNumber || '');
+  const [bgSaving, setBgSaving] = useState(false);
+  const [bgError, setBgError] = useState(null);
 
   const handleSaveHealthNotes = async () => {
     setHealthNotesSaving(true);
@@ -423,6 +334,34 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
       setDmtError(err.response?.data?.error || 'Failed to update DMT approval.');
     } finally {
       setDmtLoading(false);
+    }
+  };
+
+  const handleSaveBgNumber = async () => {
+    if (!bgInput.trim()) return;
+    setBgSaving(true);
+    setBgError(null);
+    try {
+      await bookingApi.setBgNumber(g.id, bgInput.trim());
+      setEditingBgNumber(false);
+      onUpdated();
+    } catch (err) {
+      setBgError(err.response?.data?.error || 'Failed to save.');
+    } finally {
+      setBgSaving(false);
+    }
+  };
+
+  const handleVerifyBgNumber = async (action) => {
+    setBgSaving(true);
+    setBgError(null);
+    try {
+      await bookingApi.verifyBgNumber(g.id, action);
+      onUpdated();
+    } catch (err) {
+      setBgError(err.response?.data?.error || 'Failed.');
+    } finally {
+      setBgSaving(false);
     }
   };
 
@@ -499,25 +438,6 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
   };
   const keyStyle = { color: 'var(--booking-text-muted)', flexShrink: 0 };
 
-  const bgInsuranceDisplay = () => {
-    if (!bgInsuranceRequired && !g.bgNumber) return null;
-    if (g.bgNumberStatus === 'VERIFIED') return (
-      <span style={{ color: 'var(--booking-success)' }}>
-        ✓ Verified{g.bgNumber && <span style={{ fontFamily: 'monospace', marginLeft: '0.4rem', fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>{g.bgNumber}</span>}
-      </span>
-    );
-    if (g.bgNumberStatus === 'PENDING') return (
-      <span style={{ color: '#e67e22' }}>
-        ⚠ Pending{g.bgNumber && <span style={{ fontFamily: 'monospace', marginLeft: '0.4rem', fontSize: '0.78rem' }}>{g.bgNumber}</span>}
-      </span>
-    );
-    if (g.bgNumberStatus === 'INVALID') return (
-      <span style={{ color: 'var(--booking-danger)' }}>
-        ✗ Invalid{g.bgNumber && <span style={{ fontFamily: 'monospace', marginLeft: '0.4rem', fontSize: '0.78rem' }}>{g.bgNumber}</span>}
-      </span>
-    );
-    return <span style={{ color: 'var(--booking-danger)' }}>✗ Not provided</span>;
-  };
 
   return (
     <div style={{
@@ -594,7 +514,50 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
         {(bgInsuranceRequired || g.bgNumber) && (
           <li style={{ ...infoItemStyle, borderBottom: 'none' }}>
             <span style={keyStyle}>BG insurance</span>
-            {bgInsuranceDisplay()}
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              {editingBgNumber ? (
+                <>
+                  <input
+                    className="bk-input"
+                    style={{ fontSize: '0.82rem', padding: '0.2rem 0.4rem', width: '120px' }}
+                    value={bgInput}
+                    onChange={e => setBgInput(e.target.value)}
+                    placeholder="BG number"
+                    autoFocus
+                  />
+                  <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={bgSaving || !bgInput.trim()} onClick={handleSaveBgNumber} style={{ fontSize: '0.75rem' }}>
+                    {bgSaving ? 'Saving…' : 'Save'}
+                  </button>
+                  <button className="bk-btn bk-btn--sm" onClick={() => { setEditingBgNumber(false); setBgInput(g.bgNumber || ''); setBgError(null); }} style={{ fontSize: '0.75rem', border: '1px solid var(--booking-border)' }}>
+                    Cancel
+                  </button>
+                  {bgError && <span style={{ color: 'var(--booking-danger)', fontSize: '0.75rem' }}>{bgError}</span>}
+                </>
+              ) : (
+                <>
+                  {g.bgNumberStatus === 'VERIFIED' && (
+                    <span style={{ color: 'var(--booking-success)' }}>✓ Verified <span style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>{g.bgNumber}</span></span>
+                  )}
+                  {g.bgNumberStatus === 'PENDING' && (
+                    <>
+                      <span style={{ color: '#e67e22' }}>⚠ Pending <span style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{g.bgNumber}</span></span>
+                      <button className="bk-btn bk-btn--sm" disabled={bgSaving} onClick={() => handleVerifyBgNumber('verify')} style={{ fontSize: '0.75rem', border: '1px solid var(--booking-border)' }}>Verify</button>
+                      <button className="bk-btn bk-btn--sm" disabled={bgSaving} onClick={() => handleVerifyBgNumber('invalidate')} style={{ fontSize: '0.75rem', border: '1px solid var(--booking-danger)', color: 'var(--booking-danger)' }}>Mark invalid</button>
+                    </>
+                  )}
+                  {g.bgNumberStatus === 'INVALID' && (
+                    <span style={{ color: 'var(--booking-danger)' }}>✗ Invalid <span style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{g.bgNumber}</span></span>
+                  )}
+                  {!g.bgNumber && (
+                    <span style={{ color: 'var(--booking-danger)' }}>✗ Not provided</span>
+                  )}
+                  <button onClick={() => { setEditingBgNumber(true); setBgInput(g.bgNumber || ''); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--booking-accent)', fontSize: '0.75rem', padding: 0 }}>
+                    {g.bgNumber ? 'Edit' : 'Set'}
+                  </button>
+                </>
+              )}
+            </span>
           </li>
         )}
         {/* DMT approval */}
@@ -718,9 +681,6 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
           </li>
         )}
       </ul>
-
-      {/* BG action bar */}
-      <BgActionBar gymnast={g} onUpdated={onUpdated} />
 
       {/* Membership & slots */}
       <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--booking-bg-light)' }}>
