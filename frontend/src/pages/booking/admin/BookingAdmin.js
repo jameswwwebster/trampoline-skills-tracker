@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-const waLink = (phone) => `https://wa.me/${phone.replace(/\D/g, '').replace(/^0/, '44')}`;
 import { useNavigate } from 'react-router-dom';
 import { bookingApi } from '../../../utils/bookingApi';
 import CalendarNav from '../CalendarNav';
 import '../booking-shared.css';
 import '../BookingCalendar.css';
+
+const waLink = (phone) => `https://wa.me/${phone.replace(/\D/g, '').replace(/^0/, '44')}`;
 
 // ─── ManualAddForm (unchanged) ───────────────────────────────────────────────
 
