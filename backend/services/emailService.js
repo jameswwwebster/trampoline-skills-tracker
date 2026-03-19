@@ -542,6 +542,93 @@ class EmailService {
       text: `Hello ${guardianName},\n\nYou have been connected as a guardian for ${gymnastName} at ${clubName}.\n\nRelationship: ${relationship}\n\nWelcome to Trampoline Life!`,
     }, { to: guardianEmail, gymnast: gymnastName, club: clubName });
   }
+  // Sent when a membership is created with a future start date (no Stripe setup yet)
+  async sendMembershipScheduledEmail(email, guardianName, gymnast, amountPence, startDate) {
+    const amount = `£${(amountPence / 100).toFixed(2)}`;
+    const startStr = new Date(startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const loginUrl = `${BASE_URL()}/booking/my-account`;
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject: `Membership scheduled for ${gymnast.firstName} ${gymnast.lastName}`,
+      html: brandedHtml('Membership scheduled', `
+        <p style="margin-top:0">Hi ${guardianName},</p>
+        <p>A monthly membership of <strong style="color:#7c35e8">${amount}/month</strong> has been scheduled for <strong>${gymnast.firstName} ${gymnast.lastName}</strong>, starting on <strong>${startStr}</strong>.</p>
+        ${infoBox(`<p style="margin:0">No action is needed right now. We'll send you another email on <strong>${startStr}</strong> with instructions to set up payment.</p>`)}
+        ${muted('If you have any questions, please contact the club.')}
+      `),
+      text: `Hi ${guardianName},\n\nA monthly membership of ${amount}/month has been scheduled for ${gymnast.firstName} ${gymnast.lastName}, starting on ${startStr}.\n\nNo action is needed right now. We'll send you another email on ${startStr} with instructions to set up payment.\n\nIf you have any questions, please contact the club.`,
+    }, { to: email, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount, startStr });
+  }
+
+  // Booking confirmation receipt
+  async sendBookingReceiptEmail(email, firstName, sessions, totalAmountPence) {
+    const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const fmtDate = d => new Date(d).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    const totalStr = totalAmountPence > 0 ? `£${(totalAmountPence / 100).toFixed(2)}` : 'Covered by credits';
+
+    const sessionBlocks = sessions.map(s => {
+      const gymnasts = s.gymnasts.map(g => `${g.firstName} ${g.lastName}`).join(', ');
+      return `<div style="margin-bottom:0.75rem;padding:0.6rem 0.85rem;background:#f9f9fb;border-radius:6px;border:1px solid #e4e4e8">
+        <p style="margin:0 0 0.2rem;font-weight:700;color:#1a1a1a">${fmtDate(s.date)} &mdash; ${s.startTime}–${s.endTime}</p>
+        <p style="margin:0;font-size:0.9rem;color:#555">${gymnasts}</p>
+      </div>`;
+    }).join('');
+
+    const textLines = sessions.map(s => {
+      const gymnasts = s.gymnasts.map(g => `${g.firstName} ${g.lastName}`).join(', ');
+      return `• ${fmtDate(s.date)} ${s.startTime}–${s.endTime}: ${gymnasts}`;
+    }).join('\n');
+
+    const plural = sessions.length !== 1 ? 's' : '';
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject: sessions.length === 1
+        ? `Booking confirmed — ${fmtDate(sessions[0].date)} ${sessions[0].startTime}`
+        : `Booking confirmed — ${sessions.length} session${plural}`,
+      html: brandedHtml('Booking confirmed', `
+        <p style="margin-top:0">Hi ${firstName},</p>
+        <p>Your booking${plural} ${sessions.length === 1 ? 'is' : 'are'} confirmed.</p>
+        ${sessionBlocks}
+        ${infoBox(`<p style="margin:0"><strong>Total paid:</strong> ${totalStr}</p>`)}
+        ${muted('You can view your upcoming bookings in the app at any time.')}
+      `),
+      text: `Hi ${firstName},\n\nYour booking${plural} ${sessions.length === 1 ? 'is' : 'are'} confirmed:\n\n${textLines}\n\nTotal paid: ${totalStr}\n\nYou can view upcoming bookings in the app.`,
+    }, { to: email, sessions: sessions.length, total: totalStr });
+  }
+
+  // Fetch booking data, check preferences, and send receipt — call from routes/webhook
+  async trySendBookingReceipt(userId, bookingIds, prisma) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, firstName: true, bookingReceiptEmail: true, club: { select: { emailEnabled: true } } },
+      });
+      if (!user?.email || user.bookingReceiptEmail === false || !user.club?.emailEnabled) return;
+
+      const bookings = await prisma.booking.findMany({
+        where: { id: { in: bookingIds }, status: 'CONFIRMED' },
+        include: {
+          sessionInstance: { include: { template: { select: { startTime: true, endTime: true } } } },
+          lines: { include: { gymnast: { select: { firstName: true, lastName: true } } } },
+        },
+        orderBy: { sessionInstance: { date: 'asc' } },
+      });
+      if (bookings.length === 0) return;
+
+      const sessions = bookings.map(b => ({
+        date: b.sessionInstance.date,
+        startTime: b.sessionInstance.template.startTime,
+        endTime: b.sessionInstance.template.endTime,
+        gymnasts: b.lines.map(l => l.gymnast),
+      }));
+      const total = bookings.reduce((sum, b) => sum + b.totalAmount, 0);
+      await this.sendBookingReceiptEmail(user.email, user.firstName, sessions, total);
+    } catch (err) {
+      console.error('Booking receipt email failed:', err);
+    }
+  }
 }
 
 module.exports = new EmailService();

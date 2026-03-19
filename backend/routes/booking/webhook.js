@@ -27,6 +27,19 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
     });
     console.log(`Booking confirmed for payment intent ${paymentIntent.id}`);
 
+    // Send booking receipt to the parent (non-blocking, swallows errors internally)
+    const confirmedBookings = await prisma.booking.findMany({
+      where: { stripePaymentIntentId: paymentIntent.id, status: 'CONFIRMED' },
+      select: { id: true, userId: true },
+    });
+    if (confirmedBookings.length > 0) {
+      emailService.trySendBookingReceipt(
+        confirmedBookings[0].userId,
+        confirmedBookings.map(b => b.id),
+        prisma,
+      );
+    }
+
     // Mark charges paid
     await prisma.charge.updateMany({
       where: { paidOnPaymentIntentId: paymentIntent.id },

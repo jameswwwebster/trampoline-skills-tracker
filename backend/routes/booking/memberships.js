@@ -356,6 +356,26 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       // Start date is today or in the past — activate immediately (creates Stripe sub, sends email)
       const { activateMembership } = require('../../services/membershipActivationService');
       await activateMembership(membership.id, prisma);
+    } else {
+      // Future start date — notify guardian now so they know it's been scheduled
+      const guardian = await prisma.user.findFirst({
+        where: { guardedGymnasts: { some: { id: membership.gymnast.id } } },
+        select: { email: true, firstName: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (guardian?.email) {
+        try {
+          await emailService.sendMembershipScheduledEmail(
+            guardian.email,
+            guardian.firstName,
+            membership.gymnast,
+            value.monthlyAmount,
+            startDate,
+          );
+        } catch (emailErr) {
+          console.error('Failed to send membership scheduled email:', emailErr);
+        }
+      }
     }
 
     // Re-fetch to return up-to-date status

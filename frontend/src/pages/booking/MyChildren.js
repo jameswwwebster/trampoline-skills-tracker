@@ -641,15 +641,14 @@ function NotificationPreferences({ user, onSaved }) {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
-  const toggle = async () => {
+  const savePreference = async (field, value) => {
     setSaving(true);
     setSaved(false);
     setSaveError(null);
-    const newValue = user.weeklySessionReminder === false;
     try {
       const res = await axios.put(
         `${API_URL}/users/profile`,
-        { weeklySessionReminder: newValue },
+        { [field]: value },
         { headers: getHeaders() }
       );
       onSaved(res.data.user);
@@ -665,12 +664,12 @@ function NotificationPreferences({ user, onSaved }) {
   return (
     <section style={{ marginBottom: '2rem' }}>
       <h3>Notifications</h3>
-      <div className="bk-card">
+      <div className="bk-card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
           <input
             type="checkbox"
             checked={user?.weeklySessionReminder !== false}
-            onChange={toggle}
+            onChange={() => savePreference('weeklySessionReminder', user?.weeklySessionReminder === false)}
             disabled={saving}
           />
           <span>
@@ -680,8 +679,22 @@ function NotificationPreferences({ user, onSaved }) {
             </span>
           </span>
         </label>
-        {saved && <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: 'var(--booking-success)' }}>Saved</p>}
-        {saveError && <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: 'var(--booking-danger)' }}>{saveError}</p>}
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={user?.bookingReceiptEmail !== false}
+            onChange={() => savePreference('bookingReceiptEmail', user?.bookingReceiptEmail === false)}
+            disabled={saving}
+          />
+          <span>
+            <strong>Booking confirmation emails</strong>
+            <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--booking-text-muted)', marginTop: '0.1rem' }}>
+              Receive an email when a booking is confirmed, listing the sessions and gymnasts booked.
+            </span>
+          </span>
+        </label>
+        {saved && <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--booking-success)' }}>Saved</p>}
+        {saveError && <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--booking-danger)' }}>{saveError}</p>}
       </div>
     </section>
   );
