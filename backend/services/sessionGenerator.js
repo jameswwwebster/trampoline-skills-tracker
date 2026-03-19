@@ -37,7 +37,7 @@ function isDateInClosure(date, closures) {
 }
 
 /**
- * Generates session instances for the next 4 weeks for a given club,
+ * Generates session instances for the next 3 months for a given club,
  * skipping dates in closure periods and instances that already exist.
  */
 async function generateRollingInstances(clubId) {
@@ -53,10 +53,13 @@ async function generateRollingInstances(clubId) {
   });
 
   const today = new Date();
+  const cutoff = new Date(today);
+  cutoff.setMonth(cutoff.getMonth() + 3);
+  const weeks = Math.ceil((cutoff - today) / (7 * 24 * 60 * 60 * 1000));
   let created = 0;
 
   for (const template of templates) {
-    const dates = getNextNWeeksDates(template.dayOfWeek, today, 4);
+    const dates = getNextNWeeksDates(template.dayOfWeek, today, weeks);
     for (const date of dates) {
       if (isDateInClosure(date, closures)) continue;
       if (template.startDate && date < new Date(template.startDate)) continue;
