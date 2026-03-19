@@ -719,6 +719,9 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
         )}
       </ul>
 
+      {/* BG action bar */}
+      <BgActionBar gymnast={g} onUpdated={onUpdated} />
+
       {/* Membership & slots */}
       <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--booking-bg-light)' }}>
         <span style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--booking-text-muted)', display: 'block', marginBottom: '0.5rem' }}>
@@ -808,9 +811,6 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
           </>
         )}
       </div>
-
-      {/* BG action bar */}
-      <BgActionBar gymnast={g} onUpdated={onUpdated} />
 
       {/* Remove gymnast */}
       {!g.isSelf && (
