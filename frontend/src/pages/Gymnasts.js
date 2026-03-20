@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import bookingApi from '../utils/bookingApi';
 
 
 const Gymnasts = () => {
@@ -17,13 +18,15 @@ const Gymnasts = () => {
   const [success, setSuccess] = useState(null);
   const [showQuickNav, setShowQuickNav] = useState(false);
   const [sessionGymnasts, setSessionGymnasts] = useState(new Set());
-  const [sessionTimestamps, setSessionTimestamps] = useState(new Map()); // Track when gymnasts were added to session
   const [showSessionOnly, setShowSessionOnly] = useState(false);
+  const [todaySessions, setTodaySessions] = useState([]);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(false);
   const [sortBy, setSortBy] = useState('name'); // 'name', 'level', 'recent', 'age'
   const [letterFilter, setLetterFilter] = useState('');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 25;
-  const { isClubAdmin } = useAuth();
+  const { isClubAdmin, canManageGymnasts } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -32,69 +35,16 @@ const Gymnasts = () => {
     return /^\d+[a-z]$/.test(identifier);
   };
 
-  // Session management functions
-  const toggleGymnastInSession = (gymnastId) => {
-    const newSession = new Set(sessionGymnasts);
-    const newTimestamps = new Map(sessionTimestamps);
-    
-    if (newSession.has(gymnastId)) {
-      // Removing from session
-      newSession.delete(gymnastId);
-      newTimestamps.delete(gymnastId);
-    } else {
-      // Adding to session
-      newSession.add(gymnastId);
-      newTimestamps.set(gymnastId, new Date().toISOString());
-    }
-    
-    setSessionGymnasts(newSession);
-    setSessionTimestamps(newTimestamps);
-    
-    // Save to localStorage
-    localStorage.setItem('coachingSession', JSON.stringify(Array.from(newSession)));
-    localStorage.setItem('sessionTimestamps', JSON.stringify(Array.from(newTimestamps.entries())));
-  };
-
   // Load session and preferences from localStorage on component mount
   useEffect(() => {
-    const savedSession = localStorage.getItem('coachingSession');
-    if (savedSession) {
-      try {
-        setSessionGymnasts(new Set(JSON.parse(savedSession)));
-      } catch (e) {
-        console.error('Failed to load session:', e);
-      }
-    }
-
-    const savedTimestamps = localStorage.getItem('sessionTimestamps');
-    if (savedTimestamps) {
-      try {
-        setSessionTimestamps(new Map(JSON.parse(savedTimestamps)));
-      } catch (e) {
-        console.error('Failed to load session timestamps:', e);
-      }
-    }
-
-    // Load saved preferences
     const savedSortBy = localStorage.getItem('gymnastSortBy');
-    if (savedSortBy) {
-      setSortBy(savedSortBy);
-    }
+    if (savedSortBy) setSortBy(savedSortBy);
 
     const savedShowArchived = localStorage.getItem('gymnastShowArchived');
-    if (savedShowArchived) {
-      setShowArchived(savedShowArchived === 'true');
-    }
-
-    const savedShowSessionOnly = localStorage.getItem('gymnastShowSessionOnly');
-    if (savedShowSessionOnly) {
-      setShowSessionOnly(savedShowSessionOnly === 'true');
-    }
+    if (savedShowArchived) setShowArchived(savedShowArchived === 'true');
 
     const savedSearchTerm = localStorage.getItem('gymnastSearchTerm');
-    if (savedSearchTerm) {
-      setSearchTerm(savedSearchTerm);
-    }
+    if (savedSearchTerm) setSearchTerm(savedSearchTerm);
   }, []);
 
   // Save preferences to localStorage when they change
@@ -107,14 +57,46 @@ const Gymnasts = () => {
   }, [showArchived]);
 
   useEffect(() => {
-    localStorage.setItem('gymnastShowSessionOnly', showSessionOnly.toString());
-  }, [showSessionOnly]);
-
-  useEffect(() => {
     localStorage.setItem('gymnastSearchTerm', searchTerm);
   }, [searchTerm]);
 
   useEffect(() => { setPage(1); }, [searchTerm, letterFilter, showSessionOnly]);
+
+  useEffect(() => {
+    if (!canManageGymnasts) return;
+    const now = new Date();
+    bookingApi.getSessions(now.getFullYear(), now.getMonth() + 1)
+      .then(res => {
+        const todayStr = now.toISOString().split('T')[0];
+        const sessions = res.data.filter(s =>
+          new Date(s.date).toISOString().split('T')[0] === todayStr
+        );
+        setTodaySessions(sessions);
+      })
+      .catch(() => {
+        // Silently fail — dropdown renders as disabled
+      });
+  }, [canManageGymnasts]);
+
+  const handleSessionSelect = async (sessionId) => {
+    if (!sessionId) {
+      setSelectedSessionId(null);
+      setSessionGymnasts(new Set());
+      return;
+    }
+    setSelectedSessionId(sessionId);
+    setSessionLoading(true);
+    try {
+      const res = await bookingApi.getAttendance(sessionId);
+      setSessionGymnasts(new Set(res.data.attendees.map(a => a.gymnastId)));
+    } catch (err) {
+      setError('Failed to load session attendees. Please try again.');
+      setSelectedSessionId(null);
+      // Per spec: keep the previous sessionGymnasts set unchanged on failure
+    } finally {
+      setSessionLoading(false);
+    }
+  };
 
   // Helper function to determine the gymnast's current working level number
   const getCurrentLevel = (gymnast, levels) => {
@@ -323,23 +305,9 @@ const Gymnasts = () => {
           return levelA.identifier.localeCompare(levelB.identifier);
         
         case 'recent':
-          // Sort by most recent session activity
-          const timestampA = sessionTimestamps.get(a.id);
-          const timestampB = sessionTimestamps.get(b.id);
-          
-          // If both have session timestamps, sort by most recent session activity
-          if (timestampA && timestampB) {
-            return new Date(timestampB) - new Date(timestampA);
-          }
-          
-          // If only one has a session timestamp, prioritize it
-          if (timestampA && !timestampB) return -1;
-          if (!timestampA && timestampB) return 1;
-          
-          // If neither has session timestamps, fall back to last updated/created date
           const dateA = new Date(a.updatedAt || a.createdAt);
           const dateB = new Date(b.updatedAt || b.createdAt);
-          return dateB - dateA; // Most recent first
+          return dateB - dateA;
         
         case 'age':
           const ageA = a.dateOfBirth ? new Date().getFullYear() - new Date(a.dateOfBirth).getFullYear() : 0;
@@ -628,9 +596,8 @@ const Gymnasts = () => {
                         setShowSessionOnly(false);
                         setSearchParams(new URLSearchParams());
                         setSessionGymnasts(new Set());
-                        setSessionTimestamps(new Map());
+                        setSelectedSessionId(null);
                         localStorage.removeItem('coachingSession');
-                        localStorage.removeItem('sessionTimestamps');
                       }}
                     >
                       Clear All Filters
@@ -638,7 +605,7 @@ const Gymnasts = () => {
                   </div>
                 )}
               </>
-            )}
+)}
           </div>
         </div>
       ) : (
@@ -713,8 +680,9 @@ const Gymnasts = () => {
                       <td>
                         <button
                           className={`session-toggle-btn${sessionGymnasts.has(gymnast.id) ? ' in-session' : ''}`}
-                          onClick={(e) => { e.stopPropagation(); toggleGymnastInSession(gymnast.id); }}
-                          title={sessionGymnasts.has(gymnast.id) ? 'Remove from session' : 'Add to session'}
+                          onClick={(e) => { e.stopPropagation(); }}
+                          title={sessionGymnasts.has(gymnast.id) ? 'In session' : 'Not in session'}
+                          disabled
                         >
                           {sessionGymnasts.has(gymnast.id) ? '✓' : '+'}
                         </button>
@@ -746,13 +714,11 @@ const Gymnasts = () => {
                             : 'Age unknown'
                           }
                         </div>
-                        <button 
+                        <button
                           className={`session-toggle-btn ${isInSession ? 'in-session' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleGymnastInSession(gymnast.id);
-                          }}
-                          title={isInSession ? 'Remove from session' : 'Add to session'}
+                          onClick={(e) => { e.stopPropagation(); }}
+                          title={isInSession ? 'In session' : 'Not in session'}
+                          disabled
                         >
                           {isInSession ? '✓' : '+'}
                         </button>
@@ -1054,9 +1020,8 @@ const Gymnasts = () => {
                         setShowSessionOnly(false);
                         setSearchParams(new URLSearchParams());
                         setSessionGymnasts(new Set());
-                        setSessionTimestamps(new Map());
+                        setSelectedSessionId(null);
                         localStorage.removeItem('coachingSession');
-                        localStorage.removeItem('sessionTimestamps');
                       }}
                     >
                       Clear All Filters
