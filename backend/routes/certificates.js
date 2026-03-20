@@ -618,6 +618,37 @@ router.get('/stats', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
   }
 });
 
+// Get a single certificate by ID
+router.get('/:certificateId', auth, async (req, res) => {
+  try {
+    const { certificateId } = req.params;
+
+    const certificate = await prisma.certificate.findUnique({
+      where: { id: certificateId },
+      include: {
+        gymnast: { select: { id: true, firstName: true, lastName: true } },
+        level: { select: { id: true, identifier: true, name: true } },
+        awardedBy: { select: { id: true, firstName: true, lastName: true } },
+        printedBy: { select: { id: true, firstName: true, lastName: true } },
+        physicallyAwardedBy: { select: { id: true, firstName: true, lastName: true } }
+      }
+    });
+
+    if (!certificate) {
+      return res.status(404).json({ error: 'Certificate not found' });
+    }
+
+    if (certificate.gymnast.clubId !== req.user.clubId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    res.json(certificate);
+  } catch (error) {
+    console.error('Get certificate error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Download certificate
 router.get('/:certificateId/download', auth, async (req, res) => {
   try {
