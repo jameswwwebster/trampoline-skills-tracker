@@ -1,377 +1,233 @@
-import React, { useState, useEffect } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useBranding } from '../contexts/BrandingContext';
+import './TrackingLayout.css';
 
-// Mobile nested menu component
-const MobileNestedMenu = ({ title, children, isOpen, onToggle }) => {
-  return (
-    <div className="mobile-nav-nested">
-      <button 
-        className="mobile-nav-nested-toggle"
-        onClick={onToggle}
-      >
-        <span>{title}</span>
-        <span className={`mobile-nav-nested-arrow ${isOpen ? 'open' : ''}`}>▼</span>
-      </button>
-      {isOpen && (
-        <div className="mobile-nav-nested-content">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const Layout = () => {
-  const { user, logout, canManageGymnasts, isClubAdmin, canReadCompetitions, needsProgressNavigation, isChild, isAdult, canEditLevels, isSuperAdmin } = useAuth();
+export default function Layout() {
+  const {
+    user, logout,
+    canManageGymnasts, isClubAdmin, canReadCompetitions, canEditLevels, isSuperAdmin,
+  } = useAuth();
   const { branding } = useBranding();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [openNestedMenus, setOpenNestedMenus] = useState({
-    certificates: false,
-    configuration: false,
-    administration: false
-  });
   const [openDropdown, setOpenDropdown] = useState(null);
+  const dropdownRef = useRef(null);
 
-  // Dynamic navigation text based on user type
-  const getProgressNavText = () => {
-    if (isChild) return "My Progress";
-    if (isAdult) return "Children's Progress";
-    return "Progress";
-  };
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpenDropdown(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-  const isActive = (path) => {
-    return location.pathname === path ? 'nav-link active' : 'nav-link';
-  };
-
-  const handleLogout = () => {
-    logout();
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
-
-  const toggleNestedMenu = (menuName) => {
-    setOpenNestedMenus(prev => ({
-      ...prev,
-      [menuName]: !prev[menuName]
-    }));
-  };
-
-  const toggleDropdown = (name) => {
-    setOpenDropdown(prev => prev === name ? null : name);
-  };
-
-  // Close mobile menu and dropdowns when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setOpenDropdown(null);
   }, [location.pathname]);
 
-  // Close mobile menu when clicking outside
-  useEffect(() => {
-    const handleOutsideClick = (event) => {
-      if (isMobileMenuOpen && !event.target.closest('.mobile-nav-menu') && !event.target.closest('.mobile-menu-toggle')) {
-        setIsMobileMenuOpen(false);
-      }
-      if (openDropdown && !event.target.closest('.nav-dropdown')) {
-        setOpenDropdown(null);
-      }
-    };
+  const toggleDropdown = (name) => setOpenDropdown(o => o === name ? null : name);
+  const closeMobile = () => setIsMobileMenuOpen(false);
+  const handleLogout = () => { logout(); navigate('/login'); };
 
-    document.addEventListener('click', handleOutsideClick);
-    return () => document.removeEventListener('click', handleOutsideClick);
-  }, [isMobileMenuOpen, openDropdown]);
+  const isCoachOrAdmin = canManageGymnasts || isClubAdmin;
 
   return (
-    <div className="App">
-      <nav className="navbar">
-        <Link to="/" className="navbar-brand">
-          {branding?.logoUrl ? (
-            <img 
-              src={branding.logoUrl} 
-              alt="Club Logo" 
-              style={{ height: '40px', maxWidth: '200px' }} 
-            />
-          ) : (
-            'Trampoline Tracker'
-          )}
-        </Link>
-        
-        <div className="navbar-nav">
-          <Link to="/" className={isActive('/')}>
-            Dashboard
-          </Link>
-          
-          {needsProgressNavigation && (
-            <Link to="/my-progress" className={isActive('/my-progress')}>
-              {getProgressNavText()}
-            </Link>
-          )}
-          
-          {/* My Certificates for Adults and Gymnasts */}
-          {(user?.role === 'ADULT' || user?.role === 'GYMNAST') && (
-            <Link to="/my-certificates" className={isActive('/my-certificates')}>
-              🏆 My Certificates
-            </Link>
-          )}
-          
+    <div className="tracker-layout">
+      <nav className="tracker-layout__nav">
+
+        {/* Row 1: brand + username + logout + hamburger */}
+        <div className="tracker-layout__topbar">
+          <NavLink to="/dashboard" className="tracker-layout__brand">
+            {branding?.logoUrl
+              ? <img src={branding.logoUrl} alt="Club Logo" style={{ height: '36px', maxWidth: '160px' }} />
+              : 'Trampoline Life'}
+          </NavLink>
+          <div className="tracker-layout__user">
+            <span className="tracker-layout__username">{user?.firstName} {user?.lastName}</span>
+            <button className="tracker-layout__logout" onClick={handleLogout}>Log out</button>
+            <button
+              className="tracker-layout__hamburger"
+              onClick={() => setIsMobileMenuOpen(o => !o)}
+              aria-label="Toggle menu"
+            >
+              ☰
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: nav links */}
+        <div className="tracker-layout__links" ref={dropdownRef}>
+
+          <NavLink to="/dashboard" className="tracker-layout__link">Dashboard</NavLink>
+
           {canManageGymnasts && (
-            <Link to="/gymnasts" className={isActive('/gymnasts')}>
-              Skill Tracking
-            </Link>
+            <NavLink to="/gymnasts" className="tracker-layout__link">Skill Tracking</NavLink>
           )}
-          
+
           {canManageGymnasts && (
-            <div className="nav-dropdown">
-              <button className="nav-dropdown-toggle" onClick={() => toggleDropdown('certificates')}>
-                Certificates
-                <span className={`nav-dropdown-arrow${openDropdown === 'certificates' ? ' open' : ''}`}>▼</span>
+            <div className="tracker-layout__dropdown">
+              <button
+                className={`tracker-layout__dropdown-btn${openDropdown === 'certificates' ? ' active' : ''}`}
+                onClick={() => toggleDropdown('certificates')}
+              >
+                Certificates ▾
               </button>
-              <div className={`nav-dropdown-menu${openDropdown === 'certificates' ? ' open' : ''}`}>
-                <Link to="/certificates" className={isActive('/certificates')}>
-                  Certificate Management
-                </Link>
-                {isClubAdmin && (
-                  <Link to="/certificate-designer" className={isActive('/certificate-designer')}>
-                    Certificate Setup
-                  </Link>
-                )}
-              </div>
+              {openDropdown === 'certificates' && (
+                <div className="tracker-layout__dropdown-menu">
+                  <NavLink to="/certificates" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
+                    Certificate Management
+                  </NavLink>
+                  {isClubAdmin && (
+                    <NavLink to="/certificate-designer" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
+                      Certificate Setup
+                    </NavLink>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
           {canEditLevels && (
-            <div className="nav-dropdown">
-              <button className="nav-dropdown-toggle" onClick={() => toggleDropdown('configuration')}>
-                Configuration
-                <span className={`nav-dropdown-arrow${openDropdown === 'configuration' ? ' open' : ''}`}>▼</span>
+            <div className="tracker-layout__dropdown">
+              <button
+                className={`tracker-layout__dropdown-btn${openDropdown === 'configuration' ? ' active' : ''}`}
+                onClick={() => toggleDropdown('configuration')}
+              >
+                Configuration ▾
               </button>
-              <div className={`nav-dropdown-menu${openDropdown === 'configuration' ? ' open' : ''}`}>
-                <Link to="/levels" className={isActive('/levels')}>
-                  Levels & Skills
-                </Link>
-                {canReadCompetitions && (
-                  <Link to="/competitions" className={isActive('/competitions')}>
-                    Competition Categories
-                  </Link>
-                )}
-              </div>
+              {openDropdown === 'configuration' && (
+                <div className="tracker-layout__dropdown-menu">
+                  <NavLink to="/levels" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
+                    Levels & Skills
+                  </NavLink>
+                  {canReadCompetitions && (
+                    <NavLink to="/competitions" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>
+                      Competition Categories
+                    </NavLink>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
           {isClubAdmin && (
-            <div className="nav-dropdown">
-              <button className="nav-dropdown-toggle" onClick={() => toggleDropdown('administration')}>
-                Administration
-                <span className={`nav-dropdown-arrow${openDropdown === 'administration' ? ' open' : ''}`}>▼</span>
+            <div className="tracker-layout__dropdown">
+              <button
+                className={`tracker-layout__dropdown-btn${openDropdown === 'administration' ? ' active' : ''}`}
+                onClick={() => toggleDropdown('administration')}
+              >
+                Administration ▾
               </button>
-              <div className={`nav-dropdown-menu${openDropdown === 'administration' ? ' open' : ''}`}>
-                <Link to="/club-settings" className={isActive('/club-settings')}>
-                  Club Settings
-                </Link>
-                <Link to="/branding" className={isActive('/branding')}>
-                  Club Branding
-                </Link>
-                <Link to="/custom-fields" className={isActive('/custom-fields')}>
-                  Custom Fields
-                </Link>
-                <Link to="/users" className={isActive('/users')}>
-                  Manage Users
-                </Link>
-                <Link to="/invites" className={isActive('/invites')}>
-                  Invitations
-                </Link>
-                <Link to="/adults" className={isActive('/adults')}>
-                  Adults
-                </Link>
-                <Link to="/adult-requests" className={isActive('/adult-requests')}>
-                  Adult Requests
-                </Link>
-                <Link to="/import" className={isActive('/import')}>
-                  Import Gymnasts
-                </Link>
-              </div>
+              {openDropdown === 'administration' && (
+                <div className="tracker-layout__dropdown-menu">
+                  <NavLink to="/club-settings" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Club Settings</NavLink>
+                  <NavLink to="/branding" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Club Branding</NavLink>
+                  <NavLink to="/custom-fields" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Custom Fields</NavLink>
+                  <NavLink to="/users" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Manage Users</NavLink>
+                  <NavLink to="/invites" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Invitations</NavLink>
+                  <NavLink to="/adults" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Adults</NavLink>
+                  <NavLink to="/adult-requests" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Adult Requests</NavLink>
+                  <NavLink to="/import" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Import Gymnasts</NavLink>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Super Admin Portal */}
           {isSuperAdmin && (
-            <Link to="/super-admin" className={isActive('/super-admin')}>
-              🔧 Super Admin
-            </Link>
+            <NavLink to="/super-admin" className="tracker-layout__link">Super Admin</NavLink>
           )}
-        </div>
 
-        <div className="navbar-nav">
-          <div className="nav-dropdown">
-            <button className="nav-dropdown-toggle" onClick={() => toggleDropdown('user')}>
-              {user?.firstName} {user?.lastName}
-              <span className={`nav-dropdown-arrow${openDropdown === 'user' ? ' open' : ''}`}>▼</span>
-            </button>
-            <div className={`nav-dropdown-menu${openDropdown === 'user' ? ' open' : ''}`}>
-              <Link to="/profile" className={isActive('/profile')}>
-                Profile
-              </Link>
-              <button onClick={handleLogout} className="nav-dropdown-logout">
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
+          {isCoachOrAdmin && (
+            <>
+              <span className="tracker-layout__divider" />
+              <NavLink to="/booking" className={`tracker-layout__link tracker-layout__cross-link`}>Booking</NavLink>
+            </>
+          )}
 
-        {/* Mobile Menu Toggle */}
-        <button 
-          className="mobile-menu-toggle"
-          onClick={toggleMobileMenu}
-          aria-label="Toggle mobile menu"
-        >
-          ☰
-        </button>
+        </div>
       </nav>
 
-      {/* Mobile Navigation Overlay */}
+      {/* Mobile overlay */}
       {isMobileMenuOpen && (
-        <div className="mobile-nav-overlay active" onClick={closeMobileMenu}></div>
+        <div className="tracker-layout__mobile-overlay" onClick={closeMobile} />
       )}
 
-      {/* Mobile Navigation Menu */}
-      <nav className={`mobile-nav-menu ${isMobileMenuOpen ? 'active' : ''}`}>
-        <div className="mobile-nav-header">
-          <h3 className="mobile-nav-title">Menu</h3>
-          <button 
-            className="mobile-nav-close"
-            onClick={closeMobileMenu}
-            aria-label="Close mobile menu"
-          >
-            ×
+      {/* Mobile slide-in menu */}
+      <div className={`tracker-layout__mobile-menu${isMobileMenuOpen ? ' open' : ''}`}>
+        <div className="tracker-layout__mobile-header">
+          <span className="tracker-layout__mobile-title">Menu</span>
+          <button className="tracker-layout__mobile-close" onClick={closeMobile} aria-label="Close menu">×</button>
+        </div>
+
+        <div className="tracker-layout__mobile-links">
+
+          <NavLink to="/dashboard" className="tracker-layout__mobile-link" onClick={closeMobile}>Dashboard</NavLink>
+
+          {canManageGymnasts && (
+            <NavLink to="/gymnasts" className="tracker-layout__mobile-link" onClick={closeMobile}>Skill Tracking</NavLink>
+          )}
+
+          {canManageGymnasts && (
+            <>
+              <div className="tracker-layout__mobile-section-label">Certificates</div>
+              <NavLink to="/certificates" className="tracker-layout__mobile-link" onClick={closeMobile}>Certificate Management</NavLink>
+              {isClubAdmin && (
+                <NavLink to="/certificate-designer" className="tracker-layout__mobile-link" onClick={closeMobile}>Certificate Setup</NavLink>
+              )}
+            </>
+          )}
+
+          {canEditLevels && (
+            <>
+              <div className="tracker-layout__mobile-section-label">Configuration</div>
+              <NavLink to="/levels" className="tracker-layout__mobile-link" onClick={closeMobile}>Levels & Skills</NavLink>
+              {canReadCompetitions && (
+                <NavLink to="/competitions" className="tracker-layout__mobile-link" onClick={closeMobile}>Competition Categories</NavLink>
+              )}
+            </>
+          )}
+
+          {isClubAdmin && (
+            <>
+              <div className="tracker-layout__mobile-section-label">Administration</div>
+              <NavLink to="/club-settings" className="tracker-layout__mobile-link" onClick={closeMobile}>Club Settings</NavLink>
+              <NavLink to="/branding" className="tracker-layout__mobile-link" onClick={closeMobile}>Club Branding</NavLink>
+              <NavLink to="/custom-fields" className="tracker-layout__mobile-link" onClick={closeMobile}>Custom Fields</NavLink>
+              <NavLink to="/users" className="tracker-layout__mobile-link" onClick={closeMobile}>Manage Users</NavLink>
+              <NavLink to="/invites" className="tracker-layout__mobile-link" onClick={closeMobile}>Invitations</NavLink>
+              <NavLink to="/adults" className="tracker-layout__mobile-link" onClick={closeMobile}>Adults</NavLink>
+              <NavLink to="/adult-requests" className="tracker-layout__mobile-link" onClick={closeMobile}>Adult Requests</NavLink>
+              <NavLink to="/import" className="tracker-layout__mobile-link" onClick={closeMobile}>Import Gymnasts</NavLink>
+            </>
+          )}
+
+          {isSuperAdmin && (
+            <NavLink to="/super-admin" className="tracker-layout__mobile-link" onClick={closeMobile}>Super Admin</NavLink>
+          )}
+
+        </div>
+
+        <div className="tracker-layout__mobile-footer">
+          <NavLink to="/profile" className="tracker-layout__mobile-link" onClick={closeMobile}>Profile</NavLink>
+          {isCoachOrAdmin && (
+            <NavLink to="/booking" className="tracker-layout__mobile-link" onClick={closeMobile}>Booking</NavLink>
+          )}
+          <button className={`tracker-layout__mobile-link tracker-layout__mobile-logout`} onClick={() => { handleLogout(); closeMobile(); }}>
+            Log out
           </button>
         </div>
 
-        <div className="mobile-nav-links">
-          <Link to="/" className={isActive('/')}>
-            Dashboard
-          </Link>
-          
-          {needsProgressNavigation && (
-            <Link to="/my-progress" className={isActive('/my-progress')}>
-              {getProgressNavText()}
-            </Link>
-          )}
-          
-          {/* My Certificates for Adults and Gymnasts */}
-          {(user?.role === 'ADULT' || user?.role === 'GYMNAST') && (
-            <Link to="/my-certificates" className={isActive('/my-certificates')}>
-              🏆 My Certificates
-            </Link>
-          )}
-          
-          {canManageGymnasts && (
-            <Link to="/gymnasts" className={isActive('/gymnasts')}>
-              Skill Tracking
-            </Link>
-          )}
-          
-          {canManageGymnasts && (
-            <MobileNestedMenu 
-              title="Certificates" 
-              isOpen={openNestedMenus.certificates}
-              onToggle={() => toggleNestedMenu('certificates')}
-            >
-              <Link to="/certificates" className={isActive('/certificates')}>
-                Certificate Management
-              </Link>
-              {isClubAdmin && (
-                <Link to="/certificate-designer" className={isActive('/certificate-designer')}>
-                  Certificate Setup
-                </Link>
-              )}
-            </MobileNestedMenu>
-          )}
-          
-          {canEditLevels && (
-            <MobileNestedMenu 
-              title="Configuration" 
-              isOpen={openNestedMenus.configuration}
-              onToggle={() => toggleNestedMenu('configuration')}
-            >
-              <Link to="/levels" className={isActive('/levels')}>
-                Levels & Skills
-              </Link>
-              {canReadCompetitions && (
-                <Link to="/competitions" className={isActive('/competitions')}>
-                  Competition Categories
-                </Link>
-              )}
-            </MobileNestedMenu>
-          )}
+      </div>
 
-          {isClubAdmin && (
-            <MobileNestedMenu 
-              title="Administration" 
-              isOpen={openNestedMenus.administration}
-              onToggle={() => toggleNestedMenu('administration')}
-            >
-              <Link to="/club-settings" className={isActive('/club-settings')}>
-                Club Settings
-              </Link>
-              <Link to="/branding" className={isActive('/branding')}>
-                Club Branding
-              </Link>
-              <Link to="/custom-fields" className={isActive('/custom-fields')}>
-                Custom Fields
-              </Link>
-              <Link to="/users" className={isActive('/users')}>
-                Manage Users
-              </Link>
-              <Link to="/invites" className={isActive('/invites')}>
-                Invitations
-              </Link>
-              <Link to="/adults" className={isActive('/adults')}>
-                Adults
-              </Link>
-              <Link to="/adult-requests" className={isActive('/adult-requests')}>
-                Adult Requests
-              </Link>
-              <Link to="/import" className={isActive('/import')}>
-                Import Gymnasts
-              </Link>
-            </MobileNestedMenu>
-          )}
-
-          {/* Super Admin Portal - Mobile */}
-          {isSuperAdmin && (
-            <Link to="/super-admin" className={isActive('/super-admin')}>
-              🔧 Super Admin
-            </Link>
-          )}
-        </div>
-
-        <div className="mobile-nav-user">
-          <div className="mobile-nav-section">
-            <div className="mobile-nav-section-title">{user?.firstName} {user?.lastName}</div>
-            <Link to="/profile" className={isActive('/profile')}>
-              Profile
-            </Link>
-            <button onClick={handleLogout} className="btn btn-outline">
-              Logout
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <main className="main-content">
+      <main className="tracker-layout__main">
         <Outlet />
       </main>
     </div>
   );
-};
-
-export default Layout; 
+}
