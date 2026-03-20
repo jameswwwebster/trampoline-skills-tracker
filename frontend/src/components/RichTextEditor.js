@@ -4,6 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
+import Image from '@tiptap/extension-image';
 import './RichTextEditor.css';
 
 function ToolbarButton({ onClick, active, title, children }) {
@@ -19,13 +20,16 @@ function ToolbarButton({ onClick, active, title, children }) {
   );
 }
 
-export default function RichTextEditor({ value, onChange, placeholder }) {
+export default function RichTextEditor({ value, onChange, placeholder, onImageUpload }) {
+  const fileInputRef = React.useRef(null);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
       Link.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: placeholder || '' }),
+      Image,
     ],
     content: value || '',
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -72,6 +76,31 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
         <ToolbarButton onClick={setLink} active={editor.isActive('link')} title="Link">
           &#x1F517;
         </ToolbarButton>
+        {onImageUpload && (
+          <>
+            <span className="rte-divider" />
+            <ToolbarButton onClick={() => fileInputRef.current.click()} title="Insert image">
+              🖼
+            </ToolbarButton>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                e.target.value = '';
+                try {
+                  const url = await onImageUpload(file);
+                  editor.chain().focus().setImage({ src: url }).run();
+                } catch (err) {
+                  alert(err.response?.data?.error || err.message || 'Image upload failed');
+                }
+              }}
+            />
+          </>
+        )}
       </div>
       <EditorContent editor={editor} className="rte-content" />
     </div>
