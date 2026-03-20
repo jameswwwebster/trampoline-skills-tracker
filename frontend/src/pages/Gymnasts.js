@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-import AddGymnastForm from '../components/AddGymnastForm';
 import EditGymnastForm from '../components/EditGymnastForm';
 
 const Gymnasts = () => {
@@ -10,7 +9,6 @@ const Gymnasts = () => {
   const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showAddForm, setShowAddForm] = useState(false);
   const [editingGymnast, setEditingGymnast] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showArchived, setShowArchived] = useState(false);
@@ -200,17 +198,6 @@ const Gymnasts = () => {
       }
     }
   }, [searchParams, gymnasts]);
-
-  const handleAddSuccess = (newGymnast) => {
-    setGymnasts(prev => [...prev, newGymnast]);
-    setShowAddForm(false);
-  };
-
-  const handleCancelAdd = () => {
-    setShowAddForm(false);
-  };
-
-  // Remove unused function handleEditClick
 
   const handleEditSuccess = (updatedGymnast) => {
     setGymnasts(prev => prev.map(g => 
@@ -412,14 +399,6 @@ const Gymnasts = () => {
       <div className="desktop-header">
         <div className="flex-between">
           <h1>Gymnasts</h1>
-          {canManageGymnasts && (
-            <button 
-              className="btn btn-primary"
-              onClick={() => setShowAddForm(!showAddForm)}
-            >
-              {showAddForm ? 'Cancel' : 'Add New Gymnast'}
-            </button>
-          )}
         </div>
       </div>
 
@@ -427,14 +406,6 @@ const Gymnasts = () => {
       <div className="mobile-gymnast-header">
         <div className="mobile-header-content">
           <h1 className="mobile-page-title">Skill Tracking</h1>
-          {canManageGymnasts && (
-            <button 
-              className="btn btn-primary btn-sm"
-              onClick={() => setShowAddForm(!showAddForm)}
-            >
-              {showAddForm ? '×' : '+'}
-            </button>
-          )}
         </div>
       </div>
 
@@ -455,13 +426,6 @@ const Gymnasts = () => {
             ×
           </button>
         </div>
-      )}
-
-      {showAddForm && (
-        <AddGymnastForm
-          onSuccess={handleAddSuccess}
-          onCancel={handleCancelAdd}
-        />
       )}
 
       {editingGymnast && (
@@ -755,7 +719,6 @@ const Gymnasts = () => {
             {gymnasts.length === 0 ? (
               <>
                 <p>No gymnasts have been added to your club yet.</p>
-                <p>Click "Add New Gymnast" to get started.</p>
               </>
             ) : (
               <>
