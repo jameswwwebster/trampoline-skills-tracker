@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { TrophyIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 const ProgressHistory = ({ gymnastId }) => {
   const [historyData, setHistoryData] = useState(null);
@@ -13,7 +14,6 @@ const ProgressHistory = ({ gymnastId }) => {
         const response = await axios.get(`/api/progress/gymnast/${gymnastId}/history`);
         setHistoryData(response.data);
       } catch (error) {
-        console.error('Failed to fetch progress history:', error);
         setError('Failed to load progress history');
       } finally {
         setLoading(false);
@@ -161,7 +161,7 @@ const ProgressHistory = ({ gymnastId }) => {
                     {/* Levels completed this month */}
                     {monthData.levels.map(level => (
                       <div key={level.id} className="timeline-item level-item">
-                        <div className="item-icon level-icon">🏆</div>
+                        <div className="item-icon level-icon"><TrophyIcon style={{ width: '1.2rem', height: '1.2rem', color: 'var(--secondary-color)' }} /></div>
                         <div className="item-content">
                           <div className="item-title">
                             <strong>Level {level.levelInfo.number} Completed</strong>
@@ -189,7 +189,7 @@ const ProgressHistory = ({ gymnastId }) => {
                     {/* Skills completed this month */}
                     {monthData.skills.map(skill => (
                       <div key={skill.id} className="timeline-item skill-item">
-                        <div className="item-icon skill-icon">✅</div>
+                        <div className="item-icon skill-icon"><CheckCircleIcon style={{ width: '1.2rem', height: '1.2rem', color: '#27ae60' }} /></div>
                         <div className="item-content">
                           <div className="item-title">
                             <strong>{skill.itemName}</strong>
@@ -227,7 +227,9 @@ const ProgressHistory = ({ gymnastId }) => {
                 <div key={`${item.type}-${item.id}`} className={`history-item ${item.type}-history-item`}>
                   <div className="history-item-header">
                     <div className="item-type-icon">
-                      {item.type === 'level' ? '🏆' : '✅'}
+                      {item.type === 'level'
+                        ? <TrophyIcon style={{ width: '1.2rem', height: '1.2rem', color: 'var(--secondary-color)' }} />
+                        : <CheckCircleIcon style={{ width: '1.2rem', height: '1.2rem', color: '#27ae60' }} />}
                     </div>
                     <div className="item-info">
                       <h6 className="item-title">

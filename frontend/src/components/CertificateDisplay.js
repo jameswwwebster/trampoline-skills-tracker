@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 // import { useAuth } from '../contexts/AuthContext'; // Not used currently
 import './CertificateDisplay.css';
+import { TrophyIcon, CheckCircleIcon, EyeIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { getStatusBadge, getTypeText } from '../utils/certificateUtils';
 
 const CERTIFICATES_PER_PAGE = 4;
 
@@ -30,7 +32,6 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
   const fetchCertificates = useCallback(async (page = 1) => {
     // Prevent multiple simultaneous fetches
     if (fetchingRef.current) {
-      console.log('Fetch already in progress, skipping...');
       return;
     }
     
@@ -53,10 +54,6 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
             const imageUrl = URL.createObjectURL(imageResponse.data);
             return { id: certificate.id, url: imageUrl };
           } catch (err) {
-            // Don't log 404 errors (missing templates) to avoid spam
-            if (err.response?.status !== 404) {
-              console.error(`Failed to fetch preview for certificate ${certificate.id}:`, err);
-            }
             return { id: certificate.id, url: null, error: err.response?.status || 'unknown' };
           }
         });
@@ -110,11 +107,10 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
 
   const handleDownloadCertificate = async (certificateId) => {
     try {
-      console.log('🔄 Downloading certificate...');
       const response = await axios.get(`/api/certificates/${certificateId}/download`, {
         responseType: 'blob'
       });
-      
+
       // Create blob URL and download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -124,42 +120,13 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
-      console.log('🖼️ Certificate PNG downloaded successfully');
     } catch (err) {
-      console.error('Download error:', err);
       setError(err.response?.data?.error || 'Failed to download certificate. Please try again.');
     }
   };
 
   const handleViewCertificate = (certificate) => {
     setSelectedCertificate(certificate);
-  };
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'AWARDED':
-        return <span className="badge badge-warning">🏆 Awarded</span>;
-      case 'PRINTED':
-        return <span className="badge badge-info">📝 Marked as Printed</span>;
-      case 'DELIVERED':
-        return <span className="badge badge-success">✅ Delivered</span>;
-      default:
-        return <span className="badge badge-secondary">{status}</span>;
-    }
-  };
-
-  const getTypeText = (type) => {
-    switch (type) {
-      case 'LEVEL_COMPLETION':
-        return 'Level Completion';
-      case 'SPECIAL_ACHIEVEMENT':
-        return 'Special Achievement';
-      case 'PARTICIPATION':
-        return 'Participation';
-      default:
-        return type;
-    }
   };
 
   if (loading) {
@@ -186,7 +153,7 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
   return (
     <div className="certificate-display">
       <div className="certificate-header">
-        <h3>🏆 Certificates ({pagination.totalCertificates})</h3>
+        <h3><TrophyIcon style={{ width: '1.2em', height: '1.2em', verticalAlign: 'middle', marginRight: '0.4em', color: 'var(--secondary-color)' }} />Certificates ({pagination.totalCertificates})</h3>
         {pagination.totalCertificates > CERTIFICATES_PER_PAGE && (
           <p className="pagination-info">
             Showing page {pagination.currentPage} of {pagination.totalPages}
@@ -197,7 +164,7 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
       {certificates.length === 0 && pagination.totalCertificates === 0 ? (
         <div className="no-certificates">
           <div className="empty-state">
-            <span className="empty-icon">🏆</span>
+            <TrophyIcon className="empty-icon" style={{ width: '3rem', height: '3rem', color: 'var(--secondary-color)' }} />
             <h4>No Certificates Yet</h4>
             <p>Certificates will appear here when awarded for completed levels and achievements.</p>
           </div>
@@ -261,13 +228,13 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
                       className="btn btn-primary btn-sm"
                       onClick={() => handleViewCertificate(certificate)}
                     >
-                      👁️ View
+                      <EyeIcon style={{ width: '1em', height: '1em', verticalAlign: 'middle', marginRight: '0.3em' }} />View
                     </button>
                     <button
                       className="btn btn-success btn-sm"
                       onClick={() => handleDownloadCertificate(certificate.id)}
                     >
-                      📥 Download
+                      <ArrowDownTrayIcon style={{ width: '1em', height: '1em', verticalAlign: 'middle', marginRight: '0.3em' }} />Download
                     </button>
                   </div>
                 )}
@@ -360,11 +327,11 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
               </div>
             </div>
             <div className="modal-footer">
-              <button 
+              <button
                 className="btn btn-success"
                 onClick={() => handleDownloadCertificate(selectedCertificate.id)}
               >
-                📥 Download Certificate
+                <ArrowDownTrayIcon style={{ width: '1em', height: '1em', verticalAlign: 'middle', marginRight: '0.3em' }} />Download Certificate
               </button>
               <button 
                 className="btn btn-secondary"

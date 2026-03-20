@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { getStatusBadge, getTypeText } from '../utils/certificateUtils';
 
 const Certificates = () => {
   const [certificates, setCertificates] = useState([]);
@@ -174,32 +175,6 @@ const Certificates = () => {
   };
 
 
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'AWARDED':
-        return <span className="badge badge-warning">Awarded</span>;
-      case 'PRINTED':
-        return <span className="badge badge-info">Marked as Printed</span>;
-      case 'DELIVERED':
-        return <span className="badge badge-success">Delivered</span>;
-      default:
-        return <span className="badge badge-secondary">{status}</span>;
-    }
-  };
-
-  const getTypeText = (type) => {
-    switch (type) {
-      case 'LEVEL_COMPLETION':
-        return 'Level Completion';
-      case 'SPECIAL_ACHIEVEMENT':
-        return 'Special Achievement';
-      case 'PARTICIPATION':
-        return 'Participation';
-      default:
-        return type;
-    }
-  };
 
   const filteredCertificates = certificates.filter(cert => {
     if (filters.status && cert.status !== filters.status) return false;
