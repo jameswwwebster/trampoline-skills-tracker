@@ -97,6 +97,7 @@ router.post('/assign', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
         targetUser.firstName,
         value.amount,
         credit.expiresAt,
+        value.note,
       );
     }
 

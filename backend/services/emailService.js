@@ -472,19 +472,19 @@ class EmailService {
     return this._send({
       from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
       to: email,
-      subject: 'A charge has been added to your account',
-      html: brandedHtml('Charge added', `
+      subject: 'You have a new charge on your account',
+      html: brandedHtml('New charge', `
         <p style="margin-top:0">Hi ${firstName},</p>
-        <p>A charge of <strong style="color:#e74c3c">${amount}</strong> has been added to your account.</p>
+        <p>A charge has been added to your account and is due by <strong>${due}</strong>.</p>
         ${infoBox(`
           <p style="margin:0.2rem 0"><strong>Description:</strong> ${description}</p>
+          <p style="margin:0.2rem 0"><strong>Amount:</strong> <strong style="color:#e74c3c">${amount}</strong></p>
           <p style="margin:0.2rem 0"><strong>Due by:</strong> ${due}</p>
         `)}
-        <p>You can pay this via the cart when you next book.</p>
-        ${ctaButton(`${BASE_URL()}/booking`, 'Log in to book')}
+        ${ctaButton(`${BASE_URL()}/booking/my-charges`, 'Pay now')}
         ${muted('If you have any questions, please contact the club.')}
       `),
-      text: `Hi ${firstName},\n\nA charge of ${amount} has been added to your account.\n\nDescription: ${description}\nDue by: ${due}\n\nYou can pay this via the cart when you next book.\n\nIf you have any questions, please contact the club.`,
+      text: `Hi ${firstName},\n\nA charge has been added to your account.\n\nDescription: ${description}\nAmount: ${amount}\nDue by: ${due}\n\nPay now: ${BASE_URL()}/booking/my-charges\n\nIf you have any questions, please contact the club.`,
     }, { to: email, amount, description });
   }
 
@@ -522,7 +522,7 @@ class EmailService {
     }, { to: email, amount, description });
   }
 
-  async sendCreditAssignedEmail(email, firstName, amountPence, expiresAt) {
+  async sendCreditAssignedEmail(email, firstName, amountPence, expiresAt, note) {
     const amount = `£${(amountPence / 100).toFixed(2)}`;
     const expiry = new Date(expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     return this._send({
@@ -532,12 +532,15 @@ class EmailService {
       html: brandedHtml('Credit added', `
         <p style="margin-top:0">Hi ${firstName},</p>
         <p>A credit of <strong style="color:#7c35e8">${amount}</strong> has been added to your account.</p>
-        ${infoBox(`<p style="margin:0">Expires: <strong>${expiry}</strong></p>`)}
+        ${infoBox(`
+          ${note ? `<p style="margin:0 0 0.4rem"><strong>Note:</strong> ${note}</p>` : ''}
+          <p style="margin:0">Expires: <strong>${expiry}</strong></p>
+        `)}
         <p>Credits are applied automatically at checkout.</p>
         ${ctaButton(`${BASE_URL()}/booking`, 'Log in to book')}
         ${muted('If you have any questions, please contact the club.')}
       `),
-      text: `Hi ${firstName},\n\nA credit of ${amount} has been added to your account. It expires on ${expiry}.\n\nCredits are applied automatically at checkout.\n\nIf you have any questions, please contact the club.`,
+      text: `Hi ${firstName},\n\nA credit of ${amount} has been added to your account.${note ? `\n\nNote: ${note}` : ''}\n\nExpires: ${expiry}\n\nCredits are applied automatically at checkout.\n\nIf you have any questions, please contact the club.`,
     }, { to: email, amount });
   }
 
