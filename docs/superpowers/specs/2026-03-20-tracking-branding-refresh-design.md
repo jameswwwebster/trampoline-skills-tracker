@@ -76,11 +76,12 @@ Note: the current `ProtectedRoute` uses `encodeURIComponent(location.pathname)` 
 ```
 
 **Row 1 (`tracker-layout__topbar`):**
-- Left: brand — shows `branding.logoUrl` as an `<img>` if set, otherwise text `"Trampoline Life"`. Links to `/gymnasts`.
+- Left: brand — shows `branding.logoUrl` as an `<img>` if set, otherwise text `"Trampoline Life"`. Links to `/dashboard`.
 - Right: user first+last name as plain text, then "Log out" button
 
 **Row 2 (`tracker-layout__links`):**
-- Visible links/dropdowns per role (unchanged from current Layout.js logic):
+- Visible links/dropdowns per role (unchanged from current Layout.js logic, plus restored Dashboard):
+  - `Dashboard` → `/dashboard` (all roles)
   - `Skill Tracking` → `/gymnasts` (coaches + admins)
   - `Certificates ▾` → dropdown: Certificate Management (`/certificates`), Certificate Setup (`/certificate-designer` — admin only) (coaches + admins)
   - `Configuration ▾` → dropdown: Levels & Skills (`/levels`), Competition Categories (`/competitions`) (admin only)
@@ -162,7 +163,7 @@ Remove all emojis from page headings, nav items, and inline content across track
 - `🔧 Super Admin` → `Super Admin`
 
 **In page files** — scan and remove emojis from JSX headings, button labels, and status messages:
-- `frontend/src/pages/Dashboard.js` (note: no `/dashboard` route exists in `App.js` — this file may be unused, but clean it anyway in case it is re-added)
+- `frontend/src/pages/Dashboard.js` (a `/dashboard` route is being re-added to the tracking layout as part of this work — see App.js change above)
 - `frontend/src/pages/Gymnasts.js`
 - `frontend/src/pages/Certificates.js`
 - `frontend/src/pages/CertificateDesigner.js`
@@ -197,7 +198,7 @@ In `BookingLayout.js`, add a "Skill Tracker" link for coaches and admins.
 | File | Change |
 |------|--------|
 | `frontend/src/components/TrackingRoute.js` | **New** — role gate, redirects ADULT/CHILD to `/booking` |
-| `frontend/src/App.js` | Replace `<ProtectedRoute><Layout /></ProtectedRoute>` with `<TrackingRoute />` |
+| `frontend/src/App.js` | Replace `<ProtectedRoute><Layout /></ProtectedRoute>` with `<TrackingRoute />`; add `<Route path="dashboard" element={<Dashboard />} />` to the tracking layout's child routes |
 | `frontend/src/components/Layout.js` | Full rebuild — two-row nav, `tracker-layout__*` classes, no emojis, Booking cross-link |
 | `frontend/src/components/TrackingLayout.css` | **New** — nav CSS mirroring BookingLayout.css with `tracker-layout__*` selectors |
 | `frontend/src/App.css` | Remove unused font imports; update card, button, form, table styles |
