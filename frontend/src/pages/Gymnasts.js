@@ -199,7 +199,7 @@ const Gymnasts = () => {
   }, [searchParams, gymnasts]);
 
   const handleArchiveClick = (e, gymnast) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     setArchivingGymnast(gymnast);
     setArchiveReason('');
   };
@@ -400,10 +400,9 @@ const Gymnasts = () => {
       {success && (
         <div className="alert alert-success">
           {success}
-          <button 
-            className="btn btn-xs btn-outline"
+          <button
+            className="btn btn-xs btn-outline alert-dismiss-btn"
             onClick={() => setSuccess(null)}
-            style={{ marginLeft: '10px' }}
           >
             ×
           </button>
@@ -453,7 +452,7 @@ const Gymnasts = () => {
           <div className="modal">
             <h3>Delete Gymnast</h3>
             <p>Are you sure you want to <strong>permanently delete</strong> <strong>{deletingGymnast.firstName} {deletingGymnast.lastName}</strong>?</p>
-            <div className="alert alert-warning">
+            <div className="alert alert-error">
               <strong>Warning:</strong> This action cannot be undone. All progress data will be lost.
               <br />
               Consider archiving instead to preserve historical data.
@@ -486,198 +485,121 @@ const Gymnasts = () => {
         </div>
       )}
 
-      {/* Search Input */}
+      {/* Search + Filter Bar */}
       <div className="card" style={{ marginBottom: '1rem' }}>
-        <div className="card-header">
+        <div className="gymnasts-filter-bar">
           <input
             type="text"
-            placeholder="Search by gymnast name..."
+            placeholder="Search gymnasts..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="form-control mobile-search-input"
-            style={{ margin: 0 }}
+            className="form-control gymnasts-search-input"
           />
-          
-          {/* Session Filter - Prominent */}
-          {sessionGymnasts.size > 0 && (
-            <div className="session-filter-prominent">
-              <button
-                className={`session-filter-btn ${showSessionOnly ? 'active' : ''}`}
-                onClick={() => setShowSessionOnly(!showSessionOnly)}
-              >
-                <span className="session-filter-text">
-                  {showSessionOnly ? 'Show All Gymnasts' : `Show Session Only (${sessionGymnasts.size})`}
-                </span>
-              </button>
-            </div>
-          )}
-          
-          {/* Filter Controls */}
-          <div className="mobile-filter-controls">
-            <div className="mobile-filter-row">
-              <div className="mobile-filter-group">
-                <label className="mobile-filter-label">Sort by</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="form-control mobile-filter-select"
-                >
-                  <option value="name">Name (A-Z)</option>
-                  <option value="recent">Most Recent</option>
-                  <option value="level">Level</option>
-                  <option value="age">Age (Youngest First)</option>
-                </select>
-              </div>
-              
-              <div className="mobile-filter-group">
-                <label className="mobile-filter-label">Level</label>
-                <select
-                  value={searchParams.get('level') || ''}
-                  onChange={(e) => {
-                    const newParams = new URLSearchParams(searchParams);
-                    if (e.target.value) {
-                      newParams.set('level', e.target.value);
-                    } else {
-                      newParams.delete('level');
-                    }
-                    setSearchParams(newParams);
-                  }}
-                  className="form-control mobile-filter-select"
-                >
-                  <option value="">All Levels</option>
-                  {levels
-                    .filter(level => !isSideTrack(level.identifier))
-                    .sort((a, b) => parseInt(a.identifier) - parseInt(b.identifier))
-                    .map(level => (
-                      <option key={level.id} value={level.identifier}>
-                        Level {level.identifier}
-                      </option>
-                    ))}
-                </select>
-              </div>
-              
-              <div className="mobile-filter-group">
-                <label className="mobile-filter-label">Competition</label>
-                <select
-                  value={searchParams.get('competition') || ''}
-                  onChange={(e) => {
-                    const newParams = new URLSearchParams(searchParams);
-                    if (e.target.value) {
-                      newParams.set('competition', e.target.value);
-                    } else {
-                      newParams.delete('competition');
-                    }
-                    setSearchParams(newParams);
-                  }}
-                  className="form-control mobile-filter-select"
-                >
-                  <option value="">All Competitions</option>
-                  {(() => {
-                    // Get all unique competitions from levels
-                    const allCompetitions = levels
-                      .filter(level => level.competitions && level.competitions.length > 0)
-                      .flatMap(level => level.competitions)
-                      .map(comp => comp.name);
-                    
-                    // Remove duplicates and sort
-                    const uniqueCompetitions = [...new Set(allCompetitions)].sort();
-                    
-                    return uniqueCompetitions.map(competitionName => (
-                      <option key={competitionName} value={competitionName}>
-                        {competitionName}
-                      </option>
-                    ));
-                  })()}
-                </select>
-              </div>
-            </div>
 
-            {/* Archive Toggle */}
-            {isClubAdmin && (
-              <div className="mobile-archive-toggle">
-                <label className="mobile-checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={showArchived}
-                    onChange={(e) => setShowArchived(e.target.checked)}
-                    className="mobile-checkbox"
-                  />
-                  <span className="mobile-checkbox-text">Show Archived</span>
-                </label>
-              </div>
-            )}
-          </div>
-          
-          {/* Active Filters */}
-          {(searchParams.get('level') || searchParams.get('competition')) && (
-            <div style={{ marginTop: '0.25rem', display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8rem', color: '#666' }}>Active filters:</span>
-              
-              {searchParams.get('level') && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <span className="badge badge-info" style={{ fontSize: '0.75rem' }}>Level {searchParams.get('level')}</span>
-                  <button 
-                    onClick={() => {
-                      const newParams = new URLSearchParams(searchParams);
-                      newParams.delete('level');
-                      setSearchParams(newParams);
-                    }}
-                    className="btn btn-xs btn-outline"
-                    style={{ padding: '0.1rem 0.25rem', fontSize: '0.7rem' }}
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-              
-              {searchParams.get('competition') && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>{searchParams.get('competition')}</span>
-                  <button 
-                    onClick={() => {
-                      const newParams = new URLSearchParams(searchParams);
-                      newParams.delete('competition');
-                      setSearchParams(newParams);
-                    }}
-                    className="btn btn-xs btn-outline"
-                    style={{ padding: '0.1rem 0.25rem', fontSize: '0.7rem' }}
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-              
-              <button 
-                onClick={() => setSearchParams(new URLSearchParams())}
-                className="btn btn-xs btn-outline"
-                style={{ fontSize: '0.7rem' }}
-              >
-                Clear all filters
-              </button>
-            </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="form-control gymnasts-filter-select"
+          >
+            <option value="name">Name (A–Z)</option>
+            <option value="recent">Most Recent</option>
+            <option value="level">Level</option>
+            <option value="age">Age (Youngest First)</option>
+          </select>
+
+          <select
+            value={searchParams.get('level') || ''}
+            onChange={(e) => {
+              const newParams = new URLSearchParams(searchParams);
+              if (e.target.value) newParams.set('level', e.target.value);
+              else newParams.delete('level');
+              setSearchParams(newParams);
+            }}
+            className="form-control gymnasts-filter-select"
+          >
+            <option value="">All Levels</option>
+            {levels
+              .filter(level => !isSideTrack(level.identifier))
+              .sort((a, b) => parseInt(a.identifier) - parseInt(b.identifier))
+              .map(level => (
+                <option key={level.id} value={level.identifier}>
+                  Level {level.identifier}
+                </option>
+              ))}
+          </select>
+
+          <select
+            value={searchParams.get('competition') || ''}
+            onChange={(e) => {
+              const newParams = new URLSearchParams(searchParams);
+              if (e.target.value) newParams.set('competition', e.target.value);
+              else newParams.delete('competition');
+              setSearchParams(newParams);
+            }}
+            className="form-control gymnasts-filter-select"
+          >
+            <option value="">All Competitions</option>
+            {[...new Set(
+              levels
+                .filter(l => l.competitions?.length > 0)
+                .flatMap(l => l.competitions.map(c => c.name))
+            )].sort().map(name => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+
+          {isClubAdmin && (
+            <label className="gymnasts-archive-label">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={(e) => setShowArchived(e.target.checked)}
+              />
+              <span>Show Archived</span>
+            </label>
+          )}
+
+          {sessionGymnasts.size > 0 && (
+            <button
+              className={`btn btn-sm ${showSessionOnly ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setShowSessionOnly(!showSessionOnly)}
+            >
+              {showSessionOnly ? 'Show All' : `Session (${sessionGymnasts.size})`}
+            </button>
           )}
         </div>
+
+        {/* Active filter chips */}
+        {(searchParams.get('level') || searchParams.get('competition')) && (
+          <div className="gymnasts-active-filters">
+            <span className="gymnasts-filter-label">Active filters:</span>
+            {searchParams.get('level') && (
+              <span className="badge badge-info gymnasts-filter-chip">
+                Level {searchParams.get('level')}
+                <button onClick={() => { const p = new URLSearchParams(searchParams); p.delete('level'); setSearchParams(p); }} className="gymnasts-filter-chip-remove">×</button>
+              </span>
+            )}
+            {searchParams.get('competition') && (
+              <span className="badge badge-success gymnasts-filter-chip">
+                {searchParams.get('competition')}
+                <button onClick={() => { const p = new URLSearchParams(searchParams); p.delete('competition'); setSearchParams(p); }} className="gymnasts-filter-chip-remove">×</button>
+              </span>
+            )}
+            <button className="btn btn-xs btn-outline" onClick={() => setSearchParams(new URLSearchParams())}>Clear all</button>
+          </div>
+        )}
       </div>
 
       {/* A–Z filter */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', margin: '0.5rem 0' }}>
+      <div className="gymnasts-az-filter">
         <button
-          style={{ fontWeight: letterFilter === '' ? 700 : 400, padding: '0.2rem 0.5rem', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', background: letterFilter === '' ? '#7c35e8' : '#fff', color: letterFilter === '' ? '#fff' : undefined }}
+          className={`gymnasts-az-btn${letterFilter === '' ? ' active' : ''}`}
           onClick={() => setLetterFilter('')}
         >All</button>
         {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
           <button
             key={letter}
-            style={{
-              fontWeight: letterFilter === letter ? 700 : 400,
-              padding: '0.2rem 0.5rem',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              background: letterFilter === letter ? '#7c35e8' : '#fff',
-              color: letterFilter === letter ? '#fff' : undefined,
-              minWidth: '2rem',
-            }}
+            className={`gymnasts-az-btn${letterFilter === letter ? ' active' : ''}`}
             onClick={() => setLetterFilter(l => l === letter ? '' : letter)}
           >{letter}</button>
         ))}
@@ -738,6 +660,7 @@ const Gymnasts = () => {
                     <th>Date of Birth</th>
                     <th>Current Level</th>
                     <th>Competition Level</th>
+                    <th>Session</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -787,7 +710,15 @@ const Gymnasts = () => {
                           );
                         })()}
                       </td>
-                      
+                      <td>
+                        <button
+                          className={`session-toggle-btn${sessionGymnasts.has(gymnast.id) ? ' in-session' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); toggleGymnastInSession(gymnast.id); }}
+                          title={sessionGymnasts.has(gymnast.id) ? 'Remove from session' : 'Add to session'}
+                        >
+                          {sessionGymnasts.has(gymnast.id) ? '✓' : '+'}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -919,15 +850,15 @@ const Gymnasts = () => {
                 </div>
               )}
             {totalPages > 1 && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginTop: '1rem', fontSize: '0.875rem' }}>
+              <div className="gymnasts-pagination">
                 <button
-                  style={{ padding: '0.3rem 0.75rem', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
+                  className="btn btn-sm btn-outline"
                   disabled={safePage <= 1}
                   onClick={() => setPage(p => p - 1)}
                 >← Prev</button>
-                <span style={{ color: '#666' }}>Page {safePage} of {totalPages}</span>
+                <span className="gymnasts-pagination-info">Page {safePage} of {totalPages}</span>
                 <button
-                  style={{ padding: '0.3rem 0.75rem', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
+                  className="btn btn-sm btn-outline"
                   disabled={safePage >= totalPages}
                   onClick={() => setPage(p => p + 1)}
                 >Next →</button>
