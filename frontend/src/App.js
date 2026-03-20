@@ -19,21 +19,12 @@ import Levels from './pages/Levels';
 import Competitions from './pages/Competitions';
 import Progress from './pages/Progress';
 import MyProgress from './pages/MyProgress';
-import Invites from './pages/Invites';
-
-import Users from './pages/Users';
 import Profile from './pages/Profile';
 import Certificates from './pages/Certificates';
 import CertificateDesigner from './pages/CertificateDesigner';
 import CertificatePreview from './pages/CertificatePreview';
-import ImportGymnasts from './pages/ImportGymnasts';
-import AcceptInvite from './pages/AcceptInvite';
 import ClubSettings from './pages/ClubSettings';
 import Branding from './pages/Branding';
-import Adults from './pages/Adults';
-import AdultConnectionRequest from './pages/AdultConnectionRequest';
-import AdultRequests from './pages/AdultRequests';
-import CustomFields from './pages/CustomFields';
 import MyCertificates from './pages/MyCertificates';
 import Health from './pages/Health';
 import SuperAdmin from './pages/SuperAdmin';
@@ -97,14 +88,9 @@ function PageMeta() {
       pathname.startsWith('/my-progress') ||
       pathname.startsWith('/certificates') ||
       pathname.startsWith('/my-certificates') ||
-      pathname.startsWith('/users') ||
       pathname.startsWith('/profile') ||
-      pathname.startsWith('/invites') ||
-      pathname.startsWith('/import') ||
       pathname.startsWith('/club-settings') ||
-      pathname.startsWith('/branding') ||
-      pathname.startsWith('/custom-fields') ||
-      pathname.startsWith('/adult-requests')
+      pathname.startsWith('/branding')
     ) {
       document.title = 'Tracker | Trampoline Life';
       if (favicon) favicon.href = '/tl-favicon.png';
@@ -168,8 +154,6 @@ function AppContent() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/adult-connection-request" element={<AdultConnectionRequest />} />
-        <Route path="/invite/:token" element={<AcceptInvite />} />
         {/* Public cheatsheet routes - no authentication required */}
         <Route path="/cheatsheets" element={<Cheatsheets />} />
         <Route path="/cheatsheets/:cheatsheetId" element={<CheatsheetViewer />} />
@@ -182,19 +166,13 @@ function AppContent() {
           <Route path="competitions" element={<Competitions />} />
           <Route path="progress/:gymnastId" element={<Progress />} />
           <Route path="my-progress" element={<MyProgress />} />
-          <Route path="invites" element={<Invites />} />
-          <Route path="users" element={<Users />} />
           <Route path="profile" element={<Profile />} />
           <Route path="certificates" element={<Certificates />} />
           <Route path="my-certificates" element={<MyCertificates />} />
           <Route path="certificates/:certificateId/preview" element={<CertificatePreview />} />
           <Route path="certificate-designer" element={<CertificateDesigner />} />
-          <Route path="import" element={<ImportGymnasts />} />
           <Route path="club-settings" element={<ClubSettings />} />
           <Route path="branding" element={<Branding />} />
-          <Route path="custom-fields" element={<CustomFields />} />
-          <Route path="adults" element={<Adults />} />
-          <Route path="adult-requests" element={<AdultRequests />} />
           <Route path="health" element={<Health />} />
           <Route path="super-admin" element={<SuperAdmin />} />
         </Route>
