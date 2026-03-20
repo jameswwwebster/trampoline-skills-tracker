@@ -527,6 +527,24 @@ const Gymnasts = () => {
             </label>
           )}
 
+          {canManageGymnasts && (
+            <select
+              className="form-control gymnasts-filter-select"
+              value={selectedSessionId || ''}
+              onChange={(e) => handleSessionSelect(e.target.value || null)}
+              disabled={todaySessions.length === 0 || sessionLoading}
+            >
+              <option value="">
+                {todaySessions.length === 0 ? 'No sessions today' : 'No session'}
+              </option>
+              {todaySessions.map(s => (
+                <option key={s.id} value={s.id}>
+                  {s.startTime}–{s.endTime} · {s.type.charAt(0) + s.type.slice(1).toLowerCase()}
+                </option>
+              ))}
+            </select>
+          )}
+
           {sessionGymnasts.size > 0 && (
             <button
               className={`btn btn-sm ${showSessionOnly ? 'btn-primary' : 'btn-outline'}`}
@@ -594,10 +612,9 @@ const Gymnasts = () => {
                       onClick={() => {
                         setSearchTerm('');
                         setShowSessionOnly(false);
-                        setSearchParams(new URLSearchParams());
-                        setSessionGymnasts(new Set());
                         setSelectedSessionId(null);
-                        localStorage.removeItem('coachingSession');
+                        setSessionGymnasts(new Set());
+                        setSearchParams(new URLSearchParams());
                       }}
                     >
                       Clear All Filters
@@ -678,14 +695,9 @@ const Gymnasts = () => {
                         })()}
                       </td>
                       <td>
-                        <button
-                          className={`session-toggle-btn${sessionGymnasts.has(gymnast.id) ? ' in-session' : ''}`}
-                          onClick={(e) => { e.stopPropagation(); }}
-                          title={sessionGymnasts.has(gymnast.id) ? 'In session' : 'Not in session'}
-                          disabled
-                        >
-                          {sessionGymnasts.has(gymnast.id) ? '✓' : '+'}
-                        </button>
+                        {sessionGymnasts.has(gymnast.id) && (
+                          <span className="badge badge-success" style={{ fontSize: '0.85rem' }}>✓</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -709,19 +721,11 @@ const Gymnasts = () => {
                           {gymnast.firstName} {gymnast.lastName}
                         </div>
                         <div className="mobile-card-age">
-                          {gymnast.dateOfBirth 
+                          {gymnast.dateOfBirth
                             ? `${new Date().getFullYear() - new Date(gymnast.dateOfBirth).getFullYear()}y`
                             : 'Age unknown'
                           }
                         </div>
-                        <button
-                          className={`session-toggle-btn ${isInSession ? 'in-session' : ''}`}
-                          onClick={(e) => { e.stopPropagation(); }}
-                          title={isInSession ? 'In session' : 'Not in session'}
-                          disabled
-                        >
-                          {isInSession ? '✓' : '+'}
-                        </button>
                       </div>
                     
                     <div className="mobile-card-body">
@@ -1018,10 +1022,9 @@ const Gymnasts = () => {
                       onClick={() => {
                         setSearchTerm('');
                         setShowSessionOnly(false);
-                        setSearchParams(new URLSearchParams());
-                        setSessionGymnasts(new Set());
                         setSelectedSessionId(null);
-                        localStorage.removeItem('coachingSession');
+                        setSessionGymnasts(new Set());
+                        setSearchParams(new URLSearchParams());
                       }}
                     >
                       Clear All Filters
