@@ -218,7 +218,7 @@ export default function Layout() {
           {isCoachOrAdmin && (
             <NavLink to="/booking" className="tracker-layout__mobile-link" onClick={closeMobile}>Booking</NavLink>
           )}
-          <button className={`tracker-layout__mobile-link tracker-layout__mobile-logout`} onClick={() => { handleLogout(); closeMobile(); }}>
+          <button className={`tracker-layout__mobile-link tracker-layout__mobile-logout`} onClick={handleLogout}>
             Log out
           </button>
         </div>
