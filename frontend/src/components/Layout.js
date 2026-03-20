@@ -128,12 +128,6 @@ export default function Layout() {
                 <div className="tracker-layout__dropdown-menu">
                   <NavLink to="/club-settings" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Club Settings</NavLink>
                   <NavLink to="/branding" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Club Branding</NavLink>
-                  <NavLink to="/custom-fields" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Custom Fields</NavLink>
-                  <NavLink to="/users" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Manage Users</NavLink>
-                  <NavLink to="/invites" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Invitations</NavLink>
-                  <NavLink to="/adults" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Adults</NavLink>
-                  <NavLink to="/adult-requests" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Adult Requests</NavLink>
-                  <NavLink to="/import" className="tracker-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Import Gymnasts</NavLink>
                 </div>
               )}
             </div>
@@ -198,12 +192,6 @@ export default function Layout() {
               <div className="tracker-layout__mobile-section-label">Administration</div>
               <NavLink to="/club-settings" className="tracker-layout__mobile-link" onClick={closeMobile}>Club Settings</NavLink>
               <NavLink to="/branding" className="tracker-layout__mobile-link" onClick={closeMobile}>Club Branding</NavLink>
-              <NavLink to="/custom-fields" className="tracker-layout__mobile-link" onClick={closeMobile}>Custom Fields</NavLink>
-              <NavLink to="/users" className="tracker-layout__mobile-link" onClick={closeMobile}>Manage Users</NavLink>
-              <NavLink to="/invites" className="tracker-layout__mobile-link" onClick={closeMobile}>Invitations</NavLink>
-              <NavLink to="/adults" className="tracker-layout__mobile-link" onClick={closeMobile}>Adults</NavLink>
-              <NavLink to="/adult-requests" className="tracker-layout__mobile-link" onClick={closeMobile}>Adult Requests</NavLink>
-              <NavLink to="/import" className="tracker-layout__mobile-link" onClick={closeMobile}>Import Gymnasts</NavLink>
             </>
           )}
 
