@@ -4,6 +4,13 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { bookingApi } from '../utils/bookingApi';
 import CreateClubForm from '../components/CreateClubForm';
+import {
+  CalendarDaysIcon,
+  ShoppingBagIcon,
+  TrophyIcon,
+  UserIcon,
+  Cog6ToothIcon,
+} from '@heroicons/react/24/outline';
 
 const Dashboard = () => {
   const {
@@ -168,7 +175,7 @@ const Dashboard = () => {
   const noticeboardPanel = (
     <Link to="/booking/noticeboard" className="dashboard-noticeboard-panel">
       <div className="dashboard-noticeboard-panel__header">
-        <span className="dashboard-noticeboard-panel__title">📌 Noticeboard</span>
+        <span className="dashboard-noticeboard-panel__title">Noticeboard</span>
         {unreadCount > 0 && (
           <span className="dashboard-noticeboard-panel__badge">{unreadCount} unread</span>
         )}
@@ -189,19 +196,19 @@ const Dashboard = () => {
   const memberTiles = (
     <div className="dashboard-tiles">
       <Link to="/booking" className="dashboard-tile dashboard-tile--bookings" state={{ skipAdminRedirect: true }}>
-        <span className="dashboard-tile__icon">📅</span>
+        <CalendarDaysIcon className="dashboard-tile__icon" />
         <span className="dashboard-tile__label">Bookings</span>
       </Link>
       <Link to="/booking/shop" className="dashboard-tile dashboard-tile--shop">
-        <span className="dashboard-tile__icon">🛍</span>
+        <ShoppingBagIcon className="dashboard-tile__icon" />
         <span className="dashboard-tile__label">Shop</span>
       </Link>
       <Link to="/my-progress" className="dashboard-tile dashboard-tile--tracking">
-        <span className="dashboard-tile__icon">🤸</span>
+        <TrophyIcon className="dashboard-tile__icon" />
         <span className="dashboard-tile__label">Skill Tracking</span>
       </Link>
       <Link to="/booking/my-account" className="dashboard-tile dashboard-tile--account">
-        <span className="dashboard-tile__icon">👤</span>
+        <UserIcon className="dashboard-tile__icon" />
         <span className="dashboard-tile__label">My Account</span>
       </Link>
     </div>
@@ -210,19 +217,19 @@ const Dashboard = () => {
   const adminTiles = (
     <div className="dashboard-tiles">
       <Link to="/booking/admin" className="dashboard-tile dashboard-tile--bookings">
-        <span className="dashboard-tile__icon">📅</span>
+        <CalendarDaysIcon className="dashboard-tile__icon" />
         <span className="dashboard-tile__label">Bookings</span>
       </Link>
       <Link to="/booking/shop" className="dashboard-tile dashboard-tile--shop">
-        <span className="dashboard-tile__icon">🛍</span>
+        <ShoppingBagIcon className="dashboard-tile__icon" />
         <span className="dashboard-tile__label">Shop</span>
       </Link>
       <Link to="/gymnasts" className="dashboard-tile dashboard-tile--tracking">
-        <span className="dashboard-tile__icon">🤸</span>
+        <TrophyIcon className="dashboard-tile__icon" />
         <span className="dashboard-tile__label">Skill Tracking</span>
       </Link>
       <Link to="/booking/admin/members" className="dashboard-tile dashboard-tile--admin">
-        <span className="dashboard-tile__icon">⚙️</span>
+        <Cog6ToothIcon className="dashboard-tile__icon" />
         <span className="dashboard-tile__label">Admin</span>
       </Link>
     </div>
@@ -242,7 +249,7 @@ const Dashboard = () => {
                 className="dashboard-today__register-btn"
                 onClick={() => navigate(`/booking/admin/register/${s.id}`)}
               >
-                🟢 Register — {s.startTime}–{s.endTime}
+                Register — {s.startTime}–{s.endTime}
               </button>
             ) : (
               <span key={s.id} className="dashboard-today__session">

@@ -239,7 +239,7 @@ const Certificates = () => {
         <div className="alert alert-danger">
           <strong>Error:</strong> {error}
           <button 
-            className="btn btn-sm btn-outline-danger float-right"
+            className="btn btn-sm btn-outline float-right"
             onClick={() => setError(null)}
           >
             ×
@@ -251,7 +251,7 @@ const Certificates = () => {
         <div className="alert alert-success">
           <strong>Success:</strong> {success}
           <button 
-            className="btn btn-sm btn-outline-success float-right"
+            className="btn btn-sm btn-outline float-right"
             onClick={() => setSuccess(null)}
           >
             ×
@@ -379,7 +379,7 @@ const Certificates = () => {
                               {certificate.status === 'AWARDED' && (
                                 <>
                                   <button
-                                    className="btn btn-info"
+                                    className="btn btn-secondary"
                                     onClick={() => handleStatusUpdate(certificate.id, 'PRINTED')}
                                     title="Mark as Printed"
                                   >
