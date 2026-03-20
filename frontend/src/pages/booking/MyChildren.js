@@ -22,6 +22,31 @@ function ContactDetailsSection({ user, onSaved }) {
   const [form, setForm] = useState({ email: user.email || '', phone: user.phone || '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState(null);
+  const [pwSuccess, setPwSuccess] = useState(false);
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      setPwError('New passwords do not match.');
+      return;
+    }
+    setPwSaving(true);
+    setPwError(null);
+    try {
+      await axios.put(`${API_URL}/users/password`, pwForm, { headers: getHeaders() });
+      setPwSuccess(true);
+      setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setTimeout(() => { setChangingPassword(false); setPwSuccess(false); }, 2000);
+    } catch (err) {
+      setPwError(err.response?.data?.error || 'Failed to change password.');
+    } finally {
+      setPwSaving(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,6 +85,43 @@ function ContactDetailsSection({ user, onSaved }) {
             Please complete your contact details.
           </p>
         )}
+        <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--booking-bg-light)' }}>
+          {!changingPassword ? (
+            <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => setChangingPassword(true)}>
+              Change password
+            </button>
+          ) : (
+            <form onSubmit={handleChangePassword}>
+              <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>Change password</p>
+              <label className="bk-label" style={{ fontWeight: 'normal', display: 'block', marginBottom: '0.5rem' }}>Current password
+                <input type="password" className="bk-input" value={pwForm.currentPassword}
+                  onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))}
+                  required autoComplete="current-password" style={{ marginTop: '0.25rem' }} />
+              </label>
+              <label className="bk-label" style={{ fontWeight: 'normal', display: 'block', marginBottom: '0.5rem' }}>New password
+                <input type="password" className="bk-input" value={pwForm.newPassword}
+                  onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
+                  required minLength={6} autoComplete="new-password" style={{ marginTop: '0.25rem' }} />
+              </label>
+              <label className="bk-label" style={{ fontWeight: 'normal', display: 'block', marginBottom: '0.5rem' }}>Confirm new password
+                <input type="password" className="bk-input" value={pwForm.confirmPassword}
+                  onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                  required minLength={6} autoComplete="new-password" style={{ marginTop: '0.25rem' }} />
+              </label>
+              {pwError && <p className="bk-error" style={{ marginBottom: '0.5rem' }}>{pwError}</p>}
+              {pwSuccess && <p style={{ color: 'var(--booking-success)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Password changed.</p>}
+              <div className="bk-row">
+                <button type="submit" disabled={pwSaving} className="bk-btn bk-btn--primary bk-btn--sm">
+                  {pwSaving ? 'Saving...' : 'Save'}
+                </button>
+                <button type="button" className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
+                  onClick={() => { setChangingPassword(false); setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); setPwError(null); }}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     );
   }
