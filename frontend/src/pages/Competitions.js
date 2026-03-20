@@ -35,7 +35,7 @@ const CompetitionModal = ({ competition, onSave, onCancel }) => {
           }
         }
       } catch (error) {
-        console.error('Failed to fetch categories:', error);
+        // silently ignore category fetch errors
       }
     };
 
@@ -351,6 +351,7 @@ const Competitions = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedCompetition, setSelectedCompetition] = useState(null);
   const [collapsedCategories, setCollapsedCategories] = useState(new Set());
+  const [deletingCompetition, setDeletingCompetition] = useState(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categoryAction, setCategoryAction] = useState(null); // 'edit' or 'delete'
@@ -424,30 +425,26 @@ const Competitions = () => {
     }
   };
 
-  const handleDeleteCompetition = async (competition) => {
-    if (competition.levelsCount > 0) {
-      alert('Cannot delete competition that is associated with levels. Remove the associations first.');
-      return;
-    }
+  const handleDeleteCompetition = (competition) => {
+    setDeletingCompetition(competition);
+  };
 
-    if (window.confirm(`Are you sure you want to delete "${competition.name}"?`)) {
-      try {
-        const response = await fetch(`/api/competitions/${competition.id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-
-        if (response.ok) {
-          await fetchCompetitions();
-        } else {
-          const errorData = await response.json();
-          alert(errorData.error || 'Failed to delete competition');
-        }
-      } catch (err) {
-        alert('An error occurred while deleting the competition');
+  const confirmDeleteCompetition = async () => {
+    const competition = deletingCompetition;
+    setDeletingCompetition(null);
+    try {
+      const response = await fetch(`/api/competitions/${competition.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        await fetchCompetitions();
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to delete competition');
       }
+    } catch (err) {
+      setError('An error occurred while deleting the competition');
     }
   };
 
@@ -476,48 +473,44 @@ const Competitions = () => {
   };
 
   const handleCategoryAction = async (data) => {
-    try {
-      const url = `/api/competitions/categories/${encodeURIComponent(selectedCategory)}`;
-      
-      if (categoryAction === 'edit') {
-        const response = await fetch(url, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ newCategoryName: data.newCategoryName })
-        });
+    const url = `/api/competitions/categories/${encodeURIComponent(selectedCategory)}`;
 
-        if (response.ok) {
-          await fetchCompetitions();
-          setShowCategoryModal(false);
-          setSelectedCategory(null);
-          setCategoryAction(null);
-        } else {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to update category');
-        }
-      } else if (categoryAction === 'delete') {
-        const response = await fetch(url, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+    if (categoryAction === 'edit') {
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ newCategoryName: data.newCategoryName })
+      });
 
-        if (response.ok) {
-          await fetchCompetitions();
-          setShowCategoryModal(false);
-          setSelectedCategory(null);
-          setCategoryAction(null);
-        } else {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to delete category');
-        }
+      if (response.ok) {
+        await fetchCompetitions();
+        setShowCategoryModal(false);
+        setSelectedCategory(null);
+        setCategoryAction(null);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update category');
       }
-    } catch (error) {
-      alert(error.message);
+    } else if (categoryAction === 'delete') {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        await fetchCompetitions();
+        setShowCategoryModal(false);
+        setSelectedCategory(null);
+        setCategoryAction(null);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete category');
+      }
     }
   };
 
@@ -665,6 +658,19 @@ const Competitions = () => {
             setCategoryAction(null);
           }}
         />
+      )}
+
+      {deletingCompetition && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Delete Competition</h3>
+            <p>Are you sure you want to delete <strong>"{deletingCompetition.name}"</strong>?</p>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setDeletingCompetition(null)}>Cancel</button>
+              <button className="btn btn-danger" onClick={confirmDeleteCompetition}>Delete</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

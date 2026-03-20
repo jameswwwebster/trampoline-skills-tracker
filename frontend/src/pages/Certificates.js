@@ -22,6 +22,8 @@ const Certificates = () => {
     templateId: '',
     notes: ''
   });
+  const [revertingCertificateId, setRevertingCertificateId] = useState(null);
+  const [deletingCertificateId, setDeletingCertificateId] = useState(null);
   const { canManageGymnasts } = useAuth();
 
   useEffect(() => {
@@ -79,31 +81,34 @@ const Certificates = () => {
     }
   };
 
-  const handleRevertCertificate = async (certificateId) => {
-    if (window.confirm('Are you sure you want to revert this certificate to the awarded state? This will undo any printed/delivered status.')) {
-      await handleStatusUpdate(certificateId, 'AWARDED');
-    }
+  const handleRevertCertificate = (certificateId) => {
+    setRevertingCertificateId(certificateId);
   };
 
-  const handleDeleteCertificate = async (certificateId) => {
+  const confirmRevertCertificate = async () => {
+    const id = revertingCertificateId;
+    setRevertingCertificateId(null);
+    await handleStatusUpdate(id, 'AWARDED');
+  };
+
+  const handleDeleteCertificate = (certificateId) => {
+    setDeletingCertificateId(certificateId);
+  };
+
+  const confirmDeleteCertificate = async () => {
+    const certificateId = deletingCertificateId;
     const certificate = certificates.find(c => c.id === certificateId);
     const gymnastName = certificate ? `${certificate.gymnast?.firstName} ${certificate.gymnast?.lastName}` : 'gymnast';
-    
-    if (window.confirm(`Are you sure you want to delete this certificate for ${gymnastName}? This action cannot be undone.`)) {
-      try {
-        setError(null);
-        setSuccess(null);
-        
-        await axios.delete(`/api/certificates/${certificateId}`);
-        
-        // Refresh certificates
-        await fetchData();
-        
-        setSuccess(`Certificate deleted for ${gymnastName}!`);
-        setTimeout(() => setSuccess(null), 4000);
-      } catch (err) {
-        setError(err.response?.data?.error || err.message || 'Failed to delete certificate');
-      }
+    setDeletingCertificateId(null);
+    try {
+      setError(null);
+      setSuccess(null);
+      await axios.delete(`/api/certificates/${certificateId}`);
+      await fetchData();
+      setSuccess(`Certificate deleted for ${gymnastName}!`);
+      setTimeout(() => setSuccess(null), 4000);
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || 'Failed to delete certificate');
     }
   };
 
@@ -164,7 +169,6 @@ const Certificates = () => {
       window.URL.revokeObjectURL(url);
       
 } catch (err) {
-      console.error('Download error:', err);
       setError(err.response?.data?.error || 'Failed to download certificate. Please try again.');
     }
   };
@@ -519,8 +523,41 @@ const Certificates = () => {
             </div>
         </div>
       )}
+      {revertingCertificateId && (() => {
+        const cert = certificates.find(c => c.id === revertingCertificateId);
+        const name = cert ? `${cert.gymnast?.firstName} ${cert.gymnast?.lastName}` : 'this gymnast';
+        return (
+          <div className="modal-overlay">
+            <div className="modal">
+              <h3>Revert Certificate</h3>
+              <p>Are you sure you want to revert the certificate for <strong>{name}</strong> to the awarded state? This will undo any printed/delivered status.</p>
+              <div className="modal-actions">
+                <button className="btn btn-outline" onClick={() => setRevertingCertificateId(null)}>Cancel</button>
+                <button className="btn btn-warning" onClick={confirmRevertCertificate}>Revert</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {deletingCertificateId && (() => {
+        const cert = certificates.find(c => c.id === deletingCertificateId);
+        const name = cert ? `${cert.gymnast?.firstName} ${cert.gymnast?.lastName}` : 'this gymnast';
+        return (
+          <div className="modal-overlay">
+            <div className="modal">
+              <h3>Delete Certificate</h3>
+              <p>Are you sure you want to delete the certificate for <strong>{name}</strong>? This action cannot be undone.</p>
+              <div className="modal-actions">
+                <button className="btn btn-outline" onClick={() => setDeletingCertificateId(null)}>Cancel</button>
+                <button className="btn btn-danger" onClick={confirmDeleteCertificate}>Delete</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
 
-export default Certificates; 
+export default Certificates;

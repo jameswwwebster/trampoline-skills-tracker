@@ -46,6 +46,11 @@ const CertificateDesigner = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [templateUrl, setTemplateUrl] = useState(null);
+  const [deletingFieldId, setDeletingFieldId] = useState(null);
+  const [removingDefaultTemplateId, setRemovingDefaultTemplateId] = useState(null);
+  const [deletingTemplateId, setDeletingTemplateId] = useState(null);
+  const [archivingTemplateId, setArchivingTemplateId] = useState(null);
+  const [regeneratingConfig, setRegeneratingConfig] = useState(null);
   const [templateDimensions, setTemplateDimensions] = useState({ width: 0, height: 0 });
   const [templateLoading, setTemplateLoading] = useState(false);
   
@@ -125,7 +130,6 @@ const CertificateDesigner = () => {
         setTemplateUrl(null);
       }
     } catch (error) {
-      console.error('Error loading templates:', error);
       setError('Failed to load templates');
     } finally {
       setLoading(false);
@@ -137,7 +141,7 @@ const CertificateDesigner = () => {
       const response = await axios.get('/api/certificate-fields/types');
       setFieldTypes(response.data);
     } catch (error) {
-      console.error('Error loading field types:', error);
+      // silently ignore field type load errors
     }
   };
 
@@ -146,7 +150,6 @@ const CertificateDesigner = () => {
       const response = await axios.get(`/api/certificate-fields/template/${templateId}`);
       setFields(response.data);
     } catch (error) {
-      console.error('Error loading fields:', error);
       setError('Failed to load fields');
     }
   };
@@ -165,7 +168,6 @@ const CertificateDesigner = () => {
       const imageUrl = URL.createObjectURL(imageBlob);
       setTemplateUrl(imageUrl);
     } catch (error) {
-      console.error('Error loading template image:', error);
       setTemplateUrl(null);
       
       // Provide more specific error messages with recovery options
@@ -221,7 +223,6 @@ const CertificateDesigner = () => {
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      console.error('Error uploading template:', error);
       setError(error.response?.data?.error || 'Failed to upload template');
     }
   };
@@ -248,82 +249,86 @@ const CertificateDesigner = () => {
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      console.error('Error saving field:', error);
       setError(error.response?.data?.error || 'Failed to save field');
     }
   };
 
-  const handleFieldDelete = async (fieldId) => {
-    if (window.confirm('Are you sure you want to delete this field?')) {
-      try {
-        await axios.delete(`/api/certificate-fields/${fieldId}`);
-        setSuccess('Field deleted successfully!');
-        await loadFields(selectedTemplate.id);
-        
-        // Clear success message after 3 seconds
-        setTimeout(() => setSuccess(''), 3000);
-      } catch (error) {
-        console.error('Error deleting field:', error);
-        setError('Failed to delete field');
-      }
+  const handleFieldDelete = (fieldId) => {
+    setDeletingFieldId(fieldId);
+  };
+
+  const confirmFieldDelete = async () => {
+    const fieldId = deletingFieldId;
+    setDeletingFieldId(null);
+    try {
+      await axios.delete(`/api/certificate-fields/${fieldId}`);
+      setSuccess('Field deleted successfully!');
+      await loadFields(selectedTemplate.id);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError('Failed to delete field');
     }
   };
 
   const handleSetAsDefault = async (templateId) => {
     try {
       const template = templates.find(t => t.id === templateId);
-      
+
       if (template.isDefault) {
-        // If already default, confirm removal
-        if (!window.confirm('This template is currently the default. Remove it as default?')) {
-          return;
-        }
+        setRemovingDefaultTemplateId(templateId);
+        return;
       }
-      
+
       await axios.put(`/api/certificate-templates/${templateId}`, {
         name: template.name,
-        isDefault: !template.isDefault
+        isDefault: true
       });
-      
-      setSuccess(`Template ${template.isDefault ? 'removed as' : 'set as'} default successfully!`);
+
+      setSuccess('Template set as default successfully!');
       await loadTemplates();
-      
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      console.error('Error setting template as default:', error);
       setError('Failed to update template default status');
     }
   };
 
-  const handleTemplateDelete = async (templateId) => {
+  const confirmRemoveDefault = async () => {
+    const templateId = removingDefaultTemplateId;
+    setRemovingDefaultTemplateId(null);
     try {
       const template = templates.find(t => t.id === templateId);
-      
-      if (!window.confirm(`Are you sure you want to delete the template "${template.name}"? This action cannot be undone.`)) {
-        return;
-      }
-      
+      await axios.put(`/api/certificate-templates/${templateId}`, {
+        name: template.name,
+        isDefault: false
+      });
+      setSuccess('Template removed as default successfully!');
+      await loadTemplates();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError('Failed to update template default status');
+    }
+  };
+
+  const handleTemplateDelete = (templateId) => {
+    setDeletingTemplateId(templateId);
+  };
+
+  const confirmTemplateDelete = async () => {
+    const templateId = deletingTemplateId;
+    const template = templates.find(t => t.id === templateId);
+    setDeletingTemplateId(null);
+    try {
       await axios.delete(`/api/certificate-templates/${templateId}`);
-      
       setSuccess(`Template "${template.name}" deleted successfully!`);
-      
-      // If deleted template was selected, clear selection
       if (selectedTemplate && selectedTemplate.id === templateId) {
         setSelectedTemplate(null);
         setFields([]);
         setTemplateUrl(null);
       }
-      
       await loadTemplates();
-      
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      console.error('Error deleting template:', error);
       const errorMessage = error.response?.data?.error || 'Failed to delete template';
-      
-      // Show specific error for templates in use
       if (error.response?.data?.certificateCount > 0) {
         setError(`Cannot delete template: It is being used by ${error.response.data.certificateCount} certificate(s). Archive it instead.`);
       } else {
@@ -332,65 +337,49 @@ const CertificateDesigner = () => {
     }
   };
 
-  const handleTemplateArchive = async (templateId) => {
+  const handleTemplateArchive = (templateId) => {
+    setArchivingTemplateId(templateId);
+  };
+
+  const confirmTemplateArchive = async () => {
+    const templateId = archivingTemplateId;
+    const template = templates.find(t => t.id === templateId);
+    setArchivingTemplateId(null);
     try {
-      const template = templates.find(t => t.id === templateId);
-      
-      if (!window.confirm(`Archive the template "${template.name}"? It will be hidden from the template list but can be restored later.`)) {
-        return;
-      }
-      
       await axios.post(`/api/certificate-templates/${templateId}/archive`);
-      
       setSuccess(`Template "${template.name}" archived successfully!`);
-      
-      // If archived template was selected, clear selection
       if (selectedTemplate && selectedTemplate.id === templateId) {
         setSelectedTemplate(null);
         setFields([]);
         setTemplateUrl(null);
       }
-      
       await loadTemplates();
-      
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      console.error('Error archiving template:', error);
       setError(error.response?.data?.error || 'Failed to archive template');
     }
   };
 
-  const handleRegenerateCertificates = async (templateId = null, forceAll = false) => {
+  const handleRegenerateCertificates = (templateId = null, forceAll = false) => {
+    const templateName = templateId ?
+      templates.find(t => t.id === templateId)?.name : 'all templates';
+    const message = forceAll ?
+      `Force regenerate ALL certificates${templateId ? ` using "${templateName}"` : ''}? This will recreate all certificates regardless of whether they need updating.` :
+      `Regenerate certificates${templateId ? ` using "${templateName}"` : ''}? Only certificates that need updating will be regenerated.`;
+    setRegeneratingConfig({ templateId, forceAll, message });
+  };
+
+  const confirmRegenerateCertificates = async () => {
+    const { templateId, forceAll } = regeneratingConfig;
+    setRegeneratingConfig(null);
     try {
-      const templateName = templateId ? 
-        templates.find(t => t.id === templateId)?.name : 
-        'all templates';
-      
-      const message = forceAll ? 
-        `Are you sure you want to force regenerate ALL certificates${templateId ? ` using "${templateName}"` : ''}? This will recreate all certificates regardless of whether they need updating.` :
-        `Are you sure you want to regenerate certificates${templateId ? ` using "${templateName}"` : ''}? Only certificates that need updating will be regenerated.`;
-      
-      if (!window.confirm(message)) {
-        return;
-      }
-      
       setLoading(true);
       setError(null);
-      
-      const response = await axios.post('/api/certificates/regenerate', {
-        templateId,
-        forceAll
-      });
-      
+      const response = await axios.post('/api/certificates/regenerate', { templateId, forceAll });
       const result = response.data;
       setSuccess(`Certificate regeneration completed!\n${result.regeneratedCount} regenerated, ${result.skippedCount} skipped${result.errorCount > 0 ? `, ${result.errorCount} errors` : ''}`);
-      
-      // Clear success message after 8 seconds
       setTimeout(() => setSuccess(''), 8000);
-      
     } catch (error) {
-      console.error('Error regenerating certificates:', error);
       setError(error.response?.data?.error || 'Failed to regenerate certificates');
     } finally {
       setLoading(false);
@@ -403,7 +392,7 @@ const CertificateDesigner = () => {
       try {
         await axios.put(`/api/certificate-fields/${fieldId}`, { x, y });
       } catch (error) {
-        console.error('Error updating field position:', error);
+        // silently ignore position update errors
       }
     }, 500),
     []
@@ -843,7 +832,6 @@ const CertificateDesigner = () => {
                       setError(null);
                     }}
                     onError={(e) => {
-                      console.error('Template image failed to load:', e);
                       setError('Template image failed to display. The file may be corrupted or in an unsupported format.');
                       setTemplateUrl(null);
                       setTemplateDimensions({ width: 0, height: 0 });
@@ -1203,8 +1191,8 @@ const CertificateDesigner = () => {
                 <button type="submit" className="btn btn-primary">
                   {selectedField ? 'Update' : 'Add'} Field
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowFieldModal(false)}
                   className="btn btn-secondary"
                 >
@@ -1212,6 +1200,77 @@ const CertificateDesigner = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deletingFieldId && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Delete Field</h3>
+            <p>Are you sure you want to delete this field?</p>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setDeletingFieldId(null)}>Cancel</button>
+              <button className="btn btn-danger" onClick={confirmFieldDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {removingDefaultTemplateId && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Remove Default</h3>
+            <p>This template is currently the default. Are you sure you want to remove it as the default?</p>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setRemovingDefaultTemplateId(null)}>Cancel</button>
+              <button className="btn btn-warning" onClick={confirmRemoveDefault}>Remove Default</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deletingTemplateId && (() => {
+        const template = templates.find(t => t.id === deletingTemplateId);
+        return (
+          <div className="modal-overlay">
+            <div className="modal">
+              <h3>Delete Template</h3>
+              <p>Are you sure you want to delete the template <strong>"{template?.name}"</strong>? This action cannot be undone.</p>
+              <div className="modal-actions">
+                <button className="btn btn-outline" onClick={() => setDeletingTemplateId(null)}>Cancel</button>
+                <button className="btn btn-danger" onClick={confirmTemplateDelete}>Delete</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {archivingTemplateId && (() => {
+        const template = templates.find(t => t.id === archivingTemplateId);
+        return (
+          <div className="modal-overlay">
+            <div className="modal">
+              <h3>Archive Template</h3>
+              <p>Archive the template <strong>"{template?.name}"</strong>? It will be hidden from the template list but can be restored later.</p>
+              <div className="modal-actions">
+                <button className="btn btn-outline" onClick={() => setArchivingTemplateId(null)}>Cancel</button>
+                <button className="btn btn-warning" onClick={confirmTemplateArchive}>Archive</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {regeneratingConfig && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Regenerate Certificates</h3>
+            <p>{regeneratingConfig.message}</p>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setRegeneratingConfig(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={confirmRegenerateCertificates}>Regenerate</button>
+            </div>
           </div>
         </div>
       )}
