@@ -325,6 +325,8 @@ export default function BookingLayout() {
                   </div>
                 )}
               </div>
+              <span className="booking-layout__admin-divider" />
+              <NavLink to="/gymnasts" className="booking-layout__admin-link">Skill Tracker</NavLink>
             </div>
           )}
         </div>
