@@ -587,10 +587,11 @@ class EmailService {
         <p style="margin-top:0">Your membership is tied to a specific session or sessions each week. Please attend your committed session — if you need to change which session you train at, speak to your coach.</p>
 
         ${h3('Getting started')}
-        <p style="margin-top:0">No action is needed right now. We'll send you another email on <strong>${startStr}</strong> with instructions to set up payment.</p>
+        <p style="margin-top:0">To activate your membership, please log in to your account and complete the payment setup. Your membership will begin on <strong>${startStr}</strong>.</p>
+        ${ctaButton(`${BASE_URL()}/booking/my-account`, 'Set up payment')}
         ${muted('If you have any questions, please contact the club.')}
       `),
-      text: `Hi ${guardianName},\n\nA monthly membership of ${amount}/month has been scheduled for ${gymnast.firstName} ${gymnast.lastName}, starting on ${startStr}.\n\nHOW YOUR FEE IS CALCULATED\nYour monthly fee is based on a training year of 46 weeks, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment.\n\nCOMMITMENTS\nYour membership is tied to a specific session or sessions each week. Please attend your committed session — if you need to change which session you train at, speak to your coach.\n\nGETTING STARTED\nNo action is needed right now. We'll send you another email on ${startStr} with instructions to set up payment.\n\nIf you have any questions, please contact the club.`,
+      text: `Hi ${guardianName},\n\nA monthly membership of ${amount}/month has been scheduled for ${gymnast.firstName} ${gymnast.lastName}, starting on ${startStr}.\n\nHOW YOUR FEE IS CALCULATED\nYour monthly fee is based on a training year of 46 weeks, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment.\n\nCOMMITMENTS\nYour membership is tied to a specific session or sessions each week. Please attend your committed session — if you need to change which session you train at, speak to your coach.\n\nGETTING STARTED\nTo activate your membership, log in and complete the payment setup. Your membership will begin on ${startStr}.\n${BASE_URL()}/booking/my-account\n\nIf you have any questions, please contact the club.`,
     }, { to: email, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount, startStr });
   }
 
