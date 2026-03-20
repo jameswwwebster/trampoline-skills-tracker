@@ -35,11 +35,11 @@ const Health = () => {
       <div className="card-body">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
           <div className="metric-stat">
-            <div className="metric-number">{data?.status === 'healthy' ? '✅' : '⚠️'}</div>
+            <div className="metric-number">{data?.status === 'healthy' ? 'OK' : 'Warn'}</div>
             <div className="metric-label">API</div>
           </div>
           <div className="metric-stat">
-            <div className="metric-number">{data?.dbConnected ? '✅' : '❌'}</div>
+            <div className="metric-number">{data?.dbConnected ? 'OK' : 'Error'}</div>
             <div className="metric-label">Database</div>
           </div>
           <div className="metric-stat">

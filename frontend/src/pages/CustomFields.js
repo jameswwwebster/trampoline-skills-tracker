@@ -161,18 +161,7 @@ const CustomFields = () => {
   };
 
   const getFieldTypeIcon = (type) => {
-    const icons = {
-      TEXT: '📝',
-      TEXTAREA: '📄',
-      NUMBER: '🔢',
-      EMAIL: '📧',
-      PHONE: '📞',
-      DATE: '📅',
-      BOOLEAN: '☑️',
-      DROPDOWN: '📋',
-      MULTI_SELECT: '📋'
-    };
-    return icons[type] || '📝';
+    return '';
   };
 
   if (loading) {

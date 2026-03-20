@@ -432,7 +432,7 @@ const Gymnasts = () => {
               className="btn btn-primary btn-sm"
               onClick={() => setShowAddForm(!showAddForm)}
             >
-              {showAddForm ? '✕' : '+'}
+              {showAddForm ? '×' : '+'}
             </button>
           )}
         </div>
@@ -567,7 +567,7 @@ const Gymnasts = () => {
                 className={`session-filter-btn ${showSessionOnly ? 'active' : ''}`}
                 onClick={() => setShowSessionOnly(!showSessionOnly)}
               >
-                <span className="session-filter-icon">📋</span>
+                <span className="session-filter-icon"></span>
                 <span className="session-filter-text">
                   {showSessionOnly ? 'Show All Gymnasts' : `Show Session Only (${sessionGymnasts.size})`}
                 </span>
@@ -887,7 +887,7 @@ const Gymnasts = () => {
                           }}
                           title={isInSession ? 'Remove from session' : 'Add to session'}
                         >
-                          {isInSession ? '✓' : '📋'}
+                          {isInSession ? '✓' : '+'}
                         </button>
                       </div>
                     
@@ -936,7 +936,7 @@ const Gymnasts = () => {
                             handleRowClick(gymnast);
                           }}
                         >
-                          📊 Track Progress
+                          Track Progress
                         </button>
                       </div>
                     </div>

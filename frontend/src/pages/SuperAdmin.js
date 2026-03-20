@@ -234,25 +234,25 @@ const SuperAdmin = () => {
           className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
-          📊 Overview
+          Overview
         </button>
         <button
           className={`tab-btn ${activeTab === 'clubs' ? 'active' : ''}`}
           onClick={() => setActiveTab('clubs')}
         >
-          🏢 Clubs
+          Clubs
         </button>
         <button
           className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
           onClick={() => setActiveTab('users')}
         >
-          👥 Users
+          Users
         </button>
         <button
           className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
         >
-          ⚙️ Settings
+          Settings
         </button>
       </div>
 
@@ -350,21 +350,21 @@ const SuperAdmin = () => {
                             onClick={() => handleClubEdit(club.id)}
                             title="Edit Club"
                           >
-                            ✏️ Edit
+                            Edit
                           </button>
                           <button
                             className="btn btn-outline btn-sm"
                             onClick={() => handleClubConnectAs(club.id)}
                             title="Connect as Club Admin"
                           >
-                            🔗 Connect As
+                            Connect As
                           </button>
                           <button
                             className="btn btn-outline btn-sm btn-danger"
                             onClick={() => handleClubDelete(club.id)}
                             title="Delete Club"
                           >
-                            🗑️ Delete
+                            Delete
                           </button>
                         </div>
                       </td>
@@ -439,28 +439,28 @@ const SuperAdmin = () => {
                           onClick={() => handleUserEdit(user.id)}
                           title="Edit User"
                         >
-                          ✏️
+                          Edit
                         </button>
                         <button
                           className="btn btn-outline btn-sm"
                           onClick={() => handleResetPassword(user.id)}
                           title="Reset Password (Generate Temporary)"
                         >
-                          🔑
+                          Reset Password
                         </button>
                         <button
                           className="btn btn-outline btn-sm"
                           onClick={() => handleSetPassword(user.id, user.email)}
                           title="Set Password (Manual)"
                         >
-                          🔐
+                          Set Password
                         </button>
                         <button
                           className="btn btn-outline btn-sm btn-danger"
                           onClick={() => handleUserDelete(user.id)}
                           title="Delete User"
                         >
-                          🗑️
+                          Delete
                         </button>
                       </div>
                     </td>
@@ -498,7 +498,7 @@ const SuperAdmin = () => {
         <div className="admin-settings">
           <div className="card">
             <div className="card-header">
-              <h3>📧 Email Configuration</h3>
+              <h3>Email Configuration</h3>
               <p className="text-muted">Configure email settings for all clubs</p>
             </div>
             <div className="card-body">
@@ -520,7 +520,7 @@ const SuperAdmin = () => {
               </div>
               
               <div className="alert alert-info">
-                <strong>📋 Email Features:</strong>
+                <strong>Email Features:</strong>
                 <ul style={{ marginTop: '0.5rem', marginBottom: 0 }}>
                   <li>Password reset emails</li>
                   <li>User invitation emails</li>
@@ -629,7 +629,7 @@ const SuperAdmin = () => {
                 className="btn btn-outline btn-sm"
                 onClick={() => setSelectedClub(null)}
               >
-                ✕
+                ×
               </button>
             </div>
             

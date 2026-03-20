@@ -69,7 +69,7 @@ const Certificates = () => {
       const statusText = status === 'PRINTED' ? 'marked as printed' : 
                         status === 'DELIVERED' ? 'marked as delivered' : 
                         status === 'AWARDED' ? 'reverted to awarded' : 'updated';
-      setSuccess(`✅ Certificate ${statusText} for ${gymnastName}!`);
+      setSuccess(`Certificate ${statusText} for ${gymnastName}!`);
       
       // Clear success message after 4 seconds
       setTimeout(() => setSuccess(null), 4000);
@@ -99,7 +99,7 @@ const Certificates = () => {
         // Refresh certificates
         await fetchData();
         
-        setSuccess(`✅ Certificate deleted for ${gymnastName}!`);
+        setSuccess(`Certificate deleted for ${gymnastName}!`);
         setTimeout(() => setSuccess(null), 4000);
       } catch (err) {
         setError(err.response?.data?.error || err.message || 'Failed to delete certificate');
@@ -130,7 +130,7 @@ const Certificates = () => {
       fetchData();
       
       // Show success message
-      setSuccess(`🏆 Certificate awarded successfully to ${gymnastName}!`);
+      setSuccess(`Certificate awarded successfully to ${gymnastName}!`);
       
       // Clear success message after 5 seconds
       setTimeout(() => setSuccess(null), 5000);
@@ -175,11 +175,11 @@ const Certificates = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'AWARDED':
-        return <span className="badge badge-warning">🏆 Awarded</span>;
+        return <span className="badge badge-warning">Awarded</span>;
       case 'PRINTED':
-        return <span className="badge badge-info">📝 Marked as Printed</span>;
+        return <span className="badge badge-info">Marked as Printed</span>;
       case 'DELIVERED':
-        return <span className="badge badge-success">✅ Delivered</span>;
+        return <span className="badge badge-success">Delivered</span>;
       default:
         return <span className="badge badge-secondary">{status}</span>;
     }
@@ -265,13 +265,13 @@ const Certificates = () => {
           className={`nav-link ${activeTab === 'list' ? 'active' : ''}`}
           onClick={() => setActiveTab('list')}
         >
-          📋 All Certificates ({certificates.length})
+          All Certificates ({certificates.length})
         </button>
         <button
           className={`nav-link ${activeTab === 'award' ? 'active' : ''}`}
           onClick={() => setActiveTab('award')}
         >
-          🏆 Award Certificate
+          Award Certificate
         </button>
       </div>
 
@@ -374,7 +374,7 @@ const Certificates = () => {
                                 onClick={() => handleDownloadCertificate(certificate.id)}
                                 title="Download Certificate PNG"
                               >
-                                📥 Download
+                                Download
                               </button>
                               {certificate.status === 'AWARDED' && (
                                 <>
@@ -383,14 +383,14 @@ const Certificates = () => {
                                     onClick={() => handleStatusUpdate(certificate.id, 'PRINTED')}
                                     title="Mark as Printed"
                                   >
-                                    📝 Mark Printed
+                                    Mark Printed
                                   </button>
                                   <button
                                     className="btn btn-success"
                                     onClick={() => handleStatusUpdate(certificate.id, 'DELIVERED')}
                                     title="Mark as Delivered"
                                   >
-                                    ✅ Deliver
+                                    Deliver
                                   </button>
                                 </>
                               )}
@@ -400,7 +400,7 @@ const Certificates = () => {
                                   onClick={() => handleStatusUpdate(certificate.id, 'DELIVERED')}
                                   title="Mark as Delivered"
                                 >
-                                  ✅ Deliver
+                                  Deliver
                                 </button>
                               )}
                               {(certificate.status === 'PRINTED' || certificate.status === 'DELIVERED') && (
@@ -409,7 +409,7 @@ const Certificates = () => {
                                   onClick={() => handleRevertCertificate(certificate.id)}
                                   title="Revert to Awarded"
                                 >
-                                  ↩️ Revert
+                                  Revert
                                 </button>
                               )}
                               <button
@@ -417,7 +417,7 @@ const Certificates = () => {
                                 onClick={() => handleDeleteCertificate(certificate.id)}
                                 title="Delete Certificate"
                               >
-                                🗑️ Delete
+                                Delete
                               </button>
                             </div>
                           </td>
@@ -519,7 +519,7 @@ const Certificates = () => {
 
               <div className="form-group">
                 <button type="submit" className="btn award-certificate-btn">
-                  🏆 Award Certificate
+                  Award Certificate
                 </button>
                 <button
                   type="button"
@@ -537,7 +537,7 @@ const Certificates = () => {
             </form>
 
             <div className="alert alert-info mt-3">
-              <strong>📧 Email Notification:</strong> Parents/guardians will automatically receive an email notification when a certificate is awarded.
+              <strong>Email Notification:</strong> Parents/guardians will automatically receive an email notification when a certificate is awarded.
             </div>
           </div>
         </div>

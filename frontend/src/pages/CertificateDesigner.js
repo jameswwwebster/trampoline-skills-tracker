@@ -384,7 +384,7 @@ const CertificateDesigner = () => {
       });
       
       const result = response.data;
-      setSuccess(`✅ Certificate regeneration completed!\n📊 ${result.regeneratedCount} regenerated, ${result.skippedCount} skipped${result.errorCount > 0 ? `, ${result.errorCount} errors` : ''}`);
+      setSuccess(`Certificate regeneration completed!\n${result.regeneratedCount} regenerated, ${result.skippedCount} skipped${result.errorCount > 0 ? `, ${result.errorCount} errors` : ''}`);
       
       // Clear success message after 8 seconds
       setTimeout(() => setSuccess(''), 8000);
@@ -715,7 +715,7 @@ const CertificateDesigner = () => {
                     className={`btn btn-sm ${template.isDefault ? 'btn-warning' : 'btn-outline-primary'}`}
                     title={template.isDefault ? 'Remove as default' : 'Set as default'}
                   >
-                    {template.isDefault ? '⭐' : '☆'}
+                    {template.isDefault ? 'Default' : 'Set Default'}
                   </button>
                   <button
                     onClick={(e) => {
@@ -725,7 +725,7 @@ const CertificateDesigner = () => {
                     className="btn btn-sm btn-outline-secondary"
                     title="Archive template"
                   >
-                    📦
+                    Archive
                   </button>
                   <button
                     onClick={(e) => {
@@ -735,7 +735,7 @@ const CertificateDesigner = () => {
                     className="btn btn-sm btn-outline-danger"
                     title="Delete template"
                   >
-                    🗑️
+                    Delete
                   </button>
                   <button
                     onClick={(e) => {
@@ -745,7 +745,7 @@ const CertificateDesigner = () => {
                     className="btn btn-sm btn-outline-success"
                     title="Regenerate certificates using this template"
                   >
-                    🔄
+                    Regenerate
                   </button>
                 </div>
               </div>
@@ -762,14 +762,14 @@ const CertificateDesigner = () => {
                   className="btn btn-sm btn-outline-success"
                   title="Smart regeneration - only updates certificates that need it"
                 >
-                  🔄 Smart Regenerate All
+                  Smart Regenerate All
                 </button>
                 <button
                   onClick={() => handleRegenerateCertificates(null, true)}
                   className="btn btn-sm btn-outline-warning"
                   title="Force regenerate all certificates"
                 >
-                  🔄 Force Regenerate All
+                  Force Regenerate All
                 </button>
               </div>
               <div className="regenerate-help">
@@ -808,14 +808,14 @@ const CertificateDesigner = () => {
                       className="btn btn-sm btn-secondary"
                       title="Edit field"
                     >
-                      ✏️
+                      Edit
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleFieldDelete(field.id)}
                       className="btn btn-sm btn-danger"
                       title="Delete field"
                     >
-                      🗑️
+                      Delete
                     </button>
                   </div>
                 </div>

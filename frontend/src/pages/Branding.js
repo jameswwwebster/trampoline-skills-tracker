@@ -143,7 +143,7 @@ const Branding = () => {
         <div className="col-md-8">
           <div className="card">
             <div className="card-header">
-              <h3 className="card-title">🎨 Club Branding</h3>
+              <h3 className="card-title">Club Branding</h3>
               <p className="text-muted mb-0">Customize your club's visual appearance</p>
             </div>
             <div className="card-body">

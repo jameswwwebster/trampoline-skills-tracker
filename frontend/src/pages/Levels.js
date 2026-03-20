@@ -365,7 +365,7 @@ const Levels = () => {
               onClick={toggleEditMode}
               className={`btn ${editMode ? 'btn-danger' : 'btn-outline'}`}
             >
-              {editMode ? '🔒 Exit Edit Mode' : '✏️ Edit Mode'}
+              {editMode ? 'Exit Edit Mode' : 'Edit Mode'}
             </button>
             {editMode && (
               <button
@@ -639,7 +639,7 @@ const LevelCard = ({
                             title="Delete skill"
                             style={{ padding: '0.1rem 0.3rem', lineHeight: 1, minWidth: 'auto' }}
                           >
-                            ✖
+                            ×
                           </button>
                         </div>
                       )}
@@ -746,7 +746,7 @@ const RoutineCard = ({
                 onClick={onDeleteRoutine}
                 className="btn btn-danger"
               >
-                ✖
+                ×
               </button>
             </div>
           )}
@@ -790,7 +790,7 @@ const RoutineCard = ({
                         title="Remove from routine"
                         style={{ padding: '0.1rem 0.3rem', lineHeight: 1, minWidth: 'auto' }}
                       >
-                        ✖
+                        ×
                       </button>
                     )}
                   </div>

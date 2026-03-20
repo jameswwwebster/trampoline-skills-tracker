@@ -63,7 +63,7 @@ const Dashboard = () => {
       
       // Show success message
       const certificate = unprintedCertificates.find(c => c.id === certificateId);
-      setSuccess(`🖨️ Certificate marked as printed for ${certificate?.gymnast?.firstName} ${certificate?.gymnast?.lastName} (Level ${certificate?.level?.identifier})!`);
+      setSuccess(`Certificate marked as printed for ${certificate?.gymnast?.firstName} ${certificate?.gymnast?.lastName} (Level ${certificate?.level?.identifier})!`);
       
       // Clear success message after 5 seconds
       setTimeout(() => setSuccess(null), 5000);
@@ -134,7 +134,7 @@ const Dashboard = () => {
                 {/* Level Distribution */}
                 <div className="card">
                   <div className="card-header">
-                    <h3 className="card-title">🎯 Gymnast Level Distribution</h3>
+                    <h3 className="card-title">Gymnast Level Distribution</h3>
                     <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
                       Current working levels - Click on a level to view gymnasts working at that level
                     </p>
@@ -168,7 +168,7 @@ const Dashboard = () => {
                 {/* Competition Readiness */}
                 <div className="card">
                   <div className="card-header">
-                    <h3 className="card-title">🏆 Competition Readiness</h3>
+                    <h3 className="card-title">Competition Readiness</h3>
                     <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
                       Gymnasts who have completed levels associated with competitions - Click to view
                     </p>
@@ -201,7 +201,7 @@ const Dashboard = () => {
                 {/* Recent Activity */}
                 <div className="card">
                   <div className="card-header">
-                    <h3 className="card-title">⚡ Recent Activity (30 days)</h3>
+                    <h3 className="card-title">Recent Activity (30 days)</h3>
                   </div>
                   <div>
                     {metrics.recentActivity.skills.length > 0 || metrics.recentActivity.levels.length > 0 ? (
@@ -242,7 +242,7 @@ const Dashboard = () => {
                 {/* Unprinted Certificates */}
                 <div className="card">
                   <div className="card-header">
-                    <h3 className="card-title">🖨️ Certificates Ready to Print</h3>
+                    <h3 className="card-title">Certificates Ready to Print</h3>
                     <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
                       Certificates that have been awarded but haven't been printed yet
                     </p>
@@ -285,14 +285,14 @@ const Dashboard = () => {
                                 className="btn btn-sm btn-success"
                                 title="Mark as printed"
                               >
-                                🖨️ Mark as Printed
+                                Mark as Printed
                               </button>
                               <Link
                                 to={`/certificates/${certificate.id}/preview`}
                                 className="btn btn-sm btn-outline"
                                 title="View certificate"
                               >
-                                👁️ Preview
+                                Preview
                               </Link>
                               
                             </div>
@@ -307,7 +307,7 @@ const Dashboard = () => {
                         )}
                       </div>
                     ) : (
-                      <p className="text-muted">🎉 All certificates have been printed!</p>
+                      <p className="text-muted">All certificates have been printed!</p>
                     )}
                   </div>
                 </div>
@@ -315,7 +315,7 @@ const Dashboard = () => {
                 {/* Code of the Day */}
                 <div className="card">
                   <div className="card-header">
-                    <h3 className="card-title">📅 Code of the Day</h3>
+                    <h3 className="card-title">Code of the Day</h3>
                     <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
                       Generate a daily access code for gymnasts to view their progress
                     </p>
@@ -326,7 +326,7 @@ const Dashboard = () => {
                       className="btn btn-primary"
                       style={{ width: '100%' }}
                     >
-                      📅 Generate Code of the Day
+                      Generate Code of the Day
                     </button>
                   </div>
                 </div>
@@ -343,7 +343,7 @@ const Dashboard = () => {
         <div className="modal-overlay active" onClick={() => setShareCodeModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>🔑 Share Access Code Generated!</h3>
+              <h3>Share Access Code Generated!</h3>
               <button 
                 className="modal-close"
                 onClick={() => setShareCodeModal(false)}
@@ -368,18 +368,18 @@ const Dashboard = () => {
                 </div>
               </div>
               <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
-                <p><strong>📱 Share this code with gymnasts so they can:</strong></p>
+                <p><strong>Share this code with gymnasts so they can:</strong></p>
                 <ul style={{ marginLeft: '1rem' }}>
                   <li>Go to the "Kids Login" page</li>
                   <li>Enter their name and this access code</li>
                   <li>View their own progress independently!</li>
                 </ul>
                 <p style={{ marginTop: '1rem', color: '#dc3545', fontWeight: 'bold' }}>
-                  ⚠️ Keep this code safe! You can generate a new one anytime if needed.
+                  Keep this code safe! You can generate a new one anytime if needed.
                 </p>
                 {isCoach && (
                   <p style={{ marginTop: '1rem', color: '#0066cc', fontStyle: 'italic' }}>
-                    💡 As a coach, this code gives access to all gymnasts in your club.
+                    As a coach, this code gives access to all gymnasts in your club.
                   </p>
                 )}
               </div>
@@ -401,7 +401,7 @@ const Dashboard = () => {
         <div className="modal-overlay active" onClick={() => setCodeOfDayModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>📅 Code of the Day</h3>
+              <h3>Code of the Day</h3>
               <button 
                 className="modal-close"
                 onClick={() => setCodeOfDayModal(false)}
@@ -428,16 +428,16 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
-                    <p><strong>🏫 Current club-wide access code</strong></p>
+                    <p><strong>Current club-wide access code</strong></p>
                     <p><strong>Expires:</strong> {new Date(codeOfDayInfo.expiresAt).toLocaleString()}</p>
                     <p style={{ marginTop: '1rem' }}>Any gymnast in your club can use this code to access their progress.</p>
                   </div>
                   <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
                     <button onClick={handleGenerateCodeOfDay} className="btn btn-outline">
-                      🔄 Generate New Code
+                      Generate New Code
                     </button>
                     <button onClick={() => clearCodeOfTheDay().then(() => setCodeOfDayModal(false))} className="btn btn-secondary">
-                      🗑️ Clear Code
+                      Clear Code
                     </button>
                   </div>
                 </div>
@@ -445,7 +445,7 @@ const Dashboard = () => {
                 <div>
                   <p>No active code of the day. Generate one for club-wide access.</p>
                   <button onClick={handleGenerateCodeOfDay} className="btn btn-primary">
-                    📅 Generate Code of the Day
+                    Generate Code of the Day
                   </button>
                 </div>
               )}

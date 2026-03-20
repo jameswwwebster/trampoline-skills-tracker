@@ -118,7 +118,7 @@ const CertificatePreview = () => {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', flexDirection: 'column' }}>
-        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📜</div>
+        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}></div>
         <p>Loading certificate...</p>
       </div>
     );
@@ -127,7 +127,7 @@ const CertificatePreview = () => {
   if (error) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', flexDirection: 'column' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '1rem', color: '#dc3545' }}>⚠️</div>
+        <div style={{ fontSize: '3rem', marginBottom: '1rem', color: '#dc3545' }}></div>
         <h2 style={{ color: '#dc3545', marginBottom: '1rem' }}>Error</h2>
         <p style={{ marginBottom: '2rem', textAlign: 'center' }}>{error}</p>
         <button 
@@ -202,7 +202,7 @@ const CertificatePreview = () => {
               fontSize: '0.9rem'
             }}
           >
-            🖨️ Print
+            Print
           </button>
           <button
             onClick={handleDownload}
@@ -216,7 +216,7 @@ const CertificatePreview = () => {
               fontSize: '0.9rem'
             }}
           >
-            📥 Download
+            Download
           </button>
         </div>
       </div>
