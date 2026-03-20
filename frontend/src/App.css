@@ -5742,7 +5742,66 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
 
 .certificates-page .certificate-actions {
   min-width: 140px;
-} 
+}
+
+.certificates-page .nav-tabs {
+  margin-bottom: 1.25rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.form-row > .form-group {
+  flex: 1 1 200px;
+}
+
+.certificates-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.certificates-filters > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.certificates-filters .form-group {
+  margin-bottom: 0;
+  min-width: 160px;
+}
+
+/* MyCertificates gymnast picker */
+.gymnast-picker {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.my-cert-gymnast-card {
+  flex: 0 0 180px;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  background: white;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.my-cert-gymnast-card:hover {
+  border-color: var(--secondary-color);
+}
+
+.my-cert-gymnast-card.selected {
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 3px rgba(124, 53, 232, 0.15);
+}
+
 /* ── Dashboard tiles ─────────────────────────────────────── */
 .dashboard-tiles {
   display: grid;

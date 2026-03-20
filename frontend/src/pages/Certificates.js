@@ -163,8 +163,7 @@ const Certificates = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
       
-      console.log('🖼️ Certificate PNG downloaded successfully');
-    } catch (err) {
+} catch (err) {
       console.error('Download error:', err);
       setError(err.response?.data?.error || 'Failed to download certificate. Please try again.');
     }
@@ -206,40 +205,32 @@ const Certificates = () => {
 
   if (!canManageGymnasts) {
     return (
-      <div className="container">
-        <div className="alert alert-warning">
-          <h4>Access Denied</h4>
-          <p>You don't have permission to manage certificates. Only coaches and club administrators can access this page.</p>
-        </div>
+      <div className="alert alert-error">
+        <h4>Access Denied</h4>
+        <p>You don't have permission to manage certificates. Only coaches and club administrators can access this page.</p>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="container">
-        <div className="text-center">
-          <div className="spinner-border" role="status">
-            <span className="sr-only">Loading...</span>
-          </div>
-          <p>Loading certificates...</p>
-        </div>
-      </div>
+      <div className="loading"><div className="spinner" /></div>
     );
   }
 
   return (
-    <div className="container certificates-page">
+    <div className="certificates-page">
       <div className="page-header">
         <h1>Certificate Management</h1>
         <p>Manage and track certificates for gymnasts</p>
       </div>
 
       {error && (
-        <div className="alert alert-danger">
+        <div className="alert alert-error">
           <strong>Error:</strong> {error}
-          <button 
-            className="btn btn-sm btn-outline float-right"
+          <button
+            className="btn btn-sm btn-outline"
+            style={{ float: 'right' }}
             onClick={() => setError(null)}
           >
             ×
@@ -250,8 +241,9 @@ const Certificates = () => {
       {success && (
         <div className="alert alert-success">
           <strong>Success:</strong> {success}
-          <button 
-            className="btn btn-sm btn-outline float-right"
+          <button
+            className="btn btn-sm btn-outline"
+            style={{ float: 'right' }}
             onClick={() => setSuccess(null)}
           >
             ×
@@ -260,7 +252,7 @@ const Certificates = () => {
       )}
 
       {/* Navigation Tabs */}
-      <div className="nav nav-tabs mb-4">
+      <div className="nav-tabs">
         <button
           className={`nav-link ${activeTab === 'list' ? 'active' : ''}`}
           onClick={() => setActiveTab('list')}
@@ -278,48 +270,46 @@ const Certificates = () => {
       {activeTab === 'list' && (
         <div>
           {/* Filters */}
-          <div className="card mb-4">
+          <div className="card">
             <div className="card-header">
               <h5 className="card-title">Filters</h5>
             </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-3">
-                  <label>Status</label>
-                  <select
-                    className="form-control"
-                    value={filters.status}
-                    onChange={(e) => setFilters({...filters, status: e.target.value})}
-                  >
-                    <option value="">All Statuses</option>
-                    <option value="AWARDED">Awarded</option>
-                    <option value="PRINTED">Marked as Printed</option>
-                    <option value="DELIVERED">Delivered</option>
-                  </select>
-                </div>
-                <div className="col-md-3">
-                  <label>Gymnast</label>
-                  <select
-                    className="form-control"
-                    value={filters.gymnastId}
-                    onChange={(e) => setFilters({...filters, gymnastId: e.target.value})}
-                  >
-                    <option value="">All Gymnasts</option>
-                    {gymnasts.map(gymnast => (
-                      <option key={gymnast.id} value={gymnast.id}>
-                        {gymnast.firstName} {gymnast.lastName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 d-flex align-items-end">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setFilters({ status: '', gymnastId: '' })}
-                  >
-                    Clear Filters
-                  </button>
-                </div>
+            <div className="certificates-filters">
+              <div>
+                <label>Status</label>
+                <select
+                  className="form-control"
+                  value={filters.status}
+                  onChange={(e) => setFilters({...filters, status: e.target.value})}
+                >
+                  <option value="">All Statuses</option>
+                  <option value="AWARDED">Awarded</option>
+                  <option value="PRINTED">Marked as Printed</option>
+                  <option value="DELIVERED">Delivered</option>
+                </select>
+              </div>
+              <div>
+                <label>Gymnast</label>
+                <select
+                  className="form-control"
+                  value={filters.gymnastId}
+                  onChange={(e) => setFilters({...filters, gymnastId: e.target.value})}
+                >
+                  <option value="">All Gymnasts</option>
+                  {gymnasts.map(gymnast => (
+                    <option key={gymnast.id} value={gymnast.id}>
+                      {gymnast.firstName} {gymnast.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setFilters({ status: '', gymnastId: '' })}
+                >
+                  Clear Filters
+                </button>
               </div>
             </div>
           </div>
@@ -331,14 +321,12 @@ const Certificates = () => {
                 Certificates ({filteredCertificates.length})
               </h5>
             </div>
-            <div className="card-body">
               {filteredCertificates.length === 0 ? (
-                <div className="text-center py-4">
+                <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                   <p className="text-muted">No certificates found matching the current filters.</p>
                 </div>
               ) : (
-                <div className="table-responsive">
-                  <table className="table table-hover">
+                  <table className="table">
                     <thead>
                       <tr>
                         <th>Gymnast</th>
@@ -368,7 +356,7 @@ const Certificates = () => {
                             </small>
                           </td>
                           <td className="certificate-actions">
-                            <div className="btn-group btn-group-sm">
+                            <div className="btn-group">
                               <button
                                 className="btn btn-primary"
                                 onClick={() => handleDownloadCertificate(certificate.id)}
@@ -425,9 +413,7 @@ const Certificates = () => {
                       ))}
                     </tbody>
                   </table>
-                </div>
               )}
-            </div>
           </div>
         </div>
       )}
@@ -437,75 +423,66 @@ const Certificates = () => {
           <div className="card-header">
             <h5 className="card-title">Award New Certificate</h5>
           </div>
-          <div className="card-body">
             <form onSubmit={handleAwardCertificate}>
-              <div className="row">
-                <div className="col-md-6">
-                  <div className="form-group">
-                    <label>Gymnast *</label>
-                    <select
-                      className="form-control"
-                      value={awardForm.gymnastId}
-                      onChange={(e) => setAwardForm({...awardForm, gymnastId: e.target.value})}
-                      required
-                    >
-                      <option value="">Select a gymnast...</option>
-                      {gymnasts.map(gymnast => (
-                        <option key={gymnast.id} value={gymnast.id}>
-                          {gymnast.firstName} {gymnast.lastName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Gymnast *</label>
+                  <select
+                    className="form-control"
+                    value={awardForm.gymnastId}
+                    onChange={(e) => setAwardForm({...awardForm, gymnastId: e.target.value})}
+                    required
+                  >
+                    <option value="">Select a gymnast...</option>
+                    {gymnasts.map(gymnast => (
+                      <option key={gymnast.id} value={gymnast.id}>
+                        {gymnast.firstName} {gymnast.lastName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div className="col-md-6">
-                  <div className="form-group">
-                    <label>Level *</label>
-                    <select
-                      className="form-control"
-                      value={awardForm.levelId}
-                      onChange={(e) => setAwardForm({...awardForm, levelId: e.target.value})}
-                      required
-                    >
-                      <option value="">Select a level...</option>
-                      {levels.map(level => (
-                        <option key={level.id} value={level.id}>
-                          {level.identifier} - {level.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="form-group">
+                  <label>Level *</label>
+                  <select
+                    className="form-control"
+                    value={awardForm.levelId}
+                    onChange={(e) => setAwardForm({...awardForm, levelId: e.target.value})}
+                    required
+                  >
+                    <option value="">Select a level...</option>
+                    {levels.map(level => (
+                      <option key={level.id} value={level.id}>
+                        {level.identifier} - {level.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
-              
-              <div className="row">
-                <div className="col-md-6">
-                  <div className="form-group">
-                    <label>Certificate Template</label>
-                    <select
-                      className="form-control"
-                      value={awardForm.templateId}
-                      onChange={(e) => setAwardForm({...awardForm, templateId: e.target.value})}
-                    >
-                      <option value="">Use default template</option>
-                      {templates.map(template => (
-                        <option key={template.id} value={template.id}>
-                          {template.name}{template.isDefault ? ' (Default)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                    <small className="form-text text-muted">
-                      Select a custom template or leave empty to use the default template.
-                      {templates.find(t => t.isDefault) && (
-                        <span className="text-primary">
-                          {' '}Default: {templates.find(t => t.isDefault).name}
-                        </span>
-                      )}
-                    </small>
-                  </div>
-                </div>
+
+              <div className="form-group">
+                <label>Certificate Template</label>
+                <select
+                  className="form-control"
+                  value={awardForm.templateId}
+                  onChange={(e) => setAwardForm({...awardForm, templateId: e.target.value})}
+                >
+                  <option value="">Use default template</option>
+                  {templates.map(template => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}{template.isDefault ? ' (Default)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <small className="form-text text-muted">
+                  Select a custom template or leave empty to use the default template.
+                  {templates.find(t => t.isDefault) && (
+                    <span>
+                      {' '}Default: {templates.find(t => t.isDefault).name}
+                    </span>
+                  )}
+                </small>
               </div>
-              
+
               <div className="form-group">
                 <label>Notes</label>
                 <textarea
@@ -523,7 +500,8 @@ const Certificates = () => {
                 </button>
                 <button
                   type="button"
-                  className="btn btn-outline-secondary ml-2"
+                  className="btn btn-outline"
+                  style={{ marginLeft: '0.5rem' }}
                   onClick={() => setAwardForm({
                     gymnastId: '',
                     levelId: '',
@@ -536,10 +514,9 @@ const Certificates = () => {
               </div>
             </form>
 
-            <div className="alert alert-info mt-3">
+            <div className="alert alert-info">
               <strong>Email Notification:</strong> Parents/guardians will automatically receive an email notification when a certificate is awarded.
             </div>
-          </div>
         </div>
       )}
     </div>

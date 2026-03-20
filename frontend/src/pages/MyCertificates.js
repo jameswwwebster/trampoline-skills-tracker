@@ -56,44 +56,35 @@ const MyCertificates = () => {
 
   if (loading) {
     return (
-      <div className="container">
-        <div className="text-center">
-          <div className="spinner-border" role="status">
-            <span className="sr-only">Loading...</span>
-          </div>
-          <p>Loading certificates...</p>
-        </div>
-      </div>
+      <div className="loading"><div className="spinner" /></div>
     );
   }
 
   if (error) {
     return (
-      <div className="container">
-        <div className="alert alert-danger">
-          <h4>Error</h4>
-          <p>{error}</p>
-          <button 
-            className="btn btn-primary"
-            onClick={() => window.location.reload()}
-          >
-            Try Again
-          </button>
-        </div>
+      <div className="alert alert-error">
+        <h4>Error</h4>
+        <p>{error}</p>
+        <button
+          className="btn btn-primary"
+          onClick={() => window.location.reload()}
+        >
+          Try Again
+        </button>
       </div>
     );
   }
 
   if (gymnasts.length === 0) {
     return (
-      <div className="container">
+      <div>
         <div className="page-header">
           <h1>My Certificates</h1>
         </div>
         <div className="alert alert-info">
           <h4>No Gymnasts Found</h4>
           <p>
-            {user?.role === 'ADULT' 
+            {user?.role === 'ADULT'
               ? 'No gymnasts found that you are guardian for. Please contact your club administrator if this is incorrect.'
               : 'No gymnast profile found for your account. Please contact your club administrator.'
             }
@@ -104,7 +95,7 @@ const MyCertificates = () => {
   }
 
   return (
-    <div className="container">
+    <div className="my-certificates-page">
       <div className="page-header">
         <h1>My Certificates</h1>
         <p>View and download your certificates</p>
@@ -112,33 +103,25 @@ const MyCertificates = () => {
 
       {/* Gymnast Selection for Parents with Multiple Children */}
       {user?.role === 'ADULT' && gymnasts.length > 1 && (
-        <div className="card mb-4">
+        <div className="card">
           <div className="card-header">
             <h5 className="card-title">Select Gymnast</h5>
           </div>
-          <div className="card-body">
-            <div className="row">
-              {gymnasts.map(gymnast => (
-                <div key={gymnast.id} className="col-md-3 mb-3">
-                  <div 
-                    className={`card ${selectedGymnast?.id === gymnast.id ? 'border-primary' : ''}`}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setSelectedGymnast(gymnast)}
-                  >
-                    <div className="card-body text-center">
-                      <h6 className="card-title">
-                        {gymnast.firstName} {gymnast.lastName}
-                      </h6>
-                      {gymnast.dateOfBirth && (
-                        <small className="text-muted">
-                          Born: {new Date(gymnast.dateOfBirth).toLocaleDateString()}
-                        </small>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="gymnast-picker">
+            {gymnasts.map(gymnast => (
+              <div
+                key={gymnast.id}
+                className={`my-cert-gymnast-card ${selectedGymnast?.id === gymnast.id ? 'selected' : ''}`}
+                onClick={() => setSelectedGymnast(gymnast)}
+              >
+                <h6>{gymnast.firstName} {gymnast.lastName}</h6>
+                {gymnast.dateOfBirth && (
+                  <small className="text-muted">
+                    Born: {new Date(gymnast.dateOfBirth).toLocaleDateString()}
+                  </small>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -151,12 +134,10 @@ const MyCertificates = () => {
               Certificates for {selectedGymnast.firstName} {selectedGymnast.lastName}
             </h5>
           </div>
-          <div className="card-body">
-            <CertificateDisplay 
-              gymnastId={selectedGymnast.id} 
-              showActions={false}
-            />
-          </div>
+          <CertificateDisplay
+            gymnastId={selectedGymnast.id}
+            showActions={false}
+          />
         </div>
       ) : (
         <div className="alert alert-info">
