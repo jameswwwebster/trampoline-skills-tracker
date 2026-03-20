@@ -316,7 +316,7 @@ Priority order as agreed:
 4. **Finance summary** — admin view of revenue: bookings, memberships, credits issued/used, outstanding balances
 5. **Coach invoicing** — coaches submit invoices through the system for sessions coached; admin reviews and approves
 6. ~~**Move the rest of the website** — migrate existing Wix content (about, contact, etc.) into this app so everything lives under one roof~~ ✓ Done
-7. **Noticeboard** — club announcements visible to members
+7. ~~**Noticeboard** — club announcements visible to members~~ ✓ Done
 
 ---
 
