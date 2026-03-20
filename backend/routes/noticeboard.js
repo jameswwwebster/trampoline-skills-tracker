@@ -6,15 +6,48 @@ const Joi = require('joi');
 const { resolveRecipients } = require('../services/recipientResolver');
 const { sendMessage } = require('../services/messageSender');
 const emailService = require('../services/emailService');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const prisma = new PrismaClient();
 const ADMIN_ROLES = ['CLUB_ADMIN', 'COACH'];
+
+const noticeboardStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dest = path.join(__dirname, '..', 'uploads', 'noticeboard', req.user.clubId);
+    fs.mkdirSync(dest, { recursive: true });
+    cb(null, dest);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  },
+});
+
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_EXT = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+
+const uploadImage = multer({
+  storage: noticeboardStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_MIME.includes(file.mimetype) || !ALLOWED_EXT.includes(ext)) {
+      return cb(new Error('Only image files are allowed'));
+    }
+    cb(null, true);
+  },
+});
 
 const postSchema = Joi.object({
   title: Joi.string().max(200).required(),
   body: Joi.string().required(),
   archiveAt: Joi.string().isoDate().required(),
   recipientFilter: Joi.object().allow(null).optional(),
+  videoEmbeds: Joi.array().items(
+    Joi.string().uri().pattern(/^https:\/\/(www\.)?(youtube\.com|youtu\.be|vimeo\.com\/\d+)/)
+  ).max(5).optional(),
 });
 
 // GET /api/noticeboard — active posts annotated with isRead
@@ -54,6 +87,7 @@ router.post('/', auth, requireRole(ADMIN_ROLES), async (req, res) => {
         title: value.title,
         body: value.body,
         archiveAt: new Date(value.archiveAt),
+        videoEmbeds: value.videoEmbeds ?? [],
         ...(value.recipientFilter && { recipientFilter: value.recipientFilter }),
       },
       include: { author: { select: { firstName: true, lastName: true } } },
@@ -89,6 +123,14 @@ router.post('/', auth, requireRole(ADMIN_ROLES), async (req, res) => {
   }
 });
 
+// POST /api/noticeboard/upload-image
+// IMPORTANT: This route MUST be before /:id to avoid 'upload-image' being treated as an id
+router.post('/upload-image', auth, requireRole(ADMIN_ROLES), uploadImage.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  const url = `/uploads/noticeboard/${req.user.clubId}/${req.file.filename}`;
+  res.json({ url });
+});
+
 // POST /api/noticeboard/preview-recipients — resolve filter without saving
 // IMPORTANT: This route MUST be before /:id to avoid 'preview-recipients' being treated as an id
 router.post('/preview-recipients', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
@@ -121,7 +163,7 @@ router.patch('/:id', auth, requireRole(ADMIN_ROLES), async (req, res) => {
 
     const updated = await prisma.noticeboardPost.update({
       where: { id: req.params.id },
-      data: { title: value.title, body: value.body, archiveAt: new Date(value.archiveAt) },
+      data: { title: value.title, body: value.body, archiveAt: new Date(value.archiveAt), videoEmbeds: value.videoEmbeds ?? [] },
       include: { author: { select: { firstName: true, lastName: true } } },
     });
 
