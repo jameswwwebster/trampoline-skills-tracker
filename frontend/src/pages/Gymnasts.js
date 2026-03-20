@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-import bookingApi from '../utils/bookingApi';
+import { bookingApi } from '../utils/bookingApi';
 
 
 const Gymnasts = () => {
