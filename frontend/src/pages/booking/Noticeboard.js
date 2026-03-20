@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { bookingApi } from '../../utils/bookingApi';
 import { useAuth } from '../../contexts/AuthContext';
 import RichTextEditor from '../../components/RichTextEditor';
@@ -148,6 +149,7 @@ function PostForm({ initial, onSave, onCancel, groups = [] }) {
 }
 
 export default function Noticeboard() {
+  const { refreshUnreadCount } = useOutletContext() || {};
   const { user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -162,9 +164,9 @@ export default function Noticeboard() {
     try {
       const res = await bookingApi.getNoticeboard();
       setPosts(res.data);
-      res.data
-        .filter(p => !p.isRead)
-        .forEach(p => bookingApi.markNoticeboardRead(p.id).catch(() => {}));
+      const unread = res.data.filter(p => !p.isRead);
+      unread.forEach(p => bookingApi.markNoticeboardRead(p.id).catch(() => {}));
+      if (unread.length > 0 && refreshUnreadCount) refreshUnreadCount();
     } catch {
       // ignore
     } finally {
