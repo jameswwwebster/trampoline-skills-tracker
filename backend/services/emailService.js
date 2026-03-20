@@ -250,8 +250,9 @@ class EmailService {
         <p>We've received your membership payment of <strong style="color:#7c35e8">${amount}</strong> for <strong>${gymnast.firstName} ${gymnast.lastName}</strong>.</p>
         ${infoBox(`<p style="margin:0">Your next payment of <strong>${amount}</strong> will be taken on <strong>${nextDate}</strong>.</p>`)}
         <p>Thanks for being a member of Trampoline Life!</p>
+        ${ctaButton(`${BASE_URL()}/booking/my-account`, 'Log in to your account')}
       `),
-      text: `Hi ${userName},\n\nWe've received your membership payment of ${amount} for ${gymnast.firstName} ${gymnast.lastName}.\n\nYour next payment of ${amount} will be taken on ${nextDate}.\n\nThanks for being a member of Trampoline Life!`,
+      text: `Hi ${userName},\n\nWe've received your membership payment of ${amount} for ${gymnast.firstName} ${gymnast.lastName}.\n\nYour next payment of ${amount} will be taken on ${nextDate}.\n\nThanks for being a member of Trampoline Life!\n\n${BASE_URL()}/booking/my-account`,
     }, { to: email, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount });
   }
 
@@ -350,6 +351,7 @@ class EmailService {
       html: brandedHtml('Membership payment reminder', `
         <p style="margin-top:0">Hi ${firstName},</p>
         <p>A membership payment of <strong>${amount}</strong> for <strong>${gymnast.firstName} ${gymnast.lastName}</strong> will be taken on <strong>${dateStr}</strong>.</p>
+        ${ctaButton(`${BASE_URL()}/booking/my-account`, 'Log in to your account')}
         ${muted('If you have any questions, please contact the club.')}
       `),
     });
@@ -458,7 +460,8 @@ class EmailService {
             </tr>
           </thead>
           <tbody>${rows.join('')}</tbody>
-        </table>`,
+        </table>
+        ${ctaButton(`${BASE_URL()}/booking/admin/members`, 'View members')}`,
       ),
     });
   }
@@ -478,6 +481,7 @@ class EmailService {
           <p style="margin:0.2rem 0"><strong>Due by:</strong> ${due}</p>
         `)}
         <p>You can pay this via the cart when you next book.</p>
+        ${ctaButton(`${BASE_URL()}/booking`, 'Log in to book')}
         ${muted('If you have any questions, please contact the club.')}
       `),
       text: `Hi ${firstName},\n\nA charge of ${amount} has been added to your account.\n\nDescription: ${description}\nDue by: ${due}\n\nYou can pay this via the cart when you next book.\n\nIf you have any questions, please contact the club.`,
@@ -494,6 +498,7 @@ class EmailService {
         <p style="margin-top:0">Hi ${firstName},</p>
         <p>A charge of <strong>${amount}</strong> (${description}) has been added to your account and automatically paid using your available credit balance.</p>
         <p style="color:#27ae60;font-weight:600">No further payment is required.</p>
+        ${ctaButton(`${BASE_URL()}/booking/my-account`, 'Log in to your account')}
         ${muted('If you have any questions, please contact the club.')}
       `),
       text: `Hi ${firstName},\n\nA charge of ${amount} (${description}) has been added to your account and automatically paid using your available credit balance.\n\nNo further payment is required.\n\nIf you have any questions, please contact the club.`,
@@ -510,6 +515,7 @@ class EmailService {
         <p style="margin-top:0">Hi ${firstName},</p>
         <p>A charge of <strong>${amount}</strong> (${description}) has been cancelled.</p>
         <p>No payment is required.</p>
+        ${ctaButton(`${BASE_URL()}/booking/my-account`, 'Log in to your account')}
         ${muted('If you have any questions, please contact the club.')}
       `),
       text: `Hi ${firstName},\n\nA charge of ${amount} (${description}) has been cancelled. No payment is required.\n\nIf you have any questions, please contact the club.`,
@@ -528,6 +534,7 @@ class EmailService {
         <p>A credit of <strong style="color:#7c35e8">${amount}</strong> has been added to your account.</p>
         ${infoBox(`<p style="margin:0">Expires: <strong>${expiry}</strong></p>`)}
         <p>Credits are applied automatically at checkout.</p>
+        ${ctaButton(`${BASE_URL()}/booking`, 'Log in to book')}
         ${muted('If you have any questions, please contact the club.')}
       `),
       text: `Hi ${firstName},\n\nA credit of ${amount} has been added to your account. It expires on ${expiry}.\n\nCredits are applied automatically at checkout.\n\nIf you have any questions, please contact the club.`,
@@ -543,6 +550,7 @@ class EmailService {
       html: brandedHtml('Credit removed', `
         <p style="margin-top:0">Hi ${firstName},</p>
         <p>A credit of <strong>${amount}</strong> has been removed from your account.</p>
+        ${ctaButton(`${BASE_URL()}/booking/my-account`, 'Log in to your account')}
         ${muted('If you have any questions, please contact the club.')}
       `),
       text: `Hi ${firstName},\n\nA credit of ${amount} has been removed from your account.\n\nIf you have any questions, please contact the club.`,
@@ -563,6 +571,7 @@ class EmailService {
           <p style="margin:0.2rem 0"><strong>Relationship:</strong> ${relationship}</p>
         `)}
         <p>You can now view ${gymnastName}'s progress, receive certificate notifications, and manage your account and membership.</p>
+        ${ctaButton(`${BASE_URL()}/booking/my-account`, 'Log in to your account')}
         ${muted('Welcome to Trampoline Life!')}
       `),
       text: `Hello ${guardianName},\n\nYou have been connected as a guardian for ${gymnastName} at ${clubName}.\n\nRelationship: ${relationship}\n\nWelcome to Trampoline Life!`,
@@ -626,6 +635,7 @@ class EmailService {
         <p>Your booking${plural} ${sessions.length === 1 ? 'is' : 'are'} confirmed.</p>
         ${sessionBlocks}
         ${infoBox(`<p style="margin:0"><strong>Total paid:</strong> ${totalStr}</p>`)}
+        ${ctaButton(`${BASE_URL()}/booking/my-bookings`, 'View my bookings')}
         ${muted('You can view your upcoming bookings in the app at any time.')}
       `),
       text: `Hi ${firstName},\n\nYour booking${plural} ${sessions.length === 1 ? 'is' : 'are'} confirmed:\n\n${textLines}\n\nTotal paid: ${totalStr}\n\nYou can view upcoming bookings in the app.`,
