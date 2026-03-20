@@ -5,6 +5,7 @@ import { BrandingProvider } from './contexts/BrandingContext';
 import { RateLimitProvider, useRateLimit } from './contexts/RateLimitContext';
 import { setRateLimitContext } from './utils/apiInterceptor';
 import ProtectedRoute from './components/ProtectedRoute';
+import TrackingRoute from './components/TrackingRoute';
 import Layout from './components/Layout';
 import RateLimitBanner from './components/RateLimitBanner';
 import Login from './pages/Login';
@@ -174,11 +175,8 @@ function AppContent() {
         <Route path="/cheatsheets/:cheatsheetId" element={<CheatsheetViewer />} />
         {/* Public game route - no authentication required */}
         <Route path="/wavelength" element={<WaveLength />} />
-        <Route element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }>
+        <Route element={<TrackingRoute />}>
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="gymnasts" element={<Gymnasts />} />
           <Route path="levels" element={<Levels />} />
           <Route path="competitions" element={<Competitions />} />
