@@ -572,7 +572,6 @@ class EmailService {
   async sendMembershipScheduledEmail(email, guardianName, gymnast, amountPence, startDate) {
     const amount = `£${(amountPence / 100).toFixed(2)}`;
     const startStr = new Date(startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-    const loginUrl = `${BASE_URL()}/booking/my-account`;
     return this._send({
       from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
       to: email,
@@ -580,10 +579,18 @@ class EmailService {
       html: brandedHtml('Membership scheduled', `
         <p style="margin-top:0">Hi ${guardianName},</p>
         <p>A monthly membership of <strong style="color:#7c35e8">${amount}/month</strong> has been scheduled for <strong>${gymnast.firstName} ${gymnast.lastName}</strong>, starting on <strong>${startStr}</strong>.</p>
-        ${infoBox(`<p style="margin:0">No action is needed right now. We'll send you another email on <strong>${startStr}</strong> with instructions to set up payment.</p>`)}
+
+        ${h3('How your fee is calculated')}
+        <p style="margin-top:0">Your monthly fee is based on a training year of <strong>46 weeks</strong>, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment — so you pay the same amount every month regardless of how many sessions fall in that particular month.</p>
+
+        ${h3('Commitments')}
+        <p style="margin-top:0">Your membership is tied to a specific session or sessions each week. Please attend your committed session — if you need to change which session you train at, speak to your coach.</p>
+
+        ${h3('Getting started')}
+        <p style="margin-top:0">No action is needed right now. We'll send you another email on <strong>${startStr}</strong> with instructions to set up payment.</p>
         ${muted('If you have any questions, please contact the club.')}
       `),
-      text: `Hi ${guardianName},\n\nA monthly membership of ${amount}/month has been scheduled for ${gymnast.firstName} ${gymnast.lastName}, starting on ${startStr}.\n\nNo action is needed right now. We'll send you another email on ${startStr} with instructions to set up payment.\n\nIf you have any questions, please contact the club.`,
+      text: `Hi ${guardianName},\n\nA monthly membership of ${amount}/month has been scheduled for ${gymnast.firstName} ${gymnast.lastName}, starting on ${startStr}.\n\nHOW YOUR FEE IS CALCULATED\nYour monthly fee is based on a training year of 46 weeks, using the number of sessions per week we have agreed together. We divide the total annual cost by 12 to give you a consistent monthly payment.\n\nCOMMITMENTS\nYour membership is tied to a specific session or sessions each week. Please attend your committed session — if you need to change which session you train at, speak to your coach.\n\nGETTING STARTED\nNo action is needed right now. We'll send you another email on ${startStr} with instructions to set up payment.\n\nIf you have any questions, please contact the club.`,
     }, { to: email, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount, startStr });
   }
 
