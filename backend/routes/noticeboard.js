@@ -14,7 +14,7 @@ const postSchema = Joi.object({
   title: Joi.string().max(200).required(),
   body: Joi.string().required(),
   archiveAt: Joi.string().isoDate().required(),
-  recipientFilter: Joi.object().optional(),
+  recipientFilter: Joi.object().allow(null).optional(),
 });
 
 // GET /api/noticeboard — active posts annotated with isRead
