@@ -567,7 +567,6 @@ const Gymnasts = () => {
                 className={`session-filter-btn ${showSessionOnly ? 'active' : ''}`}
                 onClick={() => setShowSessionOnly(!showSessionOnly)}
               >
-                <span className="session-filter-icon"></span>
                 <span className="session-filter-text">
                   {showSessionOnly ? 'Show All Gymnasts' : `Show Session Only (${sessionGymnasts.size})`}
                 </span>

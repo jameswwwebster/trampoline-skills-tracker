@@ -160,10 +160,6 @@ const CustomFields = () => {
     }));
   };
 
-  const getFieldTypeIcon = (type) => {
-    return '';
-  };
-
   if (loading) {
     return (
       <div className="custom-fields-page">
@@ -201,9 +197,6 @@ const CustomFields = () => {
             fields.map((field) => (
               <div key={field.id} className="custom-field-card">
                 <div className="field-header">
-                  <div className="field-icon">
-                    {getFieldTypeIcon(field.fieldType)}
-                  </div>
                   <div className="field-info">
                     <h3>{field.name}</h3>
                     <p className="field-key">Key: {field.key}</p>
