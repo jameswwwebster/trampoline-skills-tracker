@@ -205,6 +205,12 @@ export const bookingApi = {
   previewNoticeboardRecipients: (recipientFilter) =>
     axios.post(`${API_URL}/noticeboard/preview-recipients`, { recipientFilter }, { headers: getHeaders() }),
 
+  uploadNoticeboardImage: (formData) =>
+    axios.post(`${API_URL}/noticeboard/upload-image`, formData, {
+      headers: getHeaders(),
+      // Do NOT set Content-Type — axios derives it from FormData including the boundary
+    }),
+
   // Commitments
   getCommitmentsForTemplate: (templateId) =>
     axios.get(`${API_URL}/commitments?templateId=${templateId}`, { headers: getHeaders() }),

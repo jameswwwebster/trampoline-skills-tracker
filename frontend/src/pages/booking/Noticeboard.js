@@ -6,13 +6,39 @@ import RecipientPicker from '../../components/RecipientPicker';
 import './Noticeboard.css';
 import './booking-shared.css';
 
-const EMPTY_FORM = { title: '', body: '', archiveAt: '', recipientFilter: null };
+const EMPTY_FORM = { title: '', body: '', archiveAt: '', recipientFilter: null, videoEmbeds: [] };
 const isStaff = (user) => user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
+
+function isValidVideoUrl(url) {
+  return /^https:\/\/(www\.)?(youtube\.com\/(watch|shorts)|youtu\.be\/|vimeo\.com\/\d+)/.test(url);
+}
+
+function getEmbedUrl(url) {
+  let m;
+  m = url.match(/youtube\.com\/watch\?.*v=([^&]+)/);
+  if (m) return `https://www.youtube.com/embed/${m[1]}`;
+  m = url.match(/youtu\.be\/([^?]+)/);
+  if (m) return `https://www.youtube.com/embed/${m[1]}`;
+  m = url.match(/youtube\.com\/shorts\/([^?]+)/);
+  if (m) return `https://www.youtube.com/embed/${m[1]}`;
+  m = url.match(/vimeo\.com\/(\d+)/);
+  if (m) return `https://player.vimeo.com/video/${m[1]}`;
+  return null;
+}
 
 function PostForm({ initial, onSave, onCancel, groups = [] }) {
   const [form, setForm] = useState(initial || EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [videoInput, setVideoInput] = useState('');
+  const [videoInputError, setVideoInputError] = useState(null);
+
+  const handleImageUpload = async (file) => {
+    const fd = new FormData();
+    fd.append('image', file);
+    const res = await bookingApi.uploadNoticeboardImage(fd);
+    return res.data.url;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,7 +74,45 @@ function PostForm({ initial, onSave, onCancel, groups = [] }) {
             value={form.body}
             onChange={html => setForm(f => ({ ...f, body: html }))}
             placeholder="Write your notice..."
+            onImageUpload={handleImageUpload}
           />
+        </div>
+        <div style={{ marginBottom: '0.75rem' }}>
+          <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.3rem' }}>
+            Video embeds (optional, max 5)
+          </label>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <input
+              className="bk-input"
+              placeholder="Paste YouTube or Vimeo URL…"
+              value={videoInput}
+              onChange={e => { setVideoInput(e.target.value); setVideoInputError(null); }}
+            />
+            <button
+              type="button"
+              className="bk-btn bk-btn--sm bk-btn--primary"
+              disabled={form.videoEmbeds.length >= 5}
+              onClick={() => {
+                const url = videoInput.trim();
+                if (!isValidVideoUrl(url)) {
+                  setVideoInputError('Please enter a valid YouTube or Vimeo URL');
+                  return;
+                }
+                setForm(f => ({ ...f, videoEmbeds: [...f.videoEmbeds, url] }));
+                setVideoInput('');
+                setVideoInputError(null);
+              }}
+            >
+              Add
+            </button>
+          </div>
+          {videoInputError && <p className="bk-error" style={{ marginTop: '0.25rem' }}>{videoInputError}</p>}
+          {form.videoEmbeds.map((url, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0.6rem', background: 'var(--booking-bg-light)', borderRadius: '6px', marginTop: '0.3rem', fontSize: '0.85rem' }}>
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--booking-text-muted)' }}>{url}</span>
+              <button type="button" onClick={() => setForm(f => ({ ...f, videoEmbeds: f.videoEmbeds.filter((_, j) => j !== i) }))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--booking-text-muted)', fontSize: '1rem', lineHeight: 1 }}>✕</button>
+            </div>
+          ))}
         </div>
         <label className="bk-label" style={{ display: 'block', marginBottom: '1rem' }}>
           Archive after
@@ -168,6 +232,7 @@ export default function Noticeboard() {
               title: post.title,
               body: post.body,
               archiveAt: post.archiveAt.slice(0, 10),
+              videoEmbeds: post.videoEmbeds ?? [],
             }}
             onSave={handleUpdate}
             onCancel={() => setEditingId(null)}
@@ -188,6 +253,26 @@ export default function Noticeboard() {
               className="noticeboard-post__body"
               dangerouslySetInnerHTML={{ __html: post.body }}
             />
+            {post.videoEmbeds?.length > 0 && (
+              <div style={{ marginTop: '1rem', borderTop: '1px solid var(--booking-bg-light)', paddingTop: '0.75rem' }}>
+                <p style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--booking-text-muted)' }}>Videos</p>
+                {post.videoEmbeds.map((url, i) => {
+                  const embedUrl = getEmbedUrl(url);
+                  if (!embedUrl) return null;
+                  return (
+                    <div key={i} style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '8px', marginBottom: '0.75rem' }}>
+                      <iframe
+                        src={embedUrl}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title={`Video ${i + 1}`}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {staff && (
               <div className="noticeboard-post__actions">
                 <button
