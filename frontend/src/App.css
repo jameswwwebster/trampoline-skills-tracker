@@ -5818,12 +5818,13 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
 /* ── Noticeboard panel ───────────────────────────────────── */
 .dashboard-noticeboard-panel {
   display: block;
-  border: 2px solid #e67e22;
+  border: 2px solid var(--secondary-color);
   border-radius: 8px;
   padding: 0.75rem 1rem;
   margin-bottom: 1.5rem;
   text-decoration: none;
   color: inherit;
+  background: #f8f5ff;
 }
 .dashboard-noticeboard-panel__header {
   display: flex;
@@ -5831,9 +5832,9 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   align-items: center;
   margin-bottom: 0.35rem;
 }
-.dashboard-noticeboard-panel__title { font-weight: 700; color: #e67e22; }
+.dashboard-noticeboard-panel__title { font-weight: 700; color: var(--secondary-color); }
 .dashboard-noticeboard-panel__badge {
-  background: #e67e22;
+  background: var(--secondary-color);
   color: white;
   border-radius: 10px;
   padding: 0.1rem 0.5rem;
