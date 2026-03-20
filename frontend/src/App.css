@@ -5781,6 +5781,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
 }
 .dashboard-tile:hover { opacity: 0.9; }
 .dashboard-tile__icon { font-size: 1.5rem; }
+.dashboard-tile__label { font-size: 0.9rem; }
 .dashboard-tile--bookings { background: #3498db; }
 .dashboard-tile--shop     { background: #2ecc71; }
 .dashboard-tile--tracking { background: #9b59b6; }
