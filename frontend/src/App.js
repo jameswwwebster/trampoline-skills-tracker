@@ -4,9 +4,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { BrandingProvider } from './contexts/BrandingContext';
 import { RateLimitProvider, useRateLimit } from './contexts/RateLimitContext';
 import { setRateLimitContext } from './utils/apiInterceptor';
-import ProtectedRoute from './components/ProtectedRoute';
 import TrackingRoute from './components/TrackingRoute';
-import Layout from './components/Layout';
+import AppLayout from './components/AppLayout';
 import RateLimitBanner from './components/RateLimitBanner';
 import Login from './pages/Login';
 import ChildLogin from './pages/ChildLogin';
@@ -31,9 +30,7 @@ import SuperAdmin from './pages/SuperAdmin';
 import Cheatsheets from './pages/Cheatsheets';
 import CheatsheetViewer from './pages/CheatsheetViewer';
 import WaveLength from './pages/WaveLength';
-import BookingLayout from './pages/booking/BookingLayout';
 import BookingCalendar from './pages/booking/BookingCalendar';
-import CartCheckout from './pages/booking/CartCheckout';
 import Cart from './pages/booking/Cart';
 import CartConfirmation from './pages/booking/CartConfirmation';
 import SessionDetail from './pages/booking/SessionDetail';
@@ -50,7 +47,6 @@ import AdminBgNumbers from './pages/booking/admin/AdminBgNumbers';
 import AuditLog from './pages/booking/admin/AuditLog';
 import ShopListing from './pages/booking/shop/ShopListing';
 import ShopProduct from './pages/booking/shop/ShopProduct';
-import ShopCart from './pages/booking/shop/ShopCart';
 import ShopConfirmation from './pages/booking/shop/ShopConfirmation';
 import MyOrders from './pages/booking/shop/MyOrders';
 import MyCharges from './pages/booking/MyCharges';
@@ -110,7 +106,7 @@ function AppContent() {
   useEffect(() => {
     // Set up the API interceptor with rate limit context
     setRateLimitContext(rateLimitContext);
-    
+
     // Add body class when rate limited for layout adjustments
     const updateBodyClass = () => {
       if (rateLimitContext.isRateLimited) {
@@ -119,9 +115,9 @@ function AppContent() {
         document.body.classList.remove('rate-limited');
       }
     };
-    
+
     updateBodyClass();
-    
+
     // In development mode, expose rate limit testing function to console
     if (process.env.NODE_ENV === 'development') {
       window.testRateLimit = (seconds = 10) => {
@@ -129,7 +125,7 @@ function AppContent() {
         rateLimitContext.triggerRateLimitForTesting(seconds);
       };
     }
-    
+
     // Cleanup on unmount
     return () => {
       document.body.classList.remove('rate-limited');
@@ -144,7 +140,7 @@ function AppContent() {
       <PageMeta />
       <RateLimitBanner />
       <Routes>
-        {/* Public website routes — no authentication required */}
+        {/* Public routes */}
         <Route path="/" element={<PublicHome />} />
         <Route path="/policies" element={<PublicPolicies />} />
         <Route path="/timetable" element={<PublicTimetable />} />
@@ -154,64 +150,66 @@ function AppContent() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        {/* Public cheatsheet routes - no authentication required */}
         <Route path="/cheatsheets" element={<Cheatsheets />} />
         <Route path="/cheatsheets/:cheatsheetId" element={<CheatsheetViewer />} />
-        {/* Public game route - no authentication required */}
         <Route path="/wavelength" element={<WaveLength />} />
-        <Route element={<TrackingRoute />}>
+
+        {/* All authenticated routes under AppLayout */}
+        <Route element={<AppLayout />}>
+          {/* Universal — all authenticated roles */}
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="gymnasts" element={<Gymnasts />} />
-          <Route path="levels" element={<Levels />} />
-          <Route path="competitions" element={<Competitions />} />
-          <Route path="progress/:gymnastId" element={<Progress />} />
-          <Route path="my-progress" element={<MyProgress />} />
           <Route path="profile" element={<Profile />} />
-          <Route path="certificates" element={<Certificates />} />
+          <Route path="my-progress" element={<MyProgress />} />
           <Route path="my-certificates" element={<MyCertificates />} />
-          <Route path="certificates/:certificateId/preview" element={<CertificatePreview />} />
-          <Route path="certificate-designer" element={<CertificateDesigner />} />
-          <Route path="club-settings" element={<ClubSettings />} />
-          <Route path="branding" element={<Branding />} />
           <Route path="health" element={<Health />} />
           <Route path="super-admin" element={<SuperAdmin />} />
-        </Route>
-        {/* Booking section — separate layout under /booking */}
-        <Route path="/booking" element={
-          <ProtectedRoute>
-            <BookingLayout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<BookingCalendar />} />
-          <Route path="session/:instanceId" element={<SessionDetail />} />
-          <Route path="checkout/:bookingId" element={<Checkout />} />
-          <Route path="cart" element={<Cart />} />
-          <Route path="cart-confirmation" element={<CartConfirmation />} />
-          <Route path="cart-checkout" element={<Navigate to="/booking/cart" replace />} />
-          <Route path="confirmation/:bookingId" element={<BookingConfirmation />} />
-          <Route path="my-bookings" element={<MyBookings />} />
-          <Route path="my-account" element={<MyChildren />} />
-          <Route path="admin" element={<BookingAdmin />} />
-          <Route path="admin/closures" element={<AdminClosures />} />
-          <Route path="admin/session-management" element={<SessionManagement />} />
-          <Route path="admin/members" element={<AdminMembers />} />
-          <Route path="admin/messages" element={<AdminMessages />} />
-          <Route path="admin/bg-numbers" element={<AdminBgNumbers />} />
-          <Route path="admin/audit-log" element={<AuditLog />} />
-          <Route path="shop" element={<ShopListing />} />
-          <Route path="shop/cart" element={<Navigate to="/booking/cart" replace />} />
-          <Route path="shop/:productId" element={<ShopProduct />} />
-          <Route path="shop/confirmation/:orderId" element={<ShopConfirmation />} />
-          <Route path="my-orders" element={<MyOrders />} />
-          <Route path="my-charges" element={<MyCharges />} />
-          <Route path="noticeboard" element={<Noticeboard />} />
-          <Route path="help" element={<HelpPage />} />
-          <Route path="admin/shop-orders" element={<AdminShopOrders />} />
-          <Route path="admin/recipient-groups" element={<AdminRecipientGroups />} />
-          <Route path="admin/charges" element={<AdminCharges />} />
-          <Route path="admin/credits" element={<AdminCredits />} />
-          <Route path="admin/help" element={<AdminHelpPage />} />
-          <Route path="admin/register/:instanceId" element={<AdminRegister />} />
+
+          {/* Staff-only tracking routes */}
+          <Route element={<TrackingRoute />}>
+            <Route path="gymnasts" element={<Gymnasts />} />
+            <Route path="levels" element={<Levels />} />
+            <Route path="competitions" element={<Competitions />} />
+            <Route path="progress/:gymnastId" element={<Progress />} />
+            <Route path="certificates" element={<Certificates />} />
+            <Route path="certificates/:certificateId/preview" element={<CertificatePreview />} />
+            <Route path="certificate-designer" element={<CertificateDesigner />} />
+            <Route path="club-settings" element={<ClubSettings />} />
+            <Route path="branding" element={<Branding />} />
+          </Route>
+
+          {/* Booking routes */}
+          <Route path="booking">
+            <Route index element={<BookingCalendar />} />
+            <Route path="session/:instanceId" element={<SessionDetail />} />
+            <Route path="checkout/:bookingId" element={<Checkout />} />
+            <Route path="cart" element={<Cart />} />
+            <Route path="cart-confirmation" element={<CartConfirmation />} />
+            <Route path="cart-checkout" element={<Navigate to="/booking/cart" replace />} />
+            <Route path="confirmation/:bookingId" element={<BookingConfirmation />} />
+            <Route path="my-bookings" element={<MyBookings />} />
+            <Route path="my-account" element={<MyChildren />} />
+            <Route path="admin" element={<BookingAdmin />} />
+            <Route path="admin/closures" element={<AdminClosures />} />
+            <Route path="admin/session-management" element={<SessionManagement />} />
+            <Route path="admin/members" element={<AdminMembers />} />
+            <Route path="admin/messages" element={<AdminMessages />} />
+            <Route path="admin/bg-numbers" element={<AdminBgNumbers />} />
+            <Route path="admin/audit-log" element={<AuditLog />} />
+            <Route path="shop" element={<ShopListing />} />
+            <Route path="shop/cart" element={<Navigate to="/booking/cart" replace />} />
+            <Route path="shop/:productId" element={<ShopProduct />} />
+            <Route path="shop/confirmation/:orderId" element={<ShopConfirmation />} />
+            <Route path="my-orders" element={<MyOrders />} />
+            <Route path="my-charges" element={<MyCharges />} />
+            <Route path="noticeboard" element={<Noticeboard />} />
+            <Route path="help" element={<HelpPage />} />
+            <Route path="admin/shop-orders" element={<AdminShopOrders />} />
+            <Route path="admin/recipient-groups" element={<AdminRecipientGroups />} />
+            <Route path="admin/charges" element={<AdminCharges />} />
+            <Route path="admin/credits" element={<AdminCredits />} />
+            <Route path="admin/help" element={<AdminHelpPage />} />
+            <Route path="admin/register/:instanceId" element={<AdminRegister />} />
+          </Route>
         </Route>
       </Routes>
     </div>
@@ -230,4 +228,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
