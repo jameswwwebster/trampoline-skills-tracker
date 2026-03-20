@@ -898,6 +898,7 @@ model NoticeboardPost {
   body            String
   archiveAt       DateTime
   recipientFilter Json?
+  videoEmbeds     String[]          @default([])
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   club            Club              @relation(fields: [clubId], references: [id])
