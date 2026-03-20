@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-import EditGymnastForm from '../components/EditGymnastForm';
+
 
 const Gymnasts = () => {
   const [gymnasts, setGymnasts] = useState([]);
   const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [editingGymnast, setEditingGymnast] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showArchived, setShowArchived] = useState(false);
   const [archivingGymnast, setArchivingGymnast] = useState(null);
@@ -24,7 +23,7 @@ const Gymnasts = () => {
   const [letterFilter, setLetterFilter] = useState('');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 25;
-  const { canManageGymnasts, isClubAdmin } = useAuth();
+  const { isClubAdmin } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -198,17 +197,6 @@ const Gymnasts = () => {
       }
     }
   }, [searchParams, gymnasts]);
-
-  const handleEditSuccess = (updatedGymnast) => {
-    setGymnasts(prev => prev.map(g => 
-      g.id === updatedGymnast.id ? updatedGymnast : g
-    ));
-    setEditingGymnast(null);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingGymnast(null);
-  };
 
   const handleArchiveClick = (e, gymnast) => {
     e.stopPropagation();
@@ -409,12 +397,6 @@ const Gymnasts = () => {
         </div>
       </div>
 
-      {!canManageGymnasts && (
-        <div className="info-message">
-          <p>You can view gymnast information but don't have permission to add or edit gymnasts.</p>
-        </div>
-      )}
-
       {success && (
         <div className="alert alert-success">
           {success}
@@ -426,14 +408,6 @@ const Gymnasts = () => {
             ×
           </button>
         </div>
-      )}
-
-      {editingGymnast && (
-        <EditGymnastForm
-          gymnast={editingGymnast}
-          onSuccess={handleEditSuccess}
-          onCancel={handleCancelEdit}
-        />
       )}
 
       {/* Archive Modal */}
