@@ -290,7 +290,7 @@ export const AuthProvider = ({ children }) => {
     canReadLevels: true, // All authenticated users can read levels
     canViewProgress: true, // All authenticated users can view progress (with backend access controls)
     canViewOwnProgress: user?.role === 'ADULT' || user?.role === 'CHILD', // Adults and children can view progress
-    needsProgressNavigation: user?.role === 'ADULT' || user?.role === 'CHILD', // Adults and children need progress navigation
+    needsProgressNavigation: user?.role === 'CHILD', // Only children need progress navigation (tracking hidden from adults for now)
     needsShareCodeManagement: user?.role === 'ADULT', // Only adults need share code management
     needsCodeOfDayManagement: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH' // Club admins and coaches can manage code of the day
   };

@@ -21,7 +21,7 @@ function getTotalCartCount() {
 export default function AppLayout() {
   const {
     user, logout, loading,
-    isClubAdmin, canManageGymnasts, isSuperAdmin,
+    isClubAdmin, isAdult, canManageGymnasts, isSuperAdmin,
   } = useAuth();
   const { branding } = useBranding();
   const location = useLocation();
@@ -235,7 +235,7 @@ export default function AppLayout() {
                     <NavLink to="/gymnasts" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Gymnasts</NavLink>
                     <NavLink to="/certificates" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Certificates</NavLink>
                   </>}
-                  {!canManageGymnasts && <>
+                  {!canManageGymnasts && !isAdult && <>
                     <NavLink to="/my-progress" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Progress</NavLink>
                     <NavLink to="/my-certificates" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Certificates</NavLink>
                   </>}
@@ -368,7 +368,7 @@ export default function AppLayout() {
             <NavLink to="/gymnasts" className="app-layout__mobile-link" onClick={closeMobile}>Gymnasts</NavLink>
             <NavLink to="/certificates" className="app-layout__mobile-link" onClick={closeMobile}>Certificates</NavLink>
           </>}
-          {!canManageGymnasts && <>
+          {!canManageGymnasts && !isAdult && <>
             <NavLink to="/my-progress" className="app-layout__mobile-link" onClick={closeMobile}>My Progress</NavLink>
             <NavLink to="/my-certificates" className="app-layout__mobile-link" onClick={closeMobile}>My Certificates</NavLink>
           </>}

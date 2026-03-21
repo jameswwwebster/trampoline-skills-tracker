@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import CertificateDisplay from '../components/CertificateDisplay';
 
@@ -10,8 +11,10 @@ const MyCertificates = () => {
   const [error, setError] = useState(null);
   const [selectedGymnast, setSelectedGymnast] = useState(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (user?.role === 'ADULT') { navigate('/'); return; }
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
