@@ -134,4 +134,45 @@ describe('future-dated commitments do not count against capacity', () => {
     expect(sess.activeCommitments).toBe(1);
     expect(sess.availableSlots).toBe(sess.capacity - 1);
   });
+
+  it('GET /:instanceId counts ACTIVE commitment with startDate = today against capacity', async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    await prisma.commitment.create({
+      data: {
+        gymnastId: gymnast.id,
+        templateId: template.id,
+        createdById: admin.id,
+        startDate: today,
+      },
+    });
+
+    const res = await request(app)
+      .get(`/api/booking/sessions/${instance.id}`)
+      .set('Authorization', `Bearer ${parentToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.activeCommitments).toBe(1);
+    expect(res.body.availableSlots).toBe(res.body.capacity - 1);
+  });
+
+  it('GET /:instanceId counts ACTIVE commitment with null startDate against capacity', async () => {
+    await prisma.commitment.create({
+      data: {
+        gymnastId: gymnast.id,
+        templateId: template.id,
+        createdById: admin.id,
+        // startDate omitted (null)
+      },
+    });
+
+    const res = await request(app)
+      .get(`/api/booking/sessions/${instance.id}`)
+      .set('Authorization', `Bearer ${parentToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.activeCommitments).toBe(1);
+    expect(res.body.availableSlots).toBe(res.body.capacity - 1);
+  });
 });
