@@ -321,6 +321,7 @@ export default function AppLayout() {
                     <NavLink to="/booking/admin/bg-numbers" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>BG Numbers</NavLink>
                     <NavLink to="/booking/admin/credits" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Credits</NavLink>
                     <NavLink to="/booking/admin/charges" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Charges</NavLink>
+                    <NavLink to="/booking/admin/payments" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Payments</NavLink>
                     <NavLink to="/booking/admin/messages" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Messages</NavLink>
                     {isClubAdmin && <>
                       <div className="app-layout__dropdown-divider" />
@@ -406,6 +407,7 @@ export default function AppLayout() {
             <NavLink to="/booking/admin/bg-numbers" className="app-layout__mobile-link" onClick={closeMobile}>BG Numbers</NavLink>
             <NavLink to="/booking/admin/credits" className="app-layout__mobile-link" onClick={closeMobile}>Credits</NavLink>
             <NavLink to="/booking/admin/charges" className="app-layout__mobile-link" onClick={closeMobile}>Charges</NavLink>
+            <NavLink to="/booking/admin/payments" className="app-layout__mobile-link" onClick={closeMobile}>Payments</NavLink>
             <NavLink to="/booking/admin/messages" className="app-layout__mobile-link" onClick={closeMobile}>Messages</NavLink>
             {isClubAdmin && <>
               <NavLink to="/club-settings" className="app-layout__mobile-link" onClick={closeMobile}>Club Settings</NavLink>

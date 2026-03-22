@@ -56,6 +56,7 @@ import AdminShopOrders from './pages/booking/admin/AdminShopOrders';
 import AdminRecipientGroups from './pages/booking/admin/AdminRecipientGroups';
 import AdminCharges from './pages/booking/admin/AdminCharges';
 import AdminCredits from './pages/booking/admin/AdminCredits';
+import AdminPayments from './pages/booking/admin/AdminPayments';
 import AdminHelpPage from './pages/booking/admin/AdminHelpPage';
 import AdminRegister from './pages/booking/admin/AdminRegister';
 import PublicHome from './pages/public/PublicHome';
@@ -207,6 +208,7 @@ function AppContent() {
             <Route path="admin/recipient-groups" element={<AdminRecipientGroups />} />
             <Route path="admin/charges" element={<AdminCharges />} />
             <Route path="admin/credits" element={<AdminCredits />} />
+            <Route path="admin/payments" element={<AdminPayments />} />
             <Route path="admin/help" element={<AdminHelpPage />} />
             <Route path="admin/register/:instanceId" element={<AdminRegister />} />
           </Route>
