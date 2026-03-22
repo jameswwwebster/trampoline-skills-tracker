@@ -21,6 +21,9 @@ export default function AdminPayments() {
   const [credits, setCredits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedMember, setSelectedMember] = useState('');
+  const [selectedType, setSelectedType] = useState('');   // '' | 'charge' | 'credit'
+  const [selectedMethod, setSelectedMethod] = useState(''); // '' | 'Stripe' | 'Credit'
   const [view, setView] = useState('transactions'); // 'transactions' | 'summary'
 
   useEffect(() => {
@@ -34,7 +37,6 @@ export default function AdminPayments() {
       .finally(() => setLoading(false));
   }, [selectedMonth]);
 
-  // Build sorted list of all available months from the data (used when no filter applied)
   const availableMonths = useMemo(() => {
     const months = new Set();
     charges.forEach(c => months.add(toMonthValue(c.paidAt)));
@@ -43,7 +45,7 @@ export default function AdminPayments() {
   }, [charges, credits]);
 
   // Combined transaction list sorted by date desc
-  const transactions = useMemo(() => {
+  const allTransactions = useMemo(() => {
     const rows = [
       ...charges.map(c => ({
         id: c.id,
@@ -72,48 +74,68 @@ export default function AdminPayments() {
     return rows;
   }, [charges, credits]);
 
-  // Monthly summary
+  const members = useMemo(() => {
+    const names = new Set(allTransactions.map(t => t.member));
+    return Array.from(names).sort();
+  }, [allTransactions]);
+
+  const transactions = useMemo(() => {
+    return allTransactions.filter(t => {
+      if (selectedMember && t.member !== selectedMember) return false;
+      if (selectedType && t.type !== selectedType) return false;
+      if (selectedMethod && t.method !== selectedMethod) return false;
+      return true;
+    });
+  }, [allTransactions, selectedMember, selectedType, selectedMethod]);
+
+  // Monthly summary computed from filtered transactions
   const summary = useMemo(() => {
     const map = {};
-    charges.forEach(c => {
-      const m = toMonthValue(c.paidAt);
+    transactions.forEach(t => {
+      const m = toMonthValue(t.date);
       if (!map[m]) map[m] = { stripe: 0, credit: 0, creditsSpent: 0 };
-      if (c.paidWithCredit) map[m].credit += c.amount;
-      else map[m].stripe += c.amount;
-    });
-    credits.forEach(c => {
-      const m = toMonthValue(c.usedAt);
-      if (!map[m]) map[m] = { stripe: 0, credit: 0, creditsSpent: 0 };
-      map[m].creditsSpent += c.amount;
+      if (t.type === 'charge') {
+        if (t.method === 'Credit') map[m].credit += t.amount;
+        else map[m].stripe += t.amount;
+      } else {
+        map[m].creditsSpent += t.amount;
+      }
     });
     return Object.entries(map)
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([month, totals]) => ({ month, ...totals }));
-  }, [charges, credits]);
+  }, [transactions]);
 
   return (
     <div className="bk-page" style={{ maxWidth: '900px' }}>
       <h2>Payments</h2>
 
-      <div className="bk-row" style={{ marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
-        <div>
-          <label className="bk-label" style={{ display: 'inline', marginRight: '0.5rem', marginBottom: 0 }}>
-            Month
-          </label>
-          <select
-            className="bk-input"
-            style={{ width: 'auto' }}
-            value={selectedMonth}
-            onChange={e => setSelectedMonth(e.target.value)}
-          >
-            <option value="">All time</option>
-            {availableMonths.map(m => (
-              <option key={m} value={m}>{formatMonth(m)}</option>
-            ))}
-          </select>
-        </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end', marginBottom: '1.25rem' }}>
+        <FilterSelect label="Month" value={selectedMonth} onChange={setSelectedMonth}>
+          <option value="">All time</option>
+          {availableMonths.map(m => (
+            <option key={m} value={m}>{formatMonth(m)}</option>
+          ))}
+        </FilterSelect>
 
-        <div className="bk-row" style={{ gap: '0.5rem' }}>
+        <FilterSelect label="Member" value={selectedMember} onChange={setSelectedMember}>
+          <option value="">All members</option>
+          {members.map(m => <option key={m} value={m}>{m}</option>)}
+        </FilterSelect>
+
+        <FilterSelect label="Type" value={selectedType} onChange={setSelectedType}>
+          <option value="">All types</option>
+          <option value="charge">Charge paid</option>
+          <option value="credit">Credit spent</option>
+        </FilterSelect>
+
+        <FilterSelect label="Method" value={selectedMethod} onChange={setSelectedMethod}>
+          <option value="">All methods</option>
+          <option value="Stripe">Stripe</option>
+          <option value="Credit">Credit</option>
+        </FilterSelect>
+
+        <div className="bk-row" style={{ gap: '0.5rem', marginLeft: 'auto' }}>
           <button
             className={`bk-btn bk-btn--sm${view === 'transactions' ? ' bk-btn--primary' : ''}`}
             style={view !== 'transactions' ? { background: 'var(--booking-bg-light)', border: '1px solid var(--booking-border)' } : {}}
@@ -138,6 +160,19 @@ export default function AdminPayments() {
       ) : (
         <SummaryTable summary={summary} />
       )}
+    </div>
+  );
+}
+
+function FilterSelect({ label, value, onChange, children }) {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--booking-text-muted)' }}>
+        {label}
+      </label>
+      <select className="bk-input" style={{ width: 'auto' }} value={value} onChange={e => onChange(e.target.value)}>
+        {children}
+      </select>
     </div>
   );
 }
