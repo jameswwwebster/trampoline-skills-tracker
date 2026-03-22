@@ -6,6 +6,7 @@ import GymnastProgress from '../components/GymnastProgress';
 
 const MyProgress = () => {
   const { user, isAdult, isChild } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [children, setChildren] = useState([]);
