@@ -19,6 +19,7 @@ function pence(n) {
 export default function AdminPayments() {
   const [charges, setCharges] = useState([]);
   const [credits, setCredits] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -34,6 +35,7 @@ export default function AdminPayments() {
       .then(r => {
         setCharges(r.data.charges);
         setCredits(r.data.credits);
+        setBookings(r.data.bookings);
       })
       .catch(err => setError(err?.response?.data?.error || err?.message || 'Failed to load payments'))
       .finally(() => setLoading(false));
@@ -43,8 +45,9 @@ export default function AdminPayments() {
     const months = new Set();
     charges.forEach(c => months.add(toMonthValue(c.paidAt)));
     credits.forEach(c => months.add(toMonthValue(c.usedAt)));
+    bookings.forEach(b => months.add(toMonthValue(b.updatedAt)));
     return Array.from(months).sort().reverse();
-  }, [charges, credits]);
+  }, [charges, credits, bookings]);
 
   // Combined transaction list sorted by date desc
   const allTransactions = useMemo(() => {
@@ -71,10 +74,19 @@ export default function AdminPayments() {
         date: c.usedAt,
         method: '—',
       })),
+      ...bookings.map(b => ({
+        id: b.id,
+        type: 'booking',
+        member: `${b.user.firstName} ${b.user.lastName}`,
+        description: `${b.sessionInstance.template.type === 'DMT' ? 'DMT' : 'Trampoline'} session – ${new Date(b.sessionInstance.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+        amount: b.totalAmount,
+        date: b.updatedAt,
+        method: b.stripePaymentIntentId ? 'Stripe' : 'Credit',
+      })),
     ];
     rows.sort((a, b) => new Date(b.date) - new Date(a.date));
     return rows;
-  }, [charges, credits]);
+  }, [charges, credits, bookings]);
 
   const members = useMemo(() => {
     const names = new Set(allTransactions.map(t => t.member));
@@ -96,7 +108,7 @@ export default function AdminPayments() {
     transactions.forEach(t => {
       const m = toMonthValue(t.date);
       if (!map[m]) map[m] = { stripe: 0, credit: 0, creditsSpent: 0 };
-      if (t.type === 'charge') {
+      if (t.type === 'charge' || t.type === 'booking') {
         if (t.method === 'Credit') map[m].credit += t.amount;
         else map[m].stripe += t.amount;
       } else {
@@ -127,6 +139,7 @@ export default function AdminPayments() {
 
         <FilterSelect label="Type" value={selectedType} onChange={setSelectedType}>
           <option value="">All types</option>
+          <option value="booking">Booking payment</option>
           <option value="charge">Charge paid</option>
           <option value="credit">Credit spent</option>
         </FilterSelect>
@@ -207,8 +220,8 @@ function TransactionsTable({ transactions }) {
             <td>{t.member}</td>
             <td>{t.description}</td>
             <td>
-              <span style={{ color: t.type === 'charge' ? 'var(--booking-success)' : 'var(--booking-text-muted)', fontSize: '0.85rem' }}>
-                {t.type === 'charge' ? 'Charge paid' : 'Credit spent'}
+              <span style={{ color: t.type === 'credit' ? 'var(--booking-text-muted)' : 'var(--booking-success)', fontSize: '0.85rem' }}>
+                {t.type === 'booking' ? 'Booking payment' : t.type === 'charge' ? 'Charge paid' : 'Credit spent'}
               </span>
             </td>
             <td style={{ fontSize: '0.85rem' }}>{t.method}</td>
