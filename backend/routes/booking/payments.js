@@ -19,7 +19,7 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
       dateFilter = { gte: from, lt: to };
     }
 
-    const [charges, credits] = await Promise.all([
+    const [charges, credits, bookings] = await Promise.all([
       prisma.charge.findMany({
         where: {
           clubId: req.user.clubId,
@@ -40,9 +40,27 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
         },
         orderBy: { usedAt: 'desc' },
       }),
+      prisma.booking.findMany({
+        where: {
+          status: 'CONFIRMED',
+          totalAmount: { gt: 0 },
+          sessionInstance: { template: { clubId: req.user.clubId } },
+          ...(month ? { updatedAt: dateFilter } : {}),
+        },
+        include: {
+          user: { select: { firstName: true, lastName: true } },
+          sessionInstance: {
+            select: {
+              date: true,
+              template: { select: { type: true } },
+            },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
     ]);
 
-    res.json({ charges, credits });
+    res.json({ charges, credits, bookings });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
