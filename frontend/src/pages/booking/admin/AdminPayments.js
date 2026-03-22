@@ -20,6 +20,7 @@ export default function AdminPayments() {
   const [charges, setCharges] = useState([]);
   const [credits, setCredits] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedMember, setSelectedMember] = useState('');
   const [selectedType, setSelectedType] = useState('');   // '' | 'charge' | 'credit'
@@ -28,12 +29,13 @@ export default function AdminPayments() {
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     bookingApi.getAdminPayments(selectedMonth || null)
       .then(r => {
         setCharges(r.data.charges);
         setCredits(r.data.credits);
       })
-      .catch(() => {})
+      .catch(err => setError(err?.response?.data?.error || err?.message || 'Failed to load payments'))
       .finally(() => setLoading(false));
   }, [selectedMonth]);
 
@@ -155,6 +157,8 @@ export default function AdminPayments() {
 
       {loading ? (
         <p>Loading…</p>
+      ) : error ? (
+        <p style={{ color: 'var(--booking-error, #c0392b)' }}>Error: {error}</p>
       ) : view === 'transactions' ? (
         <TransactionsTable transactions={transactions} />
       ) : (
