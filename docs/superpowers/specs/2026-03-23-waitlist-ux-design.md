@@ -12,22 +12,25 @@ The waitlist backend (join/leave routes, offer logic, 2-hour expiry cron) is alr
 When a cancellation frees a slot, offer strategy depends on how far away the session is:
 
 **>6 hours out — exclusive offer**
-- Set the next `WAITING` entry to `OFFERED` with `offerType: EXCLUSIVE` and a 2-hour `offerExpiresAt`
+- Fetch the next `WAITING` entry (`take: 1`, ordered by `createdAt asc`)
+- Set to `OFFERED` with `offerType: EXCLUSIVE` and a 2-hour `offerExpiresAt`
 - Send the offered user an email (see Section 3)
 
 **≤6 hours out — open offer**
-- Set ALL `WAITING` entries to `OFFERED` with `offerType: OPEN` simultaneously
-- No expiry window — the session is imminent, the race resolves when someone books
+- Fetch ALL `WAITING` entries (no `take` limit)
+- Set all to `OFFERED` with `offerType: OPEN`; leave `offerExpiresAt` as null (no expiry window — the session is imminent, the race resolves when someone books)
 - Send each waiting user an email (see Section 3)
 
-`expireStaleOffers` (runs every 15 min) handles exclusive offer cleanup. No changes needed there.
+`expireStaleOffers` queries `{ status: 'OFFERED', offerExpiresAt: { lt: new Date() } }` — null `offerExpiresAt` on open offers means they are never accidentally expired by this cron. No changes needed to `expireStaleOffers`.
+
+`processWaitlist` must include `instance.template.club` in its query to check `club.emailEnabled` before sending emails.
 
 ---
 
 ## 2. Booking Route (`bookings.js`)
 
 **Capacity bypass for OFFERED users**
-Before rejecting with "Not enough slots available", check if the requesting user has an active `OFFERED` entry for the session. If so, allow the booking through.
+Before the capacity check (`bookedCount + activeCommitments + gymnastIds.length > capacity`), check if the requesting user has an active `OFFERED` entry for the session. If so, skip the capacity check entirely and allow the booking through.
 
 **Post-booking cleanup**
 After a successful booking by an OFFERED user:
@@ -69,7 +72,9 @@ model WaitlistEntry {
 
 `offerType` is null while status is `WAITING`, set when transitioning to `OFFERED`.
 
-Add `BOOKED` to the `WaitlistEntry` status enum to distinguish successfully claimed offers from expired ones.
+`CLAIMED` already exists in the `WaitlistStatus` enum — use it (not a new `BOOKED` value) when marking a successfully claimed offer.
+
+**Migration note:** `WaitlistOfferType` is a new enum. Per project convention, `ALTER TYPE ... ADD VALUE` cannot run in the same transaction as usage of the new enum value — split into two migration files: one to create the enum, one to add the `offerType` column.
 
 ---
 
