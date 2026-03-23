@@ -37,6 +37,7 @@ import SessionDetail from './pages/booking/SessionDetail';
 import Checkout from './pages/booking/Checkout';
 import BookingConfirmation from './pages/booking/BookingConfirmation';
 import MyBookings from './pages/booking/MyBookings';
+import MyWaitlist from './pages/booking/MyWaitlist';
 import MyChildren from './pages/booking/MyChildren';
 import BookingAdmin from './pages/booking/admin/BookingAdmin';
 import AdminClosures from './pages/booking/admin/AdminClosures';
@@ -184,6 +185,7 @@ function AppContent() {
             <Route path="cart-checkout" element={<Navigate to="/booking/cart" replace />} />
             <Route path="confirmation/:bookingId" element={<BookingConfirmation />} />
             <Route path="my-bookings" element={<MyBookings />} />
+            <Route path="my-waitlist" element={<MyWaitlist />} />
             <Route path="my-account" element={<MyChildren />} />
             <Route path="admin" element={<BookingAdmin />} />
             <Route path="admin/closures" element={<AdminClosures />} />

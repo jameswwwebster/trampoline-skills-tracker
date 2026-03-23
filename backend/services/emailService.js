@@ -676,6 +676,60 @@ class EmailService {
       console.error('Booking receipt email failed:', err);
     }
   }
+
+  async sendWaitlistOfferEmail(email, firstName, sessionDate, startTime, endTime, offerType, offerExpiresAt) {
+    const d = new Date(sessionDate);
+    const dateStr = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    const timeStr = `${startTime}–${endTime}`;
+
+    const isOpen = offerType === 'OPEN';
+    const subject = isOpen
+      ? `Last-minute slot — ${dateStr} at ${startTime}`
+      : `A slot has opened up — ${dateStr} at ${startTime}`;
+
+    const expiryLine = offerExpiresAt
+      ? `<p>It's being held for you until <strong>${new Date(offerExpiresAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</strong>. Open the app to claim it.</p>`
+      : `<p>Open the app to claim it — it's first come, first served.</p>`;
+
+    const expiryText = offerExpiresAt
+      ? `It's being held for you until ${new Date(offerExpiresAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}. Open the app to claim it.`
+      : `Open the app to claim it — it's first come, first served.`;
+
+    const intro = isOpen
+      ? `<p>A spot has come up in your session on <strong>${dateStr} at ${timeStr}</strong>. Since it's close to session time, we've let everyone on the waitlist know.</p>`
+      : `<p>A spot has become available in your session on <strong>${dateStr} at ${timeStr}</strong>.</p>`;
+
+    const introText = isOpen
+      ? `A spot has come up in your session on ${dateStr} at ${timeStr}. Since it's close to session time, we've let everyone on the waitlist know.`
+      : `A spot has become available in your session on ${dateStr} at ${timeStr}.`;
+
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject,
+      html: brandedHtml(subject, `
+        <p style="margin-top:0">Hi ${firstName},</p>
+        ${intro}
+        ${expiryLine}
+        ${ctaButton(`${BASE_URL()}/booking`, 'Open the app')}
+        ${muted('You can view your waitlist in My Bookings.')}
+      `),
+      text: `Hi ${firstName},\n\n${introText}\n\n${expiryText}`,
+    }, { to: email, session: `${dateStr} ${timeStr}`, offerType });
+  }
+
+  async trySendWaitlistOffer(userId, sessionDate, startTime, endTime, offerType, offerExpiresAt, prisma) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, firstName: true, club: { select: { emailEnabled: true } } },
+      });
+      if (!user?.email || !user.club?.emailEnabled) return;
+      await this.sendWaitlistOfferEmail(user.email, user.firstName, sessionDate, startTime, endTime, offerType, offerExpiresAt);
+    } catch (err) {
+      console.error('Waitlist offer email failed:', err);
+    }
+  }
 }
 
 module.exports = new EmailService();

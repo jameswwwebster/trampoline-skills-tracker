@@ -210,6 +210,7 @@ export default function AppLayout() {
                 <div className="app-layout__dropdown-menu">
                   <NavLink to="/booking" end className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)} state={{ skipAdminRedirect: true }}>Book a session</NavLink>
                   <NavLink to="/booking/my-bookings" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Bookings</NavLink>
+                  {!isAdmin && <NavLink to="/booking/my-waitlist" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Waitlist</NavLink>}
                   {canManageGymnasts && <>
                     <div className="app-layout__dropdown-divider" />
                     <NavLink to="/booking/admin" end className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Sessions</NavLink>
@@ -357,6 +358,7 @@ export default function AppLayout() {
           <div className="app-layout__mobile-section-label">Bookings</div>
           <NavLink to="/booking" end className="app-layout__mobile-link" onClick={closeMobile} state={{ skipAdminRedirect: true }}>Book a session</NavLink>
           <NavLink to="/booking/my-bookings" className="app-layout__mobile-link" onClick={closeMobile}>My Bookings</NavLink>
+          {!isAdmin && <NavLink to="/booking/my-waitlist" className="app-layout__mobile-link" onClick={closeMobile}>My Waitlist</NavLink>}
           {canManageGymnasts && <>
             <NavLink to="/booking/admin" end className="app-layout__mobile-link" onClick={closeMobile}>Sessions</NavLink>
             <NavLink to="/booking/admin/session-management" className="app-layout__mobile-link" onClick={closeMobile}>Session Management</NavLink>

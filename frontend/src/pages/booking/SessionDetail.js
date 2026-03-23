@@ -212,11 +212,10 @@ export default function SessionDetail({
           {waitlistEntry?.status === 'OFFERED' ? (
             <>
               <p className="session-detail__waitlist-offered">
-                A slot is available for you! Claim it before{' '}
-                {new Date(waitlistEntry.offerExpiresAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}.
-              </p>
-              <p style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', marginBottom: '0.75rem' }}>
-                Go back to the calendar and book this session to claim your slot.
+                {waitlistEntry.offerType === 'OPEN'
+                  ? "A slot has come up close to session time — we've let everyone on the waitlist know. First to book gets it."
+                  : `A slot has been held for you until ${new Date(waitlistEntry.offerExpiresAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}.`
+                }
               </p>
             </>
           ) : waitlistEntry?.status === 'WAITING' ? (
@@ -250,7 +249,7 @@ export default function SessionDetail({
         </div>
       )}
 
-      {!session.cancelledAt && session.availableSlots > 0 && (
+      {!session.cancelledAt && (session.availableSlots > 0 || waitlistEntry?.status === 'OFFERED') && (
         <>
           <div className="session-detail__gymnasts">
             <h3>Who's coming?</h3>

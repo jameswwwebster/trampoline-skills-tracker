@@ -800,14 +800,15 @@ enum MembershipStatus {
 }
 
 model WaitlistEntry {
-  id                String          @id @default(cuid())
+  id                String             @id @default(cuid())
   sessionInstanceId String
   userId            String
-  status            WaitlistStatus  @default(WAITING)
+  status            WaitlistStatus     @default(WAITING)
+  offerType         WaitlistOfferType?
   offerExpiresAt    DateTime?
-  createdAt         DateTime        @default(now())
-  sessionInstance   SessionInstance @relation(fields: [sessionInstanceId], references: [id])
-  user              User            @relation(fields: [userId], references: [id])
+  createdAt         DateTime           @default(now())
+  sessionInstance   SessionInstance    @relation(fields: [sessionInstanceId], references: [id])
+  user              User               @relation(fields: [userId], references: [id])
 
   @@unique([sessionInstanceId, userId])
   @@map("waitlist_entries")
@@ -818,6 +819,11 @@ enum WaitlistStatus {
   OFFERED
   CLAIMED
   EXPIRED
+}
+
+enum WaitlistOfferType {
+  EXCLUSIVE
+  OPEN
 }
 
 enum MessageStatus {

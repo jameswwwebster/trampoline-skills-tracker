@@ -62,9 +62,11 @@ export default function MyBookings() {
             <p style={{ margin: '0.25rem 0' }}>
               {dateStr} — {e.sessionInstance.template.startTime}–{e.sessionInstance.template.endTime}
             </p>
-            <p className="bk-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-              Offer expires at {new Date(e.offerExpiresAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-            </p>
+            {e.offerExpiresAt && (
+              <p className="bk-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                Offer expires at {new Date(e.offerExpiresAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
             <button
               className="bk-btn bk-btn--primary bk-btn--sm"
               onClick={() => navigate(`/booking/session/${e.sessionInstanceId}`)}

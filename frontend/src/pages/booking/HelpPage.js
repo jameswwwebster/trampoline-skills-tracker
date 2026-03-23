@@ -20,6 +20,27 @@ export default function HelpPage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
+        <h3 style={{ marginBottom: '0.5rem' }}>Waitlist</h3>
+        <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
+          If a session is full, you can join the waitlist from the session page. You will be automatically
+          notified by email if a place becomes available.
+        </p>
+        <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
+          <strong>More than 6 hours before the session:</strong> When a slot opens up, we offer it to the next
+          person in the queue exclusively for 2 hours. If they don't book within that window, the offer moves
+          to the next person in line.
+        </p>
+        <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
+          <strong>Within 6 hours of the session:</strong> We notify everyone on the waitlist at the same time.
+          The first person to book gets the place.
+        </p>
+        <p style={{ color: 'var(--booking-text-muted)' }}>
+          You can view your current waitlist entries and leave a waitlist under <strong>My Waitlist</strong> in
+          the Bookings menu.
+        </p>
+      </section>
+
+      <section style={{ marginBottom: '2rem' }}>
         <h3 style={{ marginBottom: '0.5rem' }}>British Gymnastics membership number</h3>
         <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
           All gymnasts must have a valid <strong>British Gymnastics (BG) membership number</strong> to continue
