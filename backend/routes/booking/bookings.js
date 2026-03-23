@@ -117,14 +117,20 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: `Already booked: ${names}` });
     }
 
-    // Check availability
-    const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
-    const activeCommitments = await prisma.commitment.count({
-      where: { templateId: instance.templateId, status: 'ACTIVE' },
+    // Check availability — bypass if user has an active OFFERED waitlist entry
+    const offeredEntry = await prisma.waitlistEntry.findFirst({
+      where: { sessionInstanceId, userId: req.user.id, status: 'OFFERED' },
     });
-    const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
-    if (bookedCount + activeCommitments + gymnastIds.length > capacity) {
-      return res.status(400).json({ error: 'Not enough slots available' });
+
+    if (!offeredEntry) {
+      const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+      const activeCommitments = await prisma.commitment.count({
+        where: { templateId: instance.templateId, status: 'ACTIVE' },
+      });
+      const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
+      if (bookedCount + activeCommitments + gymnastIds.length > capacity) {
+        return res.status(400).json({ error: 'Not enough slots available' });
+      }
     }
 
     const now = new Date();
@@ -313,6 +319,20 @@ router.post('/', auth, async (req, res) => {
 
     if (chargeAmount === 0) {
       emailService.trySendBookingReceipt(req.user.id, [booking.id], prisma);
+    }
+
+    // If user had an OFFERED waitlist entry, mark it CLAIMED and expire others
+    if (offeredEntry) {
+      await prisma.waitlistEntry.update({
+        where: { id: offeredEntry.id },
+        data: { status: 'CLAIMED' },
+      });
+      await prisma.waitlistEntry.updateMany({
+        where: { sessionInstanceId, status: 'OFFERED', id: { not: offeredEntry.id } },
+        data: { status: 'EXPIRED' },
+      });
+      // Cascade to next WAITING person if any
+      processWaitlist(sessionInstanceId).catch(err => console.error('Waitlist cascade failed:', err));
     }
 
     res.json({ booking, clientSecret });
