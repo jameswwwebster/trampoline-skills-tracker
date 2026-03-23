@@ -628,11 +628,19 @@ export default function AdminHelpPage() {
 
         <Divider />
         <h4 style={S.h4}>Waitlist</h4>
-        <p style={S.pLast}>
+        <p style={S.p}>
           When a session reaches capacity, adults can join the waitlist. Positions are first-come first-served.
-          When a booking is cancelled, the first waitlisted member receives an automated offer by email with a
-          time-limited link to accept the place. If they do not accept within the offer window, the place is
-          offered to the next person. The waitlist offer window expires automatically — no manual action needed.
+          When a booking is cancelled the system automatically processes the waitlist — no manual action needed.
+        </p>
+        <p style={S.p}>
+          <strong>More than 6 hours before the session:</strong> The next person in the queue receives an
+          exclusive offer by email. They have 2 hours to book the place. If they don't, the offer moves to the
+          next person in line automatically.
+        </p>
+        <p style={S.pLast}>
+          <strong>Within 6 hours of the session:</strong> All waiting members are notified at the same time.
+          The first to book gets the place; remaining OFFERED entries are expired immediately after a successful
+          booking.
         </p>
       </Section>
 
