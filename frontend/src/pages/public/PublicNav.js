@@ -50,7 +50,6 @@ export default function PublicNav() {
         <div className="pub-nav-links">
           <a href={isHome ? '#sessions' : '/#sessions'} className="pub-nav-link">Sessions</a>
           <Link to="/policies" className="pub-nav-link">Policies</Link>
-          <Link to="/timetable" className="pub-nav-link">League Timetable</Link>
           <Link to="/booking/shop" className="pub-nav-link">Shop</Link>
           <a
             href={SOCIAL_LINKS.instagram}
@@ -107,7 +106,6 @@ export default function PublicNav() {
         <div className="pub-nav-mobile" onClick={() => setMenuOpen(false)}>
           <a href={isHome ? '#sessions' : '/#sessions'} className="pub-nav-mobile-link">Sessions</a>
           <Link to="/policies" className="pub-nav-mobile-link">Policies</Link>
-          <Link to="/timetable" className="pub-nav-mobile-link">League Timetable</Link>
           <Link to="/booking/shop" className="pub-nav-mobile-link">Shop</Link>
           <div className="pub-nav-mobile-social">
             <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><InstagramIcon /></a>
