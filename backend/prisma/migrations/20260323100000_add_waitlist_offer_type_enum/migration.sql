@@ -1,0 +1,1 @@
+CREATE TYPE "WaitlistOfferType" AS ENUM ('EXCLUSIVE', 'OPEN');
