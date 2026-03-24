@@ -41,6 +41,7 @@ const Dashboard = () => {
   const [activeSessions, setActiveSessions] = useState([]);
   const [overdueCount, setOverdueCount] = useState(0);
   const [todayLoading, setTodayLoading] = useState(false);
+  const [birthdays, setBirthdays] = useState([]);
 
   useEffect(() => {
     if (!isAdminOrCoach) return;
@@ -67,6 +68,10 @@ const Dashboard = () => {
         const now2 = new Date();
         setOverdueCount(r.data.filter(c => new Date(c.dueDate) < now2 && c.status !== 'PAID').length);
       })
+      .catch(() => {});
+
+    bookingApi.getBirthdaysThisWeek()
+      .then(r => setBirthdays(r.data))
       .catch(() => {});
   }, [isAdminOrCoach]);
 
@@ -274,6 +279,16 @@ const Dashboard = () => {
       {isAdminOrCoach ? (
         <>
           {todayWidget}
+          {birthdays.length > 0 && (
+            <div className="dashboard-birthdays">
+              <div className="dashboard-birthdays__title">Birthdays this week</div>
+              {birthdays.map(g => (
+                <div key={g.id} className="dashboard-birthdays__row">
+                  {g.firstName} {g.lastName} turns {g.turnsAge} — {g.dayOfWeek}
+                </div>
+              ))}
+            </div>
+          )}
           {adminTiles}
           {noticeboardPanel}
           {/* Existing metrics below */}

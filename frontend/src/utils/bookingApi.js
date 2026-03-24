@@ -98,6 +98,9 @@ export const bookingApi = {
   getClosures: () =>
     axios.get(`${API_URL}/booking/closures`, { headers: getHeaders() }),
 
+  getBirthdaysThisWeek: () =>
+    axios.get(`${API_URL}/dashboard/birthdays-this-week`, { headers: getHeaders() }),
+
   createClosure: (data) =>
     axios.post(`${API_URL}/booking/closures`, data, { headers: getHeaders() }),
 

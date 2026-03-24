@@ -5847,6 +5847,27 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   font-style: italic;
 }
 
+/* ── Birthdays widget ────────────────────────────────────── */
+.dashboard-birthdays {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  background: white;
+}
+.dashboard-birthdays__title {
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  margin-bottom: 0.4rem;
+}
+.dashboard-birthdays__row {
+  padding: 0.2rem 0;
+  font-size: 0.9rem;
+}
+
 /* ── Today widget ────────────────────────────────────────── */
 .dashboard-today {
   border: 1px solid #e74c3c;
