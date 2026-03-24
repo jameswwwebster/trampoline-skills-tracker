@@ -147,13 +147,10 @@ const GymnastProgress = ({ gymnastId }) => {
   // Helper function to determine which levels should be auto-collapsed
   const getAutoCollapsedLevels = useCallback((levelProgressData, currentLevelNumber) => {
     const autoCollapsed = new Set();
-    levelProgressData.forEach(({ level, progressPercentage }) => {
-      // Never collapse the current main track level
-      const isCurrentMainTrackLevel = !isSideTrack(level.identifier) && 
+    levelProgressData.forEach(({ level }) => {
+      const isCurrentMainTrackLevel = !isSideTrack(level.identifier) &&
                                      parseInt(level.identifier) === currentLevelNumber;
-      
-      // Collapse levels that are 0% or 100% complete, except the current level
-      if (!isCurrentMainTrackLevel && (progressPercentage === 0 || progressPercentage === 100)) {
+      if (!isCurrentMainTrackLevel) {
         autoCollapsed.add(level.id);
       }
     });
