@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { getStatusBadge, getTypeText } from '../utils/certificateUtils';
+import { ArrowDownTrayIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 const Certificates = () => {
   const [certificates, setCertificates] = useState([]);
@@ -313,21 +314,23 @@ const Certificates = () => {
                       <div className="certificate-card-actions">
                         <div className="cert-workflow-actions">
                           <button
-                            className="btn btn-primary"
+                            className="cert-action-btn cert-action-download"
                             onClick={() => handleDownloadCertificate(certificate.id)}
+                            title="Download certificate"
                           >
+                            <ArrowDownTrayIcon className="cert-action-icon" />
                             Download
                           </button>
                           {certificate.status === 'AWARDED' && (
                             <>
                               <button
-                                className="btn btn-secondary"
+                                className="cert-action-btn"
                                 onClick={() => handleStatusUpdate(certificate.id, 'PRINTED')}
                               >
                                 Mark Printed
                               </button>
                               <button
-                                className="btn btn-success"
+                                className="cert-action-btn cert-action-deliver"
                                 onClick={() => handleStatusUpdate(certificate.id, 'DELIVERED')}
                               >
                                 Mark Delivered
@@ -336,7 +339,7 @@ const Certificates = () => {
                           )}
                           {certificate.status === 'PRINTED' && (
                             <button
-                              className="btn btn-success"
+                              className="cert-action-btn cert-action-deliver"
                               onClick={() => handleStatusUpdate(certificate.id, 'DELIVERED')}
                             >
                               Mark Delivered
@@ -344,18 +347,19 @@ const Certificates = () => {
                           )}
                           {(certificate.status === 'PRINTED' || certificate.status === 'DELIVERED') && (
                             <button
-                              className="btn btn-warning"
+                              className="cert-action-btn cert-action-revert"
                               onClick={() => handleRevertCertificate(certificate.id)}
                             >
-                              Revert Status
+                              Revert
                             </button>
                           )}
                         </div>
                         <button
-                          className="btn btn-danger cert-delete-btn"
+                          className="cert-action-btn cert-action-delete"
                           onClick={() => handleDeleteCertificate(certificate.id)}
+                          title="Delete certificate"
                         >
-                          Delete
+                          <TrashIcon className="cert-action-icon" />
                         </button>
                       </div>
                     </div>

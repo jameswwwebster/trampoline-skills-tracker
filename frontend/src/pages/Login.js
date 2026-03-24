@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './booking/bookingVars.css';
 import './AuthPages.css';
@@ -11,13 +11,11 @@ const Login = () => {
   const [loadingUser, setLoadingUser] = useState(null);
   const { login, devLogin, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const nextParam = searchParams.get('next');
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   useEffect(() => {
-    if (isAuthenticated) navigate(nextParam || '/dashboard', { replace: true });
-  }, [isAuthenticated, navigate, nextParam]);
+    if (isAuthenticated) navigate('/dashboard', { replace: true });
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => setFormData(f => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -25,7 +23,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     const result = await login(formData.email, formData.password);
-    if (result.success) navigate(nextParam || '/dashboard', { replace: true });
+    if (result.success) navigate('/dashboard', { replace: true });
     setIsLoading(false);
   };
 
@@ -33,7 +31,7 @@ const Login = () => {
     setIsDevLoading(true);
     setLoadingUser(email);
     const result = await devLogin(email);
-    if (result.success) navigate(nextParam || '/dashboard', { replace: true });
+    if (result.success) navigate('/dashboard', { replace: true });
     setIsDevLoading(false);
     setLoadingUser(null);
   };

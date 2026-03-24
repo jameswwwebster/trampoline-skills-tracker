@@ -1685,8 +1685,8 @@ textarea.form-control {
     margin-bottom: 1rem;
     box-shadow: 0 2px 8px rgba(124, 53, 232, 0.2);
     position: sticky;
-    top: 0;
-    z-index: 100;
+    top: 2.9rem; /* clears the sticky app nav topbar */
+    z-index: 90; /* below nav z-index: 100 */
   }
 
   .gymnast-name-mobile {
@@ -2047,12 +2047,12 @@ textarea.form-control {
     border-color: var(--warning-color);
   }
 
-  .mobile-skill-item.loading {
+  .mobile-skill-item.skill-loading {
     opacity: 0.6;
     pointer-events: none;
   }
 
-  .skill-card.loading {
+  .skill-card.skill-loading {
     opacity: 0.6;
     pointer-events: none;
   }
@@ -5784,23 +5784,83 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
 }
 
 .cert-workflow-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.35rem;
+  align-items: center;
 }
 
-.certificate-card-actions .btn {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.8rem;
+/* Shared ghost-style action button */
+.cert-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  line-height: 1.5;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap;
 }
 
-.cert-delete-btn {
+.cert-action-btn:hover {
+  border-color: #9ca3af;
+  color: #374151;
+  background: #f9fafb;
+}
+
+.cert-action-icon {
+  width: 0.85em;
+  height: 0.85em;
+  flex-shrink: 0;
+}
+
+/* Download — subtly blue on hover */
+.cert-action-download:hover {
+  border-color: #93c5fd;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+/* Mark Delivered — subtly green on hover */
+.cert-action-deliver:hover {
+  border-color: #86efac;
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+/* Revert — subtly amber on hover */
+.cert-action-revert {
+  color: #92400e;
+  border-color: #fde68a;
+}
+.cert-action-revert:hover {
+  border-color: #fbbf24;
+  color: #92400e;
+  background: #fffbeb;
+}
+
+/* Delete — icon-only, red on hover */
+.cert-action-delete {
+  padding: 0.2rem 0.4rem;
   margin-left: auto;
   flex-shrink: 0;
+}
+.cert-action-delete:hover {
+  border-color: #fca5a5;
+  color: #dc2626;
+  background: #fef2f2;
 }
 
 .certificates-page .nav-tabs {
@@ -5858,7 +5918,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
     max-width: 100%;
     flex: 1;
   }
-  .cert-delete-btn {
+  .cert-action-delete {
     margin-left: 0;
   }
 }
