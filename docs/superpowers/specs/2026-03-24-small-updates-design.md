@@ -20,7 +20,7 @@ Currently, visiting the noticeboard page auto-marks every unread post as read in
 
 ### Behaviour change
 
-- Remove the auto-mark-all-read-on-load logic (`Noticeboard.js` lines 167–169).
+- Remove the entire auto-mark-on-load block (`Noticeboard.js` lines 167–169) — this includes both the `forEach` call to `markNoticeboardRead` and the subsequent `refreshUnreadCount` call.
 - Unread posts get a visual indicator: a coloured left border accent.
 - Each unread post displays a "Mark as read" button in its footer.
 - Clicking the button calls the existing `POST /api/noticeboard/:id/read` endpoint, flips `isRead` to `true` in local state, and calls `refreshUnreadCount()` to update the nav badge.
@@ -45,7 +45,7 @@ New endpoint: `GET /api/dashboard/birthdays-this-week`
 
 - Auth: requires `COACH` or `CLUB_ADMIN` role.
 - Queries non-archived gymnasts in `req.user.clubId` where `dateOfBirth` is not null.
-- Filters to gymnasts whose month+day of `dateOfBirth` falls within Monday–Sunday of the current calendar week (server local time).
+- Filters to gymnasts whose month+day of `dateOfBirth` falls within Monday–Sunday of the current calendar week (server local time). `dateOfBirth` is a `DateTime` field; compare only month and day (ignore time-of-day). Past birthdays earlier in the current week are included.
 - Returns an array of objects: `{ id, firstName, lastName, dateOfBirth, dayOfWeek, turnsAge }`.
   - `dayOfWeek`: e.g. `"Thursday"`
   - `turnsAge`: integer (computed from year of birth vs. current year)
@@ -84,8 +84,8 @@ File: `frontend/src/pages/booking/CalendarNav.js`, `frontend/src/pages/booking/B
 #### BookingCalendar.js and BookingAdmin.js (consumers)
 
 - Add a `getClosureForDate(date)` helper inside each file that finds the matching closure from the already-fetched `closures` array (matching on date range).
-- In `renderDayPanel`: pass the closure reason to the "Closed" message — "Closed — [reason]" instead of just "Closed".
-- In `renderMonthCell`: show the reason as a second line below "Closed" (truncated with CSS `text-overflow: ellipsis` if needed).
+- In `renderDayPanel`: show "Closed — [reason]" instead of just "Closed". Apply this consistently in both `BookingCalendar.js` and `BookingAdmin.js`.
+- In `renderMonthCell`: show the reason on a second line below "Closed", truncated to one line with `white-space: nowrap; overflow: hidden; text-overflow: ellipsis`.
 
 No backend changes needed — the `reason` field is already returned by `GET /api/booking/closures`.
 
