@@ -98,7 +98,7 @@ export default function BookingCalendar() {
         closures={closures}
         renderDayDots={(date, daySessions, isPast, isClosed) => {
           if (isClosed) return null;
-          return daySessions.slice(0, 3).map((s, i) => {
+          return daySessions.filter(s => !s.cancelledAt || s.bookedCount > 0).slice(0, 3).map((s, i) => {
             const type = sessionClass(s, isPast);
             return (
               <span
@@ -131,7 +131,7 @@ export default function BookingCalendar() {
                 {!isClosed && daySessions.length === 0 && (
                   <p className="booking-calendar__day-empty">No sessions</p>
                 )}
-                {!isClosed && daySessions.map(s => (
+                {!isClosed && daySessions.filter(s => !s.cancelledAt || s.bookedCount > 0).map(s => (
                   <button
                     key={s.id}
                     className={`booking-calendar__day-session booking-calendar__day-session--${sessionClass(s, isPast)}`}
@@ -188,7 +188,7 @@ export default function BookingCalendar() {
         renderMonthCell={(date, daySessions, isToday, isPast, isClosed) => (
           <>
             {isClosed && <span className="booking-calendar__closed-label">Closed</span>}
-            {!isClosed && daySessions.map(s => (
+            {!isClosed && daySessions.filter(s => !s.cancelledAt || s.bookedCount > 0).map(s => (
               <div key={s.id} className={`booking-calendar__session booking-calendar__session--${sessionClass(s, isPast)}`}>
                 {s.startTime}
               </div>
