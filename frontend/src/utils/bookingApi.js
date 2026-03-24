@@ -152,6 +152,9 @@ export const bookingApi = {
   markAdultAsGymnast: (userId) =>
     axios.post(`${API_URL}/gymnasts/admin-mark-adult`, { userId }, { headers: getHeaders() }),
 
+  unlinkGymnastUser: (id) =>
+    axios.patch(`${API_URL}/gymnasts/${id}/unlink-user`, {}, { headers: getHeaders() }),
+
   deleteGymnast: (id) =>
     axios.delete(`${API_URL}/booking/admin/gymnasts/${id}`, { headers: getHeaders() }),
 
