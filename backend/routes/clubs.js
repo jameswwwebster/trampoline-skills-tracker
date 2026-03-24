@@ -64,7 +64,7 @@ const clubSettingsSchema = Joi.object({
   address: Joi.string().allow(''),
   phone: Joi.string().allow(''),
   email: Joi.string().email().allow(''),
-  website: Joi.string().uri().allow(''),
+  website: Joi.string().allow(''),
   description: Joi.string().allow(''),
   primaryColor: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/),
   secondaryColor: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/),

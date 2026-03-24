@@ -5736,6 +5736,67 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   min-width: 140px;
 }
 
+.certificate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.certificate-card {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.certificate-card:last-child {
+  border-bottom: none;
+}
+
+.certificate-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.certificate-gymnast-name {
+  display: block;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.certificate-level {
+  display: block;
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-top: 0.1rem;
+}
+
+.certificate-card-meta {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.certificate-card-meta span + span::before {
+  content: '·';
+  margin-right: 0.75rem;
+}
+
+.certificate-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.certificate-card-actions .btn {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+}
+
 .certificates-page .nav-tabs {
   margin-bottom: 1.25rem;
 }
