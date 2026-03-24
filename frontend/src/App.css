@@ -1684,6 +1684,9 @@ textarea.form-control {
     border-radius: 12px;
     margin-bottom: 1rem;
     box-shadow: 0 2px 8px rgba(124, 53, 232, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
 
   .gymnast-name-mobile {
@@ -1697,7 +1700,7 @@ textarea.form-control {
   .current-level-mobile {
     display: flex;
     justify-content: flex-start;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
   }
 
   .level-badge-mobile {
@@ -1784,7 +1787,10 @@ textarea.form-control {
   }
 
   .mobile-level-card.side-track {
-    border-left: 4px solid #f39c12;
+    border-left: 4px solid #9b59b6;
+    background: #faf7ff;
+    margin-left: 0.5rem;
+    opacity: 0.92;
   }
 
   /* Mobile Level Header */
@@ -1824,13 +1830,15 @@ textarea.form-control {
   }
 
   .side-track-indicator {
-    background: var(--warning-color);
+    background: #6f42c1;
     color: white;
-    padding: 0.25rem 0.5rem;
+    padding: 0.2rem 0.45rem;
     border-radius: 4px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     align-self: flex-start;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
 
   .level-status {
@@ -2039,38 +2047,21 @@ textarea.form-control {
     border-color: var(--warning-color);
   }
 
-  .skill-main-info {
-    flex: 1;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .mobile-skill-item.loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .skill-card.loading {
+    opacity: 0.6;
+    pointer-events: none;
   }
 
   .skill-name-mobile {
     font-size: 0.875rem;
     font-weight: 600;
     color: #2c3e50;
-  }
-
-  .skill-status-mobile {
-    margin-left: 1rem;
-  }
-
-  .status-icon {
-    font-size: 1.5rem;
-    font-weight: bold;
-  }
-
-  .status-icon.not_started {
-    color: #6c757d;
-  }
-
-  .status-icon.in_progress {
-    color: var(--warning-color);
-  }
-
-  .status-icon.completed {
-    color: var(--success-color);
+    flex: 1;
   }
 
   /* Skill Actions */
@@ -4304,7 +4295,9 @@ textarea.form-control {
 
 .side-track-level {
   border-left: 4px solid #6f42c1;
-  background-color: #f8f9ff;
+  background-color: #f3eeff;
+  margin-left: 1rem;
+  opacity: 0.92;
 }
 .btn.side-track {
   border-color: #6f42c1;

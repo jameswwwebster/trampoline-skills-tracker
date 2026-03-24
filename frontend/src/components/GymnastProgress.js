@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 // import LevelProgressTracker from './LevelProgressTracker'; // Not used currently
 import ProgressHistory from './ProgressHistory';
 import CoachNotes from './CoachNotes';
-import EditGymnastForm from './EditGymnastForm';
 import CertificateDisplay from './CertificateDisplay';
 
 const GymnastProgress = ({ gymnastId }) => {
@@ -18,6 +17,7 @@ const GymnastProgress = ({ gymnastId }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [collapsedLevels, setCollapsedLevels] = useState(new Set());
   const [confirmCompleteLevel, setConfirmCompleteLevel] = useState(null);
+  const [loadingSkills, setLoadingSkills] = useState(new Set());
   const { user } = useAuth();
 
   // Only coaches and club admins can use coaching tools
@@ -238,17 +238,48 @@ const GymnastProgress = ({ gymnastId }) => {
   };
 
   const handleSkillStatusChange = async (skillId, status) => {
+    setLoadingSkills(prev => new Set(prev).add(skillId));
     try {
-      await axios.post(`/api/progress/skill`, {
-        gymnastId,
-        skillId,
-        status
-      });
-      
-      // Refresh data
+      await axios.post(`/api/progress/skill`, { gymnastId, skillId, status });
       handleProgressUpdate();
     } catch (error) {
       console.error('Error updating skill status:', error);
+    } finally {
+      setLoadingSkills(prev => {
+        const next = new Set(prev);
+        next.delete(skillId);
+        return next;
+      });
+    }
+  };
+
+  const handleBulkSkillStatusChange = async (skills, status) => {
+    const skillsToUpdate = skills.filter(skill => {
+      const sp = gymnast.skillProgress.find(p => p.skill.id === skill.id);
+      return (sp?.status || 'NOT_STARTED') !== status;
+    });
+    if (skillsToUpdate.length === 0) return;
+
+    setLoadingSkills(prev => {
+      const next = new Set(prev);
+      skillsToUpdate.forEach(s => next.add(s.id));
+      return next;
+    });
+    try {
+      await Promise.all(
+        skillsToUpdate.map(skill =>
+          axios.post('/api/progress/skill', { gymnastId, skillId: skill.id, status })
+        )
+      );
+      handleProgressUpdate();
+    } catch (error) {
+      console.error('Error updating skills:', error);
+    } finally {
+      setLoadingSkills(prev => {
+        const next = new Set(prev);
+        skillsToUpdate.forEach(s => next.delete(s.id));
+        return next;
+      });
     }
   };
 
@@ -296,11 +327,6 @@ const GymnastProgress = ({ gymnastId }) => {
       // Could add error handling here
       setConfirmCompleteLevel(null);
     }
-  };
-
-  const handleEditGymnastSuccess = (updatedGymnast) => {
-    setGymnast(updatedGymnast);
-    setActiveTab('overview');
   };
 
   useEffect(() => {
@@ -455,12 +481,6 @@ const GymnastProgress = ({ gymnastId }) => {
                 Coach Notes
               </button>
               <button
-                onClick={() => setActiveTab('edit-gymnast')}
-                className={`tab-btn ${activeTab === 'edit-gymnast' ? 'active' : ''}`}
-              >
-                Edit Gymnast
-              </button>
-              <button
                 onClick={() => setActiveTab('certificates')}
                 className={`tab-btn ${activeTab === 'certificates' ? 'active' : ''}`}
               >
@@ -483,16 +503,6 @@ const GymnastProgress = ({ gymnastId }) => {
                     onNotesUpdate={(updatedGymnast) => {
                       setGymnast(updatedGymnast);
                     }}
-                  />
-                </div>
-              )}
-
-              {activeTab === 'edit-gymnast' && (
-                <div className="edit-gymnast-section">
-                  <EditGymnastForm
-                    gymnast={gymnast}
-                    onSuccess={handleEditGymnastSuccess}
-                    onCancel={() => setActiveTab('overview')}
                   />
                 </div>
               )}
@@ -580,7 +590,7 @@ const GymnastProgress = ({ gymnastId }) => {
                           <h5>
                             {level.identifier} - {level.name}
                             {isSideTrack(level.identifier) && (
-                              <span className="side-track-badge">Side-track</span>
+                              <span className="side-track-badge">Optional</span>
                             )}
                           </h5>
                         </div>
@@ -642,8 +652,9 @@ const GymnastProgress = ({ gymnastId }) => {
                                 const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
                                 const currentStatus = skillProgress?.status || 'NOT_STARTED';
                                 
+                                const isSkillLoading = loadingSkills.has(skill.id);
                                 return (
-                                  <div key={skill.id} className={`skill-card skill-${currentStatus.toLowerCase()}`}>
+                                  <div key={skill.id} className={`skill-card skill-${currentStatus.toLowerCase()}${isSkillLoading ? ' loading' : ''}`}>
                                     <div className="skill-name">{skill.name}</div>
                                     {canCoach && coachingMode && (
                                       <div className="skill-controls">
@@ -651,6 +662,7 @@ const GymnastProgress = ({ gymnastId }) => {
                                           onClick={() => handleSkillStatusChange(skill.id, 'NOT_STARTED')}
                                           className={`btn btn-xs ${currentStatus === 'NOT_STARTED' ? 'btn-secondary' : 'btn-outline'}`}
                                           title="Not Started"
+                                          disabled={isSkillLoading}
                                         >
                                           ○
                                         </button>
@@ -658,6 +670,7 @@ const GymnastProgress = ({ gymnastId }) => {
                                           onClick={() => handleSkillStatusChange(skill.id, 'IN_PROGRESS')}
                                           className={`btn btn-xs ${currentStatus === 'IN_PROGRESS' ? 'btn-warning' : 'btn-outline'}`}
                                           title="In Progress"
+                                          disabled={isSkillLoading}
                                         >
                                           ◐
                                         </button>
@@ -665,6 +678,7 @@ const GymnastProgress = ({ gymnastId }) => {
                                           onClick={() => handleSkillStatusChange(skill.id, 'COMPLETED')}
                                           className={`btn btn-xs ${currentStatus === 'COMPLETED' ? 'btn-success' : 'btn-outline'}`}
                                           title="Completed"
+                                          disabled={isSkillLoading}
                                         >
                                           ✓
                                         </button>
@@ -802,39 +816,6 @@ const GymnastProgress = ({ gymnastId }) => {
               })()}
             </div>
             
-            {/* Quick Stats */}
-            <div className="quick-stats-mobile">
-              <div className="stat-item">
-                <span className="stat-number">{levels.filter(level => {
-                  const isCompleted = gymnast.levelProgress
-                    .some(lp => lp.level.id === level.id && lp.status === 'COMPLETED');
-                  return isCompleted;
-                }).length}</span>
-                <span className="stat-label">Completed</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-number">{levels.filter(level => {
-                  const completedSkills = gymnast.skillProgress
-                    .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id);
-                  const totalSkills = level.skills ? level.skills.length : 0;
-                  const progressPercentage = totalSkills > 0 ? (completedSkills.length / totalSkills) * 100 : 0;
-                  const isCompleted = gymnast.levelProgress
-                    .some(lp => lp.level.id === level.id && lp.status === 'COMPLETED');
-                  return !isCompleted && progressPercentage > 0;
-                }).length}</span>
-                <span className="stat-label">In Progress</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-number">{levels.filter(level => {
-                  const completedSkills = gymnast.skillProgress
-                    .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id);
-                  const totalSkills = level.skills ? level.skills.length : 0;
-                  const progressPercentage = totalSkills > 0 ? (completedSkills.length / totalSkills) * 100 : 0;
-                  return progressPercentage === 0;
-                }).length}</span>
-                <span className="stat-label">Not Started</span>
-              </div>
-            </div>
           </div>
 
           {/* Mobile Level Cards */}
@@ -865,7 +846,7 @@ const GymnastProgress = ({ gymnastId }) => {
                       <div className="level-title">
                         <span className="level-identifier">{level.identifier}</span>
                         <span className="level-name">{level.name}</span>
-                        {isSideTrack(level.identifier) && <span className="side-track-indicator">Side</span>}
+                        {isSideTrack(level.identifier) && <span className="side-track-indicator">Optional</span>}
                       </div>
                       <div className="level-status">
                         {isCompleted ? (
@@ -916,43 +897,19 @@ const GymnastProgress = ({ gymnastId }) => {
                         <div className="mobile-quick-actions">
                           <div className="quick-actions-row">
                             <button
-                              onClick={() => {
-                                level.skills.forEach(skill => {
-                                  const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
-                                  const currentStatus = skillProgress?.status || 'NOT_STARTED';
-                                  if (currentStatus !== 'COMPLETED') {
-                                    handleSkillStatusChange(skill.id, 'COMPLETED');
-                                  }
-                                });
-                              }}
+                              onClick={() => handleBulkSkillStatusChange(level.skills, 'COMPLETED')}
                               className="quick-action-btn complete-all"
                             >
                               ✓ Complete All
                             </button>
                             <button
-                              onClick={() => {
-                                level.skills.forEach(skill => {
-                                  const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
-                                  const currentStatus = skillProgress?.status || 'NOT_STARTED';
-                                  if (currentStatus !== 'IN_PROGRESS') {
-                                    handleSkillStatusChange(skill.id, 'IN_PROGRESS');
-                                  }
-                                });
-                              }}
+                              onClick={() => handleBulkSkillStatusChange(level.skills, 'IN_PROGRESS')}
                               className="quick-action-btn progress-all"
                             >
                               ◐ In Progress
                             </button>
                             <button
-                              onClick={() => {
-                                level.skills.forEach(skill => {
-                                  const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
-                                  const currentStatus = skillProgress?.status || 'NOT_STARTED';
-                                  if (currentStatus !== 'NOT_STARTED') {
-                                    handleSkillStatusChange(skill.id, 'NOT_STARTED');
-                                  }
-                                });
-                              }}
+                              onClick={() => handleBulkSkillStatusChange(level.skills, 'NOT_STARTED')}
                               className="quick-action-btn reset-all"
                             >
                               ○ Reset
@@ -981,36 +938,31 @@ const GymnastProgress = ({ gymnastId }) => {
                               const skillProgress = gymnast.skillProgress.find(sp => sp.skill.id === skill.id);
                               const currentStatus = skillProgress?.status || 'NOT_STARTED';
                               
+                              const isSkillLoading = loadingSkills.has(skill.id);
                               return (
-                                <div key={skill.id} className={`mobile-skill-item ${currentStatus.toLowerCase()}`}>
-                                  <div className="skill-main-info">
-                                    <div className="skill-name-mobile">{skill.name}</div>
-                                    <div className="skill-status-mobile">
-                                      <span className={`status-icon ${currentStatus.toLowerCase()}`}>
-                                        {currentStatus === 'NOT_STARTED' && '○'}
-                                        {currentStatus === 'IN_PROGRESS' && '◐'}
-                                        {currentStatus === 'COMPLETED' && '✓'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  
+                                <div key={skill.id} className={`mobile-skill-item ${currentStatus.toLowerCase()}${isSkillLoading ? ' loading' : ''}`}>
+                                  <div className="skill-name-mobile">{skill.name}</div>
+
                                   {canCoach && coachingMode && (
                                     <div className="skill-actions-mobile">
                                       <button
                                         onClick={() => handleSkillStatusChange(skill.id, 'NOT_STARTED')}
                                         className={`status-btn not-started ${currentStatus === 'NOT_STARTED' ? 'active' : ''}`}
+                                        disabled={isSkillLoading}
                                       >
                                         ○
                                       </button>
                                       <button
                                         onClick={() => handleSkillStatusChange(skill.id, 'IN_PROGRESS')}
                                         className={`status-btn in-progress ${currentStatus === 'IN_PROGRESS' ? 'active' : ''}`}
+                                        disabled={isSkillLoading}
                                       >
                                         ◐
                                       </button>
                                       <button
                                         onClick={() => handleSkillStatusChange(skill.id, 'COMPLETED')}
                                         className={`status-btn completed ${currentStatus === 'COMPLETED' ? 'active' : ''}`}
+                                        disabled={isSkillLoading}
                                       >
                                         ✓
                                       </button>
