@@ -14,6 +14,7 @@ const ClubSettings = () => {
   });
   const [automationSettings, setAutomationSettings] = useState({
     emailEnabled: true,
+    certificateEmailEnabled: true,
     sessionReminderEnabled: true,
     membershipReminderEnabled: true,
     inactivityWarningEnabled: true,
@@ -37,6 +38,7 @@ const ClubSettings = () => {
       });
       setAutomationSettings({
         emailEnabled: response.data.emailEnabled ?? true,
+        certificateEmailEnabled: response.data.certificateEmailEnabled ?? true,
         sessionReminderEnabled: response.data.sessionReminderEnabled ?? true,
         membershipReminderEnabled: response.data.membershipReminderEnabled ?? true,
         inactivityWarningEnabled: response.data.inactivityWarningEnabled ?? true,
@@ -291,6 +293,14 @@ const ClubSettings = () => {
                 <input type="checkbox" checked={automationSettings.emailEnabled}
                   onChange={e => updateSetting('emailEnabled', e.target.checked)} />
                 {' '}Enable email sending for this club
+              </label>
+            </div>
+            <div>
+              <label>
+                <input type="checkbox" checked={automationSettings.certificateEmailEnabled ?? true}
+                  onChange={e => updateSetting('certificateEmailEnabled', e.target.checked)}
+                  disabled={!automationSettings.emailEnabled} />
+                {' '}Send certificate award notifications to parents/guardians
               </label>
             </div>
             <div>

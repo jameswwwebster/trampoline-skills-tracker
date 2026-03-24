@@ -12,12 +12,12 @@ const Login = () => {
   const { login, devLogin, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const next = searchParams.get('next') || '/booking';
+  const nextParam = searchParams.get('next');
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   useEffect(() => {
-    if (isAuthenticated) navigate(next, { replace: true });
-  }, [isAuthenticated, navigate, next]);
+    if (isAuthenticated) navigate(nextParam || '/dashboard', { replace: true });
+  }, [isAuthenticated, navigate, nextParam]);
 
   const handleChange = (e) => setFormData(f => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -25,7 +25,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     const result = await login(formData.email, formData.password);
-    if (result.success) navigate(next, { replace: true });
+    if (result.success) navigate(nextParam || '/dashboard', { replace: true });
     setIsLoading(false);
   };
 
@@ -33,7 +33,7 @@ const Login = () => {
     setIsDevLoading(true);
     setLoadingUser(email);
     const result = await devLogin(email);
-    if (result.success) navigate(next, { replace: true });
+    if (result.success) navigate(nextParam || '/dashboard', { replace: true });
     setIsDevLoading(false);
     setLoadingUser(null);
   };

@@ -586,6 +586,7 @@ router.patch('/:clubId/settings', auth, requireRole(['CLUB_ADMIN']), async (req,
 
     const data = {};
     if (req.body.emailEnabled !== undefined) data.emailEnabled = !!req.body.emailEnabled;
+    if (req.body.certificateEmailEnabled !== undefined) data.certificateEmailEnabled = !!req.body.certificateEmailEnabled;
     if (req.body.sessionReminderEnabled !== undefined) data.sessionReminderEnabled = !!req.body.sessionReminderEnabled;
     if (req.body.membershipReminderEnabled !== undefined) data.membershipReminderEnabled = !!req.body.membershipReminderEnabled;
     if (req.body.inactivityWarningEnabled !== undefined) data.inactivityWarningEnabled = !!req.body.inactivityWarningEnabled;

@@ -128,6 +128,7 @@ model Club {
   textColor             String?               @default("#212529")
   website               String?
   emailEnabled                Boolean               @default(false)
+  certificateEmailEnabled     Boolean               @default(true)
   sessionReminderEnabled      Boolean               @default(true)
   membershipReminderEnabled   Boolean               @default(true)
   inactivityWarningEnabled    Boolean               @default(true)

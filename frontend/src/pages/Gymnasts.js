@@ -351,20 +351,6 @@ const Gymnasts = () => {
 
   return (
     <div>
-      {/* Desktop Header */}
-      <div className="desktop-header">
-        <div className="flex-between">
-          <h1>Gymnasts</h1>
-        </div>
-      </div>
-
-      {/* Mobile Header */}
-      <div className="mobile-gymnast-header">
-        <div className="mobile-header-content">
-          <h1 className="mobile-page-title">Skill Tracking</h1>
-        </div>
-      </div>
-
       {success && (
         <div className="alert alert-success">
           {success}
