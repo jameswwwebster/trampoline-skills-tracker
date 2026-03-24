@@ -22,6 +22,7 @@ function createTestApp() {
   app.use('/api/gymnasts', require('../../routes/gymnasts'));
   app.use('/api/booking/attendance', require('../../routes/booking/attendance'));
   app.use('/api/booking/recurring-credits', require('../../routes/booking/recurringCredits'));
+  app.use('/api/dashboard', require('../../routes/dashboard'));
 
   // Generic error handler
   app.use((err, req, res, _next) => {

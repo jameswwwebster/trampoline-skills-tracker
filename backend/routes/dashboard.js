@@ -384,4 +384,51 @@ router.get('/uncertified-gymnasts', auth, requireRole(['CLUB_ADMIN', 'COACH']), 
   }
 });
 
-module.exports = router; 
+// GET /api/dashboard/birthdays-this-week — coaches and admins only
+router.get('/birthdays-this-week', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const today = new Date();
+    const daysFromMonday = today.getDay() === 0 ? 6 : today.getDay() - 1;
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - daysFromMonday);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    const gymnasts = await prisma.gymnast.findMany({
+      where: { clubId: req.user.clubId, isArchived: false, dateOfBirth: { not: null } },
+      select: { id: true, firstName: true, lastName: true, dateOfBirth: true },
+    });
+
+    const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const currentYear = today.getFullYear();
+
+    const results = gymnasts
+      .map(g => {
+        const dob = new Date(g.dateOfBirth);
+        const thisYearBirthday = new Date(currentYear, dob.getMonth(), dob.getDate());
+        if (thisYearBirthday < weekStart || thisYearBirthday > weekEnd) return null;
+        return {
+          id: g.id,
+          firstName: g.firstName,
+          lastName: g.lastName,
+          dateOfBirth: g.dateOfBirth,
+          dayOfWeek: DAYS[thisYearBirthday.getDay()],
+          turnsAge: currentYear - dob.getFullYear(),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        const dayOrder = d => (d === 'Sunday' ? 6 : DAYS.indexOf(d) - 1);
+        return dayOrder(a.dayOfWeek) - dayOrder(b.dayOfWeek);
+      });
+
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+module.exports = router;
