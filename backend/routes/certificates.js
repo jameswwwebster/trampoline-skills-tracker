@@ -253,7 +253,8 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
           select: {
             id: true,
             name: true,
-            emailEnabled: true
+            emailEnabled: true,
+            certificateEmailEnabled: true
           }
         }
       }
@@ -369,10 +370,11 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
       // Don't fail the certificate creation if PNG generation fails
     }
 
-    // Send email notifications to all parents/guardians only if club has email enabled
-    if (gymnastForCertificate && gymnastForCertificate.guardians && gymnastForCertificate.guardians.length > 0 && gymnastForCertificate.club.emailEnabled) {
+    // Send email notifications to all parents/guardians only if club has email enabled and certificate emails are enabled
+    const clubEmailsActive = gymnastForCertificate?.club?.emailEnabled && gymnastForCertificate?.club?.certificateEmailEnabled !== false;
+    if (gymnastForCertificate && gymnastForCertificate.guardians && gymnastForCertificate.guardians.length > 0 && clubEmailsActive) {
       const emailService = require('../services/emailService');
-      
+
       // Send notification to each guardian who is a parent
       for (const guardian of gymnastForCertificate.guardians) {
         if (guardian.role === 'ADULT' && guardian.email) {
@@ -390,8 +392,8 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
           }
         }
       }
-    } else if (gymnastForCertificate && gymnastForCertificate.guardians && gymnastForCertificate.guardians.length > 0 && !gymnastForCertificate.club.emailEnabled) {
-      console.log('📧 Certificate notification emails skipped - club has email disabled');
+    } else if (gymnastForCertificate && gymnastForCertificate.guardians && gymnastForCertificate.guardians.length > 0 && !clubEmailsActive) {
+      console.log('📧 Certificate notification emails skipped - club has email or certificate emails disabled');
     }
 
     res.json(certificate);
