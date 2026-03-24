@@ -410,6 +410,17 @@ export default function BookingAdmin() {
     if (selectedSession) loadDetail(selectedSession);
   }, [selectedSession]);
 
+  const getClosureForDate = (date) => {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return closures.find(c => {
+      const start = new Date(c.startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(c.endDate);
+      end.setHours(23, 59, 59, 999);
+      return d >= start && d <= end;
+    }) || null;
+  };
+
   const handleNavigate = (date) => {
     lastNavigatedDate.current = date;
     setSelectedSession(null);
@@ -470,7 +481,11 @@ export default function BookingAdmin() {
             <p className="booking-calendar__day-detail-heading">
               {date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
-            {isClosed && <p className="booking-calendar__day-closed">Closed</p>}
+            {isClosed && (
+              <p className="booking-calendar__day-closed">
+                Closed{getClosureForDate(date)?.reason ? ` — ${getClosureForDate(date).reason}` : ''}
+              </p>
+            )}
             {!isClosed && daySessions.length === 0 && (
               <p className="booking-calendar__day-empty">No sessions</p>
             )}
@@ -499,7 +514,14 @@ export default function BookingAdmin() {
         )}
         renderMonthCell={(date, daySessions, isToday, isPast, isClosed) => (
           <>
-            {isClosed && <span className="booking-calendar__closed-label">Closed</span>}
+            {isClosed && (
+              <>
+                <span className="booking-calendar__closed-label">Closed</span>
+                {getClosureForDate(date)?.reason && (
+                  <span className="booking-calendar__closed-reason">{getClosureForDate(date).reason}</span>
+                )}
+              </>
+            )}
             {!isClosed && daySessions.map(s => (
               <div
                 key={s.id}

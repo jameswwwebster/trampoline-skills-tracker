@@ -86,6 +86,11 @@
   cursor: default;
 }
 
+.booking-calendar__week-day--closed {
+  color: var(--booking-text-muted);
+  opacity: 0.6;
+}
+
 .booking-calendar__week-day-name {
   font-size: 0.65rem;
   font-weight: 600;
@@ -250,6 +255,16 @@
 .booking-calendar__closed-label {
   font-size: 0.65rem;
   color: var(--booking-text-muted);
+}
+
+.booking-calendar__closed-reason {
+  display: block;
+  font-size: 0.6rem;
+  color: var(--booking-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* ── Month picker dropdown ── */

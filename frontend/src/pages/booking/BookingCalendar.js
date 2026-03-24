@@ -23,6 +23,17 @@ export default function BookingCalendar() {
     window.dispatchEvent(new CustomEvent('booking-cart-update'));
   }, [cart]);
 
+  const getClosureForDate = (date) => {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return closures.find(c => {
+      const start = new Date(c.startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(c.endDate);
+      end.setHours(23, 59, 59, 999);
+      return d >= start && d <= end;
+    }) || null;
+  };
+
   const handleNavigate = (date) => {
     setSelectedSessionId(null);
     const y = date.getFullYear();
@@ -127,7 +138,11 @@ export default function BookingCalendar() {
               />
             ) : (
               <>
-                {isClosed && <p className="booking-calendar__day-closed">Closed</p>}
+                {isClosed && (
+                  <p className="booking-calendar__day-closed">
+                    Closed{getClosureForDate(date)?.reason ? ` — ${getClosureForDate(date).reason}` : ''}
+                  </p>
+                )}
                 {!isClosed && daySessions.length === 0 && (
                   <p className="booking-calendar__day-empty">No sessions</p>
                 )}
@@ -187,7 +202,14 @@ export default function BookingCalendar() {
         )}
         renderMonthCell={(date, daySessions, isToday, isPast, isClosed) => (
           <>
-            {isClosed && <span className="booking-calendar__closed-label">Closed</span>}
+            {isClosed && (
+              <>
+                <span className="booking-calendar__closed-label">Closed</span>
+                {getClosureForDate(date)?.reason && (
+                  <span className="booking-calendar__closed-reason">{getClosureForDate(date).reason}</span>
+                )}
+              </>
+            )}
             {!isClosed && daySessions.filter(s => !s.cancelledAt || s.bookedCount > 0).map(s => (
               <div key={s.id} className={`booking-calendar__session booking-calendar__session--${sessionClass(s, isPast)}`}>
                 {s.startTime}

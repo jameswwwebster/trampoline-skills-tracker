@@ -204,6 +204,7 @@ export default function CalendarNav({
           if (isSelected) cls += ' booking-calendar__week-day--selected';
           if (isToday && !isSelected) cls += ' booking-calendar__week-day--today';
           if (isPast) cls += ' booking-calendar__week-day--past';
+          if (isClosed) cls += ' booking-calendar__week-day--closed';
 
           return (
             <div key={d.toISOString()} className={cls} onClick={() => setSelectedDate(new Date(d))}>
