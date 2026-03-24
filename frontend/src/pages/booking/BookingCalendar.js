@@ -135,7 +135,7 @@ export default function BookingCalendar() {
                   <button
                     key={s.id}
                     className={`booking-calendar__day-session booking-calendar__day-session--${sessionClass(s, isPast)}`}
-                    disabled={(!s.isBooked && s.availableSlots === 0) || !!s.cancelledAt || isPast || hasStarted(s)}
+                    disabled={!!s.cancelledAt || isPast || hasStarted(s)}
                     onClick={() => setSelectedSessionId(s.id)}
                   >
                     <span className="booking-calendar__day-session-time">{s.startTime}–{s.endTime}
