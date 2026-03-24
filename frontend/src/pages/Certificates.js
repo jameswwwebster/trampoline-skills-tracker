@@ -305,93 +305,73 @@ const Certificates = () => {
                   <p className="text-muted">No certificates found matching the current filters.</p>
                 </div>
               ) : (
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Gymnast</th>
-                        <th>Level</th>
-                        <th>Status</th>
-                        <th>Awarded</th>
-                        <th>Awarded By</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredCertificates.map(certificate => (
-                        <tr key={certificate.id}>
-                          <td>
-                            <strong>{certificate.gymnast.firstName} {certificate.gymnast.lastName}</strong>
-                          </td>
-                          <td>
-                            {certificate.level.identifier}: {certificate.level.name}
-                          </td>
-                          <td>{getStatusBadge(certificate.status)}</td>
-                          <td>
-                            <small>{new Date(certificate.awardedAt).toLocaleDateString()}</small>
-                          </td>
-                          <td>
-                            <small>
-                              {certificate.awardedBy.firstName} {certificate.awardedBy.lastName}
-                            </small>
-                          </td>
-                          <td className="certificate-actions">
-                            <div className="btn-group">
-                              <button
-                                className="btn btn-primary"
-                                onClick={() => handleDownloadCertificate(certificate.id)}
-                                title="Download Certificate PNG"
-                              >
-                                Download
-                              </button>
-                              {certificate.status === 'AWARDED' && (
-                                <>
-                                  <button
-                                    className="btn btn-secondary"
-                                    onClick={() => handleStatusUpdate(certificate.id, 'PRINTED')}
-                                    title="Mark as Printed"
-                                  >
-                                    Mark Printed
-                                  </button>
-                                  <button
-                                    className="btn btn-success"
-                                    onClick={() => handleStatusUpdate(certificate.id, 'DELIVERED')}
-                                    title="Mark as Delivered"
-                                  >
-                                    Deliver
-                                  </button>
-                                </>
-                              )}
-                              {certificate.status === 'PRINTED' && (
-                                <button
-                                  className="btn btn-success"
-                                  onClick={() => handleStatusUpdate(certificate.id, 'DELIVERED')}
-                                  title="Mark as Delivered"
-                                >
-                                  Deliver
-                                </button>
-                              )}
-                              {(certificate.status === 'PRINTED' || certificate.status === 'DELIVERED') && (
-                                <button
-                                  className="btn btn-warning"
-                                  onClick={() => handleRevertCertificate(certificate.id)}
-                                  title="Revert to Awarded"
-                                >
-                                  Revert
-                                </button>
-                              )}
-                              <button
-                                className="btn btn-danger"
-                                onClick={() => handleDeleteCertificate(certificate.id)}
-                                title="Delete Certificate"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="certificate-list">
+                  {filteredCertificates.map(certificate => (
+                    <div key={certificate.id} className="certificate-card">
+                      <div className="certificate-card-header">
+                        <div>
+                          <strong className="certificate-gymnast-name">
+                            {certificate.gymnast.firstName} {certificate.gymnast.lastName}
+                          </strong>
+                          <span className="certificate-level">
+                            Level {certificate.level.identifier}: {certificate.level.name}
+                          </span>
+                        </div>
+                        {getStatusBadge(certificate.status)}
+                      </div>
+                      <div className="certificate-card-meta">
+                        <span>Awarded {new Date(certificate.awardedAt).toLocaleDateString()}</span>
+                        <span>by {certificate.awardedBy.firstName} {certificate.awardedBy.lastName}</span>
+                      </div>
+                      <div className="certificate-card-actions">
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => handleDownloadCertificate(certificate.id)}
+                        >
+                          Download
+                        </button>
+                        {certificate.status === 'AWARDED' && (
+                          <>
+                            <button
+                              className="btn btn-secondary"
+                              onClick={() => handleStatusUpdate(certificate.id, 'PRINTED')}
+                            >
+                              Mark Printed
+                            </button>
+                            <button
+                              className="btn btn-success"
+                              onClick={() => handleStatusUpdate(certificate.id, 'DELIVERED')}
+                            >
+                              Deliver
+                            </button>
+                          </>
+                        )}
+                        {certificate.status === 'PRINTED' && (
+                          <button
+                            className="btn btn-success"
+                            onClick={() => handleStatusUpdate(certificate.id, 'DELIVERED')}
+                          >
+                            Deliver
+                          </button>
+                        )}
+                        {(certificate.status === 'PRINTED' || certificate.status === 'DELIVERED') && (
+                          <button
+                            className="btn btn-warning"
+                            onClick={() => handleRevertCertificate(certificate.id)}
+                          >
+                            Revert
+                          </button>
+                        )}
+                        <button
+                          className="btn btn-danger"
+                          onClick={() => handleDeleteCertificate(certificate.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
           </div>
         </div>
