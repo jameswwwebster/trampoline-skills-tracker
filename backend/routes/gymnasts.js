@@ -234,7 +234,7 @@ router.post('/admin-mark-adult', auth, requireRole(['CLUB_ADMIN', 'COACH']), asy
 // PATCH /api/gymnasts/:id/unlink-user
 // Removes the user account link from a gymnast record (sets userId = null).
 // Used when a coach or parent accidentally created a gymnast record for themselves.
-router.patch('/:id/unlink-user', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+router.patch('/:id/unlink-user', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
     const { id } = req.params;
     const gymnast = await prisma.gymnast.findFirst({
