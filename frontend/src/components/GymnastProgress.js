@@ -654,7 +654,7 @@ const GymnastProgress = ({ gymnastId }) => {
                                 
                                 const isSkillLoading = loadingSkills.has(skill.id);
                                 return (
-                                  <div key={skill.id} className={`skill-card skill-${currentStatus.toLowerCase()}${isSkillLoading ? ' loading' : ''}`}>
+                                  <div key={skill.id} className={`skill-card skill-${currentStatus.toLowerCase()}${isSkillLoading ? ' skill-loading' : ''}`}>
                                     <div className="skill-name">{skill.name}</div>
                                     {canCoach && coachingMode && (
                                       <div className="skill-controls">
@@ -821,6 +821,7 @@ const GymnastProgress = ({ gymnastId }) => {
           {/* Mobile Level Cards */}
           <div className="mobile-levels-container">
             {levels
+              .filter(level => isSideTrackAvailable(level, nextMainLevelNumber))
               .sort((a, b) => sortLevelsByIdentifier(a, b))
               .map(level => {
               // Calculate progress for each level (including side tracks)
@@ -940,7 +941,7 @@ const GymnastProgress = ({ gymnastId }) => {
                               
                               const isSkillLoading = loadingSkills.has(skill.id);
                               return (
-                                <div key={skill.id} className={`mobile-skill-item ${currentStatus.toLowerCase()}${isSkillLoading ? ' loading' : ''}`}>
+                                <div key={skill.id} className={`mobile-skill-item ${currentStatus.toLowerCase()}${isSkillLoading ? ' skill-loading' : ''}`}>
                                   <div className="skill-name-mobile">{skill.name}</div>
 
                                   {canCoach && coachingMode && (

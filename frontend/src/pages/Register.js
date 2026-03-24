@@ -17,7 +17,7 @@ const Register = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/', { replace: true });
+    if (isAuthenticated) navigate('/dashboard', { replace: true });
   }, [isAuthenticated, navigate]);
 
   if (SIGNUPS_DISABLED) {
@@ -68,7 +68,7 @@ const Register = () => {
       phone: formData.phone,
       password: formData.password,
     });
-    if (result.success) navigate('/booking', { replace: true });
+    if (result.success) navigate('/dashboard', { replace: true });
     setIsLoading(false);
   };
 

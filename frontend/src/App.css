@@ -1685,8 +1685,8 @@ textarea.form-control {
     margin-bottom: 1rem;
     box-shadow: 0 2px 8px rgba(124, 53, 232, 0.2);
     position: sticky;
-    top: 0;
-    z-index: 100;
+    top: 2.9rem; /* clears the sticky app nav topbar */
+    z-index: 90; /* below nav z-index: 100 */
   }
 
   .gymnast-name-mobile {
@@ -2047,12 +2047,12 @@ textarea.form-control {
     border-color: var(--warning-color);
   }
 
-  .mobile-skill-item.loading {
+  .mobile-skill-item.skill-loading {
     opacity: 0.6;
     pointer-events: none;
   }
 
-  .skill-card.loading {
+  .skill-card.skill-loading {
     opacity: 0.6;
     pointer-events: none;
   }
