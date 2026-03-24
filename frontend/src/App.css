@@ -1678,18 +1678,21 @@ textarea.form-control {
 
   /* Mobile Progress Header */
   .mobile-progress-header {
-    background: linear-gradient(135deg, var(--secondary-color) 0%, #9b4dca 100%);
+    background: var(--secondary-color);
     color: white;
-    padding: 1.25rem 1rem 1rem;
+    padding: 0.9rem 1rem 0.85rem;
     border-radius: 12px;
     margin-bottom: 1rem;
-    box-shadow: 0 4px 16px rgba(124, 53, 232, 0.3);
+    box-shadow: 0 2px 8px rgba(124, 53, 232, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
 
   .gymnast-name-mobile {
-    font-size: 1.35rem;
+    font-size: 1.2rem;
     font-weight: 700;
-    margin: 0 0 0.75rem 0;
+    margin: 0 0 0.5rem 0;
     color: white;
     letter-spacing: -0.01em;
   }
@@ -1697,7 +1700,7 @@ textarea.form-control {
   .current-level-mobile {
     display: flex;
     justify-content: flex-start;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
   }
 
   .level-badge-mobile {
@@ -1732,7 +1735,7 @@ textarea.form-control {
     justify-content: space-around;
     background: rgba(0,0,0,0.15);
     border-radius: 8px;
-    padding: 0.6rem 0.5rem;
+    padding: 0.4rem 0.5rem;
     margin-top: 0.25rem;
   }
 
@@ -1744,7 +1747,7 @@ textarea.form-control {
   }
 
   .stat-number {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: white;
     line-height: 1;
@@ -1762,7 +1765,7 @@ textarea.form-control {
   .mobile-levels-container {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.5rem;
   }
 
   .mobile-level-card {
@@ -1784,12 +1787,15 @@ textarea.form-control {
   }
 
   .mobile-level-card.side-track {
-    border-left: 4px solid #f39c12;
+    border-left: 4px solid #9b59b6;
+    background: #faf7ff;
+    margin-left: 0.5rem;
+    opacity: 0.92;
   }
 
   /* Mobile Level Header */
   .mobile-level-header {
-    padding: 1rem;
+    padding: 0.6rem 0.85rem;
     cursor: pointer;
     transition: background-color 0.2s ease;
   }
@@ -1802,7 +1808,7 @@ textarea.form-control {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.4rem;
   }
 
   .level-title {
@@ -1812,25 +1818,27 @@ textarea.form-control {
   }
 
   .level-identifier {
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--primary-color);
   }
 
   .level-name {
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: #2c3e50;
   }
 
   .side-track-indicator {
-    background: var(--warning-color);
+    background: #6f42c1;
     color: white;
-    padding: 0.25rem 0.5rem;
+    padding: 0.2rem 0.45rem;
     border-radius: 4px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     align-self: flex-start;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
 
   .level-status {
@@ -1839,9 +1847,9 @@ textarea.form-control {
   }
 
   .status-badge {
-    padding: 0.5rem 0.75rem;
+    padding: 0.25rem 0.6rem;
     border-radius: 20px;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 600;
   }
 
@@ -1905,7 +1913,7 @@ textarea.form-control {
 
   /* Mobile Level Content */
   .mobile-level-content {
-    padding: 0 1rem 1rem 1rem;
+    padding: 0 0.85rem 0.85rem 0.85rem;
     border-top: 1px solid #f0f0f0;
   }
 
@@ -2015,14 +2023,14 @@ textarea.form-control {
   .mobile-skills-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.4rem;
   }
 
   .mobile-skill-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
+    padding: 0.6rem 0.75rem;
     background: white;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
@@ -2039,38 +2047,21 @@ textarea.form-control {
     border-color: var(--warning-color);
   }
 
-  .skill-main-info {
-    flex: 1;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .mobile-skill-item.loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .skill-card.loading {
+    opacity: 0.6;
+    pointer-events: none;
   }
 
   .skill-name-mobile {
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: #2c3e50;
-  }
-
-  .skill-status-mobile {
-    margin-left: 1rem;
-  }
-
-  .status-icon {
-    font-size: 1.5rem;
-    font-weight: bold;
-  }
-
-  .status-icon.not_started {
-    color: #6c757d;
-  }
-
-  .status-icon.in_progress {
-    color: var(--warning-color);
-  }
-
-  .status-icon.completed {
-    color: var(--success-color);
+    flex: 1;
   }
 
   /* Skill Actions */
@@ -2081,15 +2072,15 @@ textarea.form-control {
   }
 
   .status-btn {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2rem;
+    height: 2rem;
     border: 2px solid #e0e0e0;
     background: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: bold;
     transition: all 0.2s ease;
     cursor: pointer;
@@ -4304,7 +4295,9 @@ textarea.form-control {
 
 .side-track-level {
   border-left: 4px solid #6f42c1;
-  background-color: #f8f9ff;
+  background-color: #f3eeff;
+  margin-left: 1rem;
+  opacity: 0.92;
 }
 .btn.side-track {
   border-color: #6f42c1;
