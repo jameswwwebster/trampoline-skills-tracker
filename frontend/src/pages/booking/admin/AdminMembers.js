@@ -255,6 +255,52 @@ function RemoveChild({ gymnast: g, onUpdated }) {
   );
 }
 
+function UnlinkSelfGymnast({ gymnast: g, onUpdated }) {
+  const [confirming, setConfirming] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleUnlink = async () => {
+    setRemoving(true);
+    setError(null);
+    try {
+      await bookingApi.unlinkGymnastUser(g.id);
+      onUpdated();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to unlink gymnast.');
+      setRemoving(false);
+    }
+  };
+
+  if (!confirming) return (
+    <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+      <button className="bk-btn bk-btn--sm"
+        style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)', fontSize: '0.78rem' }}
+        onClick={() => setConfirming(true)}>
+        Unlink self as gymnast
+      </button>
+    </div>
+  );
+
+  return (
+    <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+      <div style={{ background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.3)', borderRadius: 'var(--booking-radius)', padding: '0.5rem 0.75rem' }}>
+        <p style={{ margin: '0 0 0.4rem', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>
+          Unlink this user from the {g.firstName} {g.lastName} gymnast record? The gymnast record and any booking history will be kept, but the account link will be removed.
+        </p>
+        {error && <p className="bk-error" style={{ marginBottom: '0.4rem' }}>{error}</p>}
+        <div className="bk-row" style={{ gap: '0.4rem' }}>
+          <button className="bk-btn bk-btn--sm" disabled={removing}
+            style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+            onClick={handleUnlink}>{removing ? 'Unlinking...' : 'Confirm unlink'}</button>
+          <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
+            onClick={() => { setConfirming(false); setError(null); }}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 const MEMBERSHIP_BADGE = {
   ACTIVE:          (m) => ({ label: `Active £${(m.monthlyAmount/100).toFixed(2)}/mo`,  color: 'var(--booking-success)', bg: 'rgba(39,174,96,0.12)' }),
@@ -774,12 +820,13 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
         )}
       </div>
 
-      {/* Remove gymnast */}
-      {!g.isSelf && (
-        <div style={{ marginTop: '0.75rem' }}>
-          <RemoveChild gymnast={g} onUpdated={onUpdated} />
-        </div>
-      )}
+      {/* Remove / unlink gymnast */}
+      <div style={{ marginTop: '0.75rem' }}>
+        {g.isSelf
+          ? <UnlinkSelfGymnast gymnast={g} onUpdated={onUpdated} />
+          : <RemoveChild gymnast={g} onUpdated={onUpdated} />
+        }
+      </div>
     </div>
   );
 }
@@ -1836,7 +1883,7 @@ export default function AdminMembers() {
 
       {/* Role filter */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
-        {[{ value: '', label: 'All roles' }, { value: 'CLUB_ADMIN', label: 'Admin' }, { value: 'COACH', label: 'Coach' }, { value: 'ADULT', label: 'Adult' }].map(opt => (
+        {[{ value: '', label: 'All roles' }, { value: 'CLUB_ADMIN', label: 'Admin' }, { value: 'COACH', label: 'Coach' }, { value: 'ADULT', label: 'Adult' }, { value: 'GYMNAST', label: 'Gymnast' }].map(opt => (
           <button
             key={opt.value}
             className="bk-btn bk-btn--sm"

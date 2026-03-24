@@ -231,6 +231,40 @@ router.post('/admin-mark-adult', auth, requireRole(['CLUB_ADMIN', 'COACH']), asy
 });
 
 // PATCH /api/gymnasts/:id/dmt-approval  (coach/admin only)
+// PATCH /api/gymnasts/:id/unlink-user
+// Removes the user account link from a gymnast record (sets userId = null).
+// Used when a coach or parent accidentally created a gymnast record for themselves.
+router.patch('/:id/unlink-user', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const gymnast = await prisma.gymnast.findFirst({
+      where: { id, clubId: req.user.clubId },
+      select: { id: true, firstName: true, lastName: true, userId: true },
+    });
+    if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
+    if (!gymnast.userId) return res.status(400).json({ error: 'Gymnast is not linked to a user account' });
+
+    await prisma.gymnast.update({
+      where: { id },
+      data: {
+        userId: null,
+        guardians: { disconnect: { id: gymnast.userId } },
+      },
+    });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'gymnast.unlink_user', entityType: 'Gymnast', entityId: id,
+      metadata: { name: `${gymnast.firstName} ${gymnast.lastName}`, unlinkedUserId: gymnast.userId },
+    });
+
+    res.json({ message: 'User account unlinked from gymnast record.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.patch('/:id/dmt-approval', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
     const { id } = req.params;
