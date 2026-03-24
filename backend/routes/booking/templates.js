@@ -130,32 +130,32 @@ router.patch('/:id/toggle', auth, requireRole(['CLUB_ADMIN']), async (req, res) 
 
 // DELETE /api/booking/templates/:id — delete a template
 router.delete('/:id', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
-  const { applyToFutureInstances } = req.body;
-
   try {
     const template = await prisma.sessionTemplate.findUnique({ where: { id: req.params.id } });
     if (!template) return res.status(404).json({ error: 'Template not found' });
     if (template.clubId !== req.user.clubId) return res.status(403).json({ error: 'Forbidden' });
 
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-
-    const bookedFuture = await prisma.sessionInstance.findMany({
-      where: { templateId: template.id, date: { gt: today } },
+    // Block deletion if any session (past or future) has confirmed bookings
+    const allInstances = await prisma.sessionInstance.findMany({
+      where: { templateId: template.id },
       include: { bookings: { where: { status: 'CONFIRMED' } } },
     });
-    const hasConfirmedBookings = bookedFuture.some(inst => inst.bookings.length > 0);
+    const hasConfirmedBookings = allInstances.some(inst => inst.bookings.length > 0);
     if (hasConfirmedBookings) {
-      return res.status(400).json({ error: 'Cannot delete: future sessions have confirmed bookings. Cancel those bookings first.' });
+      return res.status(400).json({ error: 'Cannot delete: sessions have confirmed bookings. Cancel those bookings first.' });
     }
 
-    if (applyToFutureInstances) {
-      const futureIds = bookedFuture.map(i => i.id);
-      if (futureIds.length > 0) {
-        await prisma.sessionInstance.deleteMany({ where: { id: { in: futureIds } } });
-      }
-    }
+    const instanceIds = allInstances.map(i => i.id);
 
-    await prisma.sessionTemplate.delete({ where: { id: template.id } });
+    // Delete child records in dependency order, then the template
+    await prisma.$transaction([
+      prisma.waitlistEntry.deleteMany({ where: { sessionInstanceId: { in: instanceIds } } }),
+      prisma.booking.deleteMany({ where: { sessionInstanceId: { in: instanceIds } } }),
+      prisma.sessionInstance.deleteMany({ where: { templateId: template.id } }),
+      prisma.commitment.deleteMany({ where: { templateId: template.id } }),
+      prisma.sessionTemplate.delete({ where: { id: template.id } }),
+    ]);
+
     res.json({ success: true });
   } catch (err) {
     console.error('Delete template error:', err);
