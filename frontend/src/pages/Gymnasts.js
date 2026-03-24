@@ -278,8 +278,8 @@ const Gymnasts = () => {
         .filter(lp => lp.status === 'COMPLETED')
         .map(lp => lp.level);
       
-      return completedLevels.some(level => 
-        level.competitions && level.competitions.some(comp => comp.name === competitionFilter)
+      return completedLevels.some(level =>
+        level.competitions && level.competitions.some(comp => comp.competition.name === competitionFilter)
       );
     })();
     
