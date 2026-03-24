@@ -14,7 +14,7 @@ const MyCertificates = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user?.role === 'ADULT') { navigate('/'); return; }
+    if (user?.role !== 'ADULT' && user?.role !== 'GYMNAST') { navigate('/'); return; }
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
