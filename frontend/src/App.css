@@ -5981,6 +5981,25 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   .gymnasts-filter-select { min-width: 0; flex: 1; }
   .gymnasts-search-input { width: 100%; flex: none; }
 }
+@media (max-width: 600px) {
+  .gymnasts-filter-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  .gymnasts-search-input {
+    grid-column: 1 / -1;
+  }
+  .gymnasts-filter-select {
+    width: 100%;
+    min-width: 0;
+    font-size: 0.9rem;
+  }
+  .gymnasts-archive-label {
+    grid-column: 1 / -1;
+  }
+}
 
 /* Certificate Preview page */
 .cert-preview {
