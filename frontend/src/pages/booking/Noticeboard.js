@@ -164,9 +164,6 @@ export default function Noticeboard() {
     try {
       const res = await bookingApi.getNoticeboard();
       setPosts(res.data);
-      const unread = res.data.filter(p => !p.isRead);
-      unread.forEach(p => bookingApi.markNoticeboardRead(p.id).catch(() => {}));
-      if (unread.length > 0 && refreshUnreadCount) refreshUnreadCount();
     } catch {
       // ignore
     } finally {
@@ -205,6 +202,16 @@ export default function Noticeboard() {
     load();
   };
 
+  const handleMarkRead = async (id) => {
+    try {
+      await bookingApi.markNoticeboardRead(id);
+      setPosts(prev => prev.map(p => p.id === id ? { ...p, isRead: true } : p));
+      if (refreshUnreadCount) refreshUnreadCount();
+    } catch {
+      // ignore
+    }
+  };
+
   if (loading) return <p className="bk-center">Loading…</p>;
 
   return (
@@ -240,7 +247,7 @@ export default function Noticeboard() {
             onCancel={() => setEditingId(null)}
           />
         ) : (
-          <div key={post.id} className="noticeboard-post">
+          <div key={post.id} className={`noticeboard-post${!post.isRead ? ' noticeboard-post--unread' : ''}`}>
             <div className="noticeboard-post__header">
               <h3 className="noticeboard-post__title">{post.title}</h3>
               <span className="noticeboard-post__meta">
@@ -310,6 +317,17 @@ export default function Noticeboard() {
                     Delete
                   </button>
                 )}
+              </div>
+            )}
+            {!post.isRead && (
+              <div className="noticeboard-post__read-action">
+                <button
+                  className="bk-btn bk-btn--sm"
+                  style={{ border: '1px solid var(--booking-border)' }}
+                  onClick={() => handleMarkRead(post.id)}
+                >
+                  Mark as read
+                </button>
               </div>
             )}
           </div>

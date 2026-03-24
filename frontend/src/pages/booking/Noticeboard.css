@@ -48,6 +48,16 @@
   border-top: 1px solid var(--booking-bg-light);
 }
 
+.noticeboard-post--unread {
+  border-left: 3px solid var(--booking-accent);
+}
+
+.noticeboard-post__read-action {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--booking-bg-light);
+}
+
 .noticeboard-form {
   background: var(--booking-bg-white);
   border: 1px solid var(--booking-border);
