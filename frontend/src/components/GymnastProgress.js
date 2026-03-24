@@ -18,7 +18,6 @@ const GymnastProgress = ({ gymnastId }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [collapsedLevels, setCollapsedLevels] = useState(new Set());
   const [confirmCompleteLevel, setConfirmCompleteLevel] = useState(null);
-  const [showCoachingMenu, setShowCoachingMenu] = useState(false);
   const { user } = useAuth();
 
   // Only coaches and club admins can use coaching tools
@@ -784,71 +783,6 @@ const GymnastProgress = ({ gymnastId }) => {
 
       {/* Mobile Layout */}
       <div className="mobile-layout">
-        {/* Mobile Coaching Interface */}
-        {coachingMode && canCoach && (
-          <div className="coaching-interface">
-            {/* Mobile Coaching Menu */}
-            <div className="mobile-coaching-menu">
-              <button
-                onClick={() => setShowCoachingMenu(!showCoachingMenu)}
-                className="coaching-menu-toggle"
-              >
-                <span>Coaching Tools</span>
-                <span className={`menu-arrow ${showCoachingMenu ? 'open' : ''}`}>▼</span>
-              </button>
-              
-              {showCoachingMenu && (
-                <div className="coaching-menu-dropdown">
-                  <button
-                    onClick={() => {
-                      setActiveTab('overview');
-                      setShowCoachingMenu(false);
-                    }}
-                    className={`coaching-menu-item ${activeTab === 'overview' ? 'active' : ''}`}
-                  >
-                    📊 Overview
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab('progress-history');
-                      setShowCoachingMenu(false);
-                    }}
-                    className={`coaching-menu-item ${activeTab === 'progress-history' ? 'active' : ''}`}
-                  >
-                    📈 Progress History
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab('coach-notes');
-                      setShowCoachingMenu(false);
-                    }}
-                    className={`coaching-menu-item ${activeTab === 'coach-notes' ? 'active' : ''}`}
-                  >
-                    📝 Coach Notes
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab('edit-gymnast');
-                      setShowCoachingMenu(false);
-                    }}
-                    className={`coaching-menu-item ${activeTab === 'edit-gymnast' ? 'active' : ''}`}
-                  >
-                    ✏️ Edit Gymnast
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab('certificates');
-                      setShowCoachingMenu(false);
-                    }}
-                    className={`coaching-menu-item ${activeTab === 'certificates' ? 'active' : ''}`}
-                  >
-                    🏆 Certificates
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Mobile-First Progress Interface */}
         {(!coachingMode || activeTab === 'overview') && (
