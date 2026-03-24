@@ -174,9 +174,16 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
           <div className="certificates-grid">
             {certificates.map(certificate => (
             <div key={certificate.id} className="certificate-card">
-              <div className="certificate-preview">
+              <div
+                className={`certificate-preview${showActions ? ' certificate-preview-clickable' : ''}`}
+                onClick={showActions ? () => handleViewCertificate(certificate) : undefined}
+                role={showActions ? 'button' : undefined}
+                tabIndex={showActions ? 0 : undefined}
+                onKeyDown={showActions ? (e) => e.key === 'Enter' && handleViewCertificate(certificate) : undefined}
+                aria-label={showActions ? `View certificate for Level ${certificate.level.identifier}` : undefined}
+              >
                 {imageUrls[certificate.id] ? (
-                  <img 
+                  <img
                     src={imageUrls[certificate.id]}
                     alt={`Certificate for Level ${certificate.level.identifier}`}
                     className="certificate-preview-image"
@@ -208,7 +215,6 @@ const CertificateDisplay = ({ gymnastId, showActions = true }) => {
                       Level {certificate.level.identifier}
                     </span>
                   </div>
-                  {getStatusBadge(certificate.status)}
                 </div>
                 
                 <div className="certificate-details">

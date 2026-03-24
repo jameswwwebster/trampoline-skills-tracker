@@ -248,57 +248,44 @@ const Certificates = () => {
 
       {activeTab === 'list' && (
         <div>
-          {/* Filters */}
+          {/* Certificates List */}
           <div className="card">
-            <div className="card-header">
-              <h5 className="card-title">Filters</h5>
-            </div>
-            <div className="certificates-filters">
-              <div>
-                <label>Status</label>
+            <div className="card-header cert-list-header">
+              <h5 className="card-title">
+                Certificates ({filteredCertificates.length}{filters.status || filters.gymnastId ? ' filtered' : ''})
+              </h5>
+              <div className="cert-inline-filters">
                 <select
-                  className="form-control"
+                  className="form-control form-control-sm"
                   value={filters.status}
                   onChange={(e) => setFilters({...filters, status: e.target.value})}
                 >
-                  <option value="">All Statuses</option>
+                  <option value="">All statuses</option>
                   <option value="AWARDED">Awarded</option>
-                  <option value="PRINTED">Marked as Printed</option>
+                  <option value="PRINTED">Printed</option>
                   <option value="DELIVERED">Delivered</option>
                 </select>
-              </div>
-              <div>
-                <label>Gymnast</label>
                 <select
-                  className="form-control"
+                  className="form-control form-control-sm"
                   value={filters.gymnastId}
                   onChange={(e) => setFilters({...filters, gymnastId: e.target.value})}
                 >
-                  <option value="">All Gymnasts</option>
+                  <option value="">All gymnasts</option>
                   {gymnasts.map(gymnast => (
                     <option key={gymnast.id} value={gymnast.id}>
                       {gymnast.firstName} {gymnast.lastName}
                     </option>
                   ))}
                 </select>
+                {(filters.status || filters.gymnastId) && (
+                  <button
+                    className="btn btn-sm btn-outline"
+                    onClick={() => setFilters({ status: '', gymnastId: '' })}
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
-              <div>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setFilters({ status: '', gymnastId: '' })}
-                >
-                  Clear Filters
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Certificates List */}
-          <div className="card">
-            <div className="card-header">
-              <h5 className="card-title">
-                Certificates ({filteredCertificates.length})
-              </h5>
             </div>
               {filteredCertificates.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '2rem 0' }}>
@@ -324,46 +311,48 @@ const Certificates = () => {
                         <span>by {certificate.awardedBy.firstName} {certificate.awardedBy.lastName}</span>
                       </div>
                       <div className="certificate-card-actions">
-                        <button
-                          className="btn btn-primary"
-                          onClick={() => handleDownloadCertificate(certificate.id)}
-                        >
-                          Download
-                        </button>
-                        {certificate.status === 'AWARDED' && (
-                          <>
-                            <button
-                              className="btn btn-secondary"
-                              onClick={() => handleStatusUpdate(certificate.id, 'PRINTED')}
-                            >
-                              Mark Printed
-                            </button>
+                        <div className="cert-workflow-actions">
+                          <button
+                            className="btn btn-primary"
+                            onClick={() => handleDownloadCertificate(certificate.id)}
+                          >
+                            Download
+                          </button>
+                          {certificate.status === 'AWARDED' && (
+                            <>
+                              <button
+                                className="btn btn-secondary"
+                                onClick={() => handleStatusUpdate(certificate.id, 'PRINTED')}
+                              >
+                                Mark Printed
+                              </button>
+                              <button
+                                className="btn btn-success"
+                                onClick={() => handleStatusUpdate(certificate.id, 'DELIVERED')}
+                              >
+                                Mark Delivered
+                              </button>
+                            </>
+                          )}
+                          {certificate.status === 'PRINTED' && (
                             <button
                               className="btn btn-success"
                               onClick={() => handleStatusUpdate(certificate.id, 'DELIVERED')}
                             >
-                              Deliver
+                              Mark Delivered
                             </button>
-                          </>
-                        )}
-                        {certificate.status === 'PRINTED' && (
-                          <button
-                            className="btn btn-success"
-                            onClick={() => handleStatusUpdate(certificate.id, 'DELIVERED')}
-                          >
-                            Deliver
-                          </button>
-                        )}
-                        {(certificate.status === 'PRINTED' || certificate.status === 'DELIVERED') && (
-                          <button
-                            className="btn btn-warning"
-                            onClick={() => handleRevertCertificate(certificate.id)}
-                          >
-                            Revert
-                          </button>
-                        )}
+                          )}
+                          {(certificate.status === 'PRINTED' || certificate.status === 'DELIVERED') && (
+                            <button
+                              className="btn btn-warning"
+                              onClick={() => handleRevertCertificate(certificate.id)}
+                            >
+                              Revert Status
+                            </button>
+                          )}
+                        </div>
                         <button
-                          className="btn btn-danger"
+                          className="btn btn-danger cert-delete-btn"
                           onClick={() => handleDeleteCertificate(certificate.id)}
                         >
                           Delete
@@ -453,6 +442,10 @@ const Certificates = () => {
                 />
               </div>
 
+              <div className="alert alert-info">
+                <strong>Email Notification:</strong> Parents/guardians will automatically receive an email notification when a certificate is awarded.
+              </div>
+
               <div className="form-group">
                 <button type="submit" className="btn award-certificate-btn">
                   Award Certificate
@@ -472,10 +465,6 @@ const Certificates = () => {
                 </button>
               </div>
             </form>
-
-            <div className="alert alert-info">
-              <strong>Email Notification:</strong> Parents/guardians will automatically receive an email notification when a certificate is awarded.
-            </div>
         </div>
       )}
       {revertingCertificateId && (() => {

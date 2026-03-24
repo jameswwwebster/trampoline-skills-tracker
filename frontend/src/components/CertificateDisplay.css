@@ -62,6 +62,16 @@
   position: relative;
 }
 
+.certificate-preview-clickable {
+  cursor: pointer;
+}
+
+.certificate-preview-clickable:hover .certificate-preview-image,
+.certificate-preview-clickable:hover .certificate-template {
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
 .certificate-preview-image {
   width: 100%;
   height: auto;
