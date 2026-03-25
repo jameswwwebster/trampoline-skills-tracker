@@ -368,18 +368,12 @@ export default function AppLayout() {
           </>}
 
           <div className="app-layout__mobile-section-label">Tracking</div>
-          {canManageGymnasts && <>
-            <NavLink to="/gymnasts" className="app-layout__mobile-link" onClick={closeMobile}>Gymnasts</NavLink>
-            <NavLink to="/certificates" className="app-layout__mobile-link" onClick={closeMobile}>Certificates</NavLink>
-          </>}
+          {canManageGymnasts && (
+            <NavLink to="/gymnasts" className="app-layout__mobile-link" onClick={closeMobile}>Skill Tracking</NavLink>
+          )}
           {!canManageGymnasts && !isAdult && <>
             <NavLink to="/my-progress" className="app-layout__mobile-link" onClick={closeMobile}>My Progress</NavLink>
             <NavLink to="/my-certificates" className="app-layout__mobile-link" onClick={closeMobile}>My Certificates</NavLink>
-          </>}
-          {isClubAdmin && <>
-            <NavLink to="/levels" className="app-layout__mobile-link" onClick={closeMobile}>Levels & Skills</NavLink>
-            <NavLink to="/competitions" className="app-layout__mobile-link" onClick={closeMobile}>Competition Categories</NavLink>
-            <NavLink to="/certificate-designer" className="app-layout__mobile-link" onClick={closeMobile}>Certificate Setup</NavLink>
           </>}
 
           <div className="app-layout__mobile-section-label">Shop</div>
@@ -415,6 +409,12 @@ export default function AppLayout() {
             {isClubAdmin && <>
               <NavLink to="/club-settings" className="app-layout__mobile-link" onClick={closeMobile}>Club Settings</NavLink>
               <NavLink to="/branding" className="app-layout__mobile-link" onClick={closeMobile}>Club Branding</NavLink>
+            </>}
+            <NavLink to="/certificates" className="app-layout__mobile-link" onClick={closeMobile}>Certificates</NavLink>
+            {isClubAdmin && <>
+              <NavLink to="/levels" className="app-layout__mobile-link" onClick={closeMobile}>Levels & Skills</NavLink>
+              <NavLink to="/competitions" className="app-layout__mobile-link" onClick={closeMobile}>Competition Categories</NavLink>
+              <NavLink to="/certificate-designer" className="app-layout__mobile-link" onClick={closeMobile}>Certificate Setup</NavLink>
             </>}
             <NavLink to="/booking/admin/audit-log" className="app-layout__mobile-link" onClick={closeMobile}>Audit Log</NavLink>
           </>}
