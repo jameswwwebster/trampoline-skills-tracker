@@ -134,26 +134,26 @@ router.get('/metrics', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
 
     // For each gymnast, check if they've completed a level associated with competitions
     gymnasts.forEach(gymnast => {
-      // Get all completed levels for this gymnast
-      const completedLevels = gymnast.levelProgress
+      // Get all completed level IDs for this gymnast
+      const completedLevelIds = gymnast.levelProgress
         .filter(lp => lp.status === 'COMPLETED')
-        .map(lp => lp.level);
-      
-      // Check each completed level for competition associations
-      completedLevels.forEach(completedLevel => {
-        if (completedLevel.competitions && completedLevel.competitions.length > 0) {
-          completedLevel.competitions.forEach(({ competition }) => {
-            if (competitionReadiness[competition.name]) {
-              competitionReadiness[competition.name].ready++;
-              competitionReadiness[competition.name].readyGymnasts.push({
-                id: gymnast.id,
-                firstName: gymnast.firstName,
-                lastName: gymnast.lastName,
-                level: completedLevel.name
-              });
-            }
-          });
-        }
+        .map(lp => lp.level.id);
+
+      // Cross-reference against the levels array which has competition data loaded
+      completedLevelIds.forEach(levelId => {
+        const level = levels.find(l => l.id === levelId);
+        if (!level || !level.competitions.length) return;
+        level.competitions.forEach(({ competition }) => {
+          if (competitionReadiness[competition.name]) {
+            competitionReadiness[competition.name].ready++;
+            competitionReadiness[competition.name].readyGymnasts.push({
+              id: gymnast.id,
+              firstName: gymnast.firstName,
+              lastName: gymnast.lastName,
+              level: level.name
+            });
+          }
+        });
       });
     });
 
