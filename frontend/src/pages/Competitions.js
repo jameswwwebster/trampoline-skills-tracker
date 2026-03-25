@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { ChevronRightIcon, ChevronDownIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
@@ -20,19 +21,13 @@ const CompetitionModal = ({ competition, onSave, onCancel }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('/api/competitions/categories', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        if (response.ok) {
-          const categories = await response.json();
-          setExistingCategories(categories);
-          
-          // If editing and category is not in existing list, set as custom
-          if (competition?.category && !categories.includes(competition.category)) {
-            setIsCustomCategory(true);
-          }
+        const response = await axios.get('/api/competitions/categories');
+        const categories = response.data;
+        setExistingCategories(categories);
+
+        // If editing and category is not in existing list, set as custom
+        if (competition?.category && !categories.includes(competition.category)) {
+          setIsCustomCategory(true);
         }
       } catch (error) {
         // silently ignore category fetch errors
@@ -364,23 +359,14 @@ const Competitions = () => {
   const fetchCompetitions = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/competitions', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCompetitions(data);
-        // Collapse all categories by default on first load
-        if (!initializedCollapse) {
-          const cats = new Set(data.map(c => c.category));
-          setCollapsedCategories(cats);
-          setInitializedCollapse(true);
-        }
-      } else {
-        setError('Failed to fetch competitions');
+      const response = await axios.get('/api/competitions');
+      const data = response.data;
+      setCompetitions(data);
+      // Collapse all categories by default on first load
+      if (!initializedCollapse) {
+        const cats = new Set(data.map(c => c.category));
+        setCollapsedCategories(cats);
+        setInitializedCollapse(true);
       }
     } catch (err) {
       setError('An error occurred while fetching competitions');
@@ -400,29 +386,14 @@ const Competitions = () => {
   };
 
   const handleSaveCompetition = async (competitionData) => {
-    const url = selectedCompetition 
-      ? `/api/competitions/${selectedCompetition.id}`
-      : '/api/competitions';
-    
-    const method = selectedCompetition ? 'PUT' : 'POST';
-
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(competitionData)
-    });
-
-    if (response.ok) {
-      await fetchCompetitions();
-      setShowModal(false);
-      setSelectedCompetition(null);
+    if (selectedCompetition) {
+      await axios.put(`/api/competitions/${selectedCompetition.id}`, competitionData);
     } else {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to save competition');
+      await axios.post('/api/competitions', competitionData);
     }
+    await fetchCompetitions();
+    setShowModal(false);
+    setSelectedCompetition(null);
   };
 
   const handleDeleteCompetition = (competition) => {
@@ -433,18 +404,10 @@ const Competitions = () => {
     const competition = deletingCompetition;
     setDeletingCompetition(null);
     try {
-      const response = await fetch(`/api/competitions/${competition.id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (response.ok) {
-        await fetchCompetitions();
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to delete competition');
-      }
+      await axios.delete(`/api/competitions/${competition.id}`);
+      await fetchCompetitions();
     } catch (err) {
-      setError('An error occurred while deleting the competition');
+      setError(err.response?.data?.error || 'An error occurred while deleting the competition');
     }
   };
 
@@ -476,42 +439,14 @@ const Competitions = () => {
     const url = `/api/competitions/categories/${encodeURIComponent(selectedCategory)}`;
 
     if (categoryAction === 'edit') {
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ newCategoryName: data.newCategoryName })
-      });
-
-      if (response.ok) {
-        await fetchCompetitions();
-        setShowCategoryModal(false);
-        setSelectedCategory(null);
-        setCategoryAction(null);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update category');
-      }
+      await axios.put(url, { newCategoryName: data.newCategoryName });
     } else if (categoryAction === 'delete') {
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
-        await fetchCompetitions();
-        setShowCategoryModal(false);
-        setSelectedCategory(null);
-        setCategoryAction(null);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete category');
-      }
+      await axios.delete(url);
     }
+    await fetchCompetitions();
+    setShowCategoryModal(false);
+    setSelectedCategory(null);
+    setCategoryAction(null);
   };
 
   // Group competitions by category
