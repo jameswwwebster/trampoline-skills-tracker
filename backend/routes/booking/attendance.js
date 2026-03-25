@@ -27,8 +27,8 @@ async function buildExpectedList(instanceId, clubId) {
     }))
   );
 
-  const todayUtcStart = new Date();
-  todayUtcStart.setUTCHours(0, 0, 0, 0);
+  const sessionDate = new Date(instance.date);
+  sessionDate.setHours(0, 0, 0, 0);
 
   const commitments = await prisma.commitment.findMany({
     where: {
@@ -36,7 +36,7 @@ async function buildExpectedList(instanceId, clubId) {
       status: 'ACTIVE',
       OR: [
         { startDate: null },
-        { startDate: { lte: todayUtcStart } },
+        { startDate: { lte: sessionDate } },
       ],
     },
     include: { gymnast: true },
