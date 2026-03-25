@@ -223,32 +223,26 @@ export default function AppLayout() {
             </div>
 
             {/* Tracking */}
-            <div className="app-layout__dropdown">
-              <button
-                className={`app-layout__dropdown-btn${openDropdown === 'tracking' ? ' active' : ''}`}
-                onClick={() => toggleDropdown('tracking')}
-              >
-                Tracking ▾
-              </button>
-              {openDropdown === 'tracking' && (
-                <div className="app-layout__dropdown-menu">
-                  {canManageGymnasts && <>
-                    <NavLink to="/gymnasts" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Gymnasts</NavLink>
-                    <NavLink to="/certificates" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Certificates</NavLink>
-                  </>}
-                  {!canManageGymnasts && !isAdult && <>
-                    <NavLink to="/my-progress" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Progress</NavLink>
-                    <NavLink to="/my-certificates" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Certificates</NavLink>
-                  </>}
-                  {isClubAdmin && <>
-                    <div className="app-layout__dropdown-divider" />
-                    <NavLink to="/levels" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Levels & Skills</NavLink>
-                    <NavLink to="/competitions" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Competition Categories</NavLink>
-                    <NavLink to="/certificate-designer" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Certificate Setup</NavLink>
-                  </>}
-                </div>
-              )}
-            </div>
+            {canManageGymnasts ? (
+              <NavLink to="/gymnasts" className="app-layout__link" onClick={() => setOpenDropdown(null)}>Skill Tracking</NavLink>
+            ) : (
+              <div className="app-layout__dropdown">
+                <button
+                  className={`app-layout__dropdown-btn${openDropdown === 'tracking' ? ' active' : ''}`}
+                  onClick={() => toggleDropdown('tracking')}
+                >
+                  Tracking ▾
+                </button>
+                {openDropdown === 'tracking' && (
+                  <div className="app-layout__dropdown-menu">
+                    {!isAdult && <>
+                      <NavLink to="/my-progress" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Progress</NavLink>
+                      <NavLink to="/my-certificates" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Certificates</NavLink>
+                    </>}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Shop */}
             <div className="app-layout__dropdown">
@@ -328,6 +322,13 @@ export default function AppLayout() {
                       <div className="app-layout__dropdown-divider" />
                       <NavLink to="/club-settings" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Club Settings</NavLink>
                       <NavLink to="/branding" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Club Branding</NavLink>
+                    </>}
+                    <div className="app-layout__dropdown-divider" />
+                    <NavLink to="/certificates" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Certificates</NavLink>
+                    {isClubAdmin && <>
+                      <NavLink to="/levels" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Levels & Skills</NavLink>
+                      <NavLink to="/competitions" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Competition Categories</NavLink>
+                      <NavLink to="/certificate-designer" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Certificate Setup</NavLink>
                     </>}
                     <div className="app-layout__dropdown-divider" />
                     <NavLink to="/booking/admin/audit-log" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Audit Log</NavLink>
