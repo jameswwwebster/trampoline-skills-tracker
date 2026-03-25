@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate, Navigate, Link } from 'react
 import { useAuth } from '../contexts/AuthContext';
 import { useBranding } from '../contexts/BrandingContext';
 import { bookingApi } from '../utils/bookingApi';
+import { shopApi } from '../utils/shopApi';
 import './AppLayout.css';
 
 function getTotalCartCount() {
@@ -38,6 +39,7 @@ export default function AppLayout() {
   const [hasAnyCharge, setHasAnyCharge] = useState(false);
   const [cartCount, setCartCount] = useState(getTotalCartCount);
   const [activeSessions, setActiveSessions] = useState([]);
+  const [pendingOrderCount, setPendingOrderCount] = useState(0);
 
   const dropdownRef = useRef(null);
 
@@ -123,6 +125,14 @@ export default function AppLayout() {
       })
       .catch(() => {});
   }, [isAdmin]);
+
+  // ── Pending shop orders count (admin/coach only) ────────────────────────────
+  useEffect(() => {
+    if (!canManageGymnasts) return;
+    shopApi.getPendingOrderCount()
+      .then(res => setPendingOrderCount(res.data.count))
+      .catch(() => {});
+  }, [canManageGymnasts]);
 
   // ── Auth guard ──────────────────────────────────────────────────────────────
   if (loading) return <div className="loading"><div className="spinner"></div></div>;
@@ -211,13 +221,6 @@ export default function AppLayout() {
                   <NavLink to="/booking" end className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)} state={{ skipAdminRedirect: true }}>Book a session</NavLink>
                   <NavLink to="/booking/my-bookings" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Bookings</NavLink>
                   {!isAdmin && <NavLink to="/booking/my-waitlist" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Waitlist</NavLink>}
-                  {canManageGymnasts && <>
-                    <div className="app-layout__dropdown-divider" />
-                    <NavLink to="/booking/admin" end className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Sessions</NavLink>
-                    <NavLink to="/booking/admin/session-management" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Session Management</NavLink>
-                    <NavLink to="/booking/admin/closures" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Closures</NavLink>
-                    {registerItems}
-                  </>}
                 </div>
               )}
             </div>
@@ -256,7 +259,6 @@ export default function AppLayout() {
                 <div className="app-layout__dropdown-menu">
                   <NavLink to="/booking/shop" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Shop</NavLink>
                   <NavLink to="/booking/my-orders" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Orders</NavLink>
-                  {canManageGymnasts && <NavLink to="/booking/admin/shop-orders" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Shop Orders</NavLink>}
                 </div>
               )}
             </div>
@@ -306,31 +308,40 @@ export default function AppLayout() {
               <div className="app-layout__dropdown">
                 <button
                   className={`app-layout__dropdown-btn app-layout__dropdown-btn--admin${openDropdown === 'admin' ? ' active' : ''}`}
+                  style={{ position: 'relative' }}
                   onClick={() => toggleDropdown('admin')}
                 >
                   Admin ▾
+                  {pendingOrderCount > 0 && <span className="app-layout__badge">{pendingOrderCount}</span>}
                 </button>
                 {openDropdown === 'admin' && (
                   <div className="app-layout__dropdown-menu app-layout__dropdown-menu--right">
+                    <div className="app-layout__dropdown-label">Sessions</div>
+                    <NavLink to="/booking/admin" end className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Sessions</NavLink>
+                    <NavLink to="/booking/admin/session-management" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Session Management</NavLink>
+                    <NavLink to="/booking/admin/closures" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Closures</NavLink>
+                    {registerItems}
+                    <div className="app-layout__dropdown-label">Members</div>
                     <NavLink to="/booking/admin/members" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Members</NavLink>
                     <NavLink to="/booking/admin/bg-numbers" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>BG Numbers</NavLink>
                     <NavLink to="/booking/admin/credits" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Credits</NavLink>
                     <NavLink to="/booking/admin/charges" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Charges</NavLink>
                     <NavLink to="/booking/admin/payments" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Payments</NavLink>
+                    <div className="app-layout__dropdown-label">Communications</div>
                     <NavLink to="/booking/admin/messages" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Messages</NavLink>
-                    {isClubAdmin && <>
-                      <div className="app-layout__dropdown-divider" />
-                      <NavLink to="/club-settings" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Club Settings</NavLink>
-                      <NavLink to="/branding" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Club Branding</NavLink>
-                    </>}
-                    <div className="app-layout__dropdown-divider" />
+                    <NavLink to="/booking/admin/shop-orders" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Shop Orders</NavLink>
+                    <div className="app-layout__dropdown-label">Skill Tracking</div>
                     <NavLink to="/certificates" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Certificates</NavLink>
                     {isClubAdmin && <>
                       <NavLink to="/levels" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Levels & Skills</NavLink>
                       <NavLink to="/competitions" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Competition Categories</NavLink>
                       <NavLink to="/certificate-designer" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Certificate Setup</NavLink>
                     </>}
-                    <div className="app-layout__dropdown-divider" />
+                    {isClubAdmin && <>
+                      <div className="app-layout__dropdown-label">Settings</div>
+                      <NavLink to="/club-settings" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Club Settings</NavLink>
+                      <NavLink to="/branding" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Club Branding</NavLink>
+                    </>}
                     <NavLink to="/booking/admin/audit-log" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Audit Log</NavLink>
                   </div>
                 )}
