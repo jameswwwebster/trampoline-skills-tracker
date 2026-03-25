@@ -371,12 +371,6 @@ export default function AppLayout() {
           <NavLink to="/booking" end className="app-layout__mobile-link" onClick={closeMobile} state={{ skipAdminRedirect: true }}>Book a session</NavLink>
           <NavLink to="/booking/my-bookings" className="app-layout__mobile-link" onClick={closeMobile}>My Bookings</NavLink>
           {!isAdmin && <NavLink to="/booking/my-waitlist" className="app-layout__mobile-link" onClick={closeMobile}>My Waitlist</NavLink>}
-          {canManageGymnasts && <>
-            <NavLink to="/booking/admin" end className="app-layout__mobile-link" onClick={closeMobile}>Sessions</NavLink>
-            <NavLink to="/booking/admin/session-management" className="app-layout__mobile-link" onClick={closeMobile}>Session Management</NavLink>
-            <NavLink to="/booking/admin/closures" className="app-layout__mobile-link" onClick={closeMobile}>Closures</NavLink>
-            {mobileRegisterItems}
-          </>}
 
           <div className="app-layout__mobile-section-label">Tracking</div>
           {canManageGymnasts && (
@@ -390,7 +384,6 @@ export default function AppLayout() {
           <div className="app-layout__mobile-section-label">Shop</div>
           <NavLink to="/booking/shop" className="app-layout__mobile-link" onClick={closeMobile}>Shop</NavLink>
           <NavLink to="/booking/my-orders" className="app-layout__mobile-link" onClick={closeMobile}>My Orders</NavLink>
-          {canManageGymnasts && <NavLink to="/booking/admin/shop-orders" className="app-layout__mobile-link" onClick={closeMobile}>Shop Orders</NavLink>}
 
           <NavLink
             to="/booking/noticeboard"
@@ -411,21 +404,33 @@ export default function AppLayout() {
 
           {canManageGymnasts && <>
             <div className="app-layout__mobile-section-label app-layout__mobile-section-label--admin">Admin</div>
+            <div className="app-layout__mobile-sub-label">Sessions</div>
+            <NavLink to="/booking/admin" end className="app-layout__mobile-link" onClick={closeMobile}>Sessions</NavLink>
+            <NavLink to="/booking/admin/session-management" className="app-layout__mobile-link" onClick={closeMobile}>Session Management</NavLink>
+            <NavLink to="/booking/admin/closures" className="app-layout__mobile-link" onClick={closeMobile}>Closures</NavLink>
+            {mobileRegisterItems}
+            <div className="app-layout__mobile-sub-label">Members</div>
             <NavLink to="/booking/admin/members" className="app-layout__mobile-link" onClick={closeMobile}>Members</NavLink>
             <NavLink to="/booking/admin/bg-numbers" className="app-layout__mobile-link" onClick={closeMobile}>BG Numbers</NavLink>
             <NavLink to="/booking/admin/credits" className="app-layout__mobile-link" onClick={closeMobile}>Credits</NavLink>
             <NavLink to="/booking/admin/charges" className="app-layout__mobile-link" onClick={closeMobile}>Charges</NavLink>
             <NavLink to="/booking/admin/payments" className="app-layout__mobile-link" onClick={closeMobile}>Payments</NavLink>
+            <div className="app-layout__mobile-sub-label">
+              Communications{pendingOrderCount > 0 && <span style={{ marginLeft: '0.4rem', background: 'var(--booking-accent)', color: '#fff', borderRadius: '99px', padding: '0 5px', fontSize: '0.65rem', fontWeight: 700 }}>{pendingOrderCount}</span>}
+            </div>
             <NavLink to="/booking/admin/messages" className="app-layout__mobile-link" onClick={closeMobile}>Messages</NavLink>
-            {isClubAdmin && <>
-              <NavLink to="/club-settings" className="app-layout__mobile-link" onClick={closeMobile}>Club Settings</NavLink>
-              <NavLink to="/branding" className="app-layout__mobile-link" onClick={closeMobile}>Club Branding</NavLink>
-            </>}
+            <NavLink to="/booking/admin/shop-orders" className="app-layout__mobile-link" onClick={closeMobile}>Shop Orders</NavLink>
+            <div className="app-layout__mobile-sub-label">Skill Tracking</div>
             <NavLink to="/certificates" className="app-layout__mobile-link" onClick={closeMobile}>Certificates</NavLink>
             {isClubAdmin && <>
               <NavLink to="/levels" className="app-layout__mobile-link" onClick={closeMobile}>Levels & Skills</NavLink>
               <NavLink to="/competitions" className="app-layout__mobile-link" onClick={closeMobile}>Competition Categories</NavLink>
               <NavLink to="/certificate-designer" className="app-layout__mobile-link" onClick={closeMobile}>Certificate Setup</NavLink>
+            </>}
+            {isClubAdmin && <>
+              <div className="app-layout__mobile-sub-label">Settings</div>
+              <NavLink to="/club-settings" className="app-layout__mobile-link" onClick={closeMobile}>Club Settings</NavLink>
+              <NavLink to="/branding" className="app-layout__mobile-link" onClick={closeMobile}>Club Branding</NavLink>
             </>}
             <NavLink to="/booking/admin/audit-log" className="app-layout__mobile-link" onClick={closeMobile}>Audit Log</NavLink>
           </>}
