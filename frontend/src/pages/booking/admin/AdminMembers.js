@@ -559,7 +559,7 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
             : <span style={{ color: 'var(--booking-danger)' }}>✗ Not allowed</span>}
         </li>
         {/* BG insurance */}
-        {(bgInsuranceRequired || g.bgNumber) && (
+        {(
           <li style={{ ...infoItemStyle, borderBottom: 'none' }}>
             <span style={keyStyle}>BG insurance</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
