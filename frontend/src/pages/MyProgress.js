@@ -13,7 +13,7 @@ const MyProgress = () => {
   const [selectedChild, setSelectedChild] = useState(null);
 
   useEffect(() => {
-    if (!isAdult && !isChild) { navigate('/'); return; }
+    if (isAdult) { navigate('/'); return; }
     const fetchData = async () => {
       try {
         setLoading(true);
