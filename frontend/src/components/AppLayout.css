@@ -268,6 +268,23 @@
   opacity: 0.15;
 }
 
+/* Dropdown section label */
+.app-layout__dropdown-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  padding: 0.6rem 0.75rem 0.2rem;
+  cursor: default;
+  user-select: none;
+}
+
+.app-layout__dropdown-label:not(:first-child) {
+  margin-top: 0.25rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+
 /* Main content */
 .app-layout__main {
   flex: 1;
@@ -413,6 +430,18 @@
   color: var(--booking-accent);
   border-top: 1px solid rgba(255,255,255,0.1);
   margin-top: 0.5rem;
+}
+
+/* Sub-label within mobile Admin section */
+.app-layout__mobile-sub-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  padding: 0.6rem 1.25rem 0.15rem;
+  cursor: default;
+  user-select: none;
 }
 
 .app-layout__mobile-link {
