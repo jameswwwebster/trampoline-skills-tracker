@@ -14,7 +14,7 @@ export default function SessionDetail({
   const { instanceId: paramInstanceId } = useParams();
   const instanceId = propInstanceId || paramInstanceId;
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, canManageGymnasts } = useAuth();
   const [session, setSession] = useState(null);
   const [myGymnasts, setMyGymnasts] = useState([]);
   const [localSelectedGymnastIds, setLocalSelectedGymnastIds] = useState([]);
@@ -177,6 +177,14 @@ export default function SessionDetail({
       <div className="session-detail__info">
         <h2>{dateStr}</h2>
         <p>{session.startTime} – {session.endTime}</p>
+        {canManageGymnasts && (
+          <button
+            className="session-detail__add-btn"
+            onClick={() => navigate(`/gymnasts?session=${instanceId}`)}
+          >
+            Track these gymnasts →
+          </button>
+        )}
         {session.minAge && <p className="session-detail__age-restriction">{session.minAge}+ only</p>}
         <p>
           <strong style={{
