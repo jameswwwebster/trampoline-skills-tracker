@@ -22,4 +22,7 @@ export const shopApi = {
 
   updateOrderStatus: (orderId, status) =>
     axios.patch(`${API_URL}/booking/shop/admin/orders/${orderId}/status`, { status }, { headers: getHeaders() }),
+
+  getPendingOrderCount: () =>
+    axios.get(`${API_URL}/booking/shop/admin/orders/pending-count`, { headers: getHeaders() }),
 };
