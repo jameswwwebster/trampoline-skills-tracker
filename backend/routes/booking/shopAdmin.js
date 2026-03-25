@@ -91,4 +91,17 @@ router.patch('/orders/:id/status', auth, requireRole(STAFF_ROLES), async (req, r
   }
 });
 
+// GET /api/booking/shop/admin/orders/pending-count
+router.get('/orders/pending-count', auth, requireRole(STAFF_ROLES), async (req, res) => {
+  try {
+    const count = await prisma.shopOrder.count({
+      where: { status: { in: ['ORDERED', 'ARRIVED'] } },
+    });
+    res.json({ count });
+  } catch (err) {
+    console.error('Pending order count error:', err);
+    res.status(500).json({ error: 'Failed to fetch pending order count' });
+  }
+});
+
 module.exports = router;
