@@ -169,6 +169,31 @@ const Gymnasts = () => {
     fetchData();
   }, [showArchived]);
 
+  // Handle ?session=<instanceId> deep link from "Track these gymnasts" button
+  useEffect(() => {
+    const sessionParam = searchParams.get('session');
+    if (!sessionParam) return;
+
+    // Strip param from URL so refresh returns to default unfiltered state
+    const next = new URLSearchParams(searchParams);
+    next.delete('session');
+    setSearchParams(next, { replace: true });
+
+    // Fetch attendees and activate the session filter
+    setSelectedSessionId(sessionParam);
+    setSessionLoading(true);
+    bookingApi.getAttendance(sessionParam)
+      .then(res => {
+        setSessionGymnasts(new Set(res.data.attendees.map(a => a.gymnastId)));
+        setShowSessionOnly(true);
+      })
+      .catch(() => {
+        setError('Failed to load session attendees. Please try again.');
+        setSelectedSessionId(null);
+      })
+      .finally(() => setSessionLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Check for URL parameters to highlight specific gymnast or apply filters
   useEffect(() => {
     const highlightId = searchParams.get('highlight');
