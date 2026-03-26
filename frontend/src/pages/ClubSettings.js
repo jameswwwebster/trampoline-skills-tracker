@@ -8,8 +8,7 @@ const ClubSettings = () => {
     name: '',
     address: '',
     phone: '',
-    email: '',
-    description: ''
+    email: ''
   });
   const [automationSettings, setAutomationSettings] = useState({
     emailEnabled: true,
@@ -22,7 +21,6 @@ const ClubSettings = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [validationErrors, setValidationErrors] = useState({});
 
   const fetchClubSettings = useCallback(async () => {
     try {
@@ -31,8 +29,7 @@ const ClubSettings = () => {
         name: response.data.name || '',
         address: response.data.address || '',
         phone: response.data.phone || '',
-        email: response.data.email || '',
-        description: response.data.description || ''
+        email: response.data.email || ''
       });
       setAutomationSettings({
         emailEnabled: response.data.emailEnabled ?? true,
@@ -71,49 +68,12 @@ const ClubSettings = () => {
       [name]: value
     }));
 
-    // Clear validation error when user starts typing
-    if (validationErrors[name]) {
-      setValidationErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-
     // Clear success message when user makes changes
     if (success) setSuccess('');
   };
 
-  const validateForm = () => {
-    const errors = {};
-
-    if (!formData.name.trim()) {
-      errors.name = 'Club name is required';
-    } else if (formData.name.length < 2) {
-      errors.name = 'Club name must be at least 2 characters';
-    } else if (formData.name.length > 100) {
-      errors.name = 'Club name must be less than 100 characters';
-    }
-
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
-    }
-
-    if (formData.description && formData.description.length > 500) {
-      errors.description = 'Description must be less than 500 characters';
-    }
-
-    return errors;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      return;
-    }
-
     setSaving(true);
     setError('');
     setSuccess('');
@@ -187,9 +147,7 @@ const ClubSettings = () => {
               placeholder="Enter your club name"
               required
             />
-            {validationErrors.name && (
-              <div className="text-danger">{validationErrors.name}</div>
-            )}
+
           </div>
 
           <div className="form-group">
@@ -235,32 +193,10 @@ const ClubSettings = () => {
               className="form-control"
               placeholder="Enter your club email address"
             />
-            {validationErrors.email && (
-              <div className="text-danger">{validationErrors.email}</div>
-            )}
+
           </div>
 
 
-          <div className="form-group">
-            <label htmlFor="description" className="form-label">
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              className="form-control"
-              placeholder="Tell us about your club..."
-              rows="4"
-            />
-            <div className="text-muted small">
-              {formData.description.length}/500 characters
-            </div>
-            {validationErrors.description && (
-              <div className="text-danger">{validationErrors.description}</div>
-            )}
-          </div>
 
 
           <div className="form-group">
