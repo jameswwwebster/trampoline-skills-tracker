@@ -77,7 +77,6 @@ const ClubSettings = () => {
     setSaving(true);
     setError('');
     setSuccess('');
-    setValidationErrors({});
 
     try {
       await axios.put(`/api/clubs/${user.clubId}`, formData);
