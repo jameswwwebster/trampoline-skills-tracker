@@ -9,7 +9,6 @@ const ClubSettings = () => {
     address: '',
     phone: '',
     email: '',
-    website: '',
     description: ''
   });
   const [automationSettings, setAutomationSettings] = useState({
@@ -33,7 +32,6 @@ const ClubSettings = () => {
         address: response.data.address || '',
         phone: response.data.phone || '',
         email: response.data.email || '',
-        website: response.data.website || '',
         description: response.data.description || ''
       });
       setAutomationSettings({
@@ -242,23 +240,6 @@ const ClubSettings = () => {
             )}
           </div>
 
-          <div className="form-group">
-            <label htmlFor="website" className="form-label">
-              Website
-            </label>
-            <input
-              type="text"
-              id="website"
-              name="website"
-              value={formData.website}
-              onChange={handleChange}
-              className="form-control"
-              placeholder="https://your-club-website.com"
-            />
-            {validationErrors.website && (
-              <div className="text-danger">{validationErrors.website}</div>
-            )}
-          </div>
 
           <div className="form-group">
             <label htmlFor="description" className="form-label">
