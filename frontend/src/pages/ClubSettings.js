@@ -100,10 +100,6 @@ const ClubSettings = () => {
       errors.email = 'Please enter a valid email address';
     }
 
-    if (formData.website && !/^(https?:\/\/).+/.test(formData.website) && !/^www\..+/.test(formData.website)) {
-      errors.website = 'Please enter a valid website URL (e.g. https://example.com or www.example.com)';
-    }
-
     if (formData.description && formData.description.length > 500) {
       errors.description = 'Description must be less than 500 characters';
     }
