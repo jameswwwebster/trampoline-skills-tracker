@@ -9,11 +9,27 @@
 }
 
 .app-layout__nav {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
   background: var(--booking-bg-dark);
   color: var(--booking-text-on-dark);
+}
+
+/* Offset content below the fixed nav */
+.app-layout__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 5.5rem; /* topbar + links row */
+}
+
+@media (max-width: 900px) {
+  .app-layout__content {
+    padding-top: 3rem; /* topbar only */
+  }
 }
 
 /* Top bar: brand left, user+logout right */

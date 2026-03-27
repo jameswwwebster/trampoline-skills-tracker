@@ -238,10 +238,8 @@ export default function AppLayout() {
                 </button>
                 {openDropdown === 'tracking' && (
                   <div className="app-layout__dropdown-menu">
-                    {!isAdult && <>
-                      <NavLink to="/my-progress" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Progress</NavLink>
-                      <NavLink to="/my-certificates" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Certificates</NavLink>
-                    </>}
+                    <NavLink to="/my-progress" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Progress</NavLink>
+                    {!isAdult && <NavLink to="/my-certificates" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Certificates</NavLink>}
                   </div>
                 )}
               </div>
@@ -376,9 +374,9 @@ export default function AppLayout() {
           {canManageGymnasts && (
             <NavLink to="/gymnasts" className="app-layout__mobile-link" onClick={closeMobile}>Skill Tracking</NavLink>
           )}
-          {!canManageGymnasts && !isAdult && <>
+          {!canManageGymnasts && <>
             <NavLink to="/my-progress" className="app-layout__mobile-link" onClick={closeMobile}>My Progress</NavLink>
-            <NavLink to="/my-certificates" className="app-layout__mobile-link" onClick={closeMobile}>My Certificates</NavLink>
+            {!isAdult && <NavLink to="/my-certificates" className="app-layout__mobile-link" onClick={closeMobile}>My Certificates</NavLink>}
           </>}
 
           <div className="app-layout__mobile-section-label">Shop</div>
@@ -441,34 +439,36 @@ export default function AppLayout() {
         </div>
       </div>
 
-      {/* Banners */}
-      {noticeBanner && (
-        <Link to="/booking/noticeboard" className="app-layout__notice-banner" onClick={() => setNoticeBanner(false)}>
-          <span>📌 {unreadCount} new notice{unreadCount !== 1 ? 's' : ''} on the noticeboard</span>
-          <span className="app-layout__banner-cta">View →</span>
-        </Link>
-      )}
+      <div className="app-layout__content">
+        {/* Banners */}
+        {noticeBanner && (
+          <Link to="/booking/noticeboard" className="app-layout__notice-banner" onClick={() => setNoticeBanner(false)}>
+            <span>📌 {unreadCount} new notice{unreadCount !== 1 ? 's' : ''} on the noticeboard</span>
+            <span className="app-layout__banner-cta">View →</span>
+          </Link>
+        )}
 
-      {paymentBanner && (
-        <Link to="/booking/my-account" className="app-layout__payment-banner">
-          {paymentBanner === 'pending' ? (
-            <><span>⚠ Membership payment required — your membership is not yet active.</span><span className="app-layout__banner-cta">Set up payment →</span></>
-          ) : (
-            <><span>⚠ Payment method required — your membership won't renew without a card on file.</span><span className="app-layout__banner-cta">Add now →</span></>
-          )}
-        </Link>
-      )}
+        {paymentBanner && (
+          <Link to="/booking/my-account" className="app-layout__payment-banner">
+            {paymentBanner === 'pending' ? (
+              <><span>⚠ Membership payment required — your membership is not yet active.</span><span className="app-layout__banner-cta">Set up payment →</span></>
+            ) : (
+              <><span>⚠ Payment method required — your membership won't renew without a card on file.</span><span className="app-layout__banner-cta">Add now →</span></>
+            )}
+          </Link>
+        )}
 
-      {hasOverdueCharge && (
-        <Link to="/booking/cart" className="app-layout__payment-banner">
-          <span>⚠ You have an overdue charge — pay it to make new bookings.</span>
-          <span className="app-layout__banner-cta">Pay now →</span>
-        </Link>
-      )}
+        {hasOverdueCharge && (
+          <Link to="/booking/cart" className="app-layout__payment-banner">
+            <span>⚠ You have an overdue charge — pay it to make new bookings.</span>
+            <span className="app-layout__banner-cta">Pay now →</span>
+          </Link>
+        )}
 
-      <main className="app-layout__main">
-        <Outlet context={{ refreshUnreadCount }} />
-      </main>
+        <main className="app-layout__main">
+          <Outlet context={{ refreshUnreadCount }} />
+        </main>
+      </div>
     </div>
   );
 }

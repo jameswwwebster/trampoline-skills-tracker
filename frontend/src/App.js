@@ -60,6 +60,7 @@ import AdminCredits from './pages/booking/admin/AdminCredits';
 import AdminPayments from './pages/booking/admin/AdminPayments';
 import AdminHelpPage from './pages/booking/admin/AdminHelpPage';
 import AdminRegister from './pages/booking/admin/AdminRegister';
+import AdminDashboard from './pages/AdminDashboard';
 import PublicHome from './pages/public/PublicHome';
 import PublicPolicies from './pages/public/PublicPolicies';
 import './App.css';
@@ -164,6 +165,7 @@ function AppContent() {
 
           {/* Staff-only tracking routes */}
           <Route element={<TrackingRoute />}>
+            <Route path="admin-hub" element={<AdminDashboard />} />
             <Route path="gymnasts" element={<Gymnasts />} />
             <Route path="levels" element={<Levels />} />
             <Route path="competitions" element={<Competitions />} />

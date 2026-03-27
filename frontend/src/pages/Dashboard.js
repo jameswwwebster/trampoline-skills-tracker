@@ -233,7 +233,7 @@ const Dashboard = () => {
         <TrophyIcon className="dashboard-tile__icon" />
         <span className="dashboard-tile__label">Skill Tracking</span>
       </Link>
-      <Link to="/booking/admin/members" className="dashboard-tile dashboard-tile--admin">
+      <Link to="/admin-hub" className="dashboard-tile dashboard-tile--admin">
         <Cog6ToothIcon className="dashboard-tile__icon" />
         <span className="dashboard-tile__label">Admin</span>
       </Link>

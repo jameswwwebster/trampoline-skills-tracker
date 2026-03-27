@@ -6080,6 +6080,51 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
 
 .dashboard__welcome { margin-bottom: 1.25rem; }
 
+/* ── Admin Hub ───────────────────────────────────────────── */
+.admin-hub {
+  max-width: 600px;
+}
+.admin-hub__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.admin-hub__back {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.admin-hub__back:hover { border-color: #999; color: #222; }
+.admin-hub__title { margin: 0; font-size: 1.4rem; }
+.admin-hub__section { margin-bottom: 1.5rem; }
+.admin-hub__section-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 0.6rem;
+}
+.admin-hub__tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+@media (min-width: 400px) {
+  .admin-hub__tiles {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 /* ── Gymnasts page ───────────────────────────────────────── */
 .gymnasts-filter-bar {
   display: flex;
