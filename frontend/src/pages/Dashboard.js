@@ -181,9 +181,12 @@ const Dashboard = () => {
     <Link to="/booking/noticeboard" className="dashboard-noticeboard-panel">
       <div className="dashboard-noticeboard-panel__header">
         <span className="dashboard-noticeboard-panel__title">Noticeboard</span>
-        {unreadCount > 0 && (
-          <span className="dashboard-noticeboard-panel__badge">{unreadCount} unread</span>
-        )}
+        <div className="dashboard-noticeboard-panel__header-right">
+          {unreadCount > 0 && (
+            <span className="dashboard-noticeboard-panel__badge">{unreadCount} unread</span>
+          )}
+          <span className="dashboard-noticeboard-panel__arrow">→</span>
+        </div>
       </div>
       {noticeboardLoading ? (
         <span className="dashboard-noticeboard-panel__empty">Loading...</span>

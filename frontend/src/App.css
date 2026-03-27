@@ -6000,12 +6000,27 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   text-decoration: none;
   color: inherit;
   background: #f8f5ff;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.dashboard-noticeboard-panel:hover {
+  background: #f0e8ff;
+  border-color: #7c3aed;
 }
 .dashboard-noticeboard-panel__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
+}
+.dashboard-noticeboard-panel__header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dashboard-noticeboard-panel__arrow {
+  color: var(--secondary-color);
+  font-size: 1rem;
 }
 .dashboard-noticeboard-panel__title { font-weight: 700; color: var(--secondary-color); }
 .dashboard-noticeboard-panel__badge {
