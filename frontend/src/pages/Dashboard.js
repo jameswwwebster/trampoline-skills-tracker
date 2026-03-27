@@ -84,15 +84,9 @@ const Dashboard = () => {
   const [codeOfDayInfo, setCodeOfDayInfo] = useState(null);
   const [metrics, setMetrics] = useState(null);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
-  const [unprintedCertificates, setUnprintedCertificates] = useState([]);
-  const [loadingUnprinted, setLoadingUnprinted] = useState(false);
-  const [success, setSuccess] = useState(null);
-  const [error, setError] = useState(null);
-
   useEffect(() => {
     if ((isCoach || isClubAdmin) && user?.club) {
       fetchMetrics();
-      fetchUnprintedCertificates();
     }
   }, [isCoach, isClubAdmin, user?.club]);
 
@@ -105,40 +99,6 @@ const Dashboard = () => {
       console.error('Failed to fetch metrics:', error);
     } finally {
       setLoadingMetrics(false);
-    }
-  };
-
-  const fetchUnprintedCertificates = async () => {
-    try {
-      setLoadingUnprinted(true);
-      const response = await axios.get('/api/dashboard/unprinted-certificates');
-      setUnprintedCertificates(response.data);
-    } catch (error) {
-      console.error('Failed to fetch unprinted certificates:', error);
-    } finally {
-      setLoadingUnprinted(false);
-    }
-  };
-
-  const handlePrintCertificate = async (certificateId) => {
-    try {
-      setError(null);
-      setSuccess(null);
-
-      await axios.put(`/api/certificates/${certificateId}/status`, {
-        status: 'PRINTED'
-      });
-
-      await fetchUnprintedCertificates();
-
-      const certificate = unprintedCertificates.find(c => c.id === certificateId);
-      setSuccess(`Certificate marked as printed for ${certificate?.gymnast?.firstName} ${certificate?.gymnast?.lastName} (Level ${certificate?.level?.identifier})!`);
-
-      setTimeout(() => setSuccess(null), 5000);
-    } catch (err) {
-      console.error('Failed to mark certificate as printed:', err);
-      setError(err.response?.data?.error || 'Failed to mark certificate as printed. Please try again.');
-      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -418,76 +378,6 @@ const Dashboard = () => {
                       </div>
                     </div>
 
-                    {/* Unprinted Certificates */}
-                    <div className="card">
-                      <div className="card-header">
-                        <h3 className="card-title">Certificates Ready to Print</h3>
-                        <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
-                          Certificates that have been awarded but haven't been printed yet
-                        </p>
-                      </div>
-                      <div>
-                        {loadingUnprinted ? (
-                          <div className="loading">
-                            <div className="spinner"></div>
-                            <p>Loading certificates to print...</p>
-                          </div>
-                        ) : unprintedCertificates.length > 0 ? (
-                          <div>
-                            {success && (
-                              <div className="alert alert-success" style={{ marginBottom: '1rem' }}>
-                                {success}
-                              </div>
-                            )}
-                            {error && (
-                              <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
-                                {error}
-                              </div>
-                            )}
-                            {unprintedCertificates.slice(0, 10).map((certificate, index) => (
-                              <div key={certificate.id} style={{ padding: '1rem 0.5rem', borderBottom: '1px solid #eee' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                                  <div>
-                                    <strong>{certificate.gymnast.firstName} {certificate.gymnast.lastName}</strong>
-                                    <span className="badge badge-primary" style={{ marginLeft: '0.5rem' }}>
-                                      Level {certificate.level.identifier}
-                                    </span>
-                                    <span className="badge badge-secondary" style={{ marginLeft: '0.5rem' }}>
-                                      {certificate.level.name}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  <button
-                                    onClick={() => handlePrintCertificate(certificate.id)}
-                                    className="btn btn-sm btn-success"
-                                    title="Mark as printed"
-                                  >
-                                    Mark as Printed
-                                  </button>
-                                  <Link
-                                    to={`/certificates/${certificate.id}/preview`}
-                                    className="btn btn-sm btn-outline"
-                                    title="View certificate"
-                                  >
-                                    Preview
-                                  </Link>
-                                </div>
-                              </div>
-                            ))}
-                            {unprintedCertificates.length > 10 && (
-                              <div style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
-                                <Link to="/certificates" className="btn btn-outline">
-                                  View All Certificates to Print ({unprintedCertificates.length - 10} more)
-                                </Link>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-muted">All certificates have been printed!</p>
-                        )}
-                      </div>
-                    </div>
 
                     {/* Code of the Day */}
                     <div className="card">
