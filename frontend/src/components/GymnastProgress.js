@@ -18,6 +18,8 @@ const GymnastProgress = ({ gymnastId }) => {
   const [collapsedLevels, setCollapsedLevels] = useState(new Set());
   const [confirmCompleteLevel, setConfirmCompleteLevel] = useState(null);
   const [loadingSkills, setLoadingSkills] = useState(new Set());
+  const [certImageUrls, setCertImageUrls] = useState({});
+  const certBlobsRef = React.useRef({});
   const { user } = useAuth();
 
   // Only coaches and club admins can use coaching tools
@@ -329,12 +331,37 @@ const GymnastProgress = ({ gymnastId }) => {
     }
   };
 
+  // Fetch certificate PNG blob URLs for completed levels
+  useEffect(() => {
+    if (!gymnast?.certificates?.length) return;
+    const prev = certBlobsRef.current;
+    Promise.all(
+      gymnast.certificates.map(async cert => {
+        if (prev[cert.id]) return { id: cert.id, url: prev[cert.id] };
+        try {
+          const res = await axios.get(`/api/certificates/${cert.id}/preview`, { responseType: 'blob' });
+          return { id: cert.id, url: URL.createObjectURL(res.data) };
+        } catch {
+          return { id: cert.id, url: null };
+        }
+      })
+    ).then(results => {
+      const map = {};
+      results.forEach(r => { if (r.url) map[r.id] = r.url; });
+      certBlobsRef.current = map;
+      setCertImageUrls(map);
+    });
+    return () => {
+      Object.values(certBlobsRef.current).forEach(url => url && URL.revokeObjectURL(url));
+    };
+  }, [gymnast?.certificates]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         const [gymnastResponse, levelsResponse] = await Promise.all([
           axios.get(`/api/gymnasts/${gymnastId}`),
           axios.get('/api/levels')
@@ -621,8 +648,9 @@ const GymnastProgress = ({ gymnastId }) => {
                           )}
                           {isCompleted && (() => {
                             const cert = gymnast.certificates?.find(c => c.levelId === level.id);
-                            return cert ? (
-                              <a href="#certificates-section" className="level-cert-link">
+                            const url = cert && certImageUrls[cert.id];
+                            return url ? (
+                              <a href={url} download={`certificate-level-${level.identifier}.png`} className="level-cert-link">
                                 🏆 View certificate
                               </a>
                             ) : null;
@@ -889,17 +917,17 @@ const GymnastProgress = ({ gymnastId }) => {
                     </div>
                   </div>
 
-                  {/* Certificate link for completed levels */}
+                  {/* Certificate image for completed levels */}
                   {isCompleted && (() => {
                     const cert = gymnast.certificates?.find(c => c.levelId === level.id);
-                    return cert ? (
-                      <a
-                        href="#certificates-section"
-                        className="mobile-level-cert-link"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        🏆 View certificate
-                      </a>
+                    const url = cert && certImageUrls[cert.id];
+                    return url ? (
+                      <div className="mobile-level-cert">
+                        <img src={url} alt="Certificate" className="mobile-level-cert__img" />
+                        <a href={url} download={`certificate-level-${level.identifier}.png`} className="mobile-level-cert__download">
+                          Download certificate
+                        </a>
+                      </div>
                     ) : null;
                   })()}
 
