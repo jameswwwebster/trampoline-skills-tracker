@@ -459,7 +459,10 @@ const GymnastProgress = ({ gymnastId }) => {
       isCompleted,
       progressPercentage
     };
-  }).sort((a, b) => sortLevelsByIdentifier(a.level, b.level));
+  }).sort((a, b) => {
+    if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
+    return sortLevelsByIdentifier(a.level, b.level);
+  });
 
   // Get current and working levels
   // const completedLevels = gymnast.levelProgress
@@ -872,11 +875,23 @@ const GymnastProgress = ({ gymnastId }) => {
             
           </div>
 
+          {/* Certificates shortcut */}
+          {!canCoach && gymnast.certificates?.length > 0 && (
+            <a href="#certificates-section" className="progress-cert-shortcut">
+              🏆 View certificates
+            </a>
+          )}
+
           {/* Mobile Level Cards */}
           <div className="mobile-levels-container">
             {levels
               .filter(level => isSideTrackAvailable(level, nextMainLevelNumber))
-              .sort((a, b) => sortLevelsByIdentifier(a, b))
+              .sort((a, b) => {
+                const aCompleted = gymnast.levelProgress.some(lp => lp.level.id === a.id && lp.status === 'COMPLETED');
+                const bCompleted = gymnast.levelProgress.some(lp => lp.level.id === b.id && lp.status === 'COMPLETED');
+                if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+                return sortLevelsByIdentifier(a, b);
+              })
               .map(level => {
               // Calculate progress for each level (including side tracks)
               const completedSkills = gymnast.skillProgress

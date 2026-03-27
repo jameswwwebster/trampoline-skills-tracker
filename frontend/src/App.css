@@ -6121,6 +6121,17 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   border-radius: 6px;
 }
 
+/* ── Certificates shortcut link ─────────────────────────── */
+.progress-cert-shortcut {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--secondary-color);
+  text-decoration: none;
+}
+.progress-cert-shortcut:hover { text-decoration: underline; }
+
 /* ── Level certificate display ───────────────────────────── */
 .level-cert-link {
   display: inline-block;
