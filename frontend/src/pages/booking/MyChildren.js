@@ -17,9 +17,16 @@ const CONSENT_LABELS = {
   photo_social_media: 'Photography & video for social media',
 };
 
+const ROLE_LABELS = {
+  CLUB_ADMIN: 'Club Administrator',
+  COACH: 'Coach',
+  ADULT: 'Adult / Guardian',
+  GYMNAST: 'Gymnast',
+};
+
 function ContactDetailsSection({ user, onSaved }) {
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ email: user.email || '', phone: user.phone || '' });
+  const [form, setForm] = useState({ firstName: user.firstName || '', lastName: user.lastName || '', email: user.email || '', phone: user.phone || '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [changingPassword, setChangingPassword] = useState(false);
@@ -69,16 +76,21 @@ function ContactDetailsSection({ user, onSaved }) {
     return (
       <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
         <div className="bk-row bk-row--between" style={{ marginBottom: '0.5rem' }}>
-          <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600 }}>Contact details</p>
+          <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600 }}>My details</p>
           <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => setEditing(true)}>
             Edit
           </button>
         </div>
         <div style={{ fontSize: '0.875rem', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.3rem 0.75rem' }}>
+          <span className="bk-muted">Name</span>
+          <span>{user.firstName} {user.lastName}</span>
           <span className="bk-muted">Email</span>
           <span>{user.email || <span style={{ color: 'var(--booking-danger)' }}>Not set</span>}</span>
           <span className="bk-muted">Phone</span>
           <span>{user.phone || <span style={{ color: 'var(--booking-danger)' }}>Not set</span>}</span>
+          <span className="bk-muted">Role</span>
+          <span>{ROLE_LABELS[user.role] || user.role}</span>
+          {user.club && <><span className="bk-muted">Club</span><span>{user.club.name}</span></>}
         </div>
         {missing && (
           <p style={{ margin: '0.5rem 0 0', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>
@@ -128,8 +140,20 @@ function ContactDetailsSection({ user, onSaved }) {
 
   return (
     <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
-      <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', fontWeight: 600 }}>Contact details</p>
+      <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', fontWeight: 600 }}>My details</p>
       <form onSubmit={handleSubmit}>
+        <div className="bk-grid-2" style={{ marginBottom: '0.5rem' }}>
+          <label className="bk-label" style={{ fontWeight: 'normal' }}>First name
+            <input className="bk-input" value={form.firstName}
+              onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
+              required style={{ marginTop: '0.25rem' }} />
+          </label>
+          <label className="bk-label" style={{ fontWeight: 'normal' }}>Last name
+            <input className="bk-input" value={form.lastName}
+              onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
+              required style={{ marginTop: '0.25rem' }} />
+          </label>
+        </div>
         <label className="bk-label" style={{ fontWeight: 'normal', display: 'block', marginBottom: '0.5rem' }}>Email
           <input type="email" className="bk-input" value={form.email}
             onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
@@ -139,7 +163,7 @@ function ContactDetailsSection({ user, onSaved }) {
           <input type="tel" className="bk-input" value={form.phone}
             onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
             placeholder="e.g. 07700 900123"
-            required style={{ marginTop: '0.25rem' }} />
+            style={{ marginTop: '0.25rem' }} />
         </label>
         {error && <p className="bk-error">{error}</p>}
         <div className="bk-row">
@@ -147,7 +171,7 @@ function ContactDetailsSection({ user, onSaved }) {
             {saving ? 'Saving...' : 'Save'}
           </button>
           <button type="button" className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
-            onClick={() => { setEditing(false); setForm({ email: user.email || '', phone: user.phone || '' }); }}>
+            onClick={() => { setEditing(false); setForm({ firstName: user.firstName || '', lastName: user.lastName || '', email: user.email || '', phone: user.phone || '' }); }}>
             Cancel
           </button>
         </div>

@@ -18,7 +18,6 @@ import Levels from './pages/Levels';
 import Competitions from './pages/Competitions';
 import Progress from './pages/Progress';
 import MyProgress from './pages/MyProgress';
-import Profile from './pages/Profile';
 import Certificates from './pages/Certificates';
 import CertificateDesigner from './pages/CertificateDesigner';
 import CertificatePreview from './pages/CertificatePreview';
@@ -159,7 +158,7 @@ function AppContent() {
         <Route element={<AppLayout />}>
           {/* Universal — all authenticated roles */}
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="profile" element={<Profile />} />
+          <Route path="profile" element={<Navigate to="/booking/my-account" replace />} />
           <Route path="my-progress" element={<MyProgress />} />
           <Route path="my-certificates" element={<MyCertificates />} />
           <Route path="health" element={<Health />} />

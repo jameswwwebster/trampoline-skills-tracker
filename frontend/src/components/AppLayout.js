@@ -294,7 +294,6 @@ export default function AppLayout() {
                 <div className="app-layout__dropdown-menu app-layout__dropdown-menu--right">
                   <NavLink to="/booking/my-account" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Account</NavLink>
                   {!isAdmin && <NavLink to="/booking/my-charges" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Charges</NavLink>}
-                  <NavLink to="/profile" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Profile</NavLink>
                   <NavLink to={helpPath} className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Help</NavLink>
                   {isSuperAdmin && <NavLink to="/super-admin" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Super Admin</NavLink>}
                 </div>
@@ -396,7 +395,6 @@ export default function AppLayout() {
           <div className="app-layout__mobile-section-label">Account</div>
           <NavLink to="/booking/my-account" className="app-layout__mobile-link" onClick={closeMobile}>My Account</NavLink>
           {!isAdmin && <NavLink to="/booking/my-charges" className="app-layout__mobile-link" onClick={closeMobile}>My Charges</NavLink>}
-          <NavLink to="/profile" className="app-layout__mobile-link" onClick={closeMobile}>Profile</NavLink>
           <NavLink to={helpPath} className="app-layout__mobile-link" onClick={closeMobile}>Help</NavLink>
           {isSuperAdmin && <NavLink to="/super-admin" className="app-layout__mobile-link" onClick={closeMobile}>Super Admin</NavLink>}
 
