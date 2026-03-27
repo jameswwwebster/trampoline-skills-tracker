@@ -16,6 +16,8 @@
   z-index: 100;
   background: var(--booking-bg-dark);
   color: var(--booking-text-on-dark);
+  /* Account for iOS standalone status bar */
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Offset content below the fixed nav */
