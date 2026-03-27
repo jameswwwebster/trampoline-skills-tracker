@@ -19,7 +19,7 @@ export default function PublicHome() {
               from qualified coaches in a safe environment. Come along and try it out for
               yourselves; young or old, everybody is welcome!
             </p>
-            <a href="/booking" className="pub-hero-cta">Book a session</a>
+            <a href="/login" className="pub-hero-cta">Book a session</a>
           </div>
         </section>
 
@@ -38,7 +38,7 @@ export default function PublicHome() {
             </p>
             <p className="pub-sessions-body">
               Since the spaces in our sessions are limited we ask that people book in advance using our{' '}
-              <a href="/booking" className="pub-sessions-link">booking system</a>. These sessions are
+              <a href="/login" className="pub-sessions-link">booking system</a>. These sessions are
               first come first serve.
             </p>
             <div className="pub-sessions-grid">

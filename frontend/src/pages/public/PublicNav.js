@@ -87,7 +87,7 @@ export default function PublicNav() {
           >
             <WhatsAppIcon />
           </a>
-          <Link to="/booking" className="pub-nav-cta">Log in</Link>
+          <Link to="/login" className="pub-nav-cta">Log in</Link>
         </div>
 
         {/* Mobile hamburger */}
@@ -112,7 +112,7 @@ export default function PublicNav() {
             <a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook"><FacebookIcon /></a>
             <a href={SOCIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><WhatsAppIcon /></a>
           </div>
-          <Link to="/booking" className="pub-nav-cta" style={{ margin: '0.5rem 1rem' }}>Log in</Link>
+          <Link to="/login" className="pub-nav-cta" style={{ margin: '0.5rem 1rem' }}>Log in</Link>
         </div>
       )}
 
