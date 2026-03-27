@@ -6013,15 +6013,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   align-items: center;
   margin-bottom: 0.5rem;
 }
-.dashboard-noticeboard-panel__header-right {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.dashboard-noticeboard-panel__arrow {
-  color: var(--secondary-color);
-  font-size: 1rem;
-}
 .dashboard-noticeboard-panel__title { font-weight: 700; color: var(--secondary-color); }
 .dashboard-noticeboard-panel__badge {
   background: var(--secondary-color);
@@ -6062,6 +6053,20 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   border-radius: 50%;
   background: var(--secondary-color);
   flex-shrink: 0;
+}
+.dashboard-noticeboard-panel__footer {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #e0d4f7;
+}
+.dashboard-noticeboard-panel__cta {
+  display: inline-block;
+  background: var(--secondary-color);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
 }
 
 /* ── Birthdays widget ────────────────────────────────────── */

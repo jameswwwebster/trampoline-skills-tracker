@@ -181,12 +181,9 @@ const Dashboard = () => {
     <Link to="/booking/noticeboard" className="dashboard-noticeboard-panel">
       <div className="dashboard-noticeboard-panel__header">
         <span className="dashboard-noticeboard-panel__title">Noticeboard</span>
-        <div className="dashboard-noticeboard-panel__header-right">
-          {unreadCount > 0 && (
-            <span className="dashboard-noticeboard-panel__badge">{unreadCount} unread</span>
-          )}
-          <span className="dashboard-noticeboard-panel__arrow">→</span>
-        </div>
+        {unreadCount > 0 && (
+          <span className="dashboard-noticeboard-panel__badge">{unreadCount} unread</span>
+        )}
       </div>
       {noticeboardLoading ? (
         <span className="dashboard-noticeboard-panel__empty">Loading...</span>
@@ -202,6 +199,9 @@ const Dashboard = () => {
           ))}
         </ul>
       )}
+      <div className="dashboard-noticeboard-panel__footer">
+        <span className="dashboard-noticeboard-panel__cta">View noticeboard →</span>
+      </div>
     </Link>
   );
 
