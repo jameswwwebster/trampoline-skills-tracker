@@ -61,6 +61,7 @@ import AdminPayments from './pages/booking/admin/AdminPayments';
 import AdminHelpPage from './pages/booking/admin/AdminHelpPage';
 import AdminRegister from './pages/booking/admin/AdminRegister';
 import AdminDashboard from './pages/AdminDashboard';
+import ScrollToTop from './components/ScrollToTop';
 import PublicHome from './pages/public/PublicHome';
 import PublicPolicies from './pages/public/PublicPolicies';
 import './App.css';
@@ -138,6 +139,7 @@ function AppContent() {
 
   return (
     <div className="App">
+      <ScrollToTop />
       <PageMeta />
       <RateLimitBanner />
       <Routes>

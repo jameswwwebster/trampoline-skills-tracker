@@ -19,17 +19,21 @@
 }
 
 /* Offset content below the fixed nav */
+:root {
+  --nav-height: 5.75rem; /* topbar + links row */
+}
+
+@media (max-width: 900px) {
+  :root {
+    --nav-height: 3.5rem; /* topbar only */
+  }
+}
+
 .app-layout__content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding-top: 5.5rem; /* topbar + links row */
-}
-
-@media (max-width: 900px) {
-  .app-layout__content {
-    padding-top: 3rem; /* topbar only */
-  }
+  padding-top: var(--nav-height);
 }
 
 /* Top bar: brand left, user+logout right */
