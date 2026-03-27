@@ -16,6 +16,7 @@ const GymnastProgress = ({ gymnastId }) => {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [collapsedLevels, setCollapsedLevels] = useState(new Set());
+  const [showCompletedLevels, setShowCompletedLevels] = useState(false);
   const [confirmCompleteLevel, setConfirmCompleteLevel] = useState(null);
   const [loadingSkills, setLoadingSkills] = useState(new Set());
   const { user } = useAuth();
@@ -590,7 +591,7 @@ const GymnastProgress = ({ gymnastId }) => {
               </div>
             </div>
             <div className="level-progress-list">
-              {levelProgress.map(({ level, completedSkills, totalSkills, completedCount, isCompleted, progressPercentage }) => {
+              {levelProgress.filter(({ isCompleted }) => showCompletedLevels || !isCompleted).map(({ level, completedSkills, totalSkills, completedCount, isCompleted, progressPercentage }) => {
                 // Get routine progress for this level
                 const levelRoutines = level.routines || [];
                 const routineProgress = gymnast.routineProgress?.filter(rp => 
@@ -778,6 +779,20 @@ const GymnastProgress = ({ gymnastId }) => {
                   </div>
                 );
               })}
+              {(() => {
+                const completedCount = levelProgress.filter(({ isCompleted }) => isCompleted).length;
+                if (completedCount === 0) return null;
+                return (
+                  <button
+                    className="btn btn-outline completed-levels-toggle"
+                    onClick={() => setShowCompletedLevels(v => !v)}
+                  >
+                    {showCompletedLevels
+                      ? 'Hide completed levels'
+                      : `Show ${completedCount} completed level${completedCount !== 1 ? 's' : ''}`}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -841,6 +856,10 @@ const GymnastProgress = ({ gymnastId }) => {
             {levels
               .filter(level => isSideTrackAvailable(level, nextMainLevelNumber))
               .sort((a, b) => sortLevelsByIdentifier(a, b))
+              .filter(level => {
+                const isCompleted = gymnast.levelProgress.some(lp => lp.level.id === level.id && lp.status === 'COMPLETED');
+                return showCompletedLevels || !isCompleted;
+              })
               .map(level => {
               // Calculate progress for each level (including side tracks)
               const completedSkills = gymnast.skillProgress
@@ -1069,6 +1088,23 @@ const GymnastProgress = ({ gymnastId }) => {
                 </div>
               );
             })}
+            {(() => {
+              const completedCount = levels
+                .filter(l => isSideTrackAvailable(l, nextMainLevelNumber))
+                .filter(l => gymnast.levelProgress.some(lp => lp.level.id === l.id && lp.status === 'COMPLETED'))
+                .length;
+              if (completedCount === 0) return null;
+              return (
+                <button
+                  className="btn btn-outline completed-levels-toggle"
+                  onClick={() => setShowCompletedLevels(v => !v)}
+                >
+                  {showCompletedLevels
+                    ? 'Hide completed levels'
+                    : `Show ${completedCount} completed level${completedCount !== 1 ? 's' : ''}`}
+                </button>
+              );
+            })()}
           </div>
         </>
       )}
