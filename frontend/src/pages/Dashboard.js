@@ -186,13 +186,18 @@ const Dashboard = () => {
         )}
       </div>
       {noticeboardLoading ? (
-        <span className="dashboard-noticeboard-panel__preview">Loading...</span>
-      ) : unreadCount > 0 && latestUnread ? (
-        <span className="dashboard-noticeboard-panel__preview">"{latestUnread.title}"</span>
-      ) : latestPost ? (
-        <span className="dashboard-noticeboard-panel__preview">"{latestPost.title}"</span>
+        <span className="dashboard-noticeboard-panel__empty">Loading...</span>
+      ) : noticeboardPosts.length === 0 ? (
+        <span className="dashboard-noticeboard-panel__empty">No notices yet.</span>
       ) : (
-        <span className="dashboard-noticeboard-panel__preview">No notices yet.</span>
+        <ul className="dashboard-noticeboard-panel__list">
+          {noticeboardPosts.slice(0, 3).map(post => (
+            <li key={post.id} className={`dashboard-noticeboard-panel__item${post.isRead ? '' : ' dashboard-noticeboard-panel__item--unread'}`}>
+              {!post.isRead && <span className="dashboard-noticeboard-panel__dot" />}
+              {post.title}
+            </li>
+          ))}
+        </ul>
       )}
     </Link>
   );
