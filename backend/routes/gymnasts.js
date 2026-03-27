@@ -932,6 +932,9 @@ router.get('/:id', auth, async (req, res) => {
             }
           }
         },
+        certificates: {
+          select: { id: true, levelId: true, status: true }
+        },
         routineProgress: {
           include: {
             routine: {

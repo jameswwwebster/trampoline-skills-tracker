@@ -16,7 +16,6 @@ const GymnastProgress = ({ gymnastId }) => {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [collapsedLevels, setCollapsedLevels] = useState(new Set());
-  const [showCompletedLevels, setShowCompletedLevels] = useState(false);
   const [confirmCompleteLevel, setConfirmCompleteLevel] = useState(null);
   const [loadingSkills, setLoadingSkills] = useState(new Set());
   const { user } = useAuth();
@@ -461,12 +460,12 @@ const GymnastProgress = ({ gymnastId }) => {
       {!canCoach && (
         <div className="progress-parent-explainer">
           <p>
-            Your coach marks skills off as {gymnast.firstName} learns them during sessions.
-            Skills are grouped into levels — starting at Level 1 and working upwards, each one
-            introducing new jumps and techniques that build on what came before.
+            Your coach marks skills off during sessions. Skills are grouped into levels —
+            starting at Level 1 and working upwards, each one introducing new jumps and
+            techniques that build on what came before.
           </p>
           <p>
-            When a level is fully complete, {gymnast.firstName} earns a certificate.{' '}
+            When a level is fully complete, a certificate is awarded.{' '}
             <a href="#certificates-section" className="progress-parent-explainer__link">
               View certificates below ↓
             </a>
@@ -591,7 +590,7 @@ const GymnastProgress = ({ gymnastId }) => {
               </div>
             </div>
             <div className="level-progress-list">
-              {levelProgress.filter(({ isCompleted }) => showCompletedLevels || !isCompleted).map(({ level, completedSkills, totalSkills, completedCount, isCompleted, progressPercentage }) => {
+              {levelProgress.map(({ level, completedSkills, totalSkills, completedCount, isCompleted, progressPercentage }) => {
                 // Get routine progress for this level
                 const levelRoutines = level.routines || [];
                 const routineProgress = gymnast.routineProgress?.filter(rp => 
@@ -620,6 +619,14 @@ const GymnastProgress = ({ gymnastId }) => {
                           {isCompleted && (
                             <span className="badge badge-success">Level Completed</span>
                           )}
+                          {isCompleted && (() => {
+                            const cert = gymnast.certificates?.find(c => c.levelId === level.id);
+                            return cert ? (
+                              <a href="#certificates-section" className="level-cert-link">
+                                🏆 View certificate
+                              </a>
+                            ) : null;
+                          })()}
                         </div>
                       </div>
                       <div className="progress-bar-container">
@@ -779,20 +786,6 @@ const GymnastProgress = ({ gymnastId }) => {
                   </div>
                 );
               })}
-              {(() => {
-                const completedCount = levelProgress.filter(({ isCompleted }) => isCompleted).length;
-                if (completedCount === 0) return null;
-                return (
-                  <button
-                    className="btn btn-outline completed-levels-toggle"
-                    onClick={() => setShowCompletedLevels(v => !v)}
-                  >
-                    {showCompletedLevels
-                      ? 'Hide completed levels'
-                      : `Show ${completedCount} completed level${completedCount !== 1 ? 's' : ''}`}
-                  </button>
-                );
-              })()}
             </div>
           </div>
         )}
@@ -835,6 +828,7 @@ const GymnastProgress = ({ gymnastId }) => {
           <div className="mobile-progress-header">
             <h2 className="gymnast-name-mobile">{gymnast.firstName} {gymnast.lastName}</h2>
             <div className="current-level-mobile">
+              <span className="current-level-label-mobile">Current level</span>
               {(() => {
                 const currentLevel = getCurrentLevelNumber(gymnast, levels);
                 const workingLevel = levels.find(l => !isSideTrack(l.identifier) && parseInt(l.identifier) === currentLevel);
@@ -856,10 +850,6 @@ const GymnastProgress = ({ gymnastId }) => {
             {levels
               .filter(level => isSideTrackAvailable(level, nextMainLevelNumber))
               .sort((a, b) => sortLevelsByIdentifier(a, b))
-              .filter(level => {
-                const isCompleted = gymnast.levelProgress.some(lp => lp.level.id === level.id && lp.status === 'COMPLETED');
-                return showCompletedLevels || !isCompleted;
-              })
               .map(level => {
               // Calculate progress for each level (including side tracks)
               const completedSkills = gymnast.skillProgress
@@ -880,38 +870,38 @@ const GymnastProgress = ({ gymnastId }) => {
                 <div key={level.id} id={`level-${level.id}`} className={`mobile-level-card ${isCompleted ? 'completed' : ''} ${isCurrentLevel ? 'current' : ''} ${isSideTrack(level.identifier) ? 'side-track' : ''}`}>
                   {/* Level Header */}
                   <div className="mobile-level-header" onClick={() => toggleLevelCollapse(level.id)}>
-                    <div className="level-title-section">
-                      <div className="level-title">
-                        <span className="level-identifier">{level.identifier}</span>
-                        <span className="level-name">{level.name}</span>
-                        {isSideTrack(level.identifier) && <span className="side-track-indicator">Optional</span>}
-                      </div>
-                      <div className="level-status">
-                        {isCompleted ? (
-                          <span className="status-badge completed">✓ Complete</span>
-                        ) : isCurrentLevel ? (
-                          <span className="status-badge current">Current</span>
-                        ) : (
-                          <span className="status-badge pending">{Math.round(progressPercentage)}%</span>
-                        )}
-                      </div>
+                    <div className="mobile-level-title-row">
+                      <span className="level-identifier">{level.identifier}</span>
+                      <span className="level-name">{level.name}</span>
+                      {isSideTrack(level.identifier) && <span className="side-track-indicator">Optional</span>}
+                      {isCompleted ? (
+                        <span className="status-badge completed">✓ Done</span>
+                      ) : isCurrentLevel ? (
+                        <span className="status-badge current">Current</span>
+                      ) : null}
                     </div>
-                    
-                    <div className="level-progress-section">
-                      <div className="progress-bar-container">
-                        <div className="progress-bar">
-                          <div 
-                            className="progress-fill" 
-                            style={{ width: `${progressPercentage}%` }}
-                          />
-                        </div>
-                        <span className="progress-text">{completedCount}/{totalSkills}</span>
+                    <div className="mobile-level-progress-row">
+                      <div className="progress-bar">
+                        <div className="progress-fill" style={{ width: `${progressPercentage}%` }} />
                       </div>
-                      <div className="expand-indicator">
-                        {isCollapsed ? '▼' : '▲'}
-                      </div>
+                      <span className="progress-text">{completedCount}/{totalSkills}</span>
+                      <span className="expand-indicator">{isCollapsed ? '▼' : '▲'}</span>
                     </div>
                   </div>
+
+                  {/* Certificate link for completed levels */}
+                  {isCompleted && (() => {
+                    const cert = gymnast.certificates?.find(c => c.levelId === level.id);
+                    return cert ? (
+                      <a
+                        href="#certificates-section"
+                        className="mobile-level-cert-link"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        🏆 View certificate
+                      </a>
+                    ) : null;
+                  })()}
 
                   {/* Level Content */}
                   {!isCollapsed && (
@@ -1065,14 +1055,14 @@ const GymnastProgress = ({ gymnastId }) => {
 
                                     {routineSkills.length > 0 && (
                                       <div className="routine-skills-mobile">
-                                        <div className="routine-skills-label">Required Skills:</div>
-                                        <div className="routine-skills-badges">
+                                        <div className="routine-skills-label">Required skills:</div>
+                                        <ul className="routine-skills-list">
                                           {routineSkills.map(rs => (
-                                            <span key={rs.id} className="routine-skill-badge">
+                                            <li key={rs.id}>
                                               {rs.skill ? rs.skill.name : rs.customSkillName}
-                                            </span>
+                                            </li>
                                           ))}
-                                        </div>
+                                        </ul>
                                       </div>
                                     )}
                                   </div>
@@ -1088,23 +1078,6 @@ const GymnastProgress = ({ gymnastId }) => {
                 </div>
               );
             })}
-            {(() => {
-              const completedCount = levels
-                .filter(l => isSideTrackAvailable(l, nextMainLevelNumber))
-                .filter(l => gymnast.levelProgress.some(lp => lp.level.id === l.id && lp.status === 'COMPLETED'))
-                .length;
-              if (completedCount === 0) return null;
-              return (
-                <button
-                  className="btn btn-outline completed-levels-toggle"
-                  onClick={() => setShowCompletedLevels(v => !v)}
-                >
-                  {showCompletedLevels
-                    ? 'Hide completed levels'
-                    : `Show ${completedCount} completed level${completedCount !== 1 ? 's' : ''}`}
-                </button>
-              );
-            })()}
           </div>
         </>
       )}
