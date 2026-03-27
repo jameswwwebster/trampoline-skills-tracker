@@ -9,8 +9,8 @@ const MyProgress = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [children, setChildren] = useState([]);
-  const [selectedChild, setSelectedChild] = useState(null);
+  const [gymnasts, setGymnasts] = useState([]);
+  const [selectedGymnast, setSelectedGymnast] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -19,29 +19,25 @@ const MyProgress = () => {
         setError(null);
 
         if (isChild) {
-          // For children, show their own progress directly
-          setSelectedChild({
+          setSelectedGymnast({
             id: user.id,
             firstName: user.firstName,
             lastName: user.lastName,
             club: user.club
           });
         } else if (isAdult) {
-          // For adults, get their children using the dedicated endpoint
           const response = await axios.get('/api/gymnasts/my-children');
-          const myChildren = response.data;
+          const myGymnasts = response.data;
 
-          if (myChildren.length === 0) {
-            setError('No children found. You may not be registered as a guardian for any gymnasts. Please contact your club administrator to be added as a guardian.');
-          } else if (myChildren.length === 1) {
-            // If only one child, show their progress directly
-            setSelectedChild(myChildren[0]);
+          if (myGymnasts.length === 0) {
+            setError('No gymnasts found. You may not be registered as a guardian for any gymnasts. Please contact your club administrator to be added as a guardian.');
+          } else if (myGymnasts.length === 1) {
+            setSelectedGymnast(myGymnasts[0]);
           } else {
-            // Multiple children, show selection
-            setChildren(myChildren);
+            setGymnasts(myGymnasts);
           }
         } else {
-          setError('Access denied. This page is only available for parents, guardians, and children.');
+          setError('Access denied.');
           return;
         }
       } catch (error) {
@@ -55,12 +51,12 @@ const MyProgress = () => {
     fetchData();
   }, [user, isAdult, isChild]);
 
-  const handleChildSelect = (child) => {
-    setSelectedChild(child);
+  const handleGymnastSelect = (gymnast) => {
+    setSelectedGymnast(gymnast);
   };
 
-  const handleBackToChildren = () => {
-    setSelectedChild(null);
+  const handleBackToGymnasts = () => {
+    setSelectedGymnast(null);
   };
 
   if (loading) {
@@ -87,57 +83,57 @@ const MyProgress = () => {
     );
   }
 
-  // Show specific child's progress
-  if (selectedChild) {
+  // Show specific gymnast's progress
+  if (selectedGymnast) {
     return (
       <div>
-        {children.length > 1 && (
+        {gymnasts.length > 1 && (
           <div style={{ marginBottom: '1rem' }}>
-            <button 
-              onClick={handleBackToChildren}
+            <button
+              onClick={handleBackToGymnasts}
               className="btn btn-outline"
             >
-              ← Back to Children
+              ← Back
             </button>
           </div>
         )}
-        <GymnastProgress gymnastId={selectedChild.id} />
+        <GymnastProgress gymnastId={selectedGymnast.id} />
       </div>
     );
   }
 
-  // Show children selection for adults with multiple children
-  if (isAdult && children.length > 1) {
+  // Show gymnast selection for adults with multiple gymnasts
+  if (isAdult && gymnasts.length > 1) {
     return (
       <div>
-        <h1>Children's Progress</h1>
-        <p>Select a child to view their progress:</p>
-        
+        <h1>Progress</h1>
+        <p>Select a gymnast to view their progress:</p>
+
         <div className="grid">
-          {children.map(child => (
-            <div key={child.id} className="card">
+          {gymnasts.map(gymnast => (
+            <div key={gymnast.id} className="card">
               <div className="card-header">
                 <h3 className="card-title">
-                  {child.firstName} {child.lastName}
+                  {gymnast.firstName} {gymnast.lastName}
                 </h3>
               </div>
               <div>
                 <p>
                   <strong>Date of Birth:</strong>{' '}
-                  {child.dateOfBirth 
-                    ? new Date(child.dateOfBirth).toLocaleDateString()
+                  {gymnast.dateOfBirth
+                    ? new Date(gymnast.dateOfBirth).toLocaleDateString()
                     : 'Not specified'
                   }
                 </p>
                 <p>
-                  <strong>Completed Skills:</strong> {child.completedSkillsCount || 0}
+                  <strong>Completed Skills:</strong> {gymnast.completedSkillsCount || 0}
                 </p>
                 <p>
-                  <strong>Completed Levels:</strong> {child.completedLevelsCount || 0}
+                  <strong>Completed Levels:</strong> {gymnast.completedLevelsCount || 0}
                 </p>
-                
-                <button 
-                  onClick={() => handleChildSelect(child)}
+
+                <button
+                  onClick={() => handleGymnastSelect(gymnast)}
                   className="btn btn-primary"
                   style={{ marginTop: '1rem' }}
                 >
