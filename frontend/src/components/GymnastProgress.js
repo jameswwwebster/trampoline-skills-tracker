@@ -488,7 +488,7 @@ const GymnastProgress = ({ gymnastId }) => {
         <div className="progress-parent-explainer">
           <p>
             Your coach marks skills off during sessions. Skills are grouped into levels —
-            starting at Level 1 and working upwards, each one introducing new jumps and
+            starting at Level 1 and working upwards, each one introducing new skills and
             techniques that build on what came before.
           </p>
           <p>
