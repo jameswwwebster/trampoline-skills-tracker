@@ -492,10 +492,9 @@ const GymnastProgress = ({ gymnastId }) => {
             techniques that build on what came before.
           </p>
           <p>
-            When a level is fully complete, a certificate is awarded.{' '}
-            <a href="#certificates-section" className="progress-parent-explainer__link">
-              View certificates below ↓
-            </a>
+            Some levels are linked to competitions. Reaching those levels means a gymnast
+            is eligible to enter events at that competition grade — though competing is
+            always optional.
           </p>
         </div>
       )}
