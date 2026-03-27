@@ -6132,6 +6132,9 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   text-decoration: none;
   padding: 0.35rem 0.85rem;
   border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
   transition: filter 0.15s;
 }
 .progress-cert-shortcut:hover { filter: brightness(1.1); }

@@ -877,9 +877,12 @@ const GymnastProgress = ({ gymnastId }) => {
 
           {/* Certificates shortcut */}
           {!canCoach && gymnast.certificates?.length > 0 && (
-            <a href="#certificates-section" className="progress-cert-shortcut">
+            <button
+              className="progress-cert-shortcut"
+              onClick={() => document.getElementById('completed-levels-section')?.scrollIntoView({ behavior: 'smooth' })}
+            >
               🏆 View certificates
-            </a>
+            </button>
           )}
 
           {/* Mobile Level Cards */}
@@ -915,7 +918,7 @@ const GymnastProgress = ({ gymnastId }) => {
               return (
                 <React.Fragment key={level.id}>
                 {showCompletedDivider && (
-                  <div className="mobile-levels-divider">Completed levels</div>
+                  <div id="completed-levels-section" className="mobile-levels-divider">Completed levels</div>
                 )}
                 <div id={`level-${level.id}`} className={`mobile-level-card ${isCompleted ? 'completed' : ''} ${isCurrentLevel ? 'current' : ''} ${isSideTrack(level.identifier) ? 'side-track' : ''}`}>
                   {/* Level Header */}
@@ -1133,12 +1136,6 @@ const GymnastProgress = ({ gymnastId }) => {
         </>
       )}
 
-      {/* Mobile Certificates Section */}
-      {!coachingMode && (
-        <div id="certificates-section" style={{ marginTop: '1rem' }}>
-          <CertificateDisplay gymnastId={gymnastId} showActions={false} />
-        </div>
-      )}
       </div>
 
       {/* Complete Level Confirmation Modal */}
