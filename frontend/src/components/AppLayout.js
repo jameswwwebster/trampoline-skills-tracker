@@ -30,6 +30,20 @@ export default function AppLayout() {
 
   const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
 
+  const navRef = useRef(null);
+
+  // Keep --nav-height in sync with the actual rendered nav height
+  useEffect(() => {
+    const update = () => {
+      if (navRef.current) {
+        document.documentElement.style.setProperty('--nav-height', `${navRef.current.offsetHeight}px`);
+      }
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -179,7 +193,7 @@ export default function AppLayout() {
 
   return (
     <div className="app-layout">
-      <nav className="app-layout__nav">
+      <nav className="app-layout__nav" ref={navRef}>
 
         {/* Top bar: brand + user */}
         <div className="app-layout__topbar">

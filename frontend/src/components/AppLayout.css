@@ -25,7 +25,7 @@
 
 @media (max-width: 900px) {
   :root {
-    --nav-height: 3.5rem; /* topbar only */
+    --nav-height: 4rem; /* topbar only — JS will correct after first paint */
   }
 }
 
