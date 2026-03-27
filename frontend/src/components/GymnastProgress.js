@@ -892,7 +892,7 @@ const GymnastProgress = ({ gymnastId }) => {
                 if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
                 return sortLevelsByIdentifier(a, b);
               })
-              .map(level => {
+              .map((level, idx, arr) => {
               // Calculate progress for each level (including side tracks)
               const completedSkills = gymnast.skillProgress
                 .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id)
@@ -908,8 +908,16 @@ const GymnastProgress = ({ gymnastId }) => {
               const isCollapsed = collapsedLevels.has(level.id);
               const isCurrentLevel = !isSideTrack(level.identifier) && parseInt(level.identifier) === getCurrentLevelNumber(gymnast, levels);
               
+              const prevLevel = idx > 0 ? arr[idx - 1] : null;
+              const prevCompleted = prevLevel ? gymnast.levelProgress.some(lp => lp.level.id === prevLevel.id && lp.status === 'COMPLETED') : false;
+              const showCompletedDivider = isCompleted && !prevCompleted;
+
               return (
-                <div key={level.id} id={`level-${level.id}`} className={`mobile-level-card ${isCompleted ? 'completed' : ''} ${isCurrentLevel ? 'current' : ''} ${isSideTrack(level.identifier) ? 'side-track' : ''}`}>
+                <React.Fragment key={level.id}>
+                {showCompletedDivider && (
+                  <div className="mobile-levels-divider">Completed levels</div>
+                )}
+                <div id={`level-${level.id}`} className={`mobile-level-card ${isCompleted ? 'completed' : ''} ${isCurrentLevel ? 'current' : ''} ${isSideTrack(level.identifier) ? 'side-track' : ''}`}>
                   {/* Level Header */}
                   <div className="mobile-level-header" onClick={() => toggleLevelCollapse(level.id)}>
                     <div className="mobile-level-title-row">
@@ -1118,10 +1126,18 @@ const GymnastProgress = ({ gymnastId }) => {
                     </div>
                   )}
                 </div>
+                </React.Fragment>
               );
             })}
           </div>
         </>
+      )}
+
+      {/* Mobile Certificates Section */}
+      {!coachingMode && (
+        <div id="certificates-section" style={{ marginTop: '1rem' }}>
+          <CertificateDisplay gymnastId={gymnastId} showActions={false} />
+        </div>
       )}
       </div>
 

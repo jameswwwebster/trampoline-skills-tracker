@@ -6121,16 +6121,32 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   border-radius: 6px;
 }
 
-/* ── Certificates shortcut link ─────────────────────────── */
+/* ── Certificates shortcut button ───────────────────────── */
 .progress-cert-shortcut {
   display: inline-block;
   margin-bottom: 0.75rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--secondary-color);
+  color: #fff;
+  background: var(--secondary-color);
   text-decoration: none;
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  transition: filter 0.15s;
 }
-.progress-cert-shortcut:hover { text-decoration: underline; }
+.progress-cert-shortcut:hover { filter: brightness(1.1); }
+
+/* ── Completed levels divider ────────────────────────────── */
+.mobile-levels-divider {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.35);
+  padding: 0.75rem 0 0.25rem;
+  border-top: 1px solid rgba(0,0,0,0.1);
+  margin-top: 0.5rem;
+}
 
 /* ── Level certificate display ───────────────────────────── */
 .level-cert-link {
