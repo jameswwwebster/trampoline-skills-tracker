@@ -455,6 +455,24 @@ const GymnastProgress = ({ gymnastId }) => {
 
   return (
     <div className="gymnast-progress">
+
+      {/* Parent explainer — shown for non-coaches */}
+      {!canCoach && (
+        <div className="progress-parent-explainer">
+          <p>
+            Your coach marks skills off as {gymnast.firstName} learns them during sessions.
+            Skills are grouped into levels — starting at Level 1 and working upwards, each one
+            introducing new jumps and techniques that build on what came before.
+          </p>
+          <p>
+            When a level is fully complete, {gymnast.firstName} earns a certificate.{' '}
+            <a href="#certificates-section" className="progress-parent-explainer__link">
+              View certificates below ↓
+            </a>
+          </p>
+        </div>
+      )}
+
       {/* Desktop Layout */}
       <div className="desktop-layout">
         {/* Desktop Coaching Interface */}
@@ -766,9 +784,9 @@ const GymnastProgress = ({ gymnastId }) => {
 
         {/* Certificates Section - Show for non-coaches */}
         {!coachingMode && (
-          <div className="card">
-            <CertificateDisplay 
-              gymnastId={gymnastId} 
+          <div className="card" id="certificates-section">
+            <CertificateDisplay
+              gymnastId={gymnastId}
               showActions={false}
             />
           </div>

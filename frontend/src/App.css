@@ -1782,8 +1782,9 @@ textarea.form-control {
   }
 
   .mobile-level-card.completed {
-    border: 2px solid #28a745;
-    background: #f6fef7;
+    border: 1px solid #d0d0d0;
+    background: #f5f5f5;
+    opacity: 0.65;
   }
 
   .mobile-level-card.side-track {
@@ -3224,8 +3225,9 @@ textarea.form-control {
 }
 
 .level-progress-item.completed {
-  background-color: #e8f5e8;
-  border-color: #28a745;
+  background-color: #f5f5f5;
+  border-color: #d0d0d0;
+  opacity: 0.65;
 }
 
 .level-header {
@@ -3274,7 +3276,7 @@ textarea.form-control {
 }
 
 .level-progress-item.completed .progress-fill {
-  background-color: #28a745;
+  background-color: #aaa;
 }
 
 .progress-percentage {
@@ -6067,6 +6069,32 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   font-weight: 600;
   padding: 0.35rem 0.75rem;
   border-radius: 6px;
+}
+
+/* ── Progress parent explainer ──────────────────────────── */
+.progress-parent-explainer {
+  background: #f8f5ff;
+  border: 1px solid #e0d4f7;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  color: #444;
+  line-height: 1.55;
+}
+.progress-parent-explainer p {
+  margin: 0 0 0.4rem;
+}
+.progress-parent-explainer p:last-child {
+  margin-bottom: 0;
+}
+.progress-parent-explainer__link {
+  color: var(--secondary-color);
+  text-decoration: none;
+  font-weight: 600;
+}
+.progress-parent-explainer__link:hover {
+  text-decoration: underline;
 }
 
 /* ── Birthdays widget ────────────────────────────────────── */
