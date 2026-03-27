@@ -527,12 +527,6 @@ const GymnastProgress = ({ gymnastId }) => {
               >
                 Coach Notes
               </button>
-              <button
-                onClick={() => setActiveTab('certificates')}
-                className={`tab-btn ${activeTab === 'certificates' ? 'active' : ''}`}
-              >
-                🏆 Certificates
-              </button>
             </div>
 
             <div className="coaching-content">
@@ -554,14 +548,6 @@ const GymnastProgress = ({ gymnastId }) => {
                 </div>
               )}
 
-              {activeTab === 'certificates' && (
-                <div className="certificates-section">
-                  <CertificateDisplay 
-                    gymnastId={gymnastId} 
-                    showActions={canCoach}
-                  />
-                </div>
-              )}
             </div>
           </div>
         )}
