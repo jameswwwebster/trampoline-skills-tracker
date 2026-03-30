@@ -870,27 +870,24 @@ router.delete('/:levelId/routines/:routineId/skills/:skillId', auth, requireRole
       return res.status(404).json({ error: 'Routine not found in this level' });
     }
 
-    // Find and delete the routine skill
-    const routineSkill = await prisma.routineSkill.findUnique({
-      where: {
-        routineId_skillId: {
-          routineId,
-          skillId
-        }
-      }
+    // Find the routine skill — custom skills store rs.id as the skill id (no FK),
+    // regular skills store the actual skill FK. Try both.
+    let routineSkill = await prisma.routineSkill.findFirst({
+      where: { id: skillId, routineId }
     });
+
+    if (!routineSkill) {
+      routineSkill = await prisma.routineSkill.findUnique({
+        where: { routineId_skillId: { routineId, skillId } }
+      });
+    }
 
     if (!routineSkill) {
       return res.status(404).json({ error: 'Skill not found in this routine' });
     }
 
     await prisma.routineSkill.delete({
-      where: {
-        routineId_skillId: {
-          routineId,
-          skillId
-        }
-      }
+      where: { id: routineSkill.id }
     });
 
     res.json({ message: 'Skill removed from routine successfully' });
