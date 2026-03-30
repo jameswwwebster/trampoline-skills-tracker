@@ -4859,18 +4859,15 @@ textarea.form-control {
   gap: 0.5rem;
 }
 
-.routine-skills-section .btn {
-  width: 100px;
-  height: 40px;
-}
+/* override removed — replaced by .edit-mode-btn */
 
 .routine-skill-item {
   background: white;
   border: 1px solid #dee2e6;
   border-radius: 4px;
-  padding: 0.5rem;
+  padding: 0.4rem 0.5rem;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
 }
@@ -4881,9 +4878,61 @@ textarea.form-control {
   font-weight: 400;
 }
 
-.routine-skill-item .btn {
-  width: 60px;
-  height: 40px;
+/* override removed — replaced by .edit-mode-btn */
+
+/* ── Edit-mode action buttons ────────────────────────────── */
+.edit-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+  color: #bbb;
+  flex-shrink: 0;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.edit-mode-btn:hover {
+  color: #555;
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.15);
+}
+.edit-mode-btn--delete:hover {
+  color: #e74c3c;
+  background: rgba(231,76,60,0.07);
+  border-color: rgba(231,76,60,0.3);
+}
+.edit-mode-btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+/* "+ Add X" buttons in edit mode */
+.edit-mode-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 26px;
+  padding: 0 0.65rem;
+  border-radius: 5px;
+  border: 1px solid rgba(0,0,0,0.18);
+  background: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-family: inherit;
+  color: #555;
+  white-space: nowrap;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.edit-mode-add-btn:hover {
+  background: var(--secondary-color);
+  border-color: var(--secondary-color);
+  color: #fff;
 }
 
 /* Modal styles */

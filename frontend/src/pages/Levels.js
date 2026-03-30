@@ -580,11 +580,8 @@ const LevelCard = ({
             Level {level.identifier || level.number}: {level.name}
           </h4>
           {canEdit && (
-            <button 
-              onClick={onEditLevel}
-              className="btn btn-sm btn-outline"
-            >
-              Edit Level
+            <button onClick={onEditLevel} className="edit-mode-btn" title="Edit level">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           )}
         </div>
@@ -625,23 +622,14 @@ const LevelCard = ({
                     <div className="routine-skill-item">
                       <span className="skill-name">{skill.name}</span>
                       {canEdit && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                          <button 
-                            onClick={() => onEditSkill(skill)}
-                            className="btn btn-xs btn-outline"
-                            title="Edit skill"
-                          >
-                            Edit
+                        <span className="edit-mode-btn-group">
+                          <button onClick={() => onEditSkill(skill)} className="edit-mode-btn" title="Edit skill">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                           </button>
-                          <button 
-                            onClick={() => onDeleteSkill(level.id, skill.id)}
-                            className="btn btn-xs btn-danger"
-                            title="Delete skill"
-                            style={{ padding: '0.1rem 0.3rem', lineHeight: 1, minWidth: 'auto' }}
-                          >
-                            ×
+                          <button onClick={() => onDeleteSkill(level.id, skill.id)} className="edit-mode-btn edit-mode-btn--delete" title="Delete skill">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                           </button>
-                        </div>
+                        </span>
                       )}
                     </div>
                     {skill.description && (
@@ -655,12 +643,7 @@ const LevelCard = ({
             )}
             {canEdit && (
               <div style={{ marginTop: '0.5rem' }}>
-                <button 
-                  onClick={onAddSkill}
-                  className="btn btn-sm btn-primary"
-                >
-                  + Add Skill
-                </button>
+                <button onClick={onAddSkill} className="edit-mode-add-btn">+ Add Skill</button>
               </div>
             )}
           </div>
@@ -670,12 +653,7 @@ const LevelCard = ({
             <div className="section-header">
               <h5>Routines ({level.routines.length})</h5>
               {canEdit && (
-                <button 
-                  onClick={onAddRoutine}
-                  className="btn btn-sm btn-primary"
-                >
-                  + Add Routine
-                </button>
+                <button onClick={onAddRoutine} className="edit-mode-add-btn">+ Add Routine</button>
               )}
             </div>
             
@@ -735,20 +713,14 @@ const RoutineCard = ({
             <span className="badge badge-info">Alternative</span>
           )}
           {canEdit && (
-            <div className="routine-actions">
-              <button 
-                onClick={onEditRoutine}
-                className="btn btn-outline"
-              >
-                Edit
+            <span className="edit-mode-btn-group">
+              <button onClick={onEditRoutine} className="edit-mode-btn" title="Edit routine">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
-              <button 
-                onClick={onDeleteRoutine}
-                className="btn btn-danger"
-              >
-                ×
+              <button onClick={onDeleteRoutine} className="edit-mode-btn edit-mode-btn--delete" title="Delete routine">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
               </button>
-            </div>
+            </span>
           )}
         </div>
       </div>
@@ -763,12 +735,7 @@ const RoutineCard = ({
             <div className="section-header">
               <h6>Required Skills ({routine.skills.length})</h6>
               {canEdit && (
-                <button 
-                  onClick={onAddSkillToRoutine}
-                  className="btn btn-xs btn-primary"
-                >
-                  + Add Skill
-                </button>
+                <button onClick={onAddSkillToRoutine} className="edit-mode-add-btn">+ Add Skill</button>
               )}
             </div>
             
@@ -784,13 +751,8 @@ const RoutineCard = ({
                       {skill.isImplicit && <span className="badge badge-info" style={{ marginLeft: '0.5rem', fontSize: '0.7rem' }}>Implicit</span>}
                     </span>
                     {canEdit && (
-                      <button 
-                        onClick={() => onRemoveSkillFromRoutine(levelId, routine.id, skill.id)}
-                        className="btn btn-xs btn-danger"
-                        title="Remove from routine"
-                        style={{ padding: '0.1rem 0.3rem', lineHeight: 1, minWidth: 'auto' }}
-                      >
-                        ×
+                      <button onClick={() => onRemoveSkillFromRoutine(levelId, routine.id, skill.id)} className="edit-mode-btn edit-mode-btn--delete" title="Remove from routine">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                       </button>
                     )}
                   </div>
