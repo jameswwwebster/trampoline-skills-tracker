@@ -777,11 +777,11 @@ const RoutineCard = ({
                 {routine.skills.map(skill => (
                   <div key={skill.id} className="routine-skill-item">
                     <span className="skill-name" style={{ 
-                      fontStyle: skill.isCustom ? 'italic' : 'normal',
-                      color: skill.isCustom ? '#666' : 'inherit'
+                      fontStyle: skill.isImplicit ? 'italic' : 'normal',
+                      color: skill.isImplicit ? '#666' : 'inherit'
                     }}>
                       {skill.name}
-                      {skill.isCustom && <span className="badge badge-info" style={{ marginLeft: '0.5rem', fontSize: '0.7rem' }}>Custom</span>}
+                      {skill.isImplicit && <span className="badge badge-info" style={{ marginLeft: '0.5rem', fontSize: '0.7rem' }}>Implicit</span>}
                     </span>
                     {canEdit && (
                       <button 
@@ -1174,7 +1174,7 @@ const AddRoutineModal = ({ levelId, onSave, onCancel }) => {
 
 // Add Skill to Routine Modal Component
 const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, onCancel }) => {
-  const [skillType, setSkillType] = useState('existing'); // 'existing' or 'custom'
+  const [skillType, setSkillType] = useState('existing'); // 'existing' or 'implicit'
   const [selectedSkillId, setSelectedSkillId] = useState('');
   const [customSkillName, setCustomSkillName] = useState('');
 
@@ -1182,7 +1182,7 @@ const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, o
     e.preventDefault();
     if (skillType === 'existing' && selectedSkillId) {
       onSave(selectedSkillId);
-    } else if (skillType === 'custom' && customSkillName.trim()) {
+    } else if (skillType === 'implicit' && customSkillName.trim()) {
       onSave(null, customSkillName.trim());
     }
   };
@@ -1212,16 +1212,16 @@ const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, o
                 <input
                   type="radio"
                   name="skillType"
-                  value="custom"
-                  checked={skillType === 'custom'}
+                  value="implicit"
+                  checked={skillType === 'implicit'}
                   onChange={(e) => setSkillType(e.target.value)}
                 />
-                Custom Skill
+                Implicit Skill
               </label>
             </div>
           </div>
 
-          {skillType === 'existing' ? (
+          {skillType !== 'implicit' ? (
             <div className="form-group">
               <label>Select Skill</label>
               <select
@@ -1239,7 +1239,7 @@ const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, o
             </div>
           ) : (
             <div className="form-group">
-              <label>Custom Skill Name</label>
+              <label>Implicit Skill Name</label>
               <input
                 type="text"
                 value={customSkillName}

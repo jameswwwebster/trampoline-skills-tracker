@@ -129,7 +129,7 @@ router.get('/', auth, async (req, res) => {
               description: null,
               levelId: level.id,
               order: rs.order,
-              isCustom: true
+              isImplicit: true
             };
           } else {
             // Return regular skill object
@@ -281,7 +281,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
               description: null,
               levelId: result.id,
               order: rs.order,
-              isCustom: true
+              isImplicit: true
             };
           } else {
             // Return regular skill object
@@ -401,7 +401,7 @@ router.put('/:levelId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
               description: null,
               levelId: result.id,
               order: rs.order,
-              isCustom: true
+              isImplicit: true
             };
           } else {
             // Return regular skill object
@@ -617,7 +617,7 @@ router.post('/:levelId/routines', auth, requireRole(['CLUB_ADMIN']), async (req,
             description: null,
             levelId: routine.levelId,
             order: rs.order,
-            isCustom: true
+            isImplicit: true
           };
         } else {
           // Return regular skill object
@@ -679,7 +679,7 @@ router.put('/:levelId/routines/:routineId', auth, requireRole(['CLUB_ADMIN']), a
             description: null,
             levelId: routine.levelId,
             order: rs.order,
-            isCustom: true
+            isImplicit: true
           };
         } else {
           // Return regular skill object
@@ -782,7 +782,7 @@ router.post('/:levelId/routines/:routineId/skills', auth, requireRole(['CLUB_ADM
         description: null,
         levelId: levelId,
         order: 999,
-        isCustom: true // Flag to indicate this is a custom skill
+        isImplicit: true // Flag to indicate this is a custom skill
       };
     } else {
       // Handle existing skill

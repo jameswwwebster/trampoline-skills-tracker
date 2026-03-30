@@ -232,9 +232,9 @@ const SkillProgressTracker = ({ gymnastId, levelId, onProgressUpdate }) => {
                     <div className="routine-skills-grid">
                       {routine.routineSkills.map(routineSkill => {
                         // Custom skills don't have progress tracking
-                        const isCustomSkill = !routineSkill.skill;
-                        const progress = isCustomSkill ? null : progressData[routineSkill.skill.id];
-                        const status = isCustomSkill ? 'NOT_TRACKED' : (progress?.status || 'NOT_STARTED');
+                        const isImplicitSkill = !routineSkill.skill;
+                        const progress = isImplicitSkill ? null : progressData[routineSkill.skill.id];
+                        const status = isImplicitSkill ? 'NOT_TRACKED' : (progress?.status || 'NOT_STARTED');
                         
                         return (
                           <div key={routineSkill.id} className={`routine-skill ${status.toLowerCase()}`}>
