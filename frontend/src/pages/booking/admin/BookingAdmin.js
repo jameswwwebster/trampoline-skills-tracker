@@ -291,12 +291,12 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
                       {c.gymnast.emergencyContactPhone}
                     </a>
                   </p>
-                ) : c.gymnast.user?.phone ? (
+                ) : !c.gymnast.userId && c.gymnast.guardians?.[0]?.phone ? (
                   <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
-                    Parent: <strong style={{ color: 'var(--booking-text-on-light)' }}>{c.gymnast.user.firstName} {c.gymnast.user.lastName}</strong>
+                    Parent: <strong style={{ color: 'var(--booking-text-on-light)' }}>{c.gymnast.guardians[0].firstName} {c.gymnast.guardians[0].lastName}</strong>
                     {' · '}
-                    <a href={waLink(c.gymnast.user.phone)} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--booking-accent)' }}>
-                      {c.gymnast.user.phone}
+                    <a href={waLink(c.gymnast.guardians[0].phone)} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--booking-accent)' }}>
+                      {c.gymnast.guardians[0].phone}
                     </a>
                   </p>
                 ) : (

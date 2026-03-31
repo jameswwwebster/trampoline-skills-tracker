@@ -111,10 +111,11 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
             consents: {
               select: { type: true, granted: true },
             },
+            userId: true,
             emergencyContactName: true,
             emergencyContactPhone: true,
             emergencyContactRelationship: true,
-            user: {
+            guardians: {
               select: { firstName: true, lastName: true, phone: true },
             },
           },
