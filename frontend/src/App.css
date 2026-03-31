@@ -6318,7 +6318,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
 
 /* ── Admin Hub ───────────────────────────────────────────── */
 .admin-hub {
-  max-width: 600px;
+  max-width: 900px;
 }
 .admin-hub__header {
   display: flex;
@@ -6352,12 +6352,17 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
 }
 .admin-hub__tiles {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
 }
-@media (min-width: 400px) {
+@media (min-width: 500px) {
   .admin-hub__tiles {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+@media (min-width: 700px) {
+  .admin-hub__tiles {
+    grid-template-columns: repeat(5, 1fr);
   }
 }
 
