@@ -1010,7 +1010,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Update gymnast
-router.put('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
     const { error, value } = updateGymnastSchema.validate(req.body);
@@ -1020,9 +1020,12 @@ router.put('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) 
 
     const { firstName, lastName, dateOfBirth, coachNotes } = value;
 
+    const isStaff = req.user.role === 'CLUB_ADMIN' || req.user.role === 'COACH';
+
     // Check if gymnast exists and belongs to user's club
     const existingGymnast = await prisma.gymnast.findUnique({
-      where: { id }
+      where: { id },
+      include: { guardians: { select: { id: true } } }
     });
 
     if (!existingGymnast) {
@@ -1033,13 +1036,25 @@ router.put('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) 
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    const isGuardian = existingGymnast.guardians.some(g => g.id === req.user.id);
+    const isSelf = existingGymnast.userId === req.user.id;
+
+    if (!isStaff && !isGuardian && !isSelf) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Non-staff can only update name and DOB, not coachNotes
+    if (!isStaff && coachNotes !== undefined) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
     const gymnast = await prisma.gymnast.update({
       where: { id },
       data: {
         firstName,
         lastName,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        coachNotes: coachNotes !== undefined ? coachNotes : undefined
+        ...(isStaff && coachNotes !== undefined ? { coachNotes } : {})
       },
       include: {
         guardians: {

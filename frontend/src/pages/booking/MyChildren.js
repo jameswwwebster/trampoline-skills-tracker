@@ -294,6 +294,32 @@ function GymnastCard({ gymnast, onUpdated }) {
   const [healthNotesNone, setHealthNotesNone] = useState(gymnast.healthNotes === 'none');
   const [healthNotesSaving, setHealthNotesSaving] = useState(false);
   const [healthNotesError, setHealthNotesError] = useState(null);
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [detailsForm, setDetailsForm] = useState({
+    firstName: gymnast.firstName || '',
+    lastName: gymnast.lastName || '',
+    dateOfBirth: gymnast.dateOfBirth ? new Date(gymnast.dateOfBirth).toISOString().split('T')[0] : ''
+  });
+  const [detailsSaving, setDetailsSaving] = useState(false);
+  const [detailsError, setDetailsError] = useState(null);
+
+  const handleSaveDetails = async () => {
+    if (!detailsForm.firstName.trim() || !detailsForm.lastName.trim()) {
+      setDetailsError('First and last name are required.');
+      return;
+    }
+    setDetailsSaving(true);
+    setDetailsError(null);
+    try {
+      await bookingApi.updateGymnast(gymnast.id, detailsForm);
+      setEditingDetails(false);
+      onUpdated();
+    } catch (err) {
+      setDetailsError(err.response?.data?.error || 'Failed to save.');
+    } finally {
+      setDetailsSaving(false);
+    }
+  };
 
   const handleSaveHealthNotes = async () => {
     setHealthNotesSaving(true);
@@ -324,16 +350,78 @@ function GymnastCard({ gymnast, onUpdated }) {
             </span>
           )}
         </div>
-        {gymnast.isSelf && (
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button
             className="bk-btn bk-btn--sm"
             style={{ border: '1px solid var(--booking-border)' }}
-            onClick={() => setEditingEC(v => !v)}
+            onClick={() => {
+              setDetailsForm({
+                firstName: gymnast.firstName || '',
+                lastName: gymnast.lastName || '',
+                dateOfBirth: gymnast.dateOfBirth ? new Date(gymnast.dateOfBirth).toISOString().split('T')[0] : ''
+              });
+              setDetailsError(null);
+              setEditingDetails(v => !v);
+            }}
           >
-            {editingEC ? 'Cancel' : hasEC ? 'Edit emergency contact' : 'Add emergency contact'}
+            {editingDetails ? 'Cancel' : 'Edit name / DOB'}
           </button>
-        )}
+          {gymnast.isSelf && (
+            <button
+              className="bk-btn bk-btn--sm"
+              style={{ border: '1px solid var(--booking-border)' }}
+              onClick={() => setEditingEC(v => !v)}
+            >
+              {editingEC ? 'Cancel' : hasEC ? 'Edit emergency contact' : 'Add emergency contact'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {editingDetails && (
+        <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'var(--booking-bg-subtle, #f9f9f9)', borderRadius: '6px' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+            <input
+              className="bk-input"
+              style={{ flex: 1, minWidth: '120px' }}
+              placeholder="First name"
+              value={detailsForm.firstName}
+              onChange={e => setDetailsForm(f => ({ ...f, firstName: e.target.value }))}
+            />
+            <input
+              className="bk-input"
+              style={{ flex: 1, minWidth: '120px' }}
+              placeholder="Last name"
+              value={detailsForm.lastName}
+              onChange={e => setDetailsForm(f => ({ ...f, lastName: e.target.value }))}
+            />
+            <input
+              className="bk-input"
+              type="date"
+              style={{ flex: 1, minWidth: '140px' }}
+              value={detailsForm.dateOfBirth}
+              onChange={e => setDetailsForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+            />
+          </div>
+          {detailsError && <p className="bk-error" style={{ marginBottom: '0.4rem' }}>{detailsError}</p>}
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <button
+              className="bk-btn bk-btn--primary bk-btn--sm"
+              disabled={detailsSaving}
+              onClick={handleSaveDetails}
+            >
+              {detailsSaving ? 'Saving...' : 'Save'}
+            </button>
+            <button
+              className="bk-btn bk-btn--sm"
+              style={{ border: '1px solid var(--booking-border)' }}
+              onClick={() => { setEditingDetails(false); setDetailsError(null); }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {gymnast.isSelf && !editingEC && hasEC && (
         <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--booking-text-muted)' }}>
