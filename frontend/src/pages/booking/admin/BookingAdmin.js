@@ -255,17 +255,33 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
               ? new Date(c.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
               : null;
             return (
-              <div key={c.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--booking-bg-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.9rem' }}>{c.gymnast.firstName} {c.gymnast.lastName}</span>
-                {isFuture ? (
-                  <span style={{ fontSize: '0.75rem', padding: '1px 6px', borderRadius: 4, background: '#e3f2fd', color: '#1565c0', fontWeight: 600 }}>
-                    Starts {startsBadge}
-                  </span>
-                ) : c.status === 'PAUSED' ? (
-                  <span style={{ fontSize: '0.75rem', padding: '1px 6px', borderRadius: 4, background: 'rgba(0,0,0,0.06)', color: 'var(--booking-text-muted)' }}>
-                    Paused
-                  </span>
-                ) : null}
+              <div key={c.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--booking-bg-light)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.9rem' }}>{c.gymnast.firstName} {c.gymnast.lastName}</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    {CONSENT_BADGES.map(({ type, label }) => {
+                      const granted = c.gymnast.consents?.find(con => con.type === type)?.granted;
+                      return (
+                        <span key={type} title={label} style={{
+                          padding: '1px 6px', borderRadius: 4, fontSize: '0.75rem',
+                          background: granted ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.1)',
+                          color: granted ? 'var(--booking-success)' : 'var(--booking-danger)',
+                        }}>
+                          {granted ? '✓' : '✗'} {label}
+                        </span>
+                      );
+                    })}
+                    {isFuture ? (
+                      <span style={{ fontSize: '0.75rem', padding: '1px 6px', borderRadius: 4, background: '#e3f2fd', color: '#1565c0', fontWeight: 600 }}>
+                        Starts {startsBadge}
+                      </span>
+                    ) : c.status === 'PAUSED' ? (
+                      <span style={{ fontSize: '0.75rem', padding: '1px 6px', borderRadius: 4, background: 'rgba(0,0,0,0.06)', color: 'var(--booking-text-muted)' }}>
+                        Paused
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -371,6 +387,14 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
         onClick={() => navigate(`/booking/admin/register/${selectedSession}`)}
       >
         Open register
+      </button>
+
+      <button
+        className="bk-btn"
+        style={{ width: '100%', marginBottom: '0.5rem', border: '1px solid var(--booking-accent)', color: 'var(--booking-accent)' }}
+        onClick={() => navigate(`/gymnasts?session=${selectedSession}`)}
+      >
+        Track these gymnasts →
       </button>
 
       <button

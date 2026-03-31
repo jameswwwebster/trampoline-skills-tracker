@@ -108,6 +108,9 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
               orderBy: { createdAt: 'desc' },
               take: 1,
             },
+            consents: {
+              select: { type: true, granted: true },
+            },
           },
         },
       },
