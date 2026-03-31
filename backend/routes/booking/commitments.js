@@ -6,6 +6,36 @@ const { audit } = require('../../services/auditLogService');
 const router = express.Router();
 const prisma = new PrismaClient();
 
+// GET /api/commitments/mine-all — auth only, all commitments for the requesting user's gymnasts
+router.get('/mine-all', auth, async (req, res) => {
+  try {
+    const myGymnasts = await prisma.gymnast.findMany({
+      where: {
+        OR: [
+          { userId: req.user.id },
+          { guardians: { some: { id: req.user.id } } },
+        ],
+      },
+      select: { id: true },
+    });
+    const myGymnastIds = myGymnasts.map(g => g.id);
+
+    const commitments = await prisma.commitment.findMany({
+      where: { gymnastId: { in: myGymnastIds } },
+      include: {
+        gymnast: { select: { id: true, firstName: true, lastName: true } },
+        template: { select: { id: true, dayOfWeek: true, startTime: true, endTime: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    res.json(commitments);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/commitments/mine?templateId=xxx — auth only, scoped to requesting user's gymnasts
 // MUST be declared before GET /:id to avoid Express matching "mine" as an :id param
 router.get('/mine', auth, async (req, res) => {

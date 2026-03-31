@@ -11,9 +11,18 @@ function isToday(dateStr) {
     d.getDate() === today.getDate();
 }
 
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const COMMITMENT_STATUS_LABEL = {
+  ACTIVE: 'Active',
+  PAUSED: 'Paused',
+  WAITLISTED: 'Waitlisted',
+};
+
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
   const [waitlist, setWaitlist] = useState([]);
+  const [commitments, setCommitments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(null);
   const navigate = useNavigate();
@@ -22,9 +31,11 @@ export default function MyBookings() {
     Promise.all([
       bookingApi.getMyBookings(),
       bookingApi.getMyWaitlist().catch(() => ({ data: [] })),
-    ]).then(([bRes, wRes]) => {
+      bookingApi.getMyCommitments().catch(() => ({ data: [] })),
+    ]).then(([bRes, wRes, cRes]) => {
       setBookings(bRes.data.filter(b => b.status === 'CONFIRMED'));
       setWaitlist(wRes.data);
+      setCommitments(cRes.data);
     }).finally(() => setLoading(false));
   };
 
@@ -74,6 +85,24 @@ export default function MyBookings() {
           </div>
         );
       })}
+
+      {commitments.length > 0 && (
+        <>
+          <h3 style={{ marginTop: '1.5rem', marginBottom: '0.5rem' }}>Standing Slots</h3>
+          {commitments.map(c => (
+            <div key={c.id} className="bk-card">
+              <strong>{DAYS[c.template.dayOfWeek]}s — {c.template.startTime}–{c.template.endTime}</strong>
+              <p style={{ margin: '0.25rem 0' }} className="bk-muted">
+                {c.gymnast.firstName} {c.gymnast.lastName}
+              </p>
+              <p style={{ margin: '0.25rem 0', fontSize: '0.85rem' }}>
+                Status: {COMMITMENT_STATUS_LABEL[c.status] ?? c.status}
+              </p>
+            </div>
+          ))}
+          <h3 style={{ marginTop: '1.5rem', marginBottom: '0.5rem' }}>Upcoming Bookings</h3>
+        </>
+      )}
 
       {bookings.length === 0 && <p>No upcoming bookings.</p>}
       {bookings.map(b => {
