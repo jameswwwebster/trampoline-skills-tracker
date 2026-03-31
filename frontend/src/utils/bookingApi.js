@@ -218,6 +218,8 @@ export const bookingApi = {
     }),
 
   // Commitments
+  getMyCommitments: () =>
+    axios.get(`${API_URL}/commitments/mine-all`, { headers: getHeaders() }),
   getCommitmentsForTemplate: (templateId) =>
     axios.get(`${API_URL}/commitments?templateId=${templateId}`, { headers: getHeaders() }),
   getCommitmentsForGymnast: (gymnastId) =>
