@@ -312,6 +312,11 @@ const MEMBERSHIP_BADGE = {
 function GymnastRow({ g, memberships, templates, onUpdated }) {
   const membership = memberships.find(m => m.gymnastId === g.id && m.status !== 'CANCELLED') ?? null;
 
+  const [editingName, setEditingName] = useState(false);
+  const [nameForm, setNameForm] = useState({ firstName: g.firstName, lastName: g.lastName });
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameError, setNameError] = useState(null);
+
   const [editingDob, setEditingDob] = useState(false);
   const [dobValue, setDobValue] = useState('');
   const [dobSaving, setDobSaving] = useState(false);
@@ -351,6 +356,27 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
       setHealthNotesError(err.response?.data?.error || 'Failed to save.');
     } finally {
       setHealthNotesSaving(false);
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (!nameForm.firstName.trim() || !nameForm.lastName.trim()) {
+      setNameError('First and last name are required.');
+      return;
+    }
+    setNameSaving(true);
+    setNameError(null);
+    try {
+      await bookingApi.updateGymnast(g.id, {
+        firstName: nameForm.firstName.trim(),
+        lastName: nameForm.lastName.trim(),
+        dateOfBirth: g.dateOfBirth ? new Date(g.dateOfBirth).toISOString().slice(0, 10) : undefined,
+      });
+      setEditingName(false);
+      onUpdated();
+    } catch (err) {
+      setNameError(err.response?.data?.error || 'Failed to save.');
+      setNameSaving(false);
     }
   };
 
@@ -497,10 +523,34 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
     }}>
       {/* Header: name + membership badge */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-        <strong style={{ fontSize: '0.9rem' }}>
-          {g.firstName} {g.lastName}
-          {g.isSelf && <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', fontWeight: 400, color: 'var(--booking-text-muted)' }}>Adult participant</span>}
-        </strong>
+        {editingName ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap', flex: 1 }}>
+            <input className="bk-input" style={{ fontSize: '0.82rem', padding: '0.2rem 0.4rem', width: '120px' }}
+              placeholder="First name" value={nameForm.firstName}
+              onChange={e => setNameForm(f => ({ ...f, firstName: e.target.value }))} autoFocus />
+            <input className="bk-input" style={{ fontSize: '0.82rem', padding: '0.2rem 0.4rem', width: '120px' }}
+              placeholder="Last name" value={nameForm.lastName}
+              onChange={e => setNameForm(f => ({ ...f, lastName: e.target.value }))} />
+            <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={nameSaving} onClick={handleSaveName} style={{ fontSize: '0.75rem' }}>
+              {nameSaving ? 'Saving…' : 'Save'}
+            </button>
+            <button className="bk-btn bk-btn--sm" onClick={() => { setEditingName(false); setNameError(null); setNameForm({ firstName: g.firstName, lastName: g.lastName }); }}
+              style={{ fontSize: '0.75rem', border: '1px solid var(--booking-border)' }}>
+              Cancel
+            </button>
+            {nameError && <span style={{ color: 'var(--booking-danger)', fontSize: '0.75rem' }}>{nameError}</span>}
+          </span>
+        ) : (
+          <strong style={{ fontSize: '0.9rem' }}>
+            {g.firstName} {g.lastName}
+            {g.isSelf && <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem', fontWeight: 400, color: 'var(--booking-text-muted)' }}>Adult participant</span>}
+            {' '}
+            <button onClick={() => { setNameForm({ firstName: g.firstName, lastName: g.lastName }); setEditingName(true); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--booking-accent)', fontSize: '0.75rem', padding: 0, fontWeight: 400 }}>
+              Edit
+            </button>
+          </strong>
+        )}
         <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '1px 8px', borderRadius: 4, background: badge.bg, color: badge.color, flexShrink: 0 }}>
           {badge.label}
         </span>
