@@ -282,6 +282,18 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
                     ) : null}
                   </div>
                 </div>
+                {c.gymnast.emergencyContactName ? (
+                  <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
+                    Emergency: <strong style={{ color: 'var(--booking-text-on-light)' }}>{c.gymnast.emergencyContactName}</strong>
+                    {c.gymnast.emergencyContactRelationship && ` (${c.gymnast.emergencyContactRelationship})`}
+                    {' · '}
+                    <a href={waLink(c.gymnast.emergencyContactPhone)} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--booking-accent)' }}>
+                      {c.gymnast.emergencyContactPhone}
+                    </a>
+                  </p>
+                ) : (
+                  <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>No emergency contact</p>
+                )}
               </div>
             );
           })}
