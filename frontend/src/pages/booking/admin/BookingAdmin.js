@@ -300,9 +300,6 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
                 <div>
                   <strong style={{ fontSize: '0.95rem' }}>{l.gymnast.firstName} {l.gymnast.lastName}</strong>
-                  <span className="bk-muted" style={{ marginLeft: '0.5rem', fontSize: '0.8rem' }}>
-                    via {b.user.firstName} {b.user.lastName}
-                  </span>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.3rem', flexShrink: 0, maxWidth: '55%' }}>
                   {CONSENT_BADGES.map(({ type, label }) => {
