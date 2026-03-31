@@ -114,6 +114,9 @@ router.get('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => 
             emergencyContactName: true,
             emergencyContactPhone: true,
             emergencyContactRelationship: true,
+            user: {
+              select: { firstName: true, lastName: true, phone: true },
+            },
           },
         },
       },

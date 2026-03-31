@@ -291,6 +291,14 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
                       {c.gymnast.emergencyContactPhone}
                     </a>
                   </p>
+                ) : c.gymnast.user?.phone ? (
+                  <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>
+                    Parent: <strong style={{ color: 'var(--booking-text-on-light)' }}>{c.gymnast.user.firstName} {c.gymnast.user.lastName}</strong>
+                    {' · '}
+                    <a href={waLink(c.gymnast.user.phone)} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--booking-accent)' }}>
+                      {c.gymnast.user.phone}
+                    </a>
+                  </p>
                 ) : (
                   <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: 'var(--booking-danger)' }}>No emergency contact</p>
                 )}
