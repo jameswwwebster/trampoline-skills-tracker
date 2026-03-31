@@ -6319,6 +6319,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
 /* ── Admin Hub ───────────────────────────────────────────── */
 .admin-hub {
   max-width: 900px;
+  margin: 0 auto;
 }
 .admin-hub__header {
   display: flex;
