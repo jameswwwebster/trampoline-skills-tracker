@@ -5,6 +5,39 @@ const emailService = require('../../services/emailService');
 const router = express.Router();
 const prisma = new PrismaClient();
 
+async function handleInvoicePaid(invoice, prisma, emailService) {
+  const membership = await prisma.membership.findFirst({
+    where: { stripeSubscriptionId: invoice.subscription },
+    include: { gymnast: true, club: true },
+  });
+  if (!membership) return;
+  if (membership.status !== 'ACTIVE') {
+    await prisma.membership.update({ where: { id: membership.id }, data: { status: 'ACTIVE', needsPaymentMethod: false } });
+  }
+  if (membership.club.emailEnabled && invoice.amount_paid > 0) {
+    const guardian = await prisma.user.findFirst({
+      where: { guardedGymnasts: { some: { id: membership.gymnastId } } },
+      select: { email: true, firstName: true, lastName: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (guardian?.email) {
+      try {
+        const nextBillingDate = new Date(invoice.period_end * 1000);
+        await emailService.sendMembershipPaymentSuccessEmail(
+          guardian.email,
+          `${guardian.firstName} ${guardian.lastName}`,
+          membership.gymnast,
+          invoice.amount_paid,
+          nextBillingDate,
+        );
+      } catch (emailErr) {
+        console.error('Failed to send membership payment success email:', emailErr.message);
+      }
+    }
+  }
+  console.log(`Membership ${membership.id} activated via invoice paid`);
+}
+
 // IMPORTANT: Registered BEFORE express.json() in server.js to receive raw body
 router.post('/', express.raw({ type: 'application/json' }), async (req, res) => {
   const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -98,40 +131,29 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
     console.log(`Bookings cancelled and credits released for payment intent ${paymentIntent.id} (${event.type})`);
   }
 
+  // invoice_payment.paid: new Stripe API (2026-02-25+) — object is invoice_payment, not invoice
+  // Must fetch the invoice to get the subscription ID.
+  if (event.type === 'invoice_payment.paid') {
+    const invoicePayment = event.data.object;
+    if (invoicePayment.invoice && invoicePayment.status === 'paid') {
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      try {
+        const invoice = await stripe.invoices.retrieve(invoicePayment.invoice);
+        if (invoice.subscription) {
+          await handleInvoicePaid(invoice, prisma, emailService);
+        }
+        console.log(`invoice_payment.paid processed (invoice ${invoicePayment.invoice})`);
+      } catch (err) {
+        console.error('Error handling invoice_payment.paid:', err.message);
+      }
+    }
+  }
+
   if (event.type === 'invoice.paid') {
     const invoice = event.data.object;
     if (invoice.subscription) {
-      const membership = await prisma.membership.findFirst({
-        where: { stripeSubscriptionId: invoice.subscription },
-        include: { gymnast: true, club: true },
-      });
-      if (membership) {
-        if (membership.status !== 'ACTIVE') {
-          await prisma.membership.update({ where: { id: membership.id }, data: { status: 'ACTIVE' } });
-        }
-        if (membership.club.emailEnabled && invoice.amount_paid > 0) {
-          const guardian = await prisma.user.findFirst({
-            where: { guardedGymnasts: { some: { id: membership.gymnastId } } },
-            select: { email: true, firstName: true, lastName: true },
-            orderBy: { createdAt: 'asc' },
-          });
-          if (guardian?.email) {
-            try {
-              const nextBillingDate = new Date(invoice.period_end * 1000);
-              await emailService.sendMembershipPaymentSuccessEmail(
-                guardian.email,
-                `${guardian.firstName} ${guardian.lastName}`,
-                membership.gymnast,
-                invoice.amount_paid,
-                nextBillingDate,
-              );
-            } catch (emailErr) {
-              console.error('Failed to send membership payment success email:', emailErr.message);
-            }
-          }
-        }
-      }
-      console.log(`Membership ${membership?.id} invoice.paid processed (invoice ${invoice.id})`);
+      await handleInvoicePaid(invoice, prisma, emailService);
+      console.log(`invoice.paid processed (invoice ${invoice.id})`);
     }
   }
 
