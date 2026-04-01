@@ -694,21 +694,44 @@ function SetupPaymentMethodForm({ membershipId, onDone }) {
 }
 
 // Handles payment for a single PENDING_PAYMENT membership — rendered in the parent billing section
+function PendingPaymentForm({ membershipId, onDone }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [error, setError] = useState(null);
+  const [processing, setProcessing] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setProcessing(true);
+    const { error: confirmError } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: `${window.location.origin}/booking/my-account` },
+      redirect: 'if_required',
+    });
+    if (confirmError) {
+      setError(confirmError.message);
+      setProcessing(false);
+    } else {
+      onDone();
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ marginTop: '0.75rem' }}>
+      <PaymentElement />
+      {error && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{error}</p>}
+      <button type="submit" disabled={!stripe || processing} className="bk-btn bk-btn--primary" style={{ marginTop: '0.75rem', width: '100%' }}>
+        {processing ? 'Processing...' : 'Pay now'}
+      </button>
+    </form>
+  );
+}
+
 function PendingPaymentRow({ membership, onRefresh }) {
-  const [hostedUrl, setHostedUrl] = useState(null);
+  const [clientSecret, setClientSecret] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const hostedUrlOpenRef = useRef(false);
-  useEffect(() => {
-    if (!hostedUrl) return;
-    hostedUrlOpenRef.current = true;
-    const handleVisibility = () => {
-      if (!document.hidden && hostedUrlOpenRef.current && onRefresh) onRefresh();
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [hostedUrl, onRefresh]);
 
   const load = async () => {
     setLoading(true);
@@ -716,9 +739,9 @@ function PendingPaymentRow({ membership, onRefresh }) {
     try {
       const res = await bookingApi.getMembershipClientSecret(membership.id);
       if (res.data.alreadyPaid) { onRefresh && onRefresh(); return; }
-      setHostedUrl(res.data.hostedUrl);
+      setClientSecret(res.data.clientSecret);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load payment link. Please try again.');
+      setError(err.response?.data?.error || 'Failed to load payment form. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -738,7 +761,7 @@ function PendingPaymentRow({ membership, onRefresh }) {
           £{(firstMonthAmount / 100).toFixed(2)} now, then £{(membership.monthlyAmount / 100).toFixed(2)}/mo from {firstOfNextMonth.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
         </span>
       </div>
-      {!hostedUrl ? (
+      {!clientSecret ? (
         <>
           <button className="bk-btn bk-btn--primary" style={{ width: '100%' }} disabled={loading} onClick={load}>
             {loading ? 'Loading...' : 'Set up payment'}
@@ -746,17 +769,9 @@ function PendingPaymentRow({ membership, onRefresh }) {
           {error && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{error}</p>}
         </>
       ) : (
-        <>
-          <a href={hostedUrl} target="_blank" rel="noopener noreferrer"
-            className="bk-btn bk-btn--primary"
-            style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
-            Complete payment on Stripe →
-          </a>
-          <button className="bk-btn bk-btn--secondary" style={{ marginTop: '0.5rem', width: '100%' }}
-            onClick={() => onRefresh && onRefresh()}>
-            I've completed payment — check status
-          </button>
-        </>
+        <Elements stripe={stripePromise} options={{ clientSecret }}>
+          <PendingPaymentForm membershipId={membership.id} onDone={onRefresh} />
+        </Elements>
       )}
     </div>
   );

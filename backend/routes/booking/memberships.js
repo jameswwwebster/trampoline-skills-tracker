@@ -202,11 +202,18 @@ router.get('/:id/client-secret', auth, async (req, res) => {
       return res.json({ alreadyPaid: true });
     }
 
-    // Stripe API 2026-02-25.clover: invoices no longer have payment_intent.
-    // Use the hosted_invoice_url instead to collect payment.
-    const hostedUrl = invoice?.hosted_invoice_url;
-    if (!hostedUrl) return res.status(400).json({ error: 'No pending payment found for this membership' });
-    res.json({ hostedUrl });
+    // Stripe API 2026-02-25.clover: invoices no longer have payment_intent directly.
+    // List invoice_payments to find the open PaymentIntent client secret.
+    const invoicePayments = await stripe.invoicePayments.list({ invoice: invoice.id });
+    const openPayment = invoicePayments.data.find(ip => ip.status === 'open');
+    const piId = openPayment?.payment?.type === 'payment_intent'
+      ? (typeof openPayment.payment.payment_intent === 'string'
+          ? openPayment.payment.payment_intent
+          : openPayment.payment.payment_intent?.id)
+      : null;
+    if (!piId) return res.status(400).json({ error: 'No pending payment found for this membership' });
+    const pi = await stripe.paymentIntents.retrieve(piId);
+    res.json({ clientSecret: pi.client_secret });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
