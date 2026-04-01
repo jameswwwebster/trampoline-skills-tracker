@@ -663,23 +663,16 @@ function SetupPaymentMethodForm({ membershipId, onDone }) {
     e.preventDefault();
     if (!stripe || !elements) return;
     setProcessing(true);
-    const { error: confirmError, setupIntent } = await stripe.confirmSetup({
+    const returnUrl = `${window.location.origin}/booking/my-account?setupMembershipId=${membershipId}`;
+    const { error: confirmError } = await stripe.confirmSetup({
       elements,
-      confirmParams: { return_url: `${window.location.origin}/booking/my-account` },
-      redirect: 'if_required',
+      confirmParams: { return_url: returnUrl },
     });
     if (confirmError) {
       setError(confirmError.message);
       setProcessing(false);
-      return;
     }
-    try {
-      await bookingApi.confirmMembershipPaymentMethod(membershipId, setupIntent.payment_method);
-      onDone();
-    } catch (err) {
-      setError('Card saved but failed to update membership. Please contact the club.');
-      setProcessing(false);
-    }
+    // On success, Stripe redirects to return_url — handled by MyChildren on mount
   };
 
   return (
@@ -915,6 +908,23 @@ export default function MyChildren() {
     bookingApi.getMyCredits().then(r => setCredits(r.data)).catch(() => {});
     bookingApi.getMyCharges().then(r => setCharges(r.data)).catch(() => {});
     bookingApi.getMyMemberships().then(r => setMemberships(r.data)).catch(() => {});
+
+    // Handle redirect back from Stripe after Apple Pay / wallet setup
+    const params = new URLSearchParams(window.location.search);
+    const setupMembershipId = params.get('setupMembershipId');
+    const clientSecret = params.get('setup_intent_client_secret');
+    const redirectStatus = params.get('redirect_status');
+    if (setupMembershipId && clientSecret && redirectStatus === 'succeeded') {
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+      stripePromise.then(stripe => stripe.retrieveSetupIntent(clientSecret)).then(({ setupIntent }) => {
+        if (setupIntent?.payment_method) {
+          bookingApi.confirmMembershipPaymentMethod(setupMembershipId, setupIntent.payment_method)
+            .then(() => bookingApi.getMyMemberships().then(r => setMemberships(r.data)))
+            .catch(() => {});
+        }
+      });
+    }
   }, []);
 
   const handleSelf = async (e) => {
