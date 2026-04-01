@@ -40,7 +40,7 @@ export default function AdminMessages() {
   const openNew = () => {
     setEditing(null);
     setForm({ subject: '', htmlBody: '', recipientFilter: defaultFilter(), scheduledAt: '' });
-    setPreview(null);
+
     setError('');
     setComposing(true);
   };
@@ -53,7 +53,7 @@ export default function AdminMessages() {
       recipientFilter: msg.recipientFilter,
       scheduledAt: msg.scheduledAt ? new Date(msg.scheduledAt).toISOString().slice(0, 16) : '',
     });
-    setPreview(null);
+
     setError('');
     setComposing(true);
   };
