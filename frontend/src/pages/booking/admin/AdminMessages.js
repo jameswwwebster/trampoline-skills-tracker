@@ -14,6 +14,55 @@ const STATUS_COLOURS = {
 
 const defaultFilter = () => ({ type: 'all' });
 
+function MessageRecipientList({ messageId }) {
+  const [recipients, setRecipients] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const load = async () => {
+    if (recipients) { setOpen(o => !o); return; }
+    setLoading(true);
+    setOpen(true);
+    try {
+      const r = await bookingApi.getMessage(messageId);
+      setRecipients(r.data.recipients || []);
+    } catch {
+      setRecipients([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: '0.5rem' }}>
+      <button
+        className="bk-btn bk-btn--sm"
+        style={{ fontSize: '0.78rem', padding: '0.2rem 0.5rem', border: '1px solid var(--booking-border)' }}
+        onClick={load}
+      >
+        {open ? 'Hide recipients' : 'Show recipients'}
+      </button>
+      {open && (
+        <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--booking-text-muted)' }}>
+          {loading ? 'Loading…' : recipients && recipients.length === 0 ? 'No recipients recorded.' : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+              {recipients.map(r => (
+                <div key={r.id} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <span>{r.email}</span>
+                  <span style={{ color: r.status === 'SENT' ? 'var(--booking-booked)' : r.status === 'FAILED' ? 'var(--booking-danger)' : 'inherit', fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 600 }}>
+                    {r.status}
+                  </span>
+                  {r.error && <span style={{ color: 'var(--booking-danger)' }}>{r.error}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminMessages() {
   const [messages, setMessages] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -210,6 +259,7 @@ export default function AdminMessages() {
                     {msg.scheduledAt && !msg.sentAt && ` · Scheduled for ${new Date(msg.scheduledAt).toLocaleString('en-GB')}`}
                     {msg.recipientCount > 0 && ` · ${msg.recipientCount} recipients`}
                   </div>
+                  {msg.status === 'SENT' && <MessageRecipientList messageId={msg.id} />}
                 </div>
                 {['DRAFT', 'SCHEDULED'].includes(msg.status) && (
                   <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
