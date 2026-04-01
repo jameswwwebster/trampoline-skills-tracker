@@ -96,7 +96,7 @@ async function activateMembership(membershipId, prisma) {
         },
       }],
       billing_cycle_anchor: billingCycleAnchor,
-      proration_behavior: trialEnd ? 'none' : 'create_prorations',
+      proration_behavior: 'create_prorations',
       ...(trialEnd ? { trial_end: trialEnd } : {}),
       payment_behavior: paymentBehavior,
       payment_settings: { save_default_payment_method: 'on_subscription' },
