@@ -51,18 +51,18 @@ async function _resolve(filter, clubId) {
 
   switch (filter.type) {
     case 'all':
-      return prisma.user.findMany({ where: baseWhere, select: { id: true, email: true, firstName: true } });
+      return prisma.user.findMany({ where: baseWhere, select: { id: true, email: true, firstName: true, lastName: true } });
 
     case 'role':
       return prisma.user.findMany({
         where: { ...baseWhere, role: filter.role },
-        select: { id: true, email: true, firstName: true },
+        select: { id: true, email: true, firstName: true, lastName: true },
       });
 
     case 'session': {
       const bookings = await prisma.booking.findMany({
         where: { sessionInstanceId: filter.instanceId, status: 'CONFIRMED' },
-        select: { user: { select: { id: true, email: true, firstName: true, clubId: true, isArchived: true } } },
+        select: { user: { select: { id: true, email: true, firstName: true, lastName: true, clubId: true, isArchived: true } } },
       });
       return bookings
         .map(b => b.user)
@@ -72,7 +72,7 @@ async function _resolve(filter, clubId) {
     case 'active_membership': {
       const memberships = await prisma.membership.findMany({
         where: { clubId, status: { in: ['ACTIVE', 'SCHEDULED'] } },
-        include: { gymnast: { include: { guardians: { where: { isArchived: false }, select: { id: true, email: true, firstName: true } } } } },
+        include: { gymnast: { include: { guardians: { where: { isArchived: false }, select: { id: true, email: true, firstName: true, lastName: true } } } } },
       });
       const users = memberships.flatMap(m => m.gymnast.guardians);
       const seen = new Set();
@@ -82,7 +82,7 @@ async function _resolve(filter, clubId) {
     case 'has_membership': {
       const memberships = await prisma.membership.findMany({
         where: { clubId, status: { not: 'CANCELLED' } },
-        include: { gymnast: { include: { guardians: { where: { isArchived: false }, select: { id: true, email: true, firstName: true } } } } },
+        include: { gymnast: { include: { guardians: { where: { isArchived: false }, select: { id: true, email: true, firstName: true, lastName: true } } } } },
       });
       const users = memberships.flatMap(m => m.gymnast.guardians);
       const seen = new Set();
@@ -92,7 +92,7 @@ async function _resolve(filter, clubId) {
     case 'pending_payment_membership': {
       const memberships = await prisma.membership.findMany({
         where: { clubId, status: 'PENDING_PAYMENT' },
-        include: { gymnast: { include: { guardians: { where: { isArchived: false }, select: { id: true, email: true, firstName: true } } } } },
+        include: { gymnast: { include: { guardians: { where: { isArchived: false }, select: { id: true, email: true, firstName: true, lastName: true } } } } },
       });
       const users = memberships.flatMap(m => m.gymnast.guardians);
       const seen = new Set();
@@ -107,7 +107,7 @@ async function _resolve(filter, clubId) {
           expiresAt: { lte: cutoff, gt: now },
           user: { clubId, isArchived: false },
         },
-        select: { user: { select: { id: true, email: true, firstName: true } } },
+        select: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
       });
       const users = credits.map(c => c.user).filter(u => u.email);
       const seen = new Set();
@@ -127,7 +127,7 @@ async function _resolve(filter, clubId) {
       const bookedIds = new Set(usersWithBookings.map(b => b.userId));
       const allUsers = await prisma.user.findMany({
         where: baseWhere,
-        select: { id: true, email: true, firstName: true },
+        select: { id: true, email: true, firstName: true, lastName: true },
       });
       return allUsers.filter(u => !bookedIds.has(u.id));
     }
@@ -135,7 +135,7 @@ async function _resolve(filter, clubId) {
     case 'adhoc':
       return prisma.user.findMany({
         where: { id: { in: filter.userIds || [] }, clubId, isArchived: false, email: { not: null } },
-        select: { id: true, email: true, firstName: true },
+        select: { id: true, email: true, firstName: true, lastName: true },
       });
 
     default:
