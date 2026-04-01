@@ -69,6 +69,12 @@ async function activateMembership(membershipId, prisma) {
     const firstOfNextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
     const billingCycleAnchor = Math.floor(firstOfNextMonth.getTime() / 1000);
 
+    // If the guardian already saved a payment method (via pre-activation setup),
+    // use allow_incomplete so Stripe auto-charges it rather than requiring re-entry.
+    const stripeCustomer = await stripe.customers.retrieve(stripeCustomerId);
+    const hasDefaultPaymentMethod = !!stripeCustomer.invoice_settings?.default_payment_method;
+    const paymentBehavior = hasDefaultPaymentMethod ? 'allow_incomplete' : 'default_incomplete';
+
     const stripeProduct = await stripe.products.create({
       name: `Trampoline Life Membership — ${gymnast.firstName} ${gymnast.lastName}`,
     });
@@ -85,7 +91,7 @@ async function activateMembership(membershipId, prisma) {
       }],
       billing_cycle_anchor: billingCycleAnchor,
       proration_behavior: 'create_prorations',
-      payment_behavior: 'default_incomplete',
+      payment_behavior: paymentBehavior,
       payment_settings: { save_default_payment_method: 'on_subscription' },
       expand: ['latest_invoice'],
       metadata: { clubId: membership.clubId, gymnastId: gymnast.id },
