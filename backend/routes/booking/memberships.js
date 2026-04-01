@@ -187,9 +187,24 @@ router.get('/:id/client-secret', auth, async (req, res) => {
       expand: ['latest_invoice', 'pending_setup_intent'],
     });
 
+    const invoice = subscription.latest_invoice;
+
+    // If the invoice has already been paid (e.g. Stripe auto-charged when a sibling's
+    // payment saved a default card to the customer), update our DB and tell the
+    // frontend so it can refresh rather than redirect to a stale hosted URL.
+    if (invoice?.status === 'paid') {
+      if (membership.status !== 'ACTIVE') {
+        await prisma.membership.update({
+          where: { id: membership.id },
+          data: { status: 'ACTIVE', needsPaymentMethod: false },
+        });
+      }
+      return res.json({ alreadyPaid: true });
+    }
+
     // Stripe API 2026-02-25.clover: invoices no longer have payment_intent.
     // Use the hosted_invoice_url instead to collect payment.
-    const hostedUrl = subscription.latest_invoice?.hosted_invoice_url;
+    const hostedUrl = invoice?.hosted_invoice_url;
     if (!hostedUrl) return res.status(400).json({ error: 'No pending payment found for this membership' });
     res.json({ hostedUrl });
   } catch (err) {

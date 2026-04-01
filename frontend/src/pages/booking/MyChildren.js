@@ -720,6 +720,10 @@ function MembershipCard({ membership, onRefresh }) {
     setSecretError(null);
     try {
       const res = await bookingApi.getMembershipClientSecret(membership.id);
+      if (res.data.alreadyPaid) {
+        onRefresh && onRefresh();
+        return;
+      }
       setHostedUrl(res.data.hostedUrl);
     } catch (err) {
       setSecretError(err.response?.data?.error || 'Failed to load payment link. Please try again.');
