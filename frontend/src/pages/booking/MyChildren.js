@@ -693,17 +693,12 @@ function SetupPaymentMethodForm({ membershipId, onDone }) {
   );
 }
 
-function MembershipCard({ membership, onRefresh }) {
+// Handles payment for a single PENDING_PAYMENT membership — rendered in the parent billing section
+function PendingPaymentRow({ membership, onRefresh }) {
   const [hostedUrl, setHostedUrl] = useState(null);
-  const [loadingSecret, setLoadingSecret] = useState(false);
-  const [secretError, setSecretError] = useState(null);
-  const [setupClientSecret, setSetupClientSecret] = useState(null);
-  const [loadingSetup, setLoadingSetup] = useState(false);
-  const [setupError, setSetupError] = useState(null);
-  const pmSavedKey = `pm-saved-${membership.id}`;
-  const [paymentSaved, setPaymentSaved] = useState(() => sessionStorage.getItem(pmSavedKey) === 'true');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // When the hosted payment URL is open, auto-refresh when the user returns to this tab
   const hostedUrlOpenRef = useRef(false);
   useEffect(() => {
     if (!hostedUrl) return;
@@ -715,52 +710,66 @@ function MembershipCard({ membership, onRefresh }) {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [hostedUrl, onRefresh]);
 
-  const loadPaymentLink = async () => {
-    setLoadingSecret(true);
-    setSecretError(null);
+  const load = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const res = await bookingApi.getMembershipClientSecret(membership.id);
-      if (res.data.alreadyPaid) {
-        onRefresh && onRefresh();
-        return;
-      }
+      if (res.data.alreadyPaid) { onRefresh && onRefresh(); return; }
       setHostedUrl(res.data.hostedUrl);
     } catch (err) {
-      setSecretError(err.response?.data?.error || 'Failed to load payment link. Please try again.');
+      setError(err.response?.data?.error || 'Failed to load payment link. Please try again.');
     } finally {
-      setLoadingSecret(false);
+      setLoading(false);
     }
   };
 
-  const loadScheduledSetupIntent = async () => {
-    setLoadingSetup(true);
-    setSetupError(null);
-    try {
-      const res = await bookingApi.getMembershipSetupIntent(membership.id);
-      setSetupClientSecret(res.data.clientSecret);
-    } catch (err) {
-      setSetupError(err.response?.data?.error || 'Failed to load payment form. Please try again.');
-    } finally {
-      setLoadingSetup(false);
-    }
-  };
+  const startDate = new Date(membership.startDate);
+  const firstOfNextMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+  const daysInMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+  const daysRemaining = daysInMonth - startDate.getDate() + 1;
+  const firstMonthAmount = Math.round((daysRemaining / daysInMonth) * membership.monthlyAmount);
 
+  return (
+    <div style={{ paddingBottom: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--booking-border)' }}>
+      <div className="bk-row bk-row--between" style={{ marginBottom: '0.25rem' }}>
+        <strong style={{ fontSize: '0.9rem' }}>{membership.gymnast.firstName} {membership.gymnast.lastName}</strong>
+        <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>
+          £{(firstMonthAmount / 100).toFixed(2)} now, then £{(membership.monthlyAmount / 100).toFixed(2)}/mo from {firstOfNextMonth.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
+        </span>
+      </div>
+      {!hostedUrl ? (
+        <>
+          <button className="bk-btn bk-btn--primary" style={{ width: '100%' }} disabled={loading} onClick={load}>
+            {loading ? 'Loading...' : 'Set up payment'}
+          </button>
+          {error && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{error}</p>}
+        </>
+      ) : (
+        <>
+          <a href={hostedUrl} target="_blank" rel="noopener noreferrer"
+            className="bk-btn bk-btn--primary"
+            style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+            Complete payment on Stripe →
+          </a>
+          <button className="bk-btn bk-btn--secondary" style={{ marginTop: '0.5rem', width: '100%' }}
+            onClick={() => onRefresh && onRefresh()}>
+            I've completed payment — check status
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function MembershipCard({ membership }) {
   const STATUS_DISPLAY = {
-    PENDING_PAYMENT: { label: 'Payment setup required', color: 'var(--booking-danger)' },
+    PENDING_PAYMENT: { label: 'Payment pending', color: 'var(--booking-danger)' },
     ACTIVE: { label: 'Active', color: 'var(--booking-success)' },
     PAUSED: { label: 'Paused', color: 'var(--booking-text-muted)' },
     SCHEDULED: { label: 'Scheduled', color: 'var(--booking-accent)' },
   };
   const s = STATUS_DISPLAY[membership.status] || { label: membership.status, color: 'inherit' };
-
-  const firstMonthAmount = (() => {
-    const start = new Date(membership.startDate);
-    const year = start.getFullYear();
-    const month = start.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysRemaining = daysInMonth - start.getDate() + 1;
-    return Math.round((daysRemaining / daysInMonth) * membership.monthlyAmount);
-  })();
   const startDate = new Date(membership.startDate);
   const firstOfNextMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
 
@@ -797,86 +806,9 @@ function MembershipCard({ membership, onRefresh }) {
           </>
         )}
       </div>
-
-      {membership.status === 'PENDING_PAYMENT' && (
-        <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.85rem', background: 'var(--booking-bg-light)', borderRadius: 'var(--booking-radius)', fontSize: '0.85rem' }}>
-          <strong style={{ color: 'var(--booking-text-on-light)' }}>First payment: £{(firstMonthAmount / 100).toFixed(2)}</strong>
-          <span style={{ color: 'var(--booking-text-muted)' }}> — covering the rest of {startDate.toLocaleDateString('en-GB', { month: 'long' })} (pro-rated). From {firstOfNextMonth.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} you'll be charged £{(membership.monthlyAmount / 100).toFixed(2)}/month.</span>
-        </div>
-      )}
-
-      {membership.status === 'PENDING_PAYMENT' && !hostedUrl && (
-        <>
-          <button
-            className="bk-btn bk-btn--primary"
-            style={{ marginTop: '0.75rem', width: '100%' }}
-            disabled={loadingSecret}
-            onClick={loadPaymentLink}
-          >
-            {loadingSecret ? 'Loading...' : 'Set up payment'}
-          </button>
-          {secretError && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{secretError}</p>}
-        </>
-      )}
-
-      {membership.status === 'PENDING_PAYMENT' && hostedUrl && (
-        <div style={{ marginTop: '0.75rem' }}>
-          <a
-            href={hostedUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bk-btn bk-btn--primary"
-            style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
-          >
-            Complete payment on Stripe →
-          </a>
-          <button
-            className="bk-btn bk-btn--secondary"
-            style={{ marginTop: '0.5rem', width: '100%' }}
-            onClick={() => onRefresh && onRefresh()}
-          >
-            I've completed payment — check status
-          </button>
-        </div>
-      )}
-
       {membership.status === 'PAUSED' && (
         <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>
           Your membership is currently paused. Contact the club to resume.
-        </p>
-      )}
-
-      {membership.status === 'SCHEDULED' && !paymentSaved && (
-        <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.85rem', background: 'var(--booking-bg-light)', borderRadius: 'var(--booking-radius)', fontSize: '0.85rem' }}>
-          <p style={{ margin: '0 0 0.5rem', color: 'var(--booking-text-on-light)' }}>
-            Add a payment method now so your membership starts smoothly on {startDate.toLocaleDateString('en-GB')}.
-          </p>
-          {!setupClientSecret ? (
-            <>
-              <button
-                className="bk-btn bk-btn--primary"
-                style={{ width: '100%' }}
-                disabled={loadingSetup}
-                onClick={loadScheduledSetupIntent}
-              >
-                {loadingSetup ? 'Loading...' : 'Set up payment method'}
-              </button>
-              {setupError && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{setupError}</p>}
-            </>
-          ) : (
-            <Elements stripe={stripePromise} options={{ clientSecret: setupClientSecret }}>
-              <SetupPaymentMethodForm
-                membershipId={membership.id}
-                onDone={() => { setSetupClientSecret(null); sessionStorage.setItem(pmSavedKey, 'true'); setPaymentSaved(true); }}
-              />
-            </Elements>
-          )}
-        </div>
-      )}
-
-      {membership.status === 'SCHEDULED' && paymentSaved && (
-        <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--booking-success)' }}>
-          Payment method saved. You're all set for {startDate.toLocaleDateString('en-GB')}.
         </p>
       )}
     </div>
@@ -1029,6 +961,7 @@ export default function MyChildren() {
     bookingApi.getMyMemberships().then(r => setMemberships(r.data)).catch(() => {});
 
   const membershipsNeedingPayment = memberships.filter(m => m.needsPaymentMethod);
+  const pendingPaymentMemberships = memberships.filter(m => m.status === 'PENDING_PAYMENT');
 
   const loadSetupIntent = async () => {
     if (membershipsNeedingPayment.length === 0) return;
@@ -1101,39 +1034,48 @@ export default function MyChildren() {
         <section style={{ marginBottom: '2rem' }}>
           <h3>Memberships</h3>
 
-          {membershipsNeedingPayment.length > 0 && (
+          {(pendingPaymentMemberships.length > 0 || membershipsNeedingPayment.length > 0) && (
             <div className="bk-card" style={{ marginBottom: '0.75rem', borderLeft: '3px solid var(--booking-danger)' }}>
-              <p style={{ margin: '0 0 0.35rem', fontWeight: 600 }}>Payment method needed</p>
-              <p style={{ margin: '0 0 0.75rem', fontSize: '0.875rem', color: 'var(--booking-text-muted)' }}>
-                {membershipsNeedingPayment.length === 1
-                  ? `${membershipsNeedingPayment[0].gymnast.firstName}'s first payment was covered by credits. Add a card to ensure future monthly payments go through.`
-                  : `${membershipsNeedingPayment.map(m => m.gymnast.firstName).join(' and ')}'s first payments were covered by credits. Add a card once to cover all memberships.`
-                }
-              </p>
-              {!setupClientSecret ? (
+              <p style={{ margin: '0 0 0.75rem', fontWeight: 600 }}>Payment required</p>
+
+              {pendingPaymentMemberships.map(m => (
+                <PendingPaymentRow key={m.id} membership={m} onRefresh={refreshMemberships} />
+              ))}
+
+              {membershipsNeedingPayment.length > 0 && (
                 <>
-                  <button
-                    className="bk-btn bk-btn--primary"
-                    onClick={loadSetupIntent}
-                    disabled={loadingSetup}
-                  >
-                    {loadingSetup ? 'Loading...' : 'Add payment method'}
-                  </button>
-                  {setupError && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{setupError}</p>}
+                  <p style={{ margin: '0.75rem 0 0.5rem', fontSize: '0.875rem', color: 'var(--booking-text-muted)' }}>
+                    {membershipsNeedingPayment.length === 1
+                      ? `${membershipsNeedingPayment[0].gymnast.firstName}'s first payment was covered by credits. Add a card to ensure future monthly payments go through.`
+                      : `${membershipsNeedingPayment.map(m => m.gymnast.firstName).join(' and ')}'s first payments were covered by credits. Add a card once to cover all memberships.`
+                    }
+                  </p>
+                  {!setupClientSecret ? (
+                    <>
+                      <button
+                        className="bk-btn bk-btn--primary"
+                        onClick={loadSetupIntent}
+                        disabled={loadingSetup}
+                      >
+                        {loadingSetup ? 'Loading...' : 'Add payment method'}
+                      </button>
+                      {setupError && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{setupError}</p>}
+                    </>
+                  ) : (
+                    <Elements stripe={stripePromise} options={{ clientSecret: setupClientSecret }}>
+                      <SetupPaymentMethodForm
+                        membershipId={membershipsNeedingPayment[0].id}
+                        onDone={() => { setSetupClientSecret(null); refreshMemberships(); }}
+                      />
+                    </Elements>
+                  )}
                 </>
-              ) : (
-                <Elements stripe={stripePromise} options={{ clientSecret: setupClientSecret }}>
-                  <SetupPaymentMethodForm
-                    membershipId={membershipsNeedingPayment[0].id}
-                    onDone={() => { setSetupClientSecret(null); refreshMemberships(); }}
-                  />
-                </Elements>
               )}
             </div>
           )}
 
           {memberships.map(m => (
-            <MembershipCard key={m.id} membership={m} onRefresh={refreshMemberships} />
+            <MembershipCard key={m.id} membership={m} />
           ))}
 
           <div className="bk-card" style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
