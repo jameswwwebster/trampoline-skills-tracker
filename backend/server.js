@@ -211,13 +211,16 @@ cron.schedule('*/15 * * * *', async () => {
   }
 });
 
-// Activate SCHEDULED memberships whose start date has arrived — runs at 01:00 daily
-cron.schedule('0 1 * * *', async () => {
+// Activate SCHEDULED memberships due tomorrow or earlier — runs at 23:00 nightly.
+// Running the evening before startDate lets activateMembership use trial_end so the
+// first full billing period aligns exactly with startDate (no partial-day pro-ration).
+cron.schedule('0 23 * * *', async () => {
   try {
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    const tomorrowEnd = new Date();
+    tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
+    tomorrowEnd.setHours(23, 59, 59, 999);
     const due = await prisma.membership.findMany({
-      where: { status: 'SCHEDULED', startDate: { lte: todayEnd } },
+      where: { status: 'SCHEDULED', startDate: { lte: tomorrowEnd } },
       select: { id: true },
     });
     for (const m of due) {

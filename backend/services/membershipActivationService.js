@@ -64,10 +64,16 @@ async function activateMembership(membershipId, prisma) {
       });
     }
 
-    // billing_cycle_anchor = 1st of next calendar month (UTC)
+    // billing_cycle_anchor = 1st of the month after startDate (UTC)
+    const startDate = new Date(membership.startDate);
+    const anchorDate = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth() + 1, 1));
+    const billingCycleAnchor = Math.floor(anchorDate.getTime() / 1000);
+
+    // If startDate midnight is in the future, use trial_end so the first full billing
+    // period aligns exactly with startDate → no pro-ration for partial activation-day hours.
+    const startDateMidnightUTC = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
     const now = new Date();
-    const firstOfNextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-    const billingCycleAnchor = Math.floor(firstOfNextMonth.getTime() / 1000);
+    const trialEnd = startDateMidnightUTC > now ? Math.floor(startDateMidnightUTC.getTime() / 1000) : undefined;
 
     // If the guardian already saved a payment method (via pre-activation setup),
     // use allow_incomplete so Stripe auto-charges it rather than requiring re-entry.
@@ -90,7 +96,8 @@ async function activateMembership(membershipId, prisma) {
         },
       }],
       billing_cycle_anchor: billingCycleAnchor,
-      proration_behavior: 'create_prorations',
+      proration_behavior: trialEnd ? 'none' : 'create_prorations',
+      ...(trialEnd ? { trial_end: trialEnd } : {}),
       payment_behavior: paymentBehavior,
       payment_settings: { save_default_payment_method: 'on_subscription' },
       expand: ['latest_invoice'],
