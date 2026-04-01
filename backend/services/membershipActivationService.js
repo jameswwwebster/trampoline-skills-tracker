@@ -144,7 +144,10 @@ async function activateMembership(membershipId, prisma) {
     }
 
     newStatus = invoiceAmountDue === 0 ? 'ACTIVE' : 'PENDING_PAYMENT';
-    needsPaymentMethod = newStatus === 'ACTIVE';
+    // needsPaymentMethod = true only when there's no PM on file (e.g. credits
+    // covered the first invoice but no card saved for future recurring charges).
+    // If a PM already exists, Stripe will auto-charge future invoices.
+    needsPaymentMethod = newStatus === 'ACTIVE' && !hasDefaultPaymentMethod;
   }
 
   await prisma.membership.update({
