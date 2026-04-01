@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
 import RichTextEditor from '../../../components/RichTextEditor';
+import RecipientPicker from '../../../components/RecipientPicker';
 import '../booking-shared.css';
 
 const STATUS_COLOURS = {
@@ -11,24 +12,15 @@ const STATUS_COLOURS = {
   FAILED: 'var(--booking-danger)',
 };
 
-const FILTER_TYPES = [
-  { value: 'all', label: 'All members' },
-  { value: 'role', label: 'By role' },
-  { value: 'session', label: 'Session attendees' },
-  { value: 'active_membership', label: 'Active membership' },
-  { value: 'expiring_credits', label: 'Expiring credits' },
-  { value: 'no_upcoming_bookings', label: 'No upcoming bookings' },
-];
-
 const defaultFilter = () => ({ type: 'all' });
 
 export default function AdminMessages() {
   const [messages, setMessages] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [composing, setComposing] = useState(false);
   const [editing, setEditing] = useState(null); // message id being edited
   const [form, setForm] = useState({ subject: '', htmlBody: '', recipientFilter: defaultFilter(), scheduledAt: '' });
-  const [preview, setPreview] = useState(null); // { count, users }
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -40,7 +32,10 @@ export default function AdminMessages() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    bookingApi.getRecipientGroups().then(r => setGroups(r.data)).catch(() => {});
+  }, []);
 
   const openNew = () => {
     setEditing(null);
@@ -61,15 +56,6 @@ export default function AdminMessages() {
     setPreview(null);
     setError('');
     setComposing(true);
-  };
-
-  const handlePreview = async () => {
-    try {
-      const r = await bookingApi.previewRecipients(form.recipientFilter);
-      setPreview(r.data);
-    } catch {
-      setError('Failed to preview recipients');
-    }
   };
 
   const handleSave = async (sendNow = false) => {
@@ -120,48 +106,6 @@ export default function AdminMessages() {
     }
   };
 
-  const setFilterField = (key, value) => {
-    setForm(f => ({ ...f, recipientFilter: { ...f.recipientFilter, [key]: value } }));
-  };
-
-  const setFilterType = (type) => {
-    setForm(f => ({ ...f, recipientFilter: { type } }));
-    setPreview(null);
-  };
-
-  const renderFilterBuilder = () => {
-    const ft = form.recipientFilter.type;
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <select
-          className="bk-input"
-          value={ft || 'all'}
-          onChange={e => setFilterType(e.target.value)}
-        >
-          {FILTER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-        </select>
-        {ft === 'role' && (
-          <select className="bk-input" value={form.recipientFilter.role || 'ADULT'} onChange={e => setFilterField('role', e.target.value)}>
-            <option value="ADULT">Adults</option>
-            <option value="COACH">Coaches</option>
-          </select>
-        )}
-        {(ft === 'expiring_credits' || ft === 'no_upcoming_bookings') && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.875rem' }}>Within days:</label>
-            <input
-              type="number"
-              className="bk-input"
-              style={{ width: '5rem' }}
-              value={form.recipientFilter.withinDays || 30}
-              onChange={e => setFilterField('withinDays', parseInt(e.target.value, 10))}
-            />
-          </div>
-        )}
-      </div>
-    );
-  };
-
   if (loading) return <p className="bk-muted">Loading...</p>;
 
   if (composing) {
@@ -169,7 +113,7 @@ export default function AdminMessages() {
       <div className="bk-page bk-page--xl">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
           <button className="bk-btn" onClick={() => setComposing(false)}>← Back</button>
-          <h2 style={{ margin: 0 }}>{editing ? 'Edit Campaign' : 'New Campaign'}</h2>
+          <h2 style={{ margin: 0 }}>{editing ? 'Edit Message' : 'New Message'}</h2>
         </div>
 
         {error && <p style={{ color: 'var(--booking-danger)', marginBottom: '1rem' }}>{error}</p>}
@@ -197,20 +141,12 @@ export default function AdminMessages() {
 
           <div>
             <label className="bk-label">Recipients</label>
-            {renderFilterBuilder()}
-            <button
-              className="bk-btn"
-              style={{ marginTop: '0.5rem' }}
-              onClick={handlePreview}
-            >
-              Preview recipients
-            </button>
-            {preview && (
-              <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--booking-text-muted)' }}>
-                {preview.count} recipient{preview.count !== 1 ? 's' : ''}
-                {preview.users.length > 0 && `: ${preview.users.slice(0, 5).map(u => u.firstName).join(', ')}${preview.count > 5 ? ` +${preview.count - 5} more` : ''}`}
-              </p>
-            )}
+            <RecipientPicker
+              forceEnabled={true}
+              value={form.recipientFilter}
+              onChange={rf => setForm(f => ({ ...f, recipientFilter: rf }))}
+              groups={groups}
+            />
           </div>
 
           <div>
@@ -246,11 +182,11 @@ export default function AdminMessages() {
     <div className="bk-page bk-page--xl">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h2 style={{ margin: 0 }}>Messages</h2>
-        <button className="bk-btn bk-btn-primary" onClick={openNew}>New Campaign</button>
+        <button className="bk-btn bk-btn-primary" onClick={openNew}>New Message</button>
       </div>
 
       {messages.length === 0 ? (
-        <p className="bk-muted">No campaigns yet. Create your first campaign above.</p>
+        <p className="bk-muted">No messages yet.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {messages.map(msg => (
