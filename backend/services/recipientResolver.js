@@ -11,6 +11,7 @@ const prisma = new PrismaClient();
  *   { type: 'role', role: 'ADULT' | 'COACH' }
  *   { type: 'session', instanceId: string }
  *   { type: 'active_membership' }
+ *   { type: 'has_membership' }          — any non-cancelled membership (ACTIVE, SCHEDULED, PENDING_PAYMENT, PAUSED)
  *   { type: 'expiring_credits', withinDays: number }
  *   { type: 'no_upcoming_bookings', withinDays: number }
  *   { type: 'adhoc', userIds: string[] }
@@ -70,6 +71,16 @@ async function _resolve(filter, clubId) {
     case 'active_membership': {
       const memberships = await prisma.membership.findMany({
         where: { clubId, status: { in: ['ACTIVE', 'SCHEDULED'] } },
+        include: { gymnast: { include: { guardians: { where: { isArchived: false }, select: { id: true, email: true, firstName: true } } } } },
+      });
+      const users = memberships.flatMap(m => m.gymnast.guardians);
+      const seen = new Set();
+      return users.filter(u => { if (!u.email || seen.has(u.id)) return false; seen.add(u.id); return true; });
+    }
+
+    case 'has_membership': {
+      const memberships = await prisma.membership.findMany({
+        where: { clubId, status: { not: 'CANCELLED' } },
         include: { gymnast: { include: { guardians: { where: { isArchived: false }, select: { id: true, email: true, firstName: true } } } } },
       });
       const users = memberships.flatMap(m => m.gymnast.guardians);
