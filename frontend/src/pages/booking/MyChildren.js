@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { bookingApi } from '../../utils/bookingApi';
@@ -693,14 +693,27 @@ function SetupPaymentMethodForm({ membershipId, onDone }) {
   );
 }
 
-function MembershipCard({ membership }) {
+function MembershipCard({ membership, onRefresh }) {
   const [hostedUrl, setHostedUrl] = useState(null);
   const [loadingSecret, setLoadingSecret] = useState(false);
   const [secretError, setSecretError] = useState(null);
   const [setupClientSecret, setSetupClientSecret] = useState(null);
   const [loadingSetup, setLoadingSetup] = useState(false);
   const [setupError, setSetupError] = useState(null);
-  const [paymentSaved, setPaymentSaved] = useState(false);
+  const pmSavedKey = `pm-saved-${membership.id}`;
+  const [paymentSaved, setPaymentSaved] = useState(() => sessionStorage.getItem(pmSavedKey) === 'true');
+
+  // When the hosted payment URL is open, auto-refresh when the user returns to this tab
+  const hostedUrlOpenRef = useRef(false);
+  useEffect(() => {
+    if (!hostedUrl) return;
+    hostedUrlOpenRef.current = true;
+    const handleVisibility = () => {
+      if (!document.hidden && hostedUrlOpenRef.current && onRefresh) onRefresh();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [hostedUrl, onRefresh]);
 
   const loadPaymentLink = async () => {
     setLoadingSecret(true);
@@ -813,9 +826,13 @@ function MembershipCard({ membership }) {
           >
             Complete payment on Stripe →
           </a>
-          <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--booking-text-muted)', textAlign: 'center' }}>
-            Opens in a new tab. Return here and refresh once payment is complete.
-          </p>
+          <button
+            className="bk-btn bk-btn--secondary"
+            style={{ marginTop: '0.5rem', width: '100%' }}
+            onClick={() => onRefresh && onRefresh()}
+          >
+            I've completed payment — check status
+          </button>
         </div>
       )}
 
@@ -846,7 +863,7 @@ function MembershipCard({ membership }) {
             <Elements stripe={stripePromise} options={{ clientSecret: setupClientSecret }}>
               <SetupPaymentMethodForm
                 membershipId={membership.id}
-                onDone={() => { setSetupClientSecret(null); setPaymentSaved(true); }}
+                onDone={() => { setSetupClientSecret(null); sessionStorage.setItem(pmSavedKey, 'true'); setPaymentSaved(true); }}
               />
             </Elements>
           )}
@@ -1112,7 +1129,7 @@ export default function MyChildren() {
           )}
 
           {memberships.map(m => (
-            <MembershipCard key={m.id} membership={m} />
+            <MembershipCard key={m.id} membership={m} onRefresh={refreshMemberships} />
           ))}
 
           <div className="bk-card" style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
