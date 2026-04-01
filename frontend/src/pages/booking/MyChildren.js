@@ -731,6 +731,7 @@ function PendingPaymentForm({ membershipId, onDone }) {
 function PendingPaymentRow({ membership, onRefresh }) {
   const [clientSecret, setClientSecret] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [activating, setActivating] = useState(false);
   const [error, setError] = useState(null);
 
   const load = async () => {
@@ -747,6 +748,16 @@ function PendingPaymentRow({ membership, onRefresh }) {
     }
   };
 
+  const handlePaymentDone = async () => {
+    setActivating(true);
+    setClientSecret(null);
+    // Invoice should now be paid — calling client-secret activates the membership in our DB
+    try {
+      await bookingApi.getMembershipClientSecret(membership.id);
+    } catch {}
+    onRefresh && onRefresh();
+  };
+
   const startDate = new Date(membership.startDate);
   const firstOfNextMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
   const daysInMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
@@ -761,7 +772,9 @@ function PendingPaymentRow({ membership, onRefresh }) {
           £{(firstMonthAmount / 100).toFixed(2)} now, then £{(membership.monthlyAmount / 100).toFixed(2)}/mo from {firstOfNextMonth.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
         </span>
       </div>
-      {!clientSecret ? (
+      {activating ? (
+        <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', color: 'var(--booking-text-muted)' }}>Payment confirmed — activating membership…</p>
+      ) : !clientSecret ? (
         <>
           <button className="bk-btn bk-btn--primary" style={{ width: '100%' }} disabled={loading} onClick={load}>
             {loading ? 'Loading...' : 'Set up payment'}
@@ -770,7 +783,7 @@ function PendingPaymentRow({ membership, onRefresh }) {
         </>
       ) : (
         <Elements stripe={stripePromise} options={{ clientSecret }}>
-          <PendingPaymentForm membershipId={membership.id} onDone={onRefresh} />
+          <PendingPaymentForm membershipId={membership.id} onDone={handlePaymentDone} />
         </Elements>
       )}
     </div>
