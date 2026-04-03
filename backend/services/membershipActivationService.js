@@ -79,15 +79,20 @@ async function activateMembership(membershipId, prisma, options = {}) {
     // use allow_incomplete so Stripe auto-charges it rather than requiring re-entry.
     const stripeCustomer = await stripe.customers.retrieve(stripeCustomerId);
     const hasDefaultPaymentMethod = !!stripeCustomer.invoice_settings?.default_payment_method;
-    const paymentBehavior = hasDefaultPaymentMethod ? 'allow_incomplete' : 'default_incomplete';
+    // When charging a fixed first-month amount, always use default_incomplete so Stripe
+    // creates an immediate invoice (which picks up the invoice item). With allow_incomplete
+    // and proration_behavior:'none', Stripe skips the initial invoice entirely and the
+    // invoice item floats to the next billing date, causing a double charge.
+    const useFixedFirstMonth = options.firstMonthAmount !== undefined && options.firstMonthAmount !== null;
+    const paymentBehavior = (hasDefaultPaymentMethod && !useFixedFirstMonth) ? 'allow_incomplete' : 'default_incomplete';
 
     const stripeProduct = await stripe.products.create({
       name: `Trampoline Life Membership — ${gymnast.firstName} ${gymnast.lastName}`,
     });
 
-    // If a fixed first-month amount is specified, create an invoice item for it
-    // and skip auto-proration. Otherwise Stripe prorates from startDate to anchor.
-    const useFixedFirstMonth = options.firstMonthAmount !== undefined && options.firstMonthAmount !== null;
+    // If a fixed first-month amount is specified, add it as an invoice item that will
+    // be picked up on the subscription's initial invoice (created because default_incomplete
+    // always generates one). Otherwise Stripe prorates from startDate to anchor.
     if (useFixedFirstMonth && options.firstMonthAmount > 0) {
       await stripe.invoiceItems.create({
         customer: stripeCustomerId,
