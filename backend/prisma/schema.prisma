@@ -220,7 +220,7 @@ model Consent {
 model Level {
   id              String             @id @default(cuid())
   number          Int
-  identifier      String             @unique
+  identifier      String
   name            String
   description     String?
   type            LevelType?
@@ -237,6 +237,7 @@ model Level {
   skills          Skill[]
   club            Club?              @relation(fields: [clubId], references: [id])
 
+  @@unique([identifier, clubId])
   @@map("levels")
 }
 

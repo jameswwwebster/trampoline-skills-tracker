@@ -299,6 +299,9 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
     if (error.message === 'Some competitions not found or do not belong to your club') {
       return res.status(400).json({ error: error.message });
     }
+    if (error.code === 'P2002') {
+      return res.status(400).json({ error: `A level with identifier "${req.body.identifier}" already exists` });
+    }
     res.status(500).json({ error: 'Server error' });
   }
 });
