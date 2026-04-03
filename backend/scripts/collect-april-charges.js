@@ -85,15 +85,16 @@ async function main() {
       // No saved PM or charge failed — invoice stays open
     }
 
-    // Update DB if not paid
-    if (!paid) {
-      const membership = await prisma.membership.findFirst({
-        where: { stripeSubscriptionId: sub },
-      });
-      if (membership && membership.status === 'ACTIVE') {
+    // Update DB to reflect actual payment outcome
+    const membership = await prisma.membership.findFirst({
+      where: { stripeSubscriptionId: sub },
+    });
+    if (membership) {
+      const correctStatus = paid ? 'ACTIVE' : 'PENDING_PAYMENT';
+      if (membership.status !== correctStatus) {
         await prisma.membership.update({
           where: { id: membership.id },
-          data: { status: 'PENDING_PAYMENT' },
+          data: { status: correctStatus },
         });
       }
     }
