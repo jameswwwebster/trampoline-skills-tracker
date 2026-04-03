@@ -621,7 +621,7 @@ router.post('/:id/reset', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req
     });
 
     const { activateMembership } = require('../../services/membershipActivationService');
-    await activateMembership(newMembership.id, prisma);
+    await activateMembership(newMembership.id, prisma, { firstMonthAmount: membership.monthlyAmount });
 
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
