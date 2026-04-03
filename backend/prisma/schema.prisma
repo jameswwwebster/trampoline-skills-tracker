@@ -483,6 +483,7 @@ model CompetitionEntry {
   gymnastId             String
   status                CompetitionEntryStatus   @default(INVITED)
   totalAmount           Int?
+  adminPriceOverride    Int?
   stripePaymentIntentId String?
   coachConfirmed        Boolean                  @default(false)
   createdAt             DateTime                 @default(now())

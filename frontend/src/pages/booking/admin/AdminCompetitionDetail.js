@@ -95,10 +95,10 @@ export default function AdminCompetitionDetail() {
     }
   };
 
-  const handleInvite = async (gymnastId) => {
+  const handleInvite = async (gymnastId, categoryIds = [], priceOverride = null) => {
     setInviting(true);
     try {
-      await bookingApi.inviteGymnasts(id, [gymnastId]);
+      await bookingApi.inviteGymnasts(id, [gymnastId], categoryIds, priceOverride);
       const [, allRes] = await Promise.all([load(), bookingApi.getAllCompetitionGymnasts(id)]);
       setAllGymnasts(allRes.data);
       setEligible(prev => prev ? prev.map(cat => ({
@@ -225,6 +225,7 @@ export default function AdminCompetitionDetail() {
           onInvite={handleInvite}
           onUninvite={handleUninvite}
           eventEntries={event.entries}
+          eventCategories={event.categories}
         />
       )}
 
@@ -404,16 +405,115 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   );
 }
 
-function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, onUninvite, eventEntries }) {
+function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, onUninvite, eventEntries, eventCategories }) {
   const [showAll, setShowAll] = useState(false);
+  const [pendingGym, setPendingGym] = useState(null); // { id, firstName, lastName }
+  const [pendingCatIds, setPendingCatIds] = useState([]);
+  const [pendingPrice, setPendingPrice] = useState('');
 
   if (eligibleError) return <p style={{ color: 'var(--booking-danger)', fontSize: '0.875rem' }}>{eligibleError}</p>;
   if (eligible === null) return <p className="bk-muted">Loading...</p>;
 
-  // Build a map of gymnastId → entryId from event entries
   const entryMap = Object.fromEntries((eventEntries || []).map(e => [e.gymnast.id, e.id]));
-
   const notInvited = (allGymnasts || []).filter(g => !g.alreadyInvited);
+
+  const startInvite = (g, preSelectCatId = null) => {
+    setPendingGym(g);
+    setPendingCatIds(preSelectCatId ? [preSelectCatId] : []);
+    setPendingPrice('');
+  };
+
+  const cancelInvite = () => {
+    setPendingGym(null);
+    setPendingCatIds([]);
+    setPendingPrice('');
+  };
+
+  const confirmInvite = async () => {
+    const priceOverride = pendingPrice !== '' ? Math.round(parseFloat(pendingPrice) * 100) : null;
+    await onInvite(pendingGym.id, pendingCatIds, priceOverride);
+    cancelInvite();
+  };
+
+  const toggleCat = (catId) =>
+    setPendingCatIds(prev => prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]);
+
+  const InlinePicker = ({ g }) => (
+    <div style={{ background: 'var(--booking-bg, #f9fafb)', border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.75rem', marginTop: '0.35rem' }}>
+      {eventCategories.length > 0 && (
+        <div style={{ marginBottom: '0.6rem' }}>
+          <p style={{ margin: '0 0 0.35rem', fontSize: '0.8rem', fontWeight: 600 }}>Categories:</p>
+          {eventCategories.map(cat => (
+            <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '0.2rem' }}>
+              <input type="checkbox" checked={pendingCatIds.includes(cat.id)} onChange={() => toggleCat(cat.id)} />
+              {cat.name}
+            </label>
+          ))}
+        </div>
+      )}
+      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+        Price override (£) — leave blank to use standard pricing
+      </label>
+      <input
+        type="number"
+        step="0.01"
+        min="0"
+        className="bk-input"
+        style={{ maxWidth: 120, marginBottom: '0.6rem' }}
+        value={pendingPrice}
+        placeholder="e.g. 15.00"
+        onChange={e => setPendingPrice(e.target.value)}
+      />
+      <div className="bk-row" style={{ gap: '0.5rem' }}>
+        <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={inviting} onClick={confirmInvite}>
+          {inviting ? 'Inviting...' : 'Confirm invite'}
+        </button>
+        <button className="bk-btn bk-btn--sm" onClick={cancelInvite}>Cancel</button>
+      </div>
+    </div>
+  );
+
+  const renderGymnastRow = (g, preSelectCatId = null) => {
+    const isPending = pendingGym?.id === g.id;
+    return (
+      <React.Fragment key={g.id}>
+        <tr>
+          <td>{g.firstName} {g.lastName}</td>
+          <td>
+            {g.alreadyInvited ? (
+              <div className="bk-row" style={{ gap: '0.5rem', alignItems: 'center' }}>
+                <span style={{ color: 'var(--booking-success)', fontSize: '0.85rem', fontWeight: 600 }}>Invited</span>
+                <button
+                  className="bk-btn bk-btn--sm"
+                  style={{ color: 'var(--booking-danger)', fontSize: '0.8rem' }}
+                  onClick={() => onUninvite(entryMap[g.id], g.id)}
+                >
+                  Remove
+                </button>
+              </div>
+            ) : isPending ? (
+              <button className="bk-btn bk-btn--sm" onClick={cancelInvite}>Cancel</button>
+            ) : (
+              <button
+                className="bk-btn bk-btn--sm bk-btn--primary"
+                disabled={inviting}
+                onClick={() => startInvite(g, preSelectCatId)}
+              >
+                Invite
+              </button>
+            )}
+          </td>
+        </tr>
+        {isPending && (
+          <tr>
+            <td colSpan={2} style={{ paddingTop: 0 }}>
+              <InlinePicker g={g} />
+            </td>
+          </tr>
+        )}
+      </React.Fragment>
+    );
+  };
 
   return (
     <div>
@@ -423,8 +523,7 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
             Gymnasts below have completed the linked skill tracker levels for each category.
           </p>
           {eligible.map(cat => {
-            const hasFilter = cat.gymnasts.length > 0 && cat.gymnasts.length < (allGymnasts || []).length;
-            const noFilter = !hasFilter && cat.gymnasts.length === (allGymnasts || []).length;
+            const noFilter = allGymnasts && cat.gymnasts.length === allGymnasts.length;
             return (
               <div key={cat.categoryId} style={{ marginBottom: '1.5rem' }}>
                 <h4 style={{ margin: '0 0 0.25rem', fontSize: '0.9rem' }}>{cat.categoryName}</h4>
@@ -437,33 +536,7 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
                 {cat.gymnasts.length > 0 && (
                   <table className="bk-table">
                     <tbody>
-                      {cat.gymnasts.map(g => (
-                        <tr key={g.id}>
-                          <td>{g.firstName} {g.lastName}</td>
-                          <td>
-                            {g.alreadyInvited ? (
-                              <div className="bk-row" style={{ gap: '0.5rem', alignItems: 'center' }}>
-                                <span style={{ color: 'var(--booking-success)', fontSize: '0.85rem', fontWeight: 600 }}>Invited</span>
-                                <button
-                                  className="bk-btn bk-btn--sm"
-                                  style={{ color: 'var(--booking-danger)', fontSize: '0.8rem' }}
-                                  onClick={() => onUninvite(entryMap[g.id], g.id)}
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                className="bk-btn bk-btn--sm bk-btn--primary"
-                                disabled={inviting}
-                                onClick={() => onInvite(g.id)}
-                              >
-                                Invite
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {cat.gymnasts.map(g => renderGymnastRow(g, cat.categoryId))}
                     </tbody>
                   </table>
                 )}
@@ -483,20 +556,7 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
             {notInvited.length > 0 && (
               <table className="bk-table">
                 <tbody>
-                  {notInvited.map(g => (
-                    <tr key={g.id}>
-                      <td>{g.firstName} {g.lastName}</td>
-                      <td>
-                        <button
-                          className="bk-btn bk-btn--sm bk-btn--primary"
-                          disabled={inviting}
-                          onClick={() => onInvite(g.id)}
-                        >
-                          Invite
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {notInvited.map(g => renderGymnastRow(g, null))}
                 </tbody>
               </table>
             )}

@@ -248,6 +248,8 @@ router.get('/:id/eligible', auth, requireRole(ADMIN_ROLES), async (req, res) => 
 router.post('/:id/invite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
   const { error, value } = Joi.object({
     gymnastIds: Joi.array().items(Joi.string()).min(1).required(),
+    categoryIds: Joi.array().items(Joi.string()).default([]),
+    priceOverride: Joi.number().integer().min(0).allow(null).default(null),
   }).validate(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
 
@@ -264,9 +266,32 @@ router.post('/:id/invite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
       });
       if (!existing) {
         await prisma.competitionEntry.create({
-          data: { competitionEventId: event.id, gymnastId },
+          data: {
+            competitionEventId: event.id,
+            gymnastId,
+            adminPriceOverride: value.priceOverride,
+            categories: value.categoryIds.length > 0 ? {
+              create: value.categoryIds.map(cid => ({ categoryId: cid })),
+            } : undefined,
+          },
         });
         created++;
+      } else {
+        // Update existing entry: set categories and/or price override
+        const updates = {};
+        if (value.priceOverride !== null) updates.adminPriceOverride = value.priceOverride;
+        if (Object.keys(updates).length > 0) {
+          await prisma.competitionEntry.update({ where: { id: existing.id }, data: updates });
+        }
+        if (value.categoryIds.length > 0) {
+          for (const cid of value.categoryIds) {
+            await prisma.competitionEntryCategory.upsert({
+              where: { entryId_categoryId: { entryId: existing.id, categoryId: cid } },
+              create: { entryId: existing.id, categoryId: cid },
+              update: {},
+            });
+          }
+        }
       }
     }
 

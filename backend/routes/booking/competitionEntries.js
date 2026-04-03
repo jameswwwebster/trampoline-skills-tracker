@@ -188,12 +188,14 @@ router.post('/:id/checkout', auth, async (req, res) => {
       }
     }
 
-    const total = calculateEntryTotal(
-      value.categoryIds.length,
-      entry.competitionEvent.priceTiers,
-      entry.competitionEvent.lateEntryFee,
-      isLate
-    );
+    const total = entry.adminPriceOverride !== null && entry.adminPriceOverride !== undefined
+      ? entry.adminPriceOverride
+      : calculateEntryTotal(
+          value.categoryIds.length,
+          entry.competitionEvent.priceTiers,
+          entry.competitionEvent.lateEntryFee,
+          isLate
+        );
 
     if (!process.env.STRIPE_SECRET_KEY) {
       return res.status(500).json({ error: 'Stripe not configured' });

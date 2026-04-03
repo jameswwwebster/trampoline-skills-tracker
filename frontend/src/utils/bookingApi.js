@@ -302,8 +302,8 @@ export const bookingApi = {
   deleteCompetitionCategory: (eventId, catId) =>
     axios.delete(`${API_URL}/booking/competition-events/${eventId}/categories/${catId}`, { headers: getHeaders() }),
 
-  inviteGymnasts: (eventId, gymnastIds) =>
-    axios.post(`${API_URL}/booking/competition-events/${eventId}/invite`, { gymnastIds }, { headers: getHeaders() }),
+  inviteGymnasts: (eventId, gymnastIds, categoryIds = [], priceOverride = null) =>
+    axios.post(`${API_URL}/booking/competition-events/${eventId}/invite`, { gymnastIds, categoryIds, priceOverride }, { headers: getHeaders() }),
 
   // Competition Entries
   getMyCompetitionEntries: () =>

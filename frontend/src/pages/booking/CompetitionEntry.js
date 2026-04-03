@@ -56,7 +56,10 @@ export default function CompetitionEntry() {
     setClientSecret(null);
   };
 
+  const priceOverride = entry.adminPriceOverride ?? null;
+
   const calcDisplayTotal = () => {
+    if (priceOverride !== null) return priceOverride;
     const tiers = [...ev.priceTiers].sort((a, b) => a.entryNumber - b.entryNumber);
     let t = 0;
     for (let i = 0; i < selectedCategories.length; i++) {
@@ -92,11 +95,13 @@ export default function CompetitionEntry() {
         <p style={{ marginBottom: '0.25rem', fontSize: '0.875rem' }}>
           {selectedCategories.map(cid => ev.categories.find(c => c.id === cid)?.name).filter(Boolean).join(', ')}
         </p>
-        {isLate && ev.lateEntryFee && (
+        {priceOverride !== null ? (
+          <p style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>Club price applied</p>
+        ) : isLate && ev.lateEntryFee ? (
           <p style={{ color: 'var(--booking-warning)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
             Late entry fee of £{(ev.lateEntryFee / 100).toFixed(2)} included
           </p>
-        )}
+        ) : null}
         <p style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '1.25rem' }}>
           Total: £{(total / 100).toFixed(2)}
         </p>
@@ -154,11 +159,14 @@ export default function CompetitionEntry() {
             <div className="bk-card" style={{ marginBottom: '1rem' }}>
               <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: '0 0 0.35rem' }}>
                 Entry total: £{(calcDisplayTotal() / 100).toFixed(2)}
+                {priceOverride !== null && <span className="bk-muted" style={{ fontWeight: 400, fontSize: '0.8rem' }}> (club price)</span>}
               </p>
-              <p className="bk-muted" style={{ fontSize: '0.8rem', margin: 0 }}>
-                {selectedCategories.length} {selectedCategories.length === 1 ? 'category' : 'categories'}
-                {isLate && ev.lateEntryFee ? ` + £${(ev.lateEntryFee / 100).toFixed(2)} late fee` : ''}
-              </p>
+              {priceOverride === null && (
+                <p className="bk-muted" style={{ fontSize: '0.8rem', margin: 0 }}>
+                  {selectedCategories.length} {selectedCategories.length === 1 ? 'category' : 'categories'}
+                  {isLate && ev.lateEntryFee ? ` + £${(ev.lateEntryFee / 100).toFixed(2)} late fee` : ''}
+                </p>
+              )}
             </div>
           )}
 
