@@ -247,6 +247,8 @@ model Skill {
   description   String?
   levelId       String
   order         Int
+  difficulty    Decimal?        @db.Decimal(4, 1)
+  figNotation   String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   routineSkills RoutineSkill[]

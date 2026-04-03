@@ -738,25 +738,51 @@ const RoutineCard = ({
                 <button onClick={onAddSkillToRoutine} className="edit-mode-add-btn">+ Add Skill</button>
               )}
             </div>
-            
+
             {routine.skills.length > 0 ? (
               <div className="routine-skills-list">
-                {routine.skills.map(skill => (
-                  <div key={skill.id} className="routine-skill-item">
-                    <span className="skill-name" style={{ 
-                      fontStyle: skill.isImplicit ? 'italic' : 'normal',
-                      color: skill.isImplicit ? '#666' : 'inherit'
-                    }}>
-                      {skill.name}
-                      {skill.isImplicit && <span className="badge badge-info" style={{ marginLeft: '0.5rem', fontSize: '0.7rem' }}>Implicit</span>}
-                    </span>
-                    {canEdit && (
-                      <button onClick={() => onRemoveSkillFromRoutine(levelId, routine.id, skill.id)} className="edit-mode-btn edit-mode-btn--delete" title="Remove from routine">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {routine.skills.map(skill => {
+                  const dd = skill.difficulty != null ? Number(skill.difficulty) : null;
+                  return (
+                    <div key={skill.id} className="routine-skill-item">
+                      <span className="skill-name" style={{
+                        fontStyle: skill.isImplicit ? 'italic' : 'normal',
+                        color: skill.isImplicit ? '#666' : 'inherit'
+                      }}>
+                        {skill.name}
+                        {skill.isImplicit && <span className="badge badge-info" style={{ marginLeft: '0.5rem', fontSize: '0.7rem' }}>Implicit</span>}
+                      </span>
+                      <span className="skill-dd-info" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {skill.figNotation && (
+                          <code style={{ fontSize: '0.75rem', color: '#555', background: '#f0f0f0', padding: '1px 4px', borderRadius: '3px' }}>
+                            {skill.figNotation}
+                          </code>
+                        )}
+                        {dd != null && (
+                          <span style={{ fontSize: '0.75rem', color: '#555', minWidth: '2.5rem', textAlign: 'right' }}>
+                            {dd.toFixed(1)}
+                          </span>
+                        )}
+                      </span>
+                      {canEdit && (
+                        <button onClick={() => onRemoveSkillFromRoutine(levelId, routine.id, skill.id)} className="edit-mode-btn edit-mode-btn--delete" title="Remove from routine">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+                {(() => {
+                  const totalDD = routine.skills.reduce((sum, skill) => {
+                    return sum + (skill.difficulty != null ? Number(skill.difficulty) : 0);
+                  }, 0);
+                  return totalDD > 0 ? (
+                    <div className="routine-skill-item" style={{ borderTop: '1px solid #ddd', marginTop: '0.25rem', paddingTop: '0.25rem', fontWeight: 600 }}>
+                      <span>Total DD</span>
+                      <span style={{ marginLeft: 'auto', fontSize: '0.85rem' }}>{totalDD.toFixed(1)}</span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
             ) : (
               <p className="text-muted">No skills in this routine</p>

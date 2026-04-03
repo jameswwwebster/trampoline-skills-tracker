@@ -252,12 +252,39 @@ const LevelProgressTracker = ({ gymnastId, levelId, onLevelProgressUpdate }) => 
                         <ul className="skills-list">
                           {routine.routineSkills
                             .sort((a, b) => a.order - b.order)
-                            .map(routineSkill => (
-                              <li key={routineSkill.id} className="skill-item">
-                                {routineSkill.skill ? routineSkill.skill.name : routineSkill.customSkillName}
-                              </li>
-                            ))
+                            .map(routineSkill => {
+                              const skill = routineSkill.skill;
+                              const dd = skill?.difficulty != null ? Number(skill.difficulty) : null;
+                              return (
+                                <li key={routineSkill.id} className="skill-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span>{skill ? skill.name : routineSkill.customSkillName}</span>
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    {skill?.figNotation && (
+                                      <code style={{ fontSize: '0.75rem', color: '#555', background: '#f0f0f0', padding: '1px 4px', borderRadius: '3px' }}>
+                                        {skill.figNotation}
+                                      </code>
+                                    )}
+                                    {dd != null && (
+                                      <span style={{ fontSize: '0.75rem', color: '#555', minWidth: '2.5rem', textAlign: 'right' }}>
+                                        {dd.toFixed(1)}
+                                      </span>
+                                    )}
+                                  </span>
+                                </li>
+                              );
+                            })
                           }
+                          {(() => {
+                            const totalDD = routine.routineSkills.reduce((sum, rs) => {
+                              return sum + (rs.skill?.difficulty != null ? Number(rs.skill.difficulty) : 0);
+                            }, 0);
+                            return totalDD > 0 ? (
+                              <li style={{ borderTop: '1px solid #ddd', marginTop: '0.25rem', paddingTop: '0.25rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
+                                <span>Total DD</span>
+                                <span style={{ fontSize: '0.85rem' }}>{totalDD.toFixed(1)}</span>
+                              </li>
+                            ) : null;
+                          })()}
                         </ul>
                       </div>
                     )}
