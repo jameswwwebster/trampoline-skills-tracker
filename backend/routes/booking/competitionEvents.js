@@ -188,7 +188,7 @@ router.get('/:id/eligible', auth, requireRole(ADMIN_ROLES), async (req, res) => 
           include: {
             skillCompetitions: {
               include: {
-                skillCompetition: { include: { levels: true } },
+                skillCompetition: { include: { levels: { include: { level: { select: { number: true } } } } } },
               },
             },
           },
@@ -200,7 +200,11 @@ router.get('/:id/eligible', auth, requireRole(ADMIN_ROLES), async (req, res) => 
 
     const alreadyInvited = new Set(event.entries.map(e => e.gymnastId));
 
-    const result = await Promise.all(event.categories.map(async (cat) => {
+    const rawResult = await Promise.all(event.categories.map(async (cat) => {
+      const levelNums = cat.skillCompetitions.flatMap(sc =>
+        sc.skillCompetition.levels.map(l => l.level.number)
+      );
+      const maxLevelNumber = levelNums.length > 0 ? Math.max(...levelNums) : -1;
       const levelIds = cat.skillCompetitions.flatMap(sc =>
         sc.skillCompetition.levels.map(l => l.levelId)
       );
@@ -226,16 +230,30 @@ router.get('/:id/eligible', auth, requireRole(ADMIN_ROLES), async (req, res) => 
         });
       }
 
-      return {
-        categoryId: cat.id,
-        categoryName: cat.name,
-        gymnasts: gymnasts.map(g => ({
+      return { categoryId: cat.id, categoryName: cat.name, maxLevelNumber, gymnasts };
+    }));
+
+    // Each gymnast appears only in their highest-ranked eligible category
+    const gymnastHighestRank = {};
+    for (const cat of rawResult) {
+      for (const g of cat.gymnasts) {
+        if (!(g.id in gymnastHighestRank) || cat.maxLevelNumber > gymnastHighestRank[g.id]) {
+          gymnastHighestRank[g.id] = cat.maxLevelNumber;
+        }
+      }
+    }
+
+    const result = rawResult.map(cat => ({
+      categoryId: cat.categoryId,
+      categoryName: cat.categoryName,
+      gymnasts: cat.gymnasts
+        .filter(g => gymnastHighestRank[g.id] === cat.maxLevelNumber)
+        .map(g => ({
           id: g.id,
           firstName: g.firstName,
           lastName: g.lastName,
           alreadyInvited: alreadyInvited.has(g.id),
         })),
-      };
     }));
 
     res.json(result);
