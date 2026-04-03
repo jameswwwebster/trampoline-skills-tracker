@@ -488,8 +488,9 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
       // prorationBehavior: 'create_prorations' (apply now, pro-rata) or 'none' (from next month)
       const stripeProration = prorationBehavior === 'none' ? 'none' : 'create_prorations';
 
-      // Update Stripe subscription price if one exists
-      if (membership.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
+      // Update Stripe subscription price if one exists and is in an updatable state
+      const updatableStatuses = ['ACTIVE', 'PAUSED', 'SCHEDULED'];
+      if (membership.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY && updatableStatuses.includes(membership.status)) {
         const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
         const sub = await stripe.subscriptions.retrieve(membership.stripeSubscriptionId);
         const item = sub.items.data[0];
