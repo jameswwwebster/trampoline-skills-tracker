@@ -18,7 +18,7 @@ async function main() {
   if (!process.env.STRIPE_SECRET_KEY) {
     console.error('STRIPE_SECRET_KEY not set'); process.exit(1);
   }
-  const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY_LIVE || process.env.STRIPE_SECRET_KEY);
+  const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
   for (const invoiceId of PAID_INVOICE_IDS) {
     const invoice = await stripe.invoices.retrieve(invoiceId);
