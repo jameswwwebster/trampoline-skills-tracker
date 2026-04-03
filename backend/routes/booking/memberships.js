@@ -213,15 +213,39 @@ router.get('/:id/client-secret', auth, async (req, res) => {
       return res.json({ alreadyPaid: true });
     }
 
-    // Stripe API 2026-02-25.clover: invoices no longer have payment_intent directly.
-    // List invoice_payments to find the open PaymentIntent client secret.
-    const invoicePayments = await stripe.invoicePayments.list({ invoice: invoice.id });
-    const openPayment = invoicePayments.data.find(ip => ip.status === 'open');
-    const piId = openPayment?.payment?.type === 'payment_intent'
-      ? (typeof openPayment.payment.payment_intent === 'string'
-          ? openPayment.payment.payment_intent
-          : openPayment.payment.payment_intent?.id)
-      : null;
+    // Helper: extract PI id from an invoice_payment object
+    const extractPiId = (ip) => {
+      if (ip?.payment?.type !== 'payment_intent') return null;
+      const raw = ip.payment.payment_intent;
+      return typeof raw === 'string' ? raw : (raw?.id ?? null);
+    };
+
+    let piId = null;
+
+    // First: try the subscription's latest_invoice (normal PENDING_PAYMENT path)
+    if (invoice) {
+      // Stripe API 2026-02-25.clover: invoices no longer have payment_intent directly.
+      const invoicePayments = await stripe.invoicePayments.list({ invoice: invoice.id });
+      const openPayment = invoicePayments.data.find(ip => ip.status === 'open');
+      piId = extractPiId(openPayment);
+    }
+
+    // Fallback: look for a standalone open invoice for this customer.
+    // This handles memberships set to PENDING_PAYMENT via the cleanup script,
+    // where the April charge was issued as a standalone invoice (not a subscription invoice).
+    if (!piId) {
+      const openInvoices = await stripe.invoices.list({
+        customer: subscription.customer,
+        status: 'open',
+      });
+      for (const inv of openInvoices.data) {
+        const invPayments = await stripe.invoicePayments.list({ invoice: inv.id });
+        const openPayment = invPayments.data.find(ip => ip.status === 'open');
+        piId = extractPiId(openPayment);
+        if (piId) break;
+      }
+    }
+
     if (!piId) return res.status(400).json({ error: 'No pending payment found for this membership' });
     const pi = await stripe.paymentIntents.retrieve(piId);
     res.json({ clientSecret: pi.client_secret });

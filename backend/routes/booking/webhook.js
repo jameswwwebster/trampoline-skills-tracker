@@ -38,6 +38,44 @@ async function handleInvoicePaid(invoice, prisma, emailService) {
   console.log(`Membership ${membership.id} activated via invoice paid`);
 }
 
+// Handles standalone (non-subscription) invoice payments — used when a manual invoice is
+// issued for a membership charge (e.g. via the April 2026 cleanup script).
+// Activates PENDING_PAYMENT memberships for the Stripe customer if the invoice
+// has membership-related line items.
+async function handleStandaloneInvoicePaid(invoice, prisma) {
+  if (!invoice.customer || invoice.amount_paid <= 0) return;
+
+  // Only act on invoices that look like membership charges
+  const lines = invoice.lines?.data || [];
+  const isMembershipInvoice =
+    (invoice.description && invoice.description.toLowerCase().includes('membership')) ||
+    lines.some(l => l.description && l.description.toLowerCase().includes('membership'));
+  if (!isMembershipInvoice) return;
+
+  // Find the guardian by Stripe customer ID
+  const guardian = await prisma.user.findFirst({
+    where: { stripeCustomerId: invoice.customer },
+    select: { id: true },
+  });
+  if (!guardian) return;
+
+  // Activate all PENDING_PAYMENT memberships for this guardian's gymnasts
+  const gymnasts = await prisma.gymnast.findMany({
+    where: { guardians: { some: { id: guardian.id } } },
+    select: { id: true },
+  });
+  const gymnastIds = gymnasts.map(g => g.id);
+  if (gymnastIds.length === 0) return;
+
+  const result = await prisma.membership.updateMany({
+    where: { gymnastId: { in: gymnastIds }, status: 'PENDING_PAYMENT' },
+    data: { status: 'ACTIVE', needsPaymentMethod: false },
+  });
+  if (result.count > 0) {
+    console.log(`Activated ${result.count} PENDING_PAYMENT membership(s) via standalone invoice ${invoice.id}`);
+  }
+}
+
 // IMPORTANT: Registered BEFORE express.json() in server.js to receive raw body
 router.post('/', express.raw({ type: 'application/json' }), async (req, res) => {
   const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -151,6 +189,8 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
         const invoice = await stripe.invoices.retrieve(invoicePayment.invoice);
         if (invoice.subscription) {
           await handleInvoicePaid(invoice, prisma, emailService);
+        } else {
+          await handleStandaloneInvoicePaid(invoice, prisma);
         }
         console.log(`invoice_payment.paid processed (invoice ${invoicePayment.invoice})`);
       } catch (err) {
@@ -164,6 +204,9 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
     if (invoice.subscription) {
       await handleInvoicePaid(invoice, prisma, emailService);
       console.log(`invoice.paid processed (invoice ${invoice.id})`);
+    } else {
+      await handleStandaloneInvoicePaid(invoice, prisma);
+      console.log(`invoice.paid (standalone) processed (invoice ${invoice.id})`);
     }
   }
 
