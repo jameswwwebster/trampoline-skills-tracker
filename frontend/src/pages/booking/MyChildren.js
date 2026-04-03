@@ -740,6 +740,7 @@ function PendingPaymentRow({ membership, onRefresh }) {
     try {
       const res = await bookingApi.getMembershipClientSecret(membership.id);
       if (res.data.alreadyPaid) { onRefresh && onRefresh(); return; }
+      if (res.data.subscriptionCancelled) { onRefresh && onRefresh(); return; }
       setClientSecret(res.data.clientSecret);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load payment form. Please try again.');

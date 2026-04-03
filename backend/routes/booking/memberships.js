@@ -187,6 +187,17 @@ router.get('/:id/client-secret', auth, async (req, res) => {
       expand: ['latest_invoice', 'pending_setup_intent'],
     });
 
+    // Subscription was cancelled on Stripe (e.g. payment window expired)
+    if (subscription.status === 'canceled') {
+      if (membership.status !== 'CANCELLED') {
+        await prisma.membership.update({
+          where: { id: membership.id },
+          data: { status: 'CANCELLED' },
+        });
+      }
+      return res.json({ subscriptionCancelled: true });
+    }
+
     const invoice = subscription.latest_invoice;
 
     // If the invoice has already been paid (e.g. Stripe auto-charged when a sibling's
