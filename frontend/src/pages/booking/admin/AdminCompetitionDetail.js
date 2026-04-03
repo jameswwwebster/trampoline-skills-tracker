@@ -14,7 +14,8 @@ export default function AdminCompetitionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
-  const [eligible, setEligible] = useState([]);
+  const [eligible, setEligible] = useState(null); // null = not yet loaded
+  const [eligibleError, setEligibleError] = useState(null);
   const [tab, setTab] = useState('details');
   const [editField, setEditField] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -28,8 +29,15 @@ export default function AdminCompetitionDetail() {
   };
 
   const loadEligible = async () => {
-    const res = await bookingApi.getEligibleGymnasts(id);
-    setEligible(res.data);
+    setEligible(null);
+    setEligibleError(null);
+    try {
+      const res = await bookingApi.getEligibleGymnasts(id);
+      setEligible(res.data);
+    } catch (err) {
+      setEligibleError(err.response?.data?.error || 'Failed to load eligible gymnasts.');
+      setEligible([]);
+    }
   };
 
   useEffect(() => { load(); }, [id]);
@@ -52,15 +60,43 @@ export default function AdminCompetitionDetail() {
     }
   };
 
+  const handleAddCategory = async (name) => {
+    try {
+      await bookingApi.addCompetitionCategory(id, { name, skillCompetitionIds: [] });
+      await load();
+    } catch (err) {
+      setMsg(err.response?.data?.error || 'Failed to add category.');
+    }
+  };
+
+  const handleRenameCategory = async (catId, name) => {
+    try {
+      await bookingApi.updateCompetitionCategory(id, catId, { name });
+      await load();
+    } catch (err) {
+      setMsg(err.response?.data?.error || 'Failed to rename category.');
+    }
+  };
+
+  const handleRemoveCategory = async (catId) => {
+    if (!window.confirm('Remove this category? Gymnasts who selected only this category will lose their selection.')) return;
+    try {
+      await bookingApi.deleteCompetitionCategory(id, catId);
+      await load();
+    } catch (err) {
+      setMsg(err.response?.data?.error || 'Failed to remove category.');
+    }
+  };
+
   const handleInvite = async (gymnastId) => {
     setInviting(true);
     try {
       await bookingApi.inviteGymnasts(id, [gymnastId]);
       await load();
-      setEligible(prev => prev.map(cat => ({
+      setEligible(prev => prev ? prev.map(cat => ({
         ...cat,
         gymnasts: cat.gymnasts.map(g => g.id === gymnastId ? { ...g, alreadyInvited: true } : g),
-      })));
+      })) : prev);
     } catch (err) {
       setMsg(err.response?.data?.error || 'Failed to invite.');
     } finally {
@@ -151,12 +187,16 @@ export default function AdminCompetitionDetail() {
           onSave={saveField}
           onCancel={() => setEditField(null)}
           onEditValueChange={setEditValue}
+          onAddCategory={handleAddCategory}
+          onRenameCategory={handleRenameCategory}
+          onRemoveCategory={handleRemoveCategory}
         />
       )}
 
       {tab === 'invites' && (
         <InvitesTab
           eligible={eligible}
+          eligibleError={eligibleError}
           inviting={inviting}
           onInvite={handleInvite}
         />
@@ -174,7 +214,13 @@ export default function AdminCompetitionDetail() {
   );
 }
 
-function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCancel, onEditValueChange }) {
+function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCancel, onEditValueChange, onAddCategory, onRenameCategory, onRemoveCategory }) {
+  const [catEditId, setCatEditId] = useState(null);
+  const [catEditValue, setCatEditValue] = useState('');
+  const [showAddCat, setShowAddCat] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [catSaving, setCatSaving] = useState(false);
+
   const fields = [
     { key: 'name', label: 'Name', type: 'text', display: event.name },
     { key: 'location', label: 'Location', type: 'text', display: event.location },
@@ -189,6 +235,23 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
       editVal: event.lateEntryFee !== null ? (event.lateEntryFee / 100).toFixed(2) : '',
     },
   ];
+
+  const handleCatRename = async (catId) => {
+    if (!catEditValue.trim()) return;
+    setCatSaving(true);
+    await onRenameCategory(catId, catEditValue.trim());
+    setCatEditId(null);
+    setCatSaving(false);
+  };
+
+  const handleAddCat = async () => {
+    if (!newCatName.trim()) return;
+    setCatSaving(true);
+    await onAddCategory(newCatName.trim());
+    setNewCatName('');
+    setShowAddCat(false);
+    setCatSaving(false);
+  };
 
   return (
     <div>
@@ -244,24 +307,81 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
       </div>
 
       <div>
-        <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: '0 0 0.5rem' }}>Categories</p>
+        <div className="bk-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: 0 }}>Categories</p>
+          <button className="bk-btn bk-btn--sm" onClick={() => { setShowAddCat(v => !v); setNewCatName(''); }}>
+            {showAddCat ? 'Cancel' : '+ Add category'}
+          </button>
+        </div>
+
         {event.categories.map(cat => (
-          <div key={cat.id} style={{ fontSize: '0.875rem', marginBottom: '0.35rem' }}>
-            <span style={{ fontWeight: 500 }}>{cat.name}</span>
-            {cat.skillCompetitions?.length > 0 && (
-              <span className="bk-muted" style={{ marginLeft: '0.5rem', fontSize: '0.8rem' }}>
-                ({cat.skillCompetitions.length} skill level{cat.skillCompetitions.length !== 1 ? 's' : ''} linked)
-              </span>
+          <div key={cat.id} style={{ fontSize: '0.875rem', marginBottom: '0.4rem' }}>
+            {catEditId === cat.id ? (
+              <div className="bk-row" style={{ gap: '0.5rem' }}>
+                <input
+                  className="bk-input"
+                  style={{ maxWidth: 260 }}
+                  value={catEditValue}
+                  onChange={e => setCatEditValue(e.target.value)}
+                  autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') handleCatRename(cat.id); if (e.key === 'Escape') setCatEditId(null); }}
+                />
+                <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={catSaving} onClick={() => handleCatRename(cat.id)}>Save</button>
+                <button className="bk-btn bk-btn--sm" onClick={() => setCatEditId(null)}>Cancel</button>
+              </div>
+            ) : (
+              <div className="bk-row" style={{ gap: '0.5rem', alignItems: 'center' }}>
+                <span
+                  style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}
+                  title="Click to rename"
+                  onClick={() => { setCatEditId(cat.id); setCatEditValue(cat.name); }}
+                >
+                  {cat.name}
+                </span>
+                {cat.skillCompetitions?.length > 0 && (
+                  <span className="bk-muted" style={{ fontSize: '0.8rem' }}>
+                    ({cat.skillCompetitions.length} skill level{cat.skillCompetitions.length !== 1 ? 's' : ''} linked)
+                  </span>
+                )}
+                <button
+                  className="bk-btn bk-btn--sm"
+                  style={{ color: 'var(--booking-danger)', fontSize: '0.8rem', marginLeft: '0.25rem' }}
+                  onClick={() => onRemoveCategory(cat.id)}
+                >
+                  Remove
+                </button>
+              </div>
             )}
           </div>
         ))}
+
+        {event.categories.length === 0 && !showAddCat && (
+          <p className="bk-muted" style={{ fontSize: '0.875rem' }}>No categories yet.</p>
+        )}
+
+        {showAddCat && (
+          <div className="bk-row" style={{ gap: '0.5rem', marginTop: '0.5rem' }}>
+            <input
+              className="bk-input"
+              style={{ maxWidth: 260 }}
+              placeholder="Category name e.g. Women's 13-14"
+              value={newCatName}
+              onChange={e => setNewCatName(e.target.value)}
+              autoFocus
+              onKeyDown={e => { if (e.key === 'Enter') handleAddCat(); if (e.key === 'Escape') setShowAddCat(false); }}
+            />
+            <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={catSaving || !newCatName.trim()} onClick={handleAddCat}>Add</button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function InvitesTab({ eligible, inviting, onInvite }) {
-  if (eligible.length === 0) return <p className="bk-muted">Loading eligible gymnasts...</p>;
+function InvitesTab({ eligible, eligibleError, inviting, onInvite }) {
+  if (eligibleError) return <p style={{ color: 'var(--booking-danger)', fontSize: '0.875rem' }}>{eligibleError}</p>;
+  if (eligible === null) return <p className="bk-muted">Loading eligible gymnasts...</p>;
+  if (eligible.length === 0) return <p className="bk-muted">No categories found for this competition.</p>;
 
   return (
     <div>

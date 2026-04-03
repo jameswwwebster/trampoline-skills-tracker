@@ -277,4 +277,88 @@ router.post('/:id/invite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
   }
 });
 
+// POST /:id/categories — add a category to an existing event
+router.post('/:id/categories', auth, requireRole(ADMIN_ROLES), async (req, res) => {
+  const { error, value } = Joi.object({
+    name: Joi.string().required(),
+    skillCompetitionIds: Joi.array().items(Joi.string()).default([]),
+  }).validate(req.body);
+  if (error) return res.status(400).json({ error: error.details[0].message });
+
+  try {
+    const event = await prisma.competitionEvent.findFirst({
+      where: { id: req.params.id, clubId: req.user.clubId },
+    });
+    if (!event) return res.status(404).json({ error: 'Not found' });
+
+    const category = await prisma.competitionCategory.create({
+      data: {
+        competitionEventId: event.id,
+        name: value.name,
+        skillCompetitions: value.skillCompetitionIds.length > 0 ? {
+          create: value.skillCompetitionIds.map(sid => ({ skillCompetitionId: sid })),
+        } : undefined,
+      },
+      include: { skillCompetitions: true },
+    });
+    res.status(201).json(category);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /:id/categories/:catId — rename a category
+router.patch('/:id/categories/:catId', auth, requireRole(ADMIN_ROLES), async (req, res) => {
+  const { error, value } = Joi.object({
+    name: Joi.string().required(),
+  }).validate(req.body);
+  if (error) return res.status(400).json({ error: error.details[0].message });
+
+  try {
+    const event = await prisma.competitionEvent.findFirst({
+      where: { id: req.params.id, clubId: req.user.clubId },
+    });
+    if (!event) return res.status(404).json({ error: 'Not found' });
+
+    const category = await prisma.competitionCategory.findFirst({
+      where: { id: req.params.catId, competitionEventId: event.id },
+    });
+    if (!category) return res.status(404).json({ error: 'Category not found' });
+
+    const updated = await prisma.competitionCategory.update({
+      where: { id: category.id },
+      data: { name: value.name },
+      include: { skillCompetitions: true },
+    });
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// DELETE /:id/categories/:catId — remove a category
+router.delete('/:id/categories/:catId', auth, requireRole(ADMIN_ROLES), async (req, res) => {
+  try {
+    const event = await prisma.competitionEvent.findFirst({
+      where: { id: req.params.id, clubId: req.user.clubId },
+    });
+    if (!event) return res.status(404).json({ error: 'Not found' });
+
+    const category = await prisma.competitionCategory.findFirst({
+      where: { id: req.params.catId, competitionEventId: event.id },
+    });
+    if (!category) return res.status(404).json({ error: 'Category not found' });
+
+    // competitionEntryCategory has no cascade from the category side — delete manually
+    await prisma.competitionEntryCategory.deleteMany({ where: { categoryId: category.id } });
+    await prisma.competitionCategory.delete({ where: { id: category.id } });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

@@ -290,6 +290,15 @@ export const bookingApi = {
   getEligibleGymnasts: (eventId) =>
     axios.get(`${API_URL}/booking/competition-events/${eventId}/eligible`, { headers: getHeaders() }),
 
+  addCompetitionCategory: (eventId, data) =>
+    axios.post(`${API_URL}/booking/competition-events/${eventId}/categories`, data, { headers: getHeaders() }),
+
+  updateCompetitionCategory: (eventId, catId, data) =>
+    axios.patch(`${API_URL}/booking/competition-events/${eventId}/categories/${catId}`, data, { headers: getHeaders() }),
+
+  deleteCompetitionCategory: (eventId, catId) =>
+    axios.delete(`${API_URL}/booking/competition-events/${eventId}/categories/${catId}`, { headers: getHeaders() }),
+
   inviteGymnasts: (eventId, gymnastIds) =>
     axios.post(`${API_URL}/booking/competition-events/${eventId}/invite`, { gymnastIds }, { headers: getHeaders() }),
 
