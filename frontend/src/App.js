@@ -60,6 +60,10 @@ import AdminMemberships from './pages/booking/admin/AdminMemberships';
 import AdminPayments from './pages/booking/admin/AdminPayments';
 import AdminHelpPage from './pages/booking/admin/AdminHelpPage';
 import AdminRegister from './pages/booking/admin/AdminRegister';
+import AdminCompetitions from './pages/booking/admin/AdminCompetitions';
+import AdminCompetitionDetail from './pages/booking/admin/AdminCompetitionDetail';
+import MyCompetitions from './pages/booking/MyCompetitions';
+import CompetitionEntry from './pages/booking/CompetitionEntry';
 import AdminDashboard from './pages/AdminDashboard';
 import ScrollToTop from './components/ScrollToTop';
 import PublicHome from './pages/public/PublicHome';
@@ -214,6 +218,10 @@ function AppContent() {
             <Route path="admin/payments" element={<AdminPayments />} />
             <Route path="admin/help" element={<AdminHelpPage />} />
             <Route path="admin/register/:instanceId" element={<AdminRegister />} />
+            <Route path="admin/competitions" element={<AdminCompetitions />} />
+            <Route path="admin/competitions/:id" element={<AdminCompetitionDetail />} />
+            <Route path="competitions" element={<MyCompetitions />} />
+            <Route path="competitions/:entryId/enter" element={<CompetitionEntry />} />
           </Route>
         </Route>
       </Routes>

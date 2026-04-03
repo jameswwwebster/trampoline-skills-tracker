@@ -308,6 +308,7 @@ export default function AppLayout() {
                 <div className="app-layout__dropdown-menu app-layout__dropdown-menu--right">
                   <NavLink to="/booking/my-account" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Account</NavLink>
                   {!isAdmin && <NavLink to="/booking/my-charges" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Charges</NavLink>}
+                  {!isAdmin && <NavLink to="/booking/competitions" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Competitions</NavLink>}
                   <NavLink to={helpPath} className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Help</NavLink>
                   {isSuperAdmin && <NavLink to="/super-admin" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Super Admin</NavLink>}
                 </div>
@@ -336,6 +337,7 @@ export default function AppLayout() {
                     <NavLink to="/booking/admin/members" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Members</NavLink>
                     <NavLink to="/booking/admin/bg-numbers" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>BG Numbers</NavLink>
                     <NavLink to="/booking/admin/memberships" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Memberships</NavLink>
+                    <NavLink to="/booking/admin/competitions" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Competitions</NavLink>
                     <NavLink to="/booking/admin/credits" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Credits</NavLink>
                     <NavLink to="/booking/admin/charges" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Charges</NavLink>
                     <NavLink to="/booking/admin/payments" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Payments</NavLink>
@@ -410,6 +412,7 @@ export default function AppLayout() {
           <div className="app-layout__mobile-section-label">Account</div>
           <NavLink to="/booking/my-account" className="app-layout__mobile-link" onClick={closeMobile}>My Account</NavLink>
           {!isAdmin && <NavLink to="/booking/my-charges" className="app-layout__mobile-link" onClick={closeMobile}>My Charges</NavLink>}
+          {!isAdmin && <NavLink to="/booking/competitions" className="app-layout__mobile-link" onClick={closeMobile}>Competitions</NavLink>}
           <NavLink to={helpPath} className="app-layout__mobile-link" onClick={closeMobile}>Help</NavLink>
           {isSuperAdmin && <NavLink to="/super-admin" className="app-layout__mobile-link" onClick={closeMobile}>Super Admin</NavLink>}
 
@@ -424,6 +427,7 @@ export default function AppLayout() {
             <NavLink to="/booking/admin/members" className="app-layout__mobile-link" onClick={closeMobile}>Members</NavLink>
             <NavLink to="/booking/admin/bg-numbers" className="app-layout__mobile-link" onClick={closeMobile}>BG Numbers</NavLink>
             <NavLink to="/booking/admin/memberships" className="app-layout__mobile-link" onClick={closeMobile}>Memberships</NavLink>
+            <NavLink to="/booking/admin/competitions" className="app-layout__mobile-link" onClick={closeMobile}>Competitions</NavLink>
             <NavLink to="/booking/admin/credits" className="app-layout__mobile-link" onClick={closeMobile}>Credits</NavLink>
             <NavLink to="/booking/admin/charges" className="app-layout__mobile-link" onClick={closeMobile}>Charges</NavLink>
             <NavLink to="/booking/admin/payments" className="app-layout__mobile-link" onClick={closeMobile}>Payments</NavLink>
