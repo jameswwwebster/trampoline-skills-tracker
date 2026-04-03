@@ -3,9 +3,11 @@
  * These items were created for the fixed April charge but never attached to an invoice
  * because Stripe skipped the initial invoice (proration_behavior:'none' + allow_incomplete).
  *
- * This script creates a standalone invoice for each customer, finalizes it, and attempts
- * to auto-charge using their saved payment method. Customers without a saved PM will have
- * an open invoice they can pay via the app. Without this, the items would stack on May 1.
+ * For each person:
+ *   - Creates a standalone Stripe invoice for the pending April item
+ *   - Finalizes and attempts to auto-charge
+ *   - If paid: membership stays ACTIVE in DB (correct)
+ *   - If open (no saved PM / charge failed): membership updated to PENDING_PAYMENT in DB
  *
  * Run from the backend directory:
  *   node -r dotenv/config scripts/cleanup-april-invoice-items.js
@@ -13,6 +15,8 @@
 
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const SUBSCRIPTION_IDS = [
   { sub: 'sub_1TI4EsK8b6wPdCEO4DunkJPy', name: 'Isla Neasham' },
@@ -49,7 +53,7 @@ async function main() {
     );
 
     if (aprilItems.length === 0) {
-      console.log(`${name}: no pending April items — skipping`);
+      console.log(`${name}: no pending April items — skipping (already handled or never created)`);
       continue;
     }
 
@@ -59,27 +63,49 @@ async function main() {
     const invoice = await stripe.invoices.create({
       customer: customerId,
       auto_advance: false,
-      description: `April 2026 membership — collected separately`,
+      description: 'April 2026 membership — collected separately',
     });
 
-    // Finalize the invoice (locks it and makes it payable)
+    // Finalize the invoice
     const finalized = await stripe.invoices.finalizeInvoice(invoice.id);
 
     // Attempt to charge the customer's saved payment method
     let paid = false;
     try {
-      const paid_invoice = await stripe.invoices.pay(finalized.id);
-      paid = paid_invoice.status === 'paid';
+      const paidInvoice = await stripe.invoices.pay(finalized.id);
+      paid = paidInvoice.status === 'paid';
     } catch (payErr) {
       // No saved PM or card declined — invoice stays open
     }
 
-    console.log(`${name}: £${(total / 100).toFixed(2)} — invoice ${finalized.id} — ${paid ? 'PAID (auto-charged)' : 'OPEN (no saved PM or charge failed)'}`);
+    // Update DB membership status to match reality
+    const membership = await prisma.membership.findFirst({
+      where: { stripeSubscriptionId: sub },
+    });
+
+    if (membership) {
+      if (!paid && membership.status === 'ACTIVE') {
+        await prisma.membership.update({
+          where: { id: membership.id },
+          data: { status: 'PENDING_PAYMENT' },
+        });
+        console.log(`${name}: £${(total / 100).toFixed(2)} — OPEN — membership set to PENDING_PAYMENT`);
+      } else {
+        console.log(`${name}: £${(total / 100).toFixed(2)} — PAID (auto-charged) — membership stays ACTIVE`);
+      }
+    } else {
+      console.log(`${name}: £${(total / 100).toFixed(2)} — ${paid ? 'PAID' : 'OPEN'} — WARNING: membership not found in DB`);
+    }
   }
 
   console.log('\nDone.');
-  console.log('PAID entries: collected immediately from saved card.');
-  console.log('OPEN entries: guardian needs to pay via the app or Stripe dashboard.');
+  console.log('PENDING_PAYMENT members need to set up payment via the app.');
+
+  await prisma.$disconnect();
 }
 
-main().catch(err => { console.error(err); process.exit(1); });
+main().catch(async err => {
+  console.error(err);
+  await prisma.$disconnect();
+  process.exit(1);
+});
