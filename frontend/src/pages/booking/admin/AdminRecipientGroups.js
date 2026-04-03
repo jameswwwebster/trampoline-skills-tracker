@@ -9,6 +9,7 @@ const FILTER_SUMMARY = {
   all: 'All members',
   role: f => `Role: ${f.role}`,
   active_membership: 'Active membership',
+  pending_payment_membership: 'Overdue subscriptions',
   expiring_credits: 'Expiring credits',
   no_upcoming_bookings: 'No upcoming bookings',
   adhoc: f => `${f.userIds?.length ?? 0} specific people`,

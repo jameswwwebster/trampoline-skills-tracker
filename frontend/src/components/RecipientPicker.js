@@ -6,6 +6,7 @@ const STANDARD_PRESETS = [
   { label: 'Adults only', filter: { type: 'role', role: 'ADULT' } },
   { label: 'Coaches only', filter: { type: 'role', role: 'COACH' } },
   { label: 'Active membership', filter: { type: 'active_membership' } },
+  { label: 'Overdue subscriptions', filter: { type: 'pending_payment_membership' } },
   { label: 'Expiring credits', filter: { type: 'expiring_credits' } },
   { label: 'No upcoming bookings', filter: { type: 'no_upcoming_bookings' } },
 ];
