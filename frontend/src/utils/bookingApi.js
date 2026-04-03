@@ -270,6 +270,41 @@ export const bookingApi = {
 
   deleteRecurringCredit: (id) =>
     axios.delete(`${API_URL}/booking/recurring-credits/${id}`, { headers: getHeaders() }),
+
+  // Competition Events (admin)
+  getCompetitionEvents: () =>
+    axios.get(`${API_URL}/booking/competition-events`, { headers: getHeaders() }),
+
+  getCompetitionEvent: (id) =>
+    axios.get(`${API_URL}/booking/competition-events/${id}`, { headers: getHeaders() }),
+
+  createCompetitionEvent: (data) =>
+    axios.post(`${API_URL}/booking/competition-events`, data, { headers: getHeaders() }),
+
+  updateCompetitionEvent: (id, data) =>
+    axios.patch(`${API_URL}/booking/competition-events/${id}`, data, { headers: getHeaders() }),
+
+  deleteCompetitionEvent: (id) =>
+    axios.delete(`${API_URL}/booking/competition-events/${id}`, { headers: getHeaders() }),
+
+  getEligibleGymnasts: (eventId) =>
+    axios.get(`${API_URL}/booking/competition-events/${eventId}/eligible`, { headers: getHeaders() }),
+
+  inviteGymnasts: (eventId, gymnastIds) =>
+    axios.post(`${API_URL}/booking/competition-events/${eventId}/invite`, { gymnastIds }, { headers: getHeaders() }),
+
+  // Competition Entries
+  getMyCompetitionEntries: () =>
+    axios.get(`${API_URL}/booking/competition-entries/mine`, { headers: getHeaders() }),
+
+  updateCompetitionEntry: (entryId, data) =>
+    axios.patch(`${API_URL}/booking/competition-entries/${entryId}`, data, { headers: getHeaders() }),
+
+  deleteCompetitionEntry: (entryId) =>
+    axios.delete(`${API_URL}/booking/competition-entries/${entryId}`, { headers: getHeaders() }),
+
+  checkoutCompetitionEntry: (entryId, categoryIds) =>
+    axios.post(`${API_URL}/booking/competition-entries/${entryId}/checkout`, { categoryIds }, { headers: getHeaders() }),
 };
 
 // Audit log
