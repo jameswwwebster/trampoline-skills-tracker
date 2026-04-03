@@ -1811,8 +1811,6 @@ export default function AdminMembers() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(null);
   const [createSuccess, setCreateSuccess] = useState(null);
-  const [showMemberships, setShowMemberships] = useState(false);
-  const [showCredits, setShowCredits] = useState(false);
   const [showRemovedMembers, setShowRemovedMembers] = useState(false);
   const [roleFilter, setRoleFilter] = useState('');
 
@@ -2059,22 +2057,6 @@ export default function AdminMembers() {
         </div>
       )}
 
-      {[
-        { key: 'memberships', label: 'Memberships', show: showMemberships, setShow: setShowMemberships, Panel: MembershipsPanel },
-        { key: 'credits', label: 'Credits', show: showCredits, setShow: setShowCredits, Panel: CreditsPanel },
-      ].map(({ key, label, show, setShow, Panel }) => (
-        <div key={key} style={{ marginTop: '1.5rem', borderTop: '1px solid var(--booking-border)', paddingTop: '1rem' }}>
-          <button
-            className="bk-btn bk-btn--sm"
-            style={{ border: '1px solid var(--booking-border)', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-            onClick={() => setShow(v => !v)}
-          >
-            <span>{label}</span>
-            <span style={{ display: 'inline-block', transition: 'transform 0.2s', transform: show ? 'rotate(180deg)' : 'none' }}>▾</span>
-          </button>
-          {show && <div style={{ marginTop: '1rem' }}><Panel /></div>}
-        </div>
-      ))}
 
       <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--booking-border)', paddingTop: '1rem' }}>
         <button

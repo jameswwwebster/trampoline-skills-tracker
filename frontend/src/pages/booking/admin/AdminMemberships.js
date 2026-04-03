@@ -22,6 +22,8 @@ export default function AdminMemberships() {
   const [editAmount, setEditAmount] = useState('');
   const [notifying, setNotifying] = useState(false);
   const [notifyResult, setNotifyResult] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [nameSearch, setNameSearch] = useState('');
   const [showResetPicker, setShowResetPicker] = useState(false);
   const [resetSelected, setResetSelected] = useState([]);
   const [cancellingOverdue, setCancellingOverdue] = useState(false);
@@ -260,8 +262,50 @@ export default function AdminMemberships() {
         </div>
       )}
 
-      {memberships.length === 0 && <p className="bk-muted">No memberships.</p>}
-      {memberships.length > 0 && (
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <input
+          className="bk-input"
+          style={{ maxWidth: 220 }}
+          placeholder="Search by name…"
+          value={nameSearch}
+          onChange={e => setNameSearch(e.target.value)}
+        />
+        <select className="bk-input" style={{ maxWidth: 200 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+          <option value="">All statuses</option>
+          {Object.entries(STATUS_LABELS).map(([k, v]) => (
+            <option key={k} value={k}>{v.label}</option>
+          ))}
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+        {(nameSearch || statusFilter) && (
+          <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => { setNameSearch(''); setStatusFilter(''); }}>Clear</button>
+        )}
+      </div>
+
+      {(() => {
+        const filtered = memberships.filter(m => {
+          if (statusFilter && m.status !== statusFilter) return false;
+          if (!statusFilter && m.status === 'CANCELLED') return false;
+          if (nameSearch) {
+            const q = nameSearch.toLowerCase();
+            if (!`${m.gymnast.firstName} ${m.gymnast.lastName}`.toLowerCase().includes(q)) return false;
+          }
+          return true;
+        });
+        return filtered.length === 0 ? <p className="bk-muted">No memberships.</p> : null;
+      })()}
+      {memberships.length > 0 && (() => {
+        const filtered = memberships.filter(m => {
+          if (statusFilter && m.status !== statusFilter) return false;
+          if (!statusFilter && m.status === 'CANCELLED') return false;
+          if (nameSearch) {
+            const q = nameSearch.toLowerCase();
+            if (!`${m.gymnast.firstName} ${m.gymnast.lastName}`.toLowerCase().includes(q)) return false;
+          }
+          return true;
+        });
+        if (filtered.length === 0) return null;
+        return (
         <table className="bk-table">
           <thead>
             <tr>
@@ -272,7 +316,7 @@ export default function AdminMemberships() {
             </tr>
           </thead>
           <tbody>
-            {memberships.map(m => {
+            {filtered.map(m => {
               const s = STATUS_LABELS[m.status] || { label: m.status, color: 'inherit' };
               return (
                 <tr key={m.id}>
@@ -321,7 +365,8 @@ export default function AdminMemberships() {
             })}
           </tbody>
         </table>
-      )}
+        );
+      })()}
     </div>
   );
 }
