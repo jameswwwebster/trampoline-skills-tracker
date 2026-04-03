@@ -26,6 +26,7 @@ export default function AdminMemberships() {
   const [nameSearch, setNameSearch] = useState('');
   const [showResetPicker, setShowResetPicker] = useState(false);
   const [resetSelected, setResetSelected] = useState([]);
+  const [resetSkipEmail, setResetSkipEmail] = useState(false);
   const [cancellingOverdue, setCancellingOverdue] = useState(false);
   const [cancelOverdueResult, setCancelOverdueResult] = useState(null);
 
@@ -118,7 +119,7 @@ export default function AdminMemberships() {
     let failed = 0;
     for (const id of resetSelected) {
       try {
-        await bookingApi.resetMembership(id);
+        await bookingApi.resetMembership(id, resetSkipEmail);
         reset++;
       } catch {
         failed++;
@@ -244,6 +245,10 @@ export default function AdminMemberships() {
                   </label>
                 ))}
               </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+                <input type="checkbox" checked={resetSkipEmail} onChange={e => setResetSkipEmail(e.target.checked)} />
+                <span>Don't send email notifications</span>
+              </label>
               <div className="bk-row" style={{ gap: '0.5rem' }}>
                 <button
                   className="bk-btn bk-btn--sm"

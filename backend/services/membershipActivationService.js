@@ -168,16 +168,18 @@ async function activateMembership(membershipId, prisma, options = {}) {
   });
 
   // Send email to guardian
-  try {
-    const emailService = require('./emailService');
-    await emailService.sendMembershipCreatedEmail(
-      guardian.email,
-      guardian.firstName,
-      gymnast,
-      membership.monthlyAmount,
-    );
-  } catch (emailErr) {
-    console.error('Failed to send membership activation email:', emailErr);
+  if (!options.skipEmail) {
+    try {
+      const emailService = require('./emailService');
+      await emailService.sendMembershipCreatedEmail(
+        guardian.email,
+        guardian.firstName,
+        gymnast,
+        membership.monthlyAmount,
+      );
+    } catch (emailErr) {
+      console.error('Failed to send membership activation email:', emailErr);
+    }
   }
 
   console.log(`Activated membership ${membershipId} → ${newStatus}`);
