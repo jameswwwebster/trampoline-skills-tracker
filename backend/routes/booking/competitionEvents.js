@@ -277,6 +277,35 @@ router.post('/:id/invite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
   }
 });
 
+// GET /:id/all-gymnasts — all non-archived gymnasts for manual inviting
+router.get('/:id/all-gymnasts', auth, requireRole(ADMIN_ROLES), async (req, res) => {
+  try {
+    const event = await prisma.competitionEvent.findFirst({
+      where: { id: req.params.id, clubId: req.user.clubId },
+      include: { entries: { select: { gymnastId: true, id: true } } },
+    });
+    if (!event) return res.status(404).json({ error: 'Not found' });
+
+    const invitedMap = new Map(event.entries.map(e => [e.gymnastId, e.id]));
+
+    const gymnasts = await prisma.gymnast.findMany({
+      where: { clubId: req.user.clubId, isArchived: false },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+    });
+
+    res.json(gymnasts.map(g => ({
+      id: g.id,
+      firstName: g.firstName,
+      lastName: g.lastName,
+      alreadyInvited: invitedMap.has(g.id),
+      entryId: invitedMap.get(g.id) || null,
+    })));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST /:id/categories — add a category to an existing event
 router.post('/:id/categories', auth, requireRole(ADMIN_ROLES), async (req, res) => {
   const { error, value } = Joi.object({

@@ -16,6 +16,7 @@ export default function AdminCompetitionDetail() {
   const [event, setEvent] = useState(null);
   const [eligible, setEligible] = useState(null); // null = not yet loaded
   const [eligibleError, setEligibleError] = useState(null);
+  const [allGymnasts, setAllGymnasts] = useState(null);
   const [tab, setTab] = useState('details');
   const [editField, setEditField] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -30,13 +31,19 @@ export default function AdminCompetitionDetail() {
 
   const loadEligible = async () => {
     setEligible(null);
+    setAllGymnasts(null);
     setEligibleError(null);
     try {
-      const res = await bookingApi.getEligibleGymnasts(id);
-      setEligible(res.data);
+      const [eligibleRes, allRes] = await Promise.all([
+        bookingApi.getEligibleGymnasts(id),
+        bookingApi.getAllCompetitionGymnasts(id),
+      ]);
+      setEligible(eligibleRes.data);
+      setAllGymnasts(allRes.data);
     } catch (err) {
-      setEligibleError(err.response?.data?.error || 'Failed to load eligible gymnasts.');
+      setEligibleError(err.response?.data?.error || 'Failed to load gymnasts.');
       setEligible([]);
+      setAllGymnasts([]);
     }
   };
 
@@ -92,7 +99,8 @@ export default function AdminCompetitionDetail() {
     setInviting(true);
     try {
       await bookingApi.inviteGymnasts(id, [gymnastId]);
-      await load();
+      const [, allRes] = await Promise.all([load(), bookingApi.getAllCompetitionGymnasts(id)]);
+      setAllGymnasts(allRes.data);
       setEligible(prev => prev ? prev.map(cat => ({
         ...cat,
         gymnasts: cat.gymnasts.map(g => g.id === gymnastId ? { ...g, alreadyInvited: true } : g),
@@ -101,6 +109,21 @@ export default function AdminCompetitionDetail() {
       setMsg(err.response?.data?.error || 'Failed to invite.');
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleUninvite = async (entryId, gymnastId) => {
+    if (!window.confirm('Remove this invitation?')) return;
+    try {
+      await bookingApi.deleteCompetitionEntry(entryId);
+      const [, allRes] = await Promise.all([load(), bookingApi.getAllCompetitionGymnasts(id)]);
+      setAllGymnasts(allRes.data);
+      setEligible(prev => prev ? prev.map(cat => ({
+        ...cat,
+        gymnasts: cat.gymnasts.map(g => g.id === gymnastId ? { ...g, alreadyInvited: false } : g),
+      })) : prev);
+    } catch (err) {
+      setMsg(err.response?.data?.error || 'Failed to remove invitation.');
     }
   };
 
@@ -197,8 +220,11 @@ export default function AdminCompetitionDetail() {
         <InvitesTab
           eligible={eligible}
           eligibleError={eligibleError}
+          allGymnasts={allGymnasts}
           inviting={inviting}
           onInvite={handleInvite}
+          onUninvite={handleUninvite}
+          eventEntries={event.entries}
         />
       )}
 
@@ -378,30 +404,89 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   );
 }
 
-function InvitesTab({ eligible, eligibleError, inviting, onInvite }) {
+function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, onUninvite, eventEntries }) {
+  const [showAll, setShowAll] = useState(false);
+
   if (eligibleError) return <p style={{ color: 'var(--booking-danger)', fontSize: '0.875rem' }}>{eligibleError}</p>;
-  if (eligible === null) return <p className="bk-muted">Loading eligible gymnasts...</p>;
-  if (eligible.length === 0) return <p className="bk-muted">No categories found for this competition.</p>;
+  if (eligible === null) return <p className="bk-muted">Loading...</p>;
+
+  // Build a map of gymnastId → entryId from event entries
+  const entryMap = Object.fromEntries((eventEntries || []).map(e => [e.gymnast.id, e.id]));
+
+  const notInvited = (allGymnasts || []).filter(g => !g.alreadyInvited);
 
   return (
     <div>
-      <p className="bk-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
-        Recommended gymnasts have completed the linked skill tracker levels. You can invite anyone regardless.
-      </p>
-      {eligible.map(cat => (
-        <div key={cat.categoryId} style={{ marginBottom: '1.5rem' }}>
-          <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.9rem' }}>{cat.categoryName}</h4>
-          {cat.gymnasts.length === 0 && <p className="bk-muted" style={{ fontSize: '0.85rem' }}>No eligible gymnasts found.</p>}
-          {cat.gymnasts.length > 0 && (
-            <table className="bk-table">
-              <tbody>
-                {cat.gymnasts.map(g => (
-                  <tr key={g.id}>
-                    <td>{g.firstName} {g.lastName}</td>
-                    <td>
-                      {g.alreadyInvited ? (
-                        <span style={{ color: 'var(--booking-success)', fontSize: '0.85rem', fontWeight: 600 }}>Invited</span>
-                      ) : (
+      {eligible.length > 0 && (
+        <>
+          <p className="bk-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Gymnasts below have completed the linked skill tracker levels for each category.
+          </p>
+          {eligible.map(cat => {
+            const hasFilter = cat.gymnasts.length > 0 && cat.gymnasts.length < (allGymnasts || []).length;
+            const noFilter = !hasFilter && cat.gymnasts.length === (allGymnasts || []).length;
+            return (
+              <div key={cat.categoryId} style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ margin: '0 0 0.25rem', fontSize: '0.9rem' }}>{cat.categoryName}</h4>
+                {noFilter && (
+                  <p className="bk-muted" style={{ fontSize: '0.8rem', margin: '0 0 0.5rem' }}>
+                    No skill level filter set — showing all gymnasts.
+                  </p>
+                )}
+                {cat.gymnasts.length === 0 && <p className="bk-muted" style={{ fontSize: '0.85rem' }}>No eligible gymnasts found.</p>}
+                {cat.gymnasts.length > 0 && (
+                  <table className="bk-table">
+                    <tbody>
+                      {cat.gymnasts.map(g => (
+                        <tr key={g.id}>
+                          <td>{g.firstName} {g.lastName}</td>
+                          <td>
+                            {g.alreadyInvited ? (
+                              <div className="bk-row" style={{ gap: '0.5rem', alignItems: 'center' }}>
+                                <span style={{ color: 'var(--booking-success)', fontSize: '0.85rem', fontWeight: 600 }}>Invited</span>
+                                <button
+                                  className="bk-btn bk-btn--sm"
+                                  style={{ color: 'var(--booking-danger)', fontSize: '0.8rem' }}
+                                  onClick={() => onUninvite(entryMap[g.id], g.id)}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                className="bk-btn bk-btn--sm bk-btn--primary"
+                                disabled={inviting}
+                                onClick={() => onInvite(g.id)}
+                              >
+                                Invite
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      <div style={{ marginTop: eligible.length > 0 ? '1.5rem' : 0, borderTop: eligible.length > 0 ? '1px solid var(--booking-border)' : 'none', paddingTop: eligible.length > 0 ? '1rem' : 0 }}>
+        <button className="bk-btn bk-btn--ghost" style={{ fontSize: '0.875rem' }} onClick={() => setShowAll(v => !v)}>
+          {showAll ? 'Hide' : '+ Add any gymnast'}
+        </button>
+        {showAll && (
+          <div style={{ marginTop: '0.75rem' }}>
+            {notInvited.length === 0 && <p className="bk-muted" style={{ fontSize: '0.85rem' }}>All gymnasts have already been invited.</p>}
+            {notInvited.length > 0 && (
+              <table className="bk-table">
+                <tbody>
+                  {notInvited.map(g => (
+                    <tr key={g.id}>
+                      <td>{g.firstName} {g.lastName}</td>
+                      <td>
                         <button
                           className="bk-btn bk-btn--sm bk-btn--primary"
                           disabled={inviting}
@@ -409,15 +494,15 @@ function InvitesTab({ eligible, eligibleError, inviting, onInvite }) {
                         >
                           Invite
                         </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
