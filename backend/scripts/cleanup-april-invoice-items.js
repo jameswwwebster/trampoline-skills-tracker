@@ -1,12 +1,13 @@
 /**
- * Deletes floating pending invoice items for the 13 memberships reset on 2026-04-03.
+ * Collects the floating April invoice items for the 13 memberships reset on 2026-04-03.
  * These items were created for the fixed April charge but never attached to an invoice
  * because Stripe skipped the initial invoice (proration_behavior:'none' + allow_incomplete).
- * Without cleanup they would stack on top of the May 1 billing causing a double charge.
  *
- * Run with:
- *   STRIPE_SECRET_KEY=sk_live_... node backend/scripts/cleanup-april-invoice-items.js
- * or from the backend directory:
+ * This script creates a standalone invoice for each customer, finalizes it, and attempts
+ * to auto-charge using their saved payment method. Customers without a saved PM will have
+ * an open invoice they can pay via the app. Without this, the items would stack on May 1.
+ *
+ * Run from the backend directory:
  *   node -r dotenv/config scripts/cleanup-april-invoice-items.js
  */
 
@@ -35,29 +36,50 @@ async function main() {
     try {
       subscription = await stripe.subscriptions.retrieve(sub);
     } catch (err) {
-      console.log(`${name}: subscription not found (${err.message}), skipping`);
+      console.log(`${name}: subscription not found, skipping`);
       continue;
     }
 
-    const items = await stripe.invoiceItems.list({ customer: subscription.customer, pending: true });
+    const customerId = subscription.customer;
+
+    // Find pending "first month" invoice items for this customer
+    const items = await stripe.invoiceItems.list({ customer: customerId, pending: true });
     const aprilItems = items.data.filter(i =>
       i.description && i.description.toLowerCase().includes('first month membership')
     );
 
     if (aprilItems.length === 0) {
-      console.log(`${name}: no pending April items found`);
+      console.log(`${name}: no pending April items — skipping`);
       continue;
     }
 
-    for (const item of aprilItems) {
-      await stripe.invoiceItems.del(item.id);
-      console.log(`${name}: deleted pending item £${(item.amount / 100).toFixed(2)} (${item.id})`);
+    const total = aprilItems.reduce((s, i) => s + i.amount, 0);
+
+    // Create a draft invoice — this pulls in the pending items automatically
+    const invoice = await stripe.invoices.create({
+      customer: customerId,
+      auto_advance: false,
+      description: `April 2026 membership — collected separately`,
+    });
+
+    // Finalize the invoice (locks it and makes it payable)
+    const finalized = await stripe.invoices.finalizeInvoice(invoice.id);
+
+    // Attempt to charge the customer's saved payment method
+    let paid = false;
+    try {
+      const paid_invoice = await stripe.invoices.pay(finalized.id);
+      paid = paid_invoice.status === 'paid';
+    } catch (payErr) {
+      // No saved PM or card declined — invoice stays open
     }
+
+    console.log(`${name}: £${(total / 100).toFixed(2)} — invoice ${finalized.id} — ${paid ? 'PAID (auto-charged)' : 'OPEN (no saved PM or charge failed)'}`);
   }
 
-  console.log('\nDone. These subscriptions will now bill normally on May 1 without a double charge.');
-  console.log('Note: April was not collected for these members. If you wish to charge for April,');
-  console.log('create a one-off invoice manually in the Stripe dashboard for each customer.');
+  console.log('\nDone.');
+  console.log('PAID entries: collected immediately from saved card.');
+  console.log('OPEN entries: guardian needs to pay via the app or Stripe dashboard.');
 }
 
 main().catch(err => { console.error(err); process.exit(1); });
