@@ -2,6 +2,7 @@ const express = require('express');
 const Joi = require('joi');
 const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
+const emailService = require('../../services/emailService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -256,8 +257,15 @@ router.post('/:id/invite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
   try {
     const event = await prisma.competitionEvent.findFirst({
       where: { id: req.params.id, clubId: req.user.clubId },
+      include: {
+        club: { select: { emailEnabled: true } },
+        categories: { select: { id: true, name: true } },
+      },
     });
     if (!event) return res.status(404).json({ error: 'Not found' });
+
+    const categoryNameMap = Object.fromEntries(event.categories.map(c => [c.id, c.name]));
+    const selectedCategoryNames = value.categoryIds.map(cid => categoryNameMap[cid]).filter(Boolean);
 
     let created = 0;
     for (const gymnastId of value.gymnastIds) {
@@ -276,6 +284,31 @@ router.post('/:id/invite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
           },
         });
         created++;
+
+        // Send invite email non-blocking (new entries only)
+        if (event.club.emailEnabled) {
+          (async () => {
+            try {
+              const gymnast = await prisma.gymnast.findUnique({ where: { id: gymnastId } });
+              const guardian = await prisma.user.findFirst({
+                where: { guardedGymnasts: { some: { id: gymnastId } } },
+                select: { email: true, firstName: true },
+              });
+              if (guardian?.email && gymnast) {
+                await emailService.sendCompetitionInviteEmail(
+                  guardian.email,
+                  guardian.firstName,
+                  gymnast,
+                  event,
+                  selectedCategoryNames,
+                  value.priceOverride
+                );
+              }
+            } catch (emailErr) {
+              console.error('Competition invite email failed:', emailErr);
+            }
+          })();
+        }
       } else {
         // Update existing entry: set categories and/or price override
         const updates = {};

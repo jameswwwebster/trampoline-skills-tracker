@@ -438,41 +438,6 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
   const toggleCat = (catId) =>
     setPendingCatIds(prev => prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]);
 
-  const InlinePicker = ({ g }) => (
-    <div style={{ background: 'var(--booking-bg, #f9fafb)', border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.75rem', marginTop: '0.35rem' }}>
-      {eventCategories.length > 0 && (
-        <div style={{ marginBottom: '0.6rem' }}>
-          <p style={{ margin: '0 0 0.35rem', fontSize: '0.8rem', fontWeight: 600 }}>Categories:</p>
-          {eventCategories.map(cat => (
-            <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '0.2rem' }}>
-              <input type="checkbox" checked={pendingCatIds.includes(cat.id)} onChange={() => toggleCat(cat.id)} />
-              {cat.name}
-            </label>
-          ))}
-        </div>
-      )}
-      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-        Price override (£) — leave blank to use standard pricing
-      </label>
-      <input
-        type="number"
-        step="0.01"
-        min="0"
-        className="bk-input"
-        style={{ maxWidth: 120, marginBottom: '0.6rem' }}
-        value={pendingPrice}
-        placeholder="e.g. 15.00"
-        onChange={e => setPendingPrice(e.target.value)}
-      />
-      <div className="bk-row" style={{ gap: '0.5rem' }}>
-        <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={inviting} onClick={confirmInvite}>
-          {inviting ? 'Inviting...' : 'Confirm invite'}
-        </button>
-        <button className="bk-btn bk-btn--sm" onClick={cancelInvite}>Cancel</button>
-      </div>
-    </div>
-  );
-
   const renderGymnastRow = (g, preSelectCatId = null) => {
     const isPending = pendingGym?.id === g.id;
     return (
@@ -507,7 +472,38 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
         {isPending && (
           <tr>
             <td colSpan={2} style={{ paddingTop: 0 }}>
-              <InlinePicker g={g} />
+              <div style={{ background: 'var(--booking-bg, #f9fafb)', border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.75rem', marginTop: '0.35rem' }}>
+                {eventCategories.length > 0 && (
+                  <div style={{ marginBottom: '0.6rem' }}>
+                    <p style={{ margin: '0 0 0.35rem', fontSize: '0.8rem', fontWeight: 600 }}>Categories:</p>
+                    {eventCategories.map(cat => (
+                      <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '0.2rem' }}>
+                        <input type="checkbox" checked={pendingCatIds.includes(cat.id)} onChange={() => toggleCat(cat.id)} />
+                        {cat.name}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                  Price override (£) — leave blank to use standard pricing
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="bk-input"
+                  style={{ maxWidth: 120, marginBottom: '0.6rem' }}
+                  value={pendingPrice}
+                  placeholder="e.g. 15.00"
+                  onChange={e => setPendingPrice(e.target.value)}
+                />
+                <div className="bk-row" style={{ gap: '0.5rem' }}>
+                  <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={inviting} onClick={confirmInvite}>
+                    {inviting ? 'Inviting...' : 'Confirm invite'}
+                  </button>
+                  <button className="bk-btn bk-btn--sm" onClick={cancelInvite}>Cancel</button>
+                </div>
+              </div>
             </td>
           </tr>
         )}
@@ -591,6 +587,8 @@ function EntriesTab({ event, entryCountByStatus, onRemove, onCoachConfirm }) {
           <thead>
             <tr>
               <th>Gymnast</th>
+              <th>Age</th>
+              <th>BG No.</th>
               <th>Categories</th>
               <th style={{ textAlign: 'right' }}>Amount</th>
               <th>Status</th>
@@ -601,9 +599,14 @@ function EntriesTab({ event, entryCountByStatus, onRemove, onCoachConfirm }) {
           <tbody>
             {event.entries.map(entry => {
               const s = STATUS_LABELS[entry.status] || { label: entry.status, color: 'inherit' };
+              const ageEoy = entry.gymnast.dateOfBirth
+                ? new Date().getFullYear() - new Date(entry.gymnast.dateOfBirth).getFullYear()
+                : null;
               return (
                 <tr key={entry.id}>
                   <td>{entry.gymnast.firstName} {entry.gymnast.lastName}</td>
+                  <td style={{ fontSize: '0.85rem' }}>{ageEoy ?? '—'}</td>
+                  <td style={{ fontSize: '0.85rem' }}>{entry.gymnast.bgNumber || '—'}</td>
                   <td style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)' }}>
                     {entry.categories.length > 0
                       ? entry.categories.map(ec => ec.category.name).join(', ')
