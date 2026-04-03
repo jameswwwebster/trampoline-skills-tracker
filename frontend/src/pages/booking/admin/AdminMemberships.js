@@ -22,6 +22,8 @@ export default function AdminMemberships() {
   const [editAmount, setEditAmount] = useState('');
   const [notifying, setNotifying] = useState(false);
   const [notifyResult, setNotifyResult] = useState(null);
+  const [showResetPicker, setShowResetPicker] = useState(false);
+  const [resetSelected, setResetSelected] = useState([]);
   const [cancellingOverdue, setCancellingOverdue] = useState(false);
   const [cancelOverdueResult, setCancelOverdueResult] = useState(null);
 
@@ -99,16 +101,22 @@ export default function AdminMemberships() {
     }
   };
 
-  const handleResetOverdue = async () => {
+  const openResetPicker = () => {
     const overdue = memberships.filter(m => m.status === 'PENDING_PAYMENT');
-    if (!window.confirm(`Reset ${overdue.length} overdue membership${overdue.length !== 1 ? 's' : ''}? This will cancel each Stripe subscription and recreate it with the same amount starting today. Each guardian will receive a new membership email.`)) return;
-    setCancellingOverdue(true);
+    setResetSelected(overdue.map(m => m.id));
+    setShowResetPicker(true);
     setCancelOverdueResult(null);
+  };
+
+  const handleResetSelected = async () => {
+    if (resetSelected.length === 0) return;
+    setCancellingOverdue(true);
+    setShowResetPicker(false);
     let reset = 0;
     let failed = 0;
-    for (const m of overdue) {
+    for (const id of resetSelected) {
       try {
-        await bookingApi.resetMembership(m.id);
+        await bookingApi.resetMembership(id);
         reset++;
       } catch {
         failed++;
@@ -204,16 +212,51 @@ export default function AdminMemberships() {
       )}
 
       {memberships.some(m => m.status === 'PENDING_PAYMENT') && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-          <button
-            className="bk-btn bk-btn--ghost"
-            style={{ fontSize: '0.85rem', color: 'var(--booking-danger)', borderColor: 'var(--booking-danger)' }}
-            disabled={cancellingOverdue}
-            onClick={handleResetOverdue}
-          >
-            {cancellingOverdue ? 'Resetting…' : `Reset all overdue (${memberships.filter(m => m.status === 'PENDING_PAYMENT').length})`}
-          </button>
-          {cancelOverdueResult && <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>{cancelOverdueResult}</span>}
+        <div style={{ marginBottom: '1rem' }}>
+          {!showResetPicker ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button
+                className="bk-btn bk-btn--ghost"
+                style={{ fontSize: '0.85rem', color: 'var(--booking-danger)', borderColor: 'var(--booking-danger)' }}
+                disabled={cancellingOverdue}
+                onClick={openResetPicker}
+              >
+                {cancellingOverdue ? 'Resetting…' : `Reset overdue memberships…`}
+              </button>
+              {cancelOverdueResult && <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>{cancelOverdueResult}</span>}
+            </div>
+          ) : (
+            <div className="bk-card" style={{ maxWidth: 420 }}>
+              <p style={{ margin: '0 0 0.75rem', fontWeight: 600, fontSize: '0.9rem' }}>Select people to reset</p>
+              <p className="bk-muted" style={{ margin: '0 0 0.75rem', fontSize: '0.8rem' }}>Each selected membership will be cancelled and recreated with the same amount starting today. Guardians will receive an email to set up payment.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.75rem' }}>
+                {memberships.filter(m => m.status === 'PENDING_PAYMENT').map(m => (
+                  <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={resetSelected.includes(m.id)}
+                      onChange={() => setResetSelected(s => s.includes(m.id) ? s.filter(id => id !== m.id) : [...s, m.id])}
+                    />
+                    {m.gymnast.firstName} {m.gymnast.lastName}
+                    <span className="bk-muted" style={{ fontSize: '0.8rem' }}>£{(m.monthlyAmount / 100).toFixed(2)}/mo</span>
+                  </label>
+                ))}
+              </div>
+              <div className="bk-row" style={{ gap: '0.5rem' }}>
+                <button
+                  className="bk-btn bk-btn--sm"
+                  style={{ background: 'var(--booking-danger)', color: '#fff', border: 'none' }}
+                  disabled={resetSelected.length === 0}
+                  onClick={handleResetSelected}
+                >
+                  Reset {resetSelected.length > 0 ? `${resetSelected.length} ` : ''}selected
+                </button>
+                <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => setShowResetPicker(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
