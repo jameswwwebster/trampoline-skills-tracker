@@ -58,6 +58,7 @@ const AdminDashboard = () => {
         <Tile to="/booking/admin" icon={CalendarDaysIcon} label="Sessions" />
         <Tile to="/booking/admin/session-management" icon={WrenchScrewdriverIcon} label="Session Management" />
         <Tile to="/booking/admin/closures" icon={XCircleIcon} label="Closures" />
+        <Tile to="/booking/admin/competitions" icon={TrophyIcon} label="Competitions" />
       </Section>
 
       <Section title="Members">
