@@ -150,7 +150,8 @@ model Club {
   noticeboardPosts      NoticeboardPost[]
   recipientGroups       RecipientGroup[]
   charges               Charge[]
-  recurringCredits  RecurringCredit[]
+  recurringCredits      RecurringCredit[]
+  competitionEvents     CompetitionEvent[]
 
   @@map("clubs")
 }
@@ -197,7 +198,8 @@ model Gymnast {
   memberships      Membership[]
   consents         Consent[]
   commitments      Commitment[]
-  attendances      Attendance[]
+  attendances        Attendance[]
+  competitionEntries CompetitionEntry[]
 
   @@map("gymnasts")
 }
@@ -395,16 +397,17 @@ model Invite {
 }
 
 model Competition {
-  id          String             @id @default(cuid())
-  name        String
-  code        String             @unique
-  description String?
-  order       Int
-  isActive    Boolean            @default(true)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  category    String
-  levels      LevelCompetition[]
+  id            String                          @id @default(cuid())
+  name          String
+  code          String                          @unique
+  description   String?
+  order         Int
+  isActive      Boolean                         @default(true)
+  createdAt     DateTime                        @default(now())
+  updatedAt     DateTime                        @updatedAt
+  category      String
+  levels        LevelCompetition[]
+  categoryLinks CompetitionCategorySkillLevel[]
 
   @@map("competitions")
 }
@@ -419,6 +422,88 @@ model LevelCompetition {
 
   @@unique([levelId, competitionId])
   @@map("level_competitions")
+}
+
+model CompetitionEvent {
+  id            String                 @id @default(cuid())
+  clubId        String
+  name          String
+  location      String
+  startDate     DateTime
+  endDate       DateTime?
+  entryDeadline DateTime
+  lateEntryFee  Int?
+  description   String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  club          Club                   @relation(fields: [clubId], references: [id])
+  categories    CompetitionCategory[]
+  priceTiers    CompetitionPriceTier[]
+  entries       CompetitionEntry[]
+
+  @@map("competition_events")
+}
+
+model CompetitionCategory {
+  id                 String                          @id @default(cuid())
+  competitionEventId String
+  name               String
+  competitionEvent   CompetitionEvent                @relation(fields: [competitionEventId], references: [id], onDelete: Cascade)
+  skillCompetitions  CompetitionCategorySkillLevel[]
+  entryCategories    CompetitionEntryCategory[]
+
+  @@map("competition_categories")
+}
+
+model CompetitionCategorySkillLevel {
+  id                 String              @id @default(cuid())
+  categoryId         String
+  skillCompetitionId String
+  category           CompetitionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  skillCompetition   Competition         @relation(fields: [skillCompetitionId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, skillCompetitionId])
+  @@map("competition_category_skill_levels")
+}
+
+model CompetitionPriceTier {
+  id                 String           @id @default(cuid())
+  competitionEventId String
+  entryNumber        Int
+  price              Int
+  competitionEvent   CompetitionEvent @relation(fields: [competitionEventId], references: [id], onDelete: Cascade)
+
+  @@unique([competitionEventId, entryNumber])
+  @@map("competition_price_tiers")
+}
+
+model CompetitionEntry {
+  id                    String                   @id @default(cuid())
+  competitionEventId    String
+  gymnastId             String
+  status                CompetitionEntryStatus   @default(INVITED)
+  totalAmount           Int?
+  stripePaymentIntentId String?
+  coachConfirmed        Boolean                  @default(false)
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  competitionEvent      CompetitionEvent         @relation(fields: [competitionEventId], references: [id])
+  gymnast               Gymnast                  @relation(fields: [gymnastId], references: [id])
+  categories            CompetitionEntryCategory[]
+
+  @@unique([competitionEventId, gymnastId])
+  @@map("competition_entries")
+}
+
+model CompetitionEntryCategory {
+  id         String              @id @default(cuid())
+  entryId    String
+  categoryId String
+  entry      CompetitionEntry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  category   CompetitionCategory @relation(fields: [categoryId], references: [id])
+
+  @@unique([entryId, categoryId])
+  @@map("competition_entry_categories")
 }
 
 model CertificateTemplate {
@@ -798,6 +883,13 @@ enum MembershipStatus {
   CANCELLED
   PAUSED
   SCHEDULED
+}
+
+enum CompetitionEntryStatus {
+  INVITED
+  PAYMENT_PENDING
+  PAID
+  DECLINED
 }
 
 model WaitlistEntry {
