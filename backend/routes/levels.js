@@ -213,12 +213,9 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
 
       // Handle competition associations if provided
       if (competitionIds && competitionIds.length > 0) {
-        // Verify all competitions exist and belong to same club
+        // Verify all competitions exist
         const competitions = await prisma.competition.findMany({
-          where: { 
-            id: { in: competitionIds },
-            clubId: req.user.clubId
-          }
+          where: { id: { in: competitionIds } }
         });
 
         if (competitions.length !== competitionIds.length) {
