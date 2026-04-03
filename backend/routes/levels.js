@@ -6,6 +6,36 @@ const { auth, requireRole } = require('../middleware/auth');
 const router = express.Router();
 const prisma = new PrismaClient();
 
+// Batch-fetch difficulty/figNotation for implicit skill names, returns name→skill map
+async function lookupImplicitSkillDDs(names) {
+  if (!names || names.length === 0) return {};
+  const skills = await prisma.skill.findMany({
+    where: { name: { in: names } },
+    select: { name: true, difficulty: true, figNotation: true }
+  });
+  return Object.fromEntries(skills.map(s => [s.name, s]));
+}
+
+// Transform routineSkills into the frontend skill shape, with DD info for implicit skills
+function transformRoutineSkills(routineSkills, levelId, ddMap = {}) {
+  return routineSkills.map(rs => {
+    if (rs.customSkillName) {
+      const dd = ddMap[rs.customSkillName] || {};
+      return {
+        id: rs.id,
+        name: rs.customSkillName,
+        description: null,
+        levelId,
+        order: rs.order,
+        isImplicit: true,
+        difficulty: dd.difficulty ?? null,
+        figNotation: dd.figNotation ?? null,
+      };
+    }
+    return rs.skill;
+  });
+}
+
 // Validation schemas
 const levelCreateSchema = Joi.object({
   identifier: Joi.string().min(1).max(20).required(),
@@ -115,27 +145,20 @@ router.get('/', auth, async (req, res) => {
       ]
     });
 
+    // Batch-lookup DD info for all implicit skill names across all levels/routines
+    const customNames = [...new Set(
+      levels.flatMap(l => l.routines.flatMap(r =>
+        r.routineSkills.filter(rs => rs.customSkillName).map(rs => rs.customSkillName)
+      ))
+    )];
+    const ddMap = await lookupImplicitSkillDDs(customNames);
+
     // Transform the data to match the expected frontend structure
     const transformedLevels = levels.map(level => ({
       ...level,
       routines: level.routines.map(routine => ({
         ...routine,
-        skills: routine.routineSkills.map(rs => {
-          if (rs.customSkillName) {
-            // Return custom skill object
-            return {
-              id: rs.id,
-              name: rs.customSkillName,
-              description: null,
-              levelId: level.id,
-              order: rs.order,
-              isImplicit: true
-            };
-          } else {
-            // Return regular skill object
-            return rs.skill;
-          }
-        })
+        skills: transformRoutineSkills(routine.routineSkills, level.id, ddMap)
       })),
       competitions: level.competitions.map(lc => lc.competition),
       competitionLevel: level.competitions.map(lc => lc.competition.code) // For backward compatibility
@@ -265,26 +288,13 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
     });
 
     // Transform the data to match the expected frontend structure
+    const customNames1 = [...new Set(result.routines.flatMap(r => r.routineSkills.filter(rs => rs.customSkillName).map(rs => rs.customSkillName)))];
+    const ddMap1 = await lookupImplicitSkillDDs(customNames1);
     const transformedLevel = {
       ...result,
       routines: result.routines.map(routine => ({
         ...routine,
-        skills: routine.routineSkills.map(rs => {
-          if (rs.customSkillName) {
-            // Return custom skill object
-            return {
-              id: rs.id,
-              name: rs.customSkillName,
-              description: null,
-              levelId: result.id,
-              order: rs.order,
-              isImplicit: true
-            };
-          } else {
-            // Return regular skill object
-            return rs.skill;
-          }
-        })
+        skills: transformRoutineSkills(routine.routineSkills, result.id, ddMap1)
       })),
       competitions: result.competitions.map(lc => lc.competition),
       competitionLevel: result.competitions.map(lc => lc.competition.code) // For backward compatibility
@@ -388,26 +398,13 @@ router.put('/:levelId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
     });
 
     // Transform the data to match the expected frontend structure
+    const customNames2 = [...new Set(result.routines.flatMap(r => r.routineSkills.filter(rs => rs.customSkillName).map(rs => rs.customSkillName)))];
+    const ddMap2 = await lookupImplicitSkillDDs(customNames2);
     const transformedLevel = {
       ...result,
       routines: result.routines.map(routine => ({
         ...routine,
-        skills: routine.routineSkills.map(rs => {
-          if (rs.customSkillName) {
-            // Return custom skill object
-            return {
-              id: rs.id,
-              name: rs.customSkillName,
-              description: null,
-              levelId: result.id,
-              order: rs.order,
-              isImplicit: true
-            };
-          } else {
-            // Return regular skill object
-            return rs.skill;
-          }
-        })
+        skills: transformRoutineSkills(routine.routineSkills, result.id, ddMap2)
       })),
       competitions: result.competitions.map(lc => lc.competition),
       competitionLevel: result.competitions.map(lc => lc.competition.code) // For backward compatibility
@@ -606,24 +603,11 @@ router.post('/:levelId/routines', auth, requireRole(['CLUB_ADMIN']), async (req,
     });
 
     // Transform the data to match the expected frontend structure
+    const customNames3 = routine.routineSkills.filter(rs => rs.customSkillName).map(rs => rs.customSkillName);
+    const ddMap3 = await lookupImplicitSkillDDs(customNames3);
     const transformedRoutine = {
       ...routine,
-      skills: routine.routineSkills.map(rs => {
-        if (rs.customSkillName) {
-          // Return custom skill object
-          return {
-            id: rs.id,
-            name: rs.customSkillName,
-            description: null,
-            levelId: routine.levelId,
-            order: rs.order,
-            isImplicit: true
-          };
-        } else {
-          // Return regular skill object
-          return rs.skill;
-        }
-      })
+      skills: transformRoutineSkills(routine.routineSkills, routine.levelId, ddMap3)
     };
 
     res.json(transformedRoutine);
@@ -668,24 +652,11 @@ router.put('/:levelId/routines/:routineId', auth, requireRole(['CLUB_ADMIN']), a
     });
 
     // Transform the data to match the expected frontend structure
+    const customNames4 = routine.routineSkills.filter(rs => rs.customSkillName).map(rs => rs.customSkillName);
+    const ddMap4 = await lookupImplicitSkillDDs(customNames4);
     const transformedRoutine = {
       ...routine,
-      skills: routine.routineSkills.map(rs => {
-        if (rs.customSkillName) {
-          // Return custom skill object
-          return {
-            id: rs.id,
-            name: rs.customSkillName,
-            description: null,
-            levelId: routine.levelId,
-            order: rs.order,
-            isImplicit: true
-          };
-        } else {
-          // Return regular skill object
-          return rs.skill;
-        }
-      })
+      skills: transformRoutineSkills(routine.routineSkills, routine.levelId, ddMap4)
     };
 
     res.json(transformedRoutine);
@@ -830,8 +801,18 @@ router.post('/:levelId/routines/:routineId/skills', auth, requireRole(['CLUB_ADM
         }
       });
 
+      const ddMap5 = await lookupImplicitSkillDDs([customSkillName]);
+      const dd = ddMap5[customSkillName] || {};
       res.json({
-        skill: skill,
+        skill: {
+          id: routineSkill.id,
+          name: customSkillName,
+          description: null,
+          order: skillOrder,
+          isImplicit: true,
+          difficulty: dd.difficulty ?? null,
+          figNotation: dd.figNotation ?? null,
+        },
         routineSkill: routineSkill
       });
       return;

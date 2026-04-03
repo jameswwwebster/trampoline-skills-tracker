@@ -37,7 +37,7 @@ const SKILL_DATA = [
   // --- Seat combinations ---
   { name: 'Seat ½ Twist to Feet', difficulty: 0.1, figNotation: '-1' },
   { name: 'Swivelhips',           difficulty: 0.1, figNotation: '-1--' },
-  { name: '½ Twist to Seat',      difficulty: 0.2, figNotation: '11--' },
+  { name: '½ Twist to Seat',      difficulty: 0.1, figNotation: '-1' },
   { name: 'Seat to Front',        difficulty: 0.1, figNotation: '1-f' },
   { name: 'Front to Seat',        difficulty: 0.1, figNotation: '1-f' },
 
