@@ -22,6 +22,8 @@ export default function AdminMemberships() {
   const [editAmount, setEditAmount] = useState('');
   const [notifying, setNotifying] = useState(false);
   const [notifyResult, setNotifyResult] = useState(null);
+  const [cancellingOverdue, setCancellingOverdue] = useState(false);
+  const [cancelOverdueResult, setCancelOverdueResult] = useState(null);
 
   const load = () => {
     bookingApi.getMemberships().then(res => setMemberships(res.data));
@@ -95,6 +97,26 @@ export default function AdminMemberships() {
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to cancel membership.');
     }
+  };
+
+  const handleCancelOverdue = async () => {
+    const overdue = memberships.filter(m => m.status === 'PENDING_PAYMENT');
+    if (!window.confirm(`Cancel ${overdue.length} overdue membership${overdue.length !== 1 ? 's' : ''}? This will cancel the Stripe subscription for each. You can recreate them afterwards.`)) return;
+    setCancellingOverdue(true);
+    setCancelOverdueResult(null);
+    let cancelled = 0;
+    let failed = 0;
+    for (const m of overdue) {
+      try {
+        await bookingApi.deleteMembership(m.id);
+        cancelled++;
+      } catch {
+        failed++;
+      }
+    }
+    setCancelOverdueResult(`Cancelled ${cancelled}${failed > 0 ? `, ${failed} failed` : ''}.`);
+    setCancellingOverdue(false);
+    load();
   };
 
   const handleNotifyScheduled = async () => {
@@ -178,6 +200,20 @@ export default function AdminMemberships() {
             {notifying ? 'Sending…' : `Notify scheduled members (${memberships.filter(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt).length})`}
           </button>
           {notifyResult && <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>{notifyResult}</span>}
+        </div>
+      )}
+
+      {memberships.some(m => m.status === 'PENDING_PAYMENT') && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <button
+            className="bk-btn bk-btn--ghost"
+            style={{ fontSize: '0.85rem', color: 'var(--booking-danger)', borderColor: 'var(--booking-danger)' }}
+            disabled={cancellingOverdue}
+            onClick={handleCancelOverdue}
+          >
+            {cancellingOverdue ? 'Cancelling…' : `Cancel all overdue (${memberships.filter(m => m.status === 'PENDING_PAYMENT').length})`}
+          </button>
+          {cancelOverdueResult && <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>{cancelOverdueResult}</span>}
         </div>
       )}
 
