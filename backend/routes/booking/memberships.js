@@ -564,6 +564,78 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
   }
 });
 
+// POST /api/booking/memberships/:id/reset — cancel PENDING_PAYMENT and recreate with same amount/templates, starting today
+router.post('/:id/reset', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const membership = await prisma.membership.findUnique({
+      where: { id: req.params.id },
+      include: {
+        gymnast: { include: { commitments: { select: { templateId: true } } } },
+      },
+    });
+    if (!membership) return res.status(404).json({ error: 'Membership not found' });
+    if (membership.clubId !== req.user.clubId) return res.status(403).json({ error: 'Forbidden' });
+    if (membership.status !== 'PENDING_PAYMENT') return res.status(400).json({ error: 'Membership is not PENDING_PAYMENT' });
+
+    const templateIds = membership.gymnast.commitments.map(c => c.templateId);
+
+    if (membership.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      try {
+        await stripe.subscriptions.cancel(membership.stripeSubscriptionId);
+      } catch (stripeErr) {
+        console.warn('Stripe cancel skipped:', stripeErr.message);
+      }
+    }
+
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    const newMembership = await prisma.$transaction(async (tx) => {
+      await tx.membership.update({ where: { id: membership.id }, data: { status: 'CANCELLED' } });
+
+      if (templateIds.length > 0) {
+        await tx.commitment.deleteMany({
+          where: { gymnastId: membership.gymnastId, templateId: { in: templateIds } },
+        });
+      }
+
+      const created = await tx.membership.create({
+        data: {
+          gymnastId: membership.gymnastId,
+          clubId: membership.clubId,
+          monthlyAmount: membership.monthlyAmount,
+          status: 'SCHEDULED',
+          startDate: today,
+        },
+        include: { gymnast: true },
+      });
+
+      for (const templateId of templateIds) {
+        await tx.commitment.create({
+          data: { gymnastId: membership.gymnastId, templateId, createdById: req.user.id, startDate: today },
+        });
+      }
+
+      return created;
+    });
+
+    const { activateMembership } = require('../../services/membershipActivationService');
+    await activateMembership(newMembership.id, prisma);
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'membership.reset', entityType: 'Membership', entityId: newMembership.id,
+      metadata: { oldMembershipId: membership.id, gymnastId: membership.gymnastId },
+    });
+
+    res.json({ success: true, newMembershipId: newMembership.id });
+  } catch (err) {
+    console.error('Reset membership error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // DELETE /api/booking/memberships/:id — cancel
 router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {

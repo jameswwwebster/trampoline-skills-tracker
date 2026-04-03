@@ -118,6 +118,8 @@ export const bookingApi = {
 
   deleteMembership: (id) =>
     axios.delete(`${API_URL}/booking/memberships/${id}`, { headers: getHeaders() }),
+  resetMembership: (id) =>
+    axios.post(`${API_URL}/booking/memberships/${id}/reset`, {}, { headers: getHeaders() }),
 
   getMyMemberships: () =>
     axios.get(`${API_URL}/booking/memberships/my`, { headers: getHeaders() }),

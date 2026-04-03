@@ -99,22 +99,22 @@ export default function AdminMemberships() {
     }
   };
 
-  const handleCancelOverdue = async () => {
+  const handleResetOverdue = async () => {
     const overdue = memberships.filter(m => m.status === 'PENDING_PAYMENT');
-    if (!window.confirm(`Cancel ${overdue.length} overdue membership${overdue.length !== 1 ? 's' : ''}? This will cancel the Stripe subscription for each. You can recreate them afterwards.`)) return;
+    if (!window.confirm(`Reset ${overdue.length} overdue membership${overdue.length !== 1 ? 's' : ''}? This will cancel each Stripe subscription and recreate it with the same amount starting today. Each guardian will receive a new membership email.`)) return;
     setCancellingOverdue(true);
     setCancelOverdueResult(null);
-    let cancelled = 0;
+    let reset = 0;
     let failed = 0;
     for (const m of overdue) {
       try {
-        await bookingApi.deleteMembership(m.id);
-        cancelled++;
+        await bookingApi.resetMembership(m.id);
+        reset++;
       } catch {
         failed++;
       }
     }
-    setCancelOverdueResult(`Cancelled ${cancelled}${failed > 0 ? `, ${failed} failed` : ''}.`);
+    setCancelOverdueResult(`Reset ${reset}${failed > 0 ? `, ${failed} failed` : ''}.`);
     setCancellingOverdue(false);
     load();
   };
@@ -209,9 +209,9 @@ export default function AdminMemberships() {
             className="bk-btn bk-btn--ghost"
             style={{ fontSize: '0.85rem', color: 'var(--booking-danger)', borderColor: 'var(--booking-danger)' }}
             disabled={cancellingOverdue}
-            onClick={handleCancelOverdue}
+            onClick={handleResetOverdue}
           >
-            {cancellingOverdue ? 'Cancelling…' : `Cancel all overdue (${memberships.filter(m => m.status === 'PENDING_PAYMENT').length})`}
+            {cancellingOverdue ? 'Resetting…' : `Reset all overdue (${memberships.filter(m => m.status === 'PENDING_PAYMENT').length})`}
           </button>
           {cancelOverdueResult && <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>{cancelOverdueResult}</span>}
         </div>
