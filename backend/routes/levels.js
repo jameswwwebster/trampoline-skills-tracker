@@ -48,8 +48,8 @@ const routineUpdateSchema = Joi.object({
 });
 
 const routineSkillSchema = Joi.object({
-  skillId: Joi.string().optional(),
-  customSkillName: Joi.string().min(1).max(100).optional(),
+  skillId: Joi.string().allow(null).optional(),
+  customSkillName: Joi.string().min(1).max(100).allow(null).optional(),
   order: Joi.number().integer().min(1).optional()
 }).custom((value, helpers) => {
   // Custom validation to ensure either skillId or customSkillName is provided, but not both
