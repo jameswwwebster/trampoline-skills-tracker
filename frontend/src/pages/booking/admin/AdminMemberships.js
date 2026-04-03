@@ -13,7 +13,7 @@ const STATUS_LABELS = {
 export default function AdminMemberships() {
   const [memberships, setMemberships] = useState([]);
   const [gymnasts, setGymnasts] = useState([]);
-  const [form, setForm] = useState({ gymnastId: '', monthlyAmount: '', startDate: '', templateIds: [] });
+  const [form, setForm] = useState({ gymnastId: '', monthlyAmount: '', startDate: '', templateIds: [], chargeFullMonth: false });
   const [templates, setTemplates] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState(null);
@@ -44,13 +44,16 @@ export default function AdminMemberships() {
       return;
     }
     try {
-      const res = await bookingApi.createMembership({
+      const monthlyPence = Math.round(parseFloat(form.monthlyAmount) * 100);
+      const payload = {
         gymnastId: form.gymnastId,
-        monthlyAmount: Math.round(parseFloat(form.monthlyAmount) * 100),
+        monthlyAmount: monthlyPence,
         startDate: form.startDate,
         templateIds: form.templateIds,
-      });
-      setForm({ gymnastId: '', monthlyAmount: '', startDate: '', templateIds: [] });
+      };
+      if (form.chargeFullMonth) payload.firstMonthAmount = monthlyPence;
+      const res = await bookingApi.createMembership(payload);
+      setForm({ gymnastId: '', monthlyAmount: '', startDate: '', templateIds: [], chargeFullMonth: false });
       setSubmitMsg(res.data.clientSecret
         ? 'Membership created. The member will see a payment setup prompt in their account.'
         : 'Membership created.');
@@ -128,6 +131,10 @@ export default function AdminMemberships() {
         </div>
         <label className="bk-label">Start date
           <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} required className="bk-input" style={{ marginTop: '0.25rem' }} />
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+          <input type="checkbox" checked={form.chargeFullMonth} onChange={e => setForm(f => ({ ...f, chargeFullMonth: e.target.checked }))} />
+          Charge full month (no proration) — use when the member is paying for a full calendar month regardless of start date
         </label>
         <label className="bk-label">Standing slots
           <div style={{ marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>

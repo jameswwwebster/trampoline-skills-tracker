@@ -6,7 +6,7 @@
  * - Updates membership status to ACTIVE or PENDING_PAYMENT
  * - Sends membership created email
  */
-async function activateMembership(membershipId, prisma) {
+async function activateMembership(membershipId, prisma, options = {}) {
   const membership = await prisma.membership.findUnique({
     where: { id: membershipId },
     include: {
@@ -85,6 +85,18 @@ async function activateMembership(membershipId, prisma) {
       name: `Trampoline Life Membership — ${gymnast.firstName} ${gymnast.lastName}`,
     });
 
+    // If a fixed first-month amount is specified, create an invoice item for it
+    // and skip auto-proration. Otherwise Stripe prorates from startDate to anchor.
+    const useFixedFirstMonth = options.firstMonthAmount !== undefined && options.firstMonthAmount !== null;
+    if (useFixedFirstMonth && options.firstMonthAmount > 0) {
+      await stripe.invoiceItems.create({
+        customer: stripeCustomerId,
+        amount: options.firstMonthAmount,
+        currency: 'gbp',
+        description: `First month membership — ${gymnast.firstName} ${gymnast.lastName}`,
+      });
+    }
+
     const subscription = await stripe.subscriptions.create({
       customer: stripeCustomerId,
       items: [{
@@ -96,7 +108,7 @@ async function activateMembership(membershipId, prisma) {
         },
       }],
       billing_cycle_anchor: billingCycleAnchor,
-      proration_behavior: 'create_prorations',
+      proration_behavior: useFixedFirstMonth ? 'none' : 'create_prorations',
       ...(trialEnd ? { trial_end: trialEnd } : {}),
       payment_behavior: paymentBehavior,
       payment_settings: { save_default_payment_method: 'on_subscription' },

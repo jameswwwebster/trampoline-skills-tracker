@@ -359,6 +359,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     const { error, value } = Joi.object({
       gymnastId: Joi.string().required(),
       monthlyAmount: Joi.number().integer().min(0).required(),
+      firstMonthAmount: Joi.number().integer().min(0).optional(),
       startDate: Joi.date().required(),
       templateIds: Joi.array().items(Joi.string()).optional().default([]),
     }).validate(req.body);
@@ -441,7 +442,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
     if (!isFuture) {
       // Start date is today or in the past — activate immediately (creates Stripe sub, sends email)
       const { activateMembership } = require('../../services/membershipActivationService');
-      await activateMembership(membership.id, prisma);
+      await activateMembership(membership.id, prisma, { firstMonthAmount: value.firstMonthAmount });
     } else {
       // Future start date — notify guardian now so they know it's been scheduled
       const guardian = await prisma.user.findFirst({
