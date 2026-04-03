@@ -103,6 +103,16 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
 
       console.log(`[SHOP] Order ${shopOrder.id} confirmed`);
     }
+
+    // Mark competition entry as PAID
+    const competitionEntryId = paymentIntent.metadata?.competitionEntryId;
+    if (competitionEntryId) {
+      await prisma.competitionEntry.updateMany({
+        where: { id: competitionEntryId, status: 'PAYMENT_PENDING' },
+        data: { status: 'PAID' },
+      });
+      console.log(`Competition entry ${competitionEntryId} marked PAID`);
+    }
   }
 
   if (event.type === 'payment_intent.payment_failed' || event.type === 'payment_intent.canceled') {
