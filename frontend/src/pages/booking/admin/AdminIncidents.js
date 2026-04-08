@@ -423,7 +423,7 @@ export default function AdminIncidents() {
   const load = () => {
     Promise.all([
       bookingApi.getIncidents(),
-      bookingApi.getBookableGymnasts(),
+      bookingApi.getAllClubGymnasts(),
     ]).then(([iRes, gRes]) => {
       setIncidents(iRes.data);
       setGymnasts(gRes.data);
