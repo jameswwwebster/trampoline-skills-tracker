@@ -7,7 +7,7 @@ const emailService = require('../services/emailService');
 const router = express.Router();
 const prisma = new PrismaClient();
 
-const STAFF_ROLES = ['CLUB_ADMIN', 'COACH'];
+const STAFF_ROLES = ['CLUB_ADMIN', 'COACH', 'WELFARE'];
 
 const INCIDENT_INCLUDE = {
   gymnast: { select: { id: true, firstName: true, lastName: true } },

@@ -333,7 +333,7 @@ export default function AdminWelfare() {
   const load = () => {
     Promise.all([
       bookingApi.getWelfareReports(),
-      bookingApi.getBookableGymnasts(),
+      bookingApi.getAllClubGymnasts(),
     ]).then(([rRes, gRes]) => {
       setReports(rRes.data);
       setGymnasts(gRes.data);

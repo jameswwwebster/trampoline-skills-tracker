@@ -9,6 +9,8 @@ const getHeaders = () => ({
 export const bookingApi = {
   getBookableGymnasts: () =>
     axios.get(`${API_URL}/gymnasts/bookable-for-me`, { headers: getHeaders() }),
+  getAllClubGymnasts: () =>
+    axios.get(`${API_URL}/gymnasts`, { headers: getHeaders() }),
 
   createSelfGymnast: (data) =>
     axios.post(`${API_URL}/gymnasts/self`, data, { headers: getHeaders() }),
