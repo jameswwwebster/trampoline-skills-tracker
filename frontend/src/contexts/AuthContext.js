@@ -257,8 +257,10 @@ export const AuthProvider = ({ children }) => {
   const isClubAdmin = user?.role === 'CLUB_ADMIN';
   const isAdult = user?.role === 'ADULT';
   const isChild = user?.role === 'CHILD';
-  const isCoach = user?.role === 'COACH';
+  const isCoach = user?.role === 'COACH' || user?.role === 'WELFARE';
+  const isWelfare = user?.role === 'WELFARE';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isStaff = ['CLUB_ADMIN', 'COACH', 'WELFARE'].includes(user?.role);
 
   const value = {
     user,
@@ -271,7 +273,9 @@ export const AuthProvider = ({ children }) => {
     isAdult,
     isChild,
     isCoach,
+    isWelfare,
     isSuperAdmin,
+    isStaff,
     generateShareCode,
     generateCodeOfTheDay,
     getCodeOfTheDay,
@@ -282,17 +286,18 @@ export const AuthProvider = ({ children }) => {
     updateUser,
     isAuthenticated: !!user,
     canManageClub: user?.role === 'CLUB_ADMIN',
-    canManageGymnasts: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
-    canMarkProgress: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
+    canManageGymnasts: isStaff,
+    canMarkProgress: isStaff,
     canEditCompetitions: user?.role === 'CLUB_ADMIN',
     canEditLevels: user?.role === 'CLUB_ADMIN',
-    canReadCompetitions: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH',
+    canReadCompetitions: isStaff,
     canReadLevels: true, // All authenticated users can read levels
     canViewProgress: true, // All authenticated users can view progress (with backend access controls)
     canViewOwnProgress: user?.role === 'ADULT' || user?.role === 'CHILD', // Adults and children can view progress
     needsProgressNavigation: user?.role === 'CHILD', // Only children need progress navigation (tracking hidden from adults for now)
     needsShareCodeManagement: user?.role === 'ADULT', // Only adults need share code management
-    needsCodeOfDayManagement: user?.role === 'CLUB_ADMIN' || user?.role === 'COACH' // Club admins and coaches can manage code of the day
+    needsCodeOfDayManagement: isStaff, // Staff can manage code of the day
+    canViewWelfare: user?.role === 'CLUB_ADMIN' || user?.role === 'WELFARE', // Only club admins and welfare officers
   };
 
   return (

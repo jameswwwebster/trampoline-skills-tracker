@@ -5,7 +5,7 @@ import '../booking-shared.css';
 
 const waLink = (phone) => `https://wa.me/${phone.replace(/\D/g, '').replace(/^0/, '44')}`;
 
-const ROLE_LABELS = { CLUB_ADMIN: 'Admin', COACH: 'Coach', ADULT: 'Adult', GYMNAST: 'Gymnast' };
+const ROLE_LABELS = { CLUB_ADMIN: 'Admin', COACH: 'Coach', WELFARE: 'Welfare', ADULT: 'Adult', GYMNAST: 'Gymnast' };
 const ROLE_COLORS = {
   CLUB_ADMIN: { background: 'rgba(124,53,232,0.12)', color: 'var(--booking-accent)' },
   COACH:      { background: 'rgba(41,128,185,0.12)', color: '#2980b9' },
@@ -126,6 +126,7 @@ function EditProfileForm({ member, onDone }) {
 const ASSIGNABLE_ROLES = [
   { value: 'CLUB_ADMIN', label: 'Admin' },
   { value: 'COACH', label: 'Coach' },
+  { value: 'WELFARE', label: 'Welfare' },
   { value: 'ADULT', label: 'Adult' },
   { value: 'GYMNAST', label: 'Gymnast' },
 ];
@@ -1790,6 +1791,7 @@ function MemberDetail({ userId, onRemoved }) {
 const ASSIGNABLE_ROLES_CREATE = [
   { value: 'ADULT', label: 'Adult' },
   { value: 'COACH', label: 'Coach' },
+  { value: 'WELFARE', label: 'Welfare' },
   { value: 'GYMNAST', label: 'Gymnast' },
   { value: 'CLUB_ADMIN', label: 'Admin' },
 ];
@@ -1931,7 +1933,7 @@ export default function AdminMembers() {
 
       {/* Role filter */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
-        {[{ value: '', label: 'All roles' }, { value: 'CLUB_ADMIN', label: 'Admin' }, { value: 'COACH', label: 'Coach' }, { value: 'ADULT', label: 'Adult' }, { value: 'GYMNAST', label: 'Gymnast' }].map(opt => (
+        {[{ value: '', label: 'All roles' }, { value: 'CLUB_ADMIN', label: 'Admin' }, { value: 'COACH', label: 'Coach' }, { value: 'WELFARE', label: 'Welfare' }, { value: 'ADULT', label: 'Adult' }, { value: 'GYMNAST', label: 'Gymnast' }].map(opt => (
           <button
             key={opt.value}
             className="bk-btn bk-btn--sm"

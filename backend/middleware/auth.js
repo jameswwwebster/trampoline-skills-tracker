@@ -87,13 +87,15 @@ const auth = async (req, res, next) => {
 };
 
 // Role-based access control middleware
+// WELFARE role is treated as equivalent to COACH for all permission checks
 const requireRole = (roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    if (!roles.includes(req.user.role)) {
+    const effectiveRole = req.user.role === 'WELFARE' ? 'COACH' : req.user.role;
+    if (!roles.includes(req.user.role) && !roles.includes(effectiveRole)) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
@@ -127,7 +129,7 @@ const requireClubAccess = (req, res, next) => {
 
   const clubId = req.params.clubId || req.body.clubId;
   
-  if (req.user.role === 'CLUB_ADMIN' || req.user.role === 'COACH') {
+  if (['CLUB_ADMIN', 'COACH', 'WELFARE'].includes(req.user.role)) {
     if (req.user.clubId !== clubId) {
       return res.status(403).json({ error: 'Access denied to this club' });
     }
@@ -177,8 +179,8 @@ const requireGymnastAccess = async (req, res, next) => {
       return res.status(404).json({ error: 'Gymnast not found' });
     }
 
-    // Club admins and coaches can access gymnasts in their club
-    if (req.user.role === 'CLUB_ADMIN' || req.user.role === 'COACH') {
+    // Club admins, coaches, and welfare officers can access gymnasts in their club
+    if (['CLUB_ADMIN', 'COACH', 'WELFARE'].includes(req.user.role)) {
       if (req.user.clubId !== gymnast.clubId) {
         return res.status(403).json({ error: 'Access denied to this gymnast' });
       }

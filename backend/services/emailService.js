@@ -762,6 +762,69 @@ class EmailService {
       text: `Hi ${firstName},\n\n${gymnast.firstName} ${gymnast.lastName} has been invited to ${event.name} at ${event.location} on ${date}.\n\nEntry deadline: ${deadline}${categoryNames.length > 0 ? '\nCategories: ' + categoryNames.join(', ') : ''}${priceOverridePence !== null ? '\nEntry price: £' + (priceOverridePence / 100).toFixed(2) : ''}\n\nLog in to respond: ${BASE_URL()}/booking/competitions\n\nIf you have any questions, please contact the club.`,
     }, { to: email, event: event.name, gymnast: `${gymnast.firstName} ${gymnast.lastName}` });
   }
+
+  // ---------------------------------------------------------------------------
+  // Incident report emails
+  // ---------------------------------------------------------------------------
+
+  async sendIncidentAdultNotification(email, recipientName, gymnast, incident, reportUrl) {
+    const gymnástName = `${gymnast.firstName} ${gymnast.lastName}`;
+    const SEVERITY_LABEL = { MINOR: 'Minor', MODERATE: 'Moderate', SEVERE: 'Severe' };
+    const TYPE_LABEL = { INJURY: 'Injury', NEAR_MISS: 'Near miss', ILLNESS: 'Illness', OTHER: 'Other' };
+    const incidentDateStr = new Date(incident.incidentDate).toLocaleDateString('en-GB', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject: `Incident report: ${gymnástName}`,
+      html: brandedHtml('Incident report notification', `
+        <p style="margin-top:0">Hi ${recipientName},</p>
+        <p>An incident report has been filed regarding <strong>${gymnástName}</strong>. Your coach will have spoken to you about this in person. You can view the full report at any time using the link below.</p>
+        ${infoBox(`
+          <p style="margin:0 0 0.4rem"><strong>Date:</strong> ${incidentDateStr}</p>
+          ${incident.location ? `<p style="margin:0 0 0.4rem"><strong>Location:</strong> ${incident.location}</p>` : ''}
+          <p style="margin:0 0 0.4rem"><strong>Type:</strong> ${TYPE_LABEL[incident.incidentType] ?? incident.incidentType}</p>
+          <p style="margin:0"><strong>Severity:</strong> ${SEVERITY_LABEL[incident.severity] ?? incident.severity}</p>
+        `)}
+        ${ctaButton(reportUrl, 'View incident report')}
+        ${muted('If you have any questions or concerns, please contact your club directly.')}
+      `),
+      text: `Hi ${recipientName},\n\nAn incident report has been filed regarding ${gymnástName}.\n\nDate: ${incidentDateStr}\nType: ${TYPE_LABEL[incident.incidentType] ?? incident.incidentType}\nSeverity: ${SEVERITY_LABEL[incident.severity] ?? incident.severity}\n\nView the full report at: ${reportUrl}\n\nIf you have any questions, please contact your club directly.`,
+    }, { to: email, gymnástName });
+  }
+
+  async sendIncidentForwardEmail(toEmail, toName, gymnast, incident, forwardedByName, note, reportUrl) {
+    const gymnástName = `${gymnast.firstName} ${gymnast.lastName}`;
+    const TYPE_LABEL = { INJURY: 'Injury', NEAR_MISS: 'Near miss', ILLNESS: 'Illness', OTHER: 'Other' };
+    const SEVERITY_LABEL = { MINOR: 'Minor', MODERATE: 'Moderate', SEVERE: 'Severe' };
+    const incidentDateStr = new Date(incident.incidentDate).toLocaleDateString('en-GB', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: toEmail,
+      subject: `Incident report forwarded: ${gymnástName}`,
+      html: brandedHtml('Incident report', `
+        <p style="margin-top:0">Hi${toName ? ` ${toName}` : ''},</p>
+        <p>An incident report has been forwarded to you by <strong>${forwardedByName}</strong> regarding <strong>${gymnástName}</strong>.</p>
+        ${infoBox(`
+          <p style="margin:0 0 0.4rem"><strong>Date:</strong> ${incidentDateStr}</p>
+          ${incident.location ? `<p style="margin:0 0 0.4rem"><strong>Location:</strong> ${incident.location}</p>` : ''}
+          <p style="margin:0 0 0.4rem"><strong>Type:</strong> ${TYPE_LABEL[incident.incidentType] ?? incident.incidentType}</p>
+          <p style="margin:0 0 0.4rem"><strong>Severity:</strong> ${SEVERITY_LABEL[incident.severity] ?? incident.severity}</p>
+          <p style="margin:0 0 0.4rem"><strong>Description:</strong> ${incident.description}</p>
+          ${incident.injuryDetails ? `<p style="margin:0 0 0.4rem"><strong>Injury/Symptoms:</strong> ${incident.injuryDetails}</p>` : ''}
+          ${incident.firstAidGiven ? `<p style="margin:0 0 0.4rem"><strong>First aid given:</strong> ${incident.firstAidGiven}</p>` : ''}
+          ${incident.outcome ? `<p style="margin:0"><strong>Outcome:</strong> ${incident.outcome}</p>` : ''}
+        `)}
+        ${note ? `${h3('Note from sender')}<p>${note}</p>` : ''}
+        ${muted('This report was forwarded from Trampoline Life. Please contact the club if you have any questions.')}
+      `),
+      text: `Hi${toName ? ` ${toName}` : ''},\n\nAn incident report has been forwarded to you by ${forwardedByName} regarding ${gymnástName}.\n\nDate: ${incidentDateStr}\nType: ${TYPE_LABEL[incident.incidentType] ?? incident.incidentType}\nSeverity: ${SEVERITY_LABEL[incident.severity] ?? incident.severity}\nDescription: ${incident.description}\n${note ? `\nNote: ${note}\n` : ''}\nPlease contact the club if you have any questions.`,
+    }, { to: toEmail, gymnástName });
+  }
 }
+
 
 module.exports = new EmailService();

@@ -66,6 +66,9 @@ model User {
   attendances           Attendance[]
   recurringCredits         RecurringCredit[]
   createdRecurringCredits  RecurringCredit[]  @relation("RecurringCreditCreatedBy")
+  incidentReports          IncidentReport[]   @relation("IncidentReportedBy")
+  incidentForwards         IncidentForward[]  @relation("IncidentForwardedBy")
+  welfareReports           WelfareReport[]    @relation("WelfareReportedBy")
 
   @@map("users")
 }
@@ -152,6 +155,8 @@ model Club {
   charges               Charge[]
   recurringCredits      RecurringCredit[]
   competitionEvents     CompetitionEvent[]
+  incidentReports       IncidentReport[]
+  welfareReports        WelfareReport[]
 
   @@map("clubs")
 }
@@ -200,6 +205,8 @@ model Gymnast {
   commitments      Commitment[]
   attendances        Attendance[]
   competitionEntries CompetitionEntry[]
+  incidentReports    IncidentReport[]
+  welfareReports     WelfareReport[]
 
   @@map("gymnasts")
 }
@@ -805,6 +812,7 @@ model ClosurePeriod {
 enum UserRole {
   CLUB_ADMIN
   COACH
+  WELFARE
   ADULT
   GYMNAST
   SUPER_ADMIN
@@ -1068,4 +1076,71 @@ enum CommitmentStatus {
 enum AttendanceStatus {
   PRESENT
   ABSENT
+}
+
+model IncidentReport {
+  id                 String            @id @default(cuid())
+  clubId             String
+  gymnastId          String?
+  reportedById       String
+  incidentDate       DateTime
+  location           String?
+  incidentType       String            // e.g. INJURY, NEAR_MISS, ILLNESS, OTHER
+  severity           String            // MINOR, MODERATE, SEVERE
+  description        String            // What happened
+  injuryDetails      String?           // Nature of injury/symptoms
+  firstAidGiven      String?           // First aid applied
+  outcome            String?           // What happened after (sent home, hospital, etc.)
+  witnessName        String?
+  witnessContact     String?
+  witnessStatement   String?
+  adultNotifiedAt    DateTime?         // When the 1-hour delayed email was sent
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  club               Club              @relation(fields: [clubId], references: [id])
+  gymnast            Gymnast?          @relation(fields: [gymnastId], references: [id], onDelete: SetNull)
+  reportedBy         User              @relation("IncidentReportedBy", fields: [reportedById], references: [id])
+  forwards           IncidentForward[]
+
+  @@map("incident_reports")
+}
+
+model WelfareReport {
+  id                 String    @id @default(cuid())
+  clubId             String
+  gymnastId          String?
+  reportedById       String
+  incidentDate       DateTime
+  location           String?
+  concernType        String    // e.g. SAFEGUARDING, BULLYING, EMOTIONAL, PHYSICAL, OTHER
+  severity           String    // MINOR, MODERATE, SEVERE
+  description        String
+  actionTaken        String?
+  outcome            String?
+  witnessName        String?
+  witnessContact     String?
+  witnessStatement   String?
+  referredExternally Boolean   @default(false)
+  referralDetails    String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  club               Club      @relation(fields: [clubId], references: [id])
+  gymnast            Gymnast?  @relation(fields: [gymnastId], references: [id], onDelete: SetNull)
+  reportedBy         User      @relation("WelfareReportedBy", fields: [reportedById], references: [id])
+
+  @@map("welfare_reports")
+}
+
+model IncidentForward {
+  id               String         @id @default(cuid())
+  incidentReportId String
+  forwardedById    String
+  toEmail          String
+  toName           String?
+  note             String?
+  sentAt           DateTime       @default(now())
+  incidentReport   IncidentReport @relation(fields: [incidentReportId], references: [id], onDelete: Cascade)
+  forwardedBy      User           @relation("IncidentForwardedBy", fields: [forwardedById], references: [id])
+
+  @@map("incident_forwards")
 }

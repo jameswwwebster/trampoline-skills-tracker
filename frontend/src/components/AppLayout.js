@@ -22,13 +22,13 @@ function getTotalCartCount() {
 export default function AppLayout() {
   const {
     user, logout, loading,
-    isClubAdmin, isAdult, canManageGymnasts, isSuperAdmin,
+    isClubAdmin, isAdult, canManageGymnasts, isSuperAdmin, canViewWelfare,
   } = useAuth();
   const { branding } = useBranding();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
+  const isAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH' || user?.role === 'WELFARE';
 
   const navRef = useRef(null);
 
@@ -309,6 +309,8 @@ export default function AppLayout() {
                   <NavLink to="/booking/my-account" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Account</NavLink>
                   {!isAdmin && <NavLink to="/booking/my-charges" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Charges</NavLink>}
                   {!isAdmin && <NavLink to="/booking/competitions" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Competitions</NavLink>}
+                  {!canManageGymnasts && <NavLink to="/booking/incidents" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Incident Reports</NavLink>}
+                  <NavLink to="/profile" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Profile</NavLink>
                   <NavLink to={helpPath} className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Help</NavLink>
                   {isSuperAdmin && <NavLink to="/super-admin" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Super Admin</NavLink>}
                 </div>
@@ -343,6 +345,8 @@ export default function AppLayout() {
                     <NavLink to="/booking/admin/payments" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Payments</NavLink>
                     <div className="app-layout__dropdown-label">Communications</div>
                     <NavLink to="/booking/admin/messages" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Messages</NavLink>
+                    <NavLink to="/booking/admin/incidents" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Incidents</NavLink>
+                    {canViewWelfare && <NavLink to="/booking/admin/welfare" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Welfare</NavLink>}
                     <NavLink to="/booking/admin/shop-orders" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Shop Orders</NavLink>
                     <div className="app-layout__dropdown-label">Skill Tracking</div>
                     <NavLink to="/certificates" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Certificates</NavLink>
@@ -413,6 +417,8 @@ export default function AppLayout() {
           <NavLink to="/booking/my-account" className="app-layout__mobile-link" onClick={closeMobile}>My Account</NavLink>
           {!isAdmin && <NavLink to="/booking/my-charges" className="app-layout__mobile-link" onClick={closeMobile}>My Charges</NavLink>}
           {!isAdmin && <NavLink to="/booking/competitions" className="app-layout__mobile-link" onClick={closeMobile}>Competitions</NavLink>}
+          {!canManageGymnasts && <NavLink to="/booking/incidents" className="app-layout__mobile-link" onClick={closeMobile}>Incident Reports</NavLink>}
+          <NavLink to="/profile" className="app-layout__mobile-link" onClick={closeMobile}>Profile</NavLink>
           <NavLink to={helpPath} className="app-layout__mobile-link" onClick={closeMobile}>Help</NavLink>
           {isSuperAdmin && <NavLink to="/super-admin" className="app-layout__mobile-link" onClick={closeMobile}>Super Admin</NavLink>}
 
@@ -435,6 +441,8 @@ export default function AppLayout() {
               Communications{pendingOrderCount > 0 && <span style={{ marginLeft: '0.4rem', background: 'var(--booking-accent)', color: '#fff', borderRadius: '99px', padding: '0 5px', fontSize: '0.65rem', fontWeight: 700 }}>{pendingOrderCount}</span>}
             </div>
             <NavLink to="/booking/admin/messages" className="app-layout__mobile-link" onClick={closeMobile}>Messages</NavLink>
+            <NavLink to="/booking/admin/incidents" className="app-layout__mobile-link" onClick={closeMobile}>Incidents</NavLink>
+            {canViewWelfare && <NavLink to="/booking/admin/welfare" className="app-layout__mobile-link" onClick={closeMobile}>Welfare</NavLink>}
             <NavLink to="/booking/admin/shop-orders" className="app-layout__mobile-link" onClick={closeMobile}>Shop Orders</NavLink>
             <div className="app-layout__mobile-sub-label">Skill Tracking</div>
             <NavLink to="/certificates" className="app-layout__mobile-link" onClick={closeMobile}>Certificates</NavLink>
