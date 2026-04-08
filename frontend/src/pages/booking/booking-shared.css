@@ -207,3 +207,39 @@
   color: var(--booking-success);
   margin-bottom: 0.5rem;
 }
+
+/* Modal overlay + modal */
+.bk-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+  overflow-y: auto;
+}
+
+.bk-modal {
+  background: var(--booking-surface, #fff);
+  border: 1px solid var(--booking-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 100%;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  position: relative;
+}
+
+@media (max-width: 600px) {
+  .bk-modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .bk-modal {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    max-height: 90vh;
+  }
+}

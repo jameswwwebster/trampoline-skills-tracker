@@ -261,6 +261,34 @@ export const bookingApi = {
   deleteAttendance: (instanceId, gymnastId) =>
     axios.delete(`${API_URL}/booking/attendance/${instanceId}/${gymnastId}`, { headers: getHeaders() }),
 
+  // Incidents
+  getIncidents: () =>
+    axios.get(`${API_URL}/incidents`, { headers: getHeaders() }),
+  getMyIncidents: () =>
+    axios.get(`${API_URL}/incidents/mine`, { headers: getHeaders() }),
+  getIncident: (id) =>
+    axios.get(`${API_URL}/incidents/${id}`, { headers: getHeaders() }),
+  createIncident: (data) =>
+    axios.post(`${API_URL}/incidents`, data, { headers: getHeaders() }),
+  updateIncident: (id, data) =>
+    axios.patch(`${API_URL}/incidents/${id}`, data, { headers: getHeaders() }),
+  deleteIncident: (id) =>
+    axios.delete(`${API_URL}/incidents/${id}`, { headers: getHeaders() }),
+  forwardIncident: (id, data) =>
+    axios.post(`${API_URL}/incidents/${id}/forward`, data, { headers: getHeaders() }),
+
+  // Welfare reports
+  getWelfareReports: () =>
+    axios.get(`${API_URL}/welfare`, { headers: getHeaders() }),
+  getWelfareReport: (id) =>
+    axios.get(`${API_URL}/welfare/${id}`, { headers: getHeaders() }),
+  createWelfareReport: (data) =>
+    axios.post(`${API_URL}/welfare`, data, { headers: getHeaders() }),
+  updateWelfareReport: (id, data) =>
+    axios.patch(`${API_URL}/welfare/${id}`, data, { headers: getHeaders() }),
+  deleteWelfareReport: (id) =>
+    axios.delete(`${API_URL}/welfare/${id}`, { headers: getHeaders() }),
+
   // Recurring credits
   getRecurringCredits: () =>
     axios.get(`${API_URL}/booking/recurring-credits`, { headers: getHeaders() }),

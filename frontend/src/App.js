@@ -66,6 +66,9 @@ import MyCompetitions from './pages/booking/MyCompetitions';
 import CompetitionEntry from './pages/booking/CompetitionEntry';
 import AdminDashboard from './pages/AdminDashboard';
 import ScrollToTop from './components/ScrollToTop';
+import AdminIncidents from './pages/booking/admin/AdminIncidents';
+import MyIncidents from './pages/booking/MyIncidents';
+import AdminWelfare from './pages/booking/admin/AdminWelfare';
 import PublicHome from './pages/public/PublicHome';
 import PublicPolicies from './pages/public/PublicPolicies';
 import './App.css';
@@ -222,6 +225,9 @@ function AppContent() {
             <Route path="admin/competitions/:id" element={<AdminCompetitionDetail />} />
             <Route path="competitions" element={<MyCompetitions />} />
             <Route path="competitions/:entryId/enter" element={<CompetitionEntry />} />
+            <Route path="admin/incidents" element={<AdminIncidents />} />
+            <Route path="incidents" element={<MyIncidents />} />
+            <Route path="admin/welfare" element={<AdminWelfare />} />
           </Route>
         </Route>
       </Routes>

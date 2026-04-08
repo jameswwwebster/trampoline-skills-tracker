@@ -25,7 +25,7 @@ const changePasswordSchema = Joi.object({
 });
 
 const updateUserRoleSchema = Joi.object({
-  role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'ADULT', 'GYMNAST').required()
+  role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'WELFARE', 'ADULT', 'GYMNAST').required()
 });
 
 const updateOtherUserProfileSchema = Joi.object({
@@ -717,7 +717,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
         then: Joi.string().min(1).required(),
         otherwise: Joi.string().allow('').optional(),
       }),
-      role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'ADULT', 'GYMNAST').default('ADULT'),
+      role: Joi.string().valid('CLUB_ADMIN', 'COACH', 'WELFARE', 'ADULT', 'GYMNAST').default('ADULT'),
     });
     const { error, value } = schema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
