@@ -10,11 +10,13 @@ import {
   TrophyIcon,
   UserIcon,
   Cog6ToothIcon,
+  ExclamationTriangleIcon,
+  ShieldExclamationIcon,
 } from '@heroicons/react/24/outline';
 
 const Dashboard = () => {
   const {
-    user, isClubAdmin, isCoach, canManageGymnasts,
+    user, isClubAdmin, isCoach, canManageGymnasts, canViewWelfare,
     generateShareCode, generateCodeOfTheDay, getCodeOfTheDay, clearCodeOfTheDay, updateUser,
   } = useAuth();
   const navigate = useNavigate();
@@ -258,6 +260,18 @@ const Dashboard = () => {
             </div>
           )}
           {adminTiles}
+          <div className="dashboard-tiles" style={{ marginTop: '0.75rem' }}>
+            <Link to="/booking/admin/incidents" className="dashboard-tile dashboard-tile--incidents">
+              <ExclamationTriangleIcon className="dashboard-tile__icon" />
+              <span className="dashboard-tile__label">Incident Reports</span>
+            </Link>
+            {canViewWelfare && (
+              <Link to="/booking/admin/welfare" className="dashboard-tile dashboard-tile--welfare">
+                <ShieldExclamationIcon className="dashboard-tile__icon" />
+                <span className="dashboard-tile__label">Welfare Reports</span>
+              </Link>
+            )}
+          </div>
           {noticeboardPanel}
           {/* Existing metrics below */}
           <div className="grid">

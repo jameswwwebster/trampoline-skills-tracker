@@ -6090,6 +6090,8 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
 .dashboard-tile--tracking,
 .dashboard-tile--account,
 .dashboard-tile--admin { /* colours handled by icon, not tile bg */ }
+.dashboard-tile--incidents .dashboard-tile__icon { color: #e67e22; }
+.dashboard-tile--welfare .dashboard-tile__icon { color: #c0392b; }
 
 /* ── Noticeboard panel ───────────────────────────────────── */
 .dashboard-noticeboard-panel {
