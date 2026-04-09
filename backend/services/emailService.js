@@ -824,6 +824,29 @@ class EmailService {
       text: `Hi${toName ? ` ${toName}` : ''},\n\nAn incident report has been forwarded to you by ${forwardedByName} regarding ${gymnástName}.\n\nDate: ${incidentDateStr}\nType: ${TYPE_LABEL[incident.incidentType] ?? incident.incidentType}\nSeverity: ${SEVERITY_LABEL[incident.severity] ?? incident.severity}\nDescription: ${incident.description}\n${note ? `\nNote: ${note}\n` : ''}\nPlease contact the club if you have any questions.`,
     }, { to: toEmail, gymnástName });
   }
+
+  // ── Guardian invite ──────────────────────────────────────────────────────────
+
+  async sendGuardianInvite(toEmail, gymnast, invitedBy, token) {
+    const inviteUrl = `${BASE_URL()}/booking/accept-invite/${token}`;
+    const inviterName = `${invitedBy.firstName} ${invitedBy.lastName}`;
+    const gymnástName = `${gymnast.firstName} ${gymnast.lastName}`;
+    return this._send({
+      subject: `You've been invited to co-manage ${gymnástName} on Trampoline Life`,
+      html: brandedHtml(
+        `Guardian invite for ${gymnástName}`,
+        `
+        <p>Hi,</p>
+        <p><strong>${inviterName}</strong> has invited you to become a co-guardian for <strong>${gymnástName}</strong> on Trampoline Life.</p>
+        <p>As a co-guardian you'll have the same access as ${inviterName} — you can view session bookings, track progress, manage health notes, and more.</p>
+        ${ctaButton(inviteUrl, 'Accept invitation')}
+        <p style="text-align:center;font-size:0.85rem;color:#888">This invitation expires in 7 days. If you weren't expecting this, you can safely ignore it.</p>
+        ${muted('If the button above doesn\'t work, copy and paste this link into your browser: ' + inviteUrl)}
+        `
+      ),
+      text: `Hi,\n\n${inviterName} has invited you to become a co-guardian for ${gymnástName} on Trampoline Life.\n\nAccept the invitation here:\n${inviteUrl}\n\nThis invitation expires in 7 days.`,
+    }, { to: toEmail, gymnástName });
+  }
 }
 
 

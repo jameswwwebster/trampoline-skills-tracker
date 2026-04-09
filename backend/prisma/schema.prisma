@@ -69,6 +69,9 @@ model User {
   incidentReports          IncidentReport[]   @relation("IncidentReportedBy")
   incidentForwards         IncidentForward[]  @relation("IncidentForwardedBy")
   welfareReports           WelfareReport[]    @relation("WelfareReportedBy")
+  guardianInvitesSent      GuardianInvite[]   @relation("GuardianInvitesSent")
+  guardianInvitesAccepted  GuardianInvite[]   @relation("GuardianInvitesAccepted")
+  namedContactsCreated     NamedContact[]     @relation("NamedContactsCreated")
 
   @@map("users")
 }
@@ -207,6 +210,8 @@ model Gymnast {
   competitionEntries CompetitionEntry[]
   incidentReports    IncidentReport[]
   welfareReports     WelfareReport[]
+  guardianInvites    GuardianInvite[]
+  namedContacts      NamedContact[]
 
   @@map("gymnasts")
 }
@@ -404,6 +409,37 @@ model Invite {
 
   @@unique([email, clubId, status])
   @@map("invites")
+}
+
+model GuardianInvite {
+  id           String    @id @default(cuid())
+  token        String    @unique @default(cuid())
+  gymnast      Gymnast   @relation(fields: [gymnastId], references: [id], onDelete: Cascade)
+  gymnastId    String
+  invitedBy    User      @relation("GuardianInvitesSent", fields: [invitedById], references: [id])
+  invitedById  String
+  email        String
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  acceptedBy   User?     @relation("GuardianInvitesAccepted", fields: [acceptedById], references: [id])
+  acceptedById String?
+  createdAt    DateTime  @default(now())
+
+  @@map("guardian_invites")
+}
+
+model NamedContact {
+  id          String   @id @default(cuid())
+  gymnast     Gymnast  @relation(fields: [gymnastId], references: [id], onDelete: Cascade)
+  gymnastId   String
+  name        String
+  phone       String?
+  note        String?
+  createdBy   User     @relation("NamedContactsCreated", fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime @default(now())
+
+  @@map("named_contacts")
 }
 
 model Competition {

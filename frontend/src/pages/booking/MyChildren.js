@@ -2,6 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { bookingApi } from '../../utils/bookingApi';
+import {
+  getGymnastGuardians,
+  createGuardianInvite,
+  cancelGuardianInvite,
+  removeGuardian,
+  createNamedContact,
+  updateNamedContact,
+  deleteNamedContact,
+} from '../../utils/bookingApi';
 import { useAuth } from '../../contexts/AuthContext';
 import './booking-shared.css';
 import { loadStripe } from '@stripe/stripe-js';
@@ -287,7 +296,244 @@ function EmergencyContactForm({ gymnast, onSaved }) {
   );
 }
 
-function GymnastCard({ gymnast, onUpdated }) {
+function GuardiansSection({ gymnast, currentUserId, isAdmin }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState(null);
+  const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [showInviteForm, setShowInviteForm] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: '', phone: '', note: '' });
+  const [contactSaving, setContactSaving] = useState(false);
+  const [contactError, setContactError] = useState(null);
+  const [editingContact, setEditingContact] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await getGymnastGuardians(gymnast.id);
+      setData(res.data);
+    } catch (err) {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggle = () => {
+    if (!open && !data) load();
+    setOpen(v => !v);
+  };
+
+  const handleInvite = async (e) => {
+    e.preventDefault();
+    setInviting(true);
+    setInviteError(null);
+    try {
+      await createGuardianInvite({ gymnastId: gymnast.id, email: inviteEmail });
+      setInviteEmail('');
+      setShowInviteForm(false);
+      setInviteSuccess(true);
+      setTimeout(() => setInviteSuccess(false), 4000);
+      load();
+    } catch (err) {
+      setInviteError(err.response?.data?.error || 'Failed to send invite.');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleCancelInvite = async (id) => {
+    try {
+      await cancelGuardianInvite(id);
+      load();
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const handleRemoveGuardian = async (userId) => {
+    if (!window.confirm('Remove this co-guardian? They will lose access to this gymnast.')) return;
+    try {
+      await removeGuardian(gymnast.id, userId);
+      load();
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const handleAddContact = async (e) => {
+    e.preventDefault();
+    if (!contactForm.name.trim()) return;
+    setContactSaving(true);
+    setContactError(null);
+    try {
+      await createNamedContact({ gymnastId: gymnast.id, ...contactForm });
+      setContactForm({ name: '', phone: '', note: '' });
+      setShowContactForm(false);
+      load();
+    } catch (err) {
+      setContactError(err.response?.data?.error || 'Failed to add contact.');
+    } finally {
+      setContactSaving(false);
+    }
+  };
+
+  const handleSaveContact = async (id) => {
+    setContactSaving(true);
+    setContactError(null);
+    try {
+      await updateNamedContact(id, editingContact);
+      setEditingContact(null);
+      load();
+    } catch (err) {
+      setContactError(err.response?.data?.error || 'Failed to save.');
+    } finally {
+      setContactSaving(false);
+    }
+  };
+
+  const handleDeleteContact = async (id) => {
+    if (!window.confirm('Remove this named contact?')) return;
+    try {
+      await deleteNamedContact(id);
+      load();
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const rowStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', fontSize: '0.875rem', padding: '0.3rem 0', borderBottom: '1px solid var(--booking-bg-light)' };
+  const mutedBtn = { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--booking-text-muted)', fontSize: '0.8rem', padding: '0 0.2rem' };
+
+  return (
+    <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--booking-border)' }}>
+      <button
+        onClick={toggle}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', fontWeight: 600, color: 'var(--booking-text-on-light)', padding: 0 }}
+      >
+        <span>{open ? '▾' : '▸'}</span> Guardians &amp; Contacts
+      </button>
+
+      {open && (
+        <div style={{ marginTop: '0.5rem' }}>
+          {loading && <p style={{ fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>Loading…</p>}
+
+          {data && (
+            <>
+              {/* Co-guardians */}
+              <p style={{ margin: '0 0 0.25rem', fontSize: '0.78rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--booking-text-muted)' }}>Co-guardians</p>
+              {data.guardians.map(g => (
+                <div key={g.id} style={rowStyle}>
+                  <span>{g.firstName} {g.lastName} {g.email ? <span style={{ color: 'var(--booking-text-muted)' }}>· {g.email}</span> : null}</span>
+                  {isAdmin && g.id !== currentUserId && (
+                    <button style={mutedBtn} onClick={() => handleRemoveGuardian(g.id)} title="Remove guardian">✕</button>
+                  )}
+                </div>
+              ))}
+
+              {/* Pending invites */}
+              {data.pendingInvites.length > 0 && (
+                <>
+                  <p style={{ margin: '0.5rem 0 0.25rem', fontSize: '0.78rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--booking-text-muted)' }}>Pending invites</p>
+                  {data.pendingInvites.map(inv => (
+                    <div key={inv.id} style={rowStyle}>
+                      <span style={{ color: 'var(--booking-text-muted)' }}>{inv.email} <em style={{ fontSize: '0.78rem' }}>(expires {new Date(inv.expiresAt).toLocaleDateString('en-GB')})</em></span>
+                      <button style={mutedBtn} onClick={() => handleCancelInvite(inv.id)} title="Cancel invite">✕</button>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {inviteSuccess && (
+                <p style={{ margin: '0.4rem 0 0', fontSize: '0.82rem', color: 'var(--booking-success)' }}>Invite sent successfully.</p>
+              )}
+
+              {showInviteForm ? (
+                <form onSubmit={handleInvite} style={{ marginTop: '0.5rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  <input
+                    className="bk-input"
+                    type="email"
+                    placeholder="Email address"
+                    value={inviteEmail}
+                    onChange={e => setInviteEmail(e.target.value)}
+                    style={{ flex: 1, minWidth: '180px' }}
+                    required
+                  />
+                  <button type="submit" disabled={inviting} className="bk-btn bk-btn--primary bk-btn--sm">
+                    {inviting ? 'Sending…' : 'Send invite'}
+                  </button>
+                  <button type="button" className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => { setShowInviteForm(false); setInviteError(null); }}>
+                    Cancel
+                  </button>
+                  {inviteError && <p className="bk-error" style={{ width: '100%', margin: '0.2rem 0 0' }}>{inviteError}</p>}
+                </form>
+              ) : (
+                <button className="bk-btn bk-btn--sm" style={{ marginTop: '0.4rem', border: '1px solid var(--booking-border)' }} onClick={() => setShowInviteForm(true)}>
+                  + Invite co-guardian
+                </button>
+              )}
+
+              {/* Named contacts */}
+              <p style={{ margin: '0.75rem 0 0.25rem', fontSize: '0.78rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--booking-text-muted)' }}>Named contacts <span style={{ fontWeight: 400, textTransform: 'none' }}>(no account needed)</span></p>
+              {data.namedContacts.length === 0 && <p style={{ fontSize: '0.82rem', color: 'var(--booking-text-muted)', margin: '0 0 0.25rem' }}>None added.</p>}
+              {data.namedContacts.map(c => (
+                <div key={c.id}>
+                  {editingContact?.id === c.id ? (
+                    <div style={{ padding: '0.4rem 0', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                      <input className="bk-input" placeholder="Name" value={editingContact.name} onChange={e => setEditingContact(ec => ({ ...ec, name: e.target.value }))} />
+                      <input className="bk-input" placeholder="Phone (optional)" value={editingContact.phone || ''} onChange={e => setEditingContact(ec => ({ ...ec, phone: e.target.value }))} />
+                      <input className="bk-input" placeholder="Note (optional)" value={editingContact.note || ''} onChange={e => setEditingContact(ec => ({ ...ec, note: e.target.value }))} />
+                      {contactError && <p className="bk-error">{contactError}</p>}
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button className="bk-btn bk-btn--primary bk-btn--sm" disabled={contactSaving} onClick={() => handleSaveContact(c.id)}>{contactSaving ? 'Saving…' : 'Save'}</button>
+                        <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => setEditingContact(null)}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={rowStyle}>
+                      <span>
+                        <strong>{c.name}</strong>
+                        {c.phone && <span style={{ color: 'var(--booking-text-muted)' }}> · {c.phone}</span>}
+                        {c.note && <span style={{ color: 'var(--booking-text-muted)', fontStyle: 'italic' }}> · {c.note}</span>}
+                      </span>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        <button style={mutedBtn} onClick={() => setEditingContact({ id: c.id, name: c.name, phone: c.phone || '', note: c.note || '' })}>Edit</button>
+                        <button style={mutedBtn} onClick={() => handleDeleteContact(c.id)}>✕</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {showContactForm ? (
+                <form onSubmit={handleAddContact} style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                  <input className="bk-input" placeholder="Name *" value={contactForm.name} onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))} required />
+                  <input className="bk-input" placeholder="Phone (optional)" value={contactForm.phone} onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))} />
+                  <input className="bk-input" placeholder="Note e.g. Collects on Fridays (optional)" value={contactForm.note} onChange={e => setContactForm(f => ({ ...f, note: e.target.value }))} />
+                  {contactError && <p className="bk-error">{contactError}</p>}
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button type="submit" disabled={contactSaving} className="bk-btn bk-btn--primary bk-btn--sm">{contactSaving ? 'Saving…' : 'Add contact'}</button>
+                    <button type="button" className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => { setShowContactForm(false); setContactError(null); }}>Cancel</button>
+                  </div>
+                </form>
+              ) : (
+                <button className="bk-btn bk-btn--sm" style={{ marginTop: '0.4rem', border: '1px solid var(--booking-border)' }} onClick={() => setShowContactForm(true)}>
+                  + Add named contact
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GymnastCard({ gymnast, onUpdated, currentUserId, isAdmin }) {
   const [editingEC, setEditingEC] = useState(false);
   const [editingHealthNotes, setEditingHealthNotes] = useState(false);
   const [healthNotesValue, setHealthNotesValue] = useState(gymnast.healthNotes === 'none' ? '' : gymnast.healthNotes || '');
@@ -517,6 +763,10 @@ function GymnastCard({ gymnast, onUpdated }) {
       <ConsentToggles gymnast={gymnast} onUpdated={onUpdated} />
 
       <BgNumberSection gymnast={gymnast} onUpdated={onUpdated} />
+
+      {!gymnast.isSelf && (
+        <GuardiansSection gymnast={gymnast} currentUserId={currentUserId} isAdmin={isAdmin} />
+      )}
     </div>
   );
 }
@@ -909,7 +1159,7 @@ function NotificationPreferences({ user, onSaved }) {
 }
 
 export default function MyChildren() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, isClubAdmin } = useAuth();
   const [gymnasts, setGymnasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ firstName: '', lastName: '', dateOfBirth: '', healthNotes: '', healthNotesNone: false });
@@ -1204,7 +1454,7 @@ export default function MyChildren() {
 
         {children.length === 0 && !showForm && <p className="bk-muted">No children added yet.</p>}
         {children.map(g => (
-          <GymnastCard key={g.id} gymnast={g} onUpdated={load} />
+          <GymnastCard key={g.id} gymnast={g} onUpdated={load} currentUserId={user?.id} isAdmin={isClubAdmin} />
         ))}
       </section>
 
