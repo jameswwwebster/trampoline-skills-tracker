@@ -26,6 +26,8 @@ const noticeboardRouter = require('./routes/noticeboard');
 const recipientGroupsRouter = require('./routes/recipientGroups');
 const incidentRoutes = require('./routes/incidents');
 const welfareRoutes = require('./routes/welfare');
+const guardianInviteRoutes = require('./routes/guardianInvites');
+const namedContactRoutes = require('./routes/namedContacts');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -166,6 +168,8 @@ app.use('/api/noticeboard', noticeboardRouter);
 app.use('/api/recipient-groups', recipientGroupsRouter);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/welfare', welfareRoutes);
+app.use('/api/guardian-invites', guardianInviteRoutes);
+app.use('/api/named-contacts', namedContactRoutes);
 
 // Booking routes
 app.use('/api/booking/sessions', require('./routes/booking/sessions'));

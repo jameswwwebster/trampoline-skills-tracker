@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './booking/bookingVars.css';
 import './AuthPages.css';
@@ -15,10 +15,12 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { register, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/dashboard', { replace: true });
-  }, [isAuthenticated, navigate]);
+    if (isAuthenticated) navigate(returnTo || '/dashboard', { replace: true });
+  }, [isAuthenticated, navigate, returnTo]);
 
   if (SIGNUPS_DISABLED) {
     return (
@@ -68,7 +70,7 @@ const Register = () => {
       phone: formData.phone,
       password: formData.password,
     });
-    if (result.success) navigate('/dashboard', { replace: true });
+    if (result.success) navigate(returnTo || '/dashboard', { replace: true });
     setIsLoading(false);
   };
 

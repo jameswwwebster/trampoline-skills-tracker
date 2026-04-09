@@ -371,3 +371,32 @@ export const toggleTemplate = (id, applyToFutureInstances) =>
 
 export const deleteTemplate = (id, applyToFutureInstances) =>
   axios.delete(`${API_URL}/booking/templates/${id}`, { data: { applyToFutureInstances }, headers: getHeaders() });
+
+// Guardian invites
+export const getGymnastGuardians = (gymnastId) =>
+  axios.get(`${API_URL}/guardian-invites/gymnast/${gymnastId}`, { headers: getHeaders() });
+
+export const getInviteByToken = (token) =>
+  axios.get(`${API_URL}/guardian-invites/token/${token}`);
+
+export const createGuardianInvite = (data) =>
+  axios.post(`${API_URL}/guardian-invites`, data, { headers: getHeaders() });
+
+export const acceptGuardianInvite = (token) =>
+  axios.post(`${API_URL}/guardian-invites/token/${token}/accept`, {}, { headers: getHeaders() });
+
+export const cancelGuardianInvite = (id) =>
+  axios.delete(`${API_URL}/guardian-invites/${id}`, { headers: getHeaders() });
+
+export const removeGuardian = (gymnastId, userId) =>
+  axios.delete(`${API_URL}/guardian-invites/gymnast/${gymnastId}/guardian/${userId}`, { headers: getHeaders() });
+
+// Named contacts
+export const createNamedContact = (data) =>
+  axios.post(`${API_URL}/named-contacts`, data, { headers: getHeaders() });
+
+export const updateNamedContact = (id, data) =>
+  axios.patch(`${API_URL}/named-contacts/${id}`, data, { headers: getHeaders() });
+
+export const deleteNamedContact = (id) =>
+  axios.delete(`${API_URL}/named-contacts/${id}`, { headers: getHeaders() });
