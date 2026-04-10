@@ -1038,18 +1038,19 @@ model MessageRecipient {
 }
 
 model NoticeboardPost {
-  id              String            @id @default(cuid())
+  id              String                @id @default(cuid())
   clubId          String
   authorId        String
   title           String
   body            String
   archiveAt       DateTime
   recipientFilter Json?
-  videoEmbeds     String[]          @default([])
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  club            Club              @relation(fields: [clubId], references: [id])
-  author          User              @relation(fields: [authorId], references: [id])
+  videoEmbeds     String[]              @default([])
+  priority        NoticeboardPriority   @default(INFO)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  club            Club                  @relation(fields: [clubId], references: [id])
+  author          User                  @relation(fields: [authorId], references: [id])
   reads           NoticeboardRead[]
 }
 
@@ -1112,6 +1113,12 @@ enum CommitmentStatus {
 enum AttendanceStatus {
   PRESENT
   ABSENT
+}
+
+enum NoticeboardPriority {
+  INFO
+  IMPORTANT
+  URGENT
 }
 
 model IncidentReport {

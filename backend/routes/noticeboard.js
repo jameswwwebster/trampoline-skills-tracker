@@ -44,6 +44,7 @@ const postSchema = Joi.object({
   title: Joi.string().max(200).required(),
   body: Joi.string().required(),
   archiveAt: Joi.string().isoDate().required(),
+  priority: Joi.string().valid('INFO', 'IMPORTANT', 'URGENT').optional(),
   recipientFilter: Joi.object().allow(null).optional(),
   videoEmbeds: Joi.array().items(
     Joi.string().uri().pattern(/^https:\/\/(www\.)?(youtube\.com|youtu\.be|vimeo\.com\/\d+)/)
@@ -87,6 +88,7 @@ router.post('/', auth, requireRole(ADMIN_ROLES), async (req, res) => {
         title: value.title,
         body: value.body,
         archiveAt: new Date(value.archiveAt),
+        priority: value.priority ?? 'INFO',
         videoEmbeds: value.videoEmbeds ?? [],
         ...(value.recipientFilter && { recipientFilter: value.recipientFilter }),
       },
@@ -163,7 +165,7 @@ router.patch('/:id', auth, requireRole(ADMIN_ROLES), async (req, res) => {
 
     const updated = await prisma.noticeboardPost.update({
       where: { id: req.params.id },
-      data: { title: value.title, body: value.body, archiveAt: new Date(value.archiveAt), videoEmbeds: value.videoEmbeds ?? [] },
+      data: { title: value.title, body: value.body, archiveAt: new Date(value.archiveAt), priority: value.priority ?? 'INFO', videoEmbeds: value.videoEmbeds ?? [] },
       include: { author: { select: { firstName: true, lastName: true } } },
     });
 

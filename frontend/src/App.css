@@ -6094,83 +6094,126 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
 .dashboard-tile--welfare .dashboard-tile__icon { color: #c0392b; }
 
 /* ── Noticeboard panel ───────────────────────────────────── */
-.dashboard-noticeboard-panel {
-  display: block;
+.dashboard-nb {
   border: 2px solid var(--secondary-color);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
+  border-radius: 10px;
   margin-bottom: 1.5rem;
-  text-decoration: none;
-  color: inherit;
+  overflow: hidden;
   background: #f8f5ff;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
 }
-.dashboard-noticeboard-panel:hover {
-  background: #f0e8ff;
-  border-color: #7c3aed;
-}
-.dashboard-noticeboard-panel__header {
+.dashboard-nb__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  padding: 0.7rem 1rem 0.5rem;
 }
-.dashboard-noticeboard-panel__title { font-weight: 700; color: var(--secondary-color); }
-.dashboard-noticeboard-panel__badge {
+.dashboard-nb__title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--secondary-color);
+}
+.dashboard-nb__badge {
   background: var(--secondary-color);
   color: white;
   border-radius: 10px;
-  padding: 0.1rem 0.5rem;
-  font-size: 0.75rem;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
-.dashboard-noticeboard-panel__empty {
+.dashboard-nb__empty {
   font-size: 0.875rem;
   color: #888;
+  padding: 0 1rem 0.75rem;
+  margin: 0;
 }
-.dashboard-noticeboard-panel__list {
+.dashboard-nb__list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
 }
-.dashboard-noticeboard-panel__item {
-  font-size: 0.875rem;
-  color: #555;
+.dashboard-nb__item {
+  padding: 0.6rem 1rem;
+  border-top: 1px solid #e8e0f7;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-left: 3px solid transparent;
+}
+.dashboard-nb__item:hover { background: #f0e8ff; }
+.dashboard-nb__item--unread { background: #fff; border-left-color: var(--secondary-color); }
+.dashboard-nb__item--unread:hover { background: #faf6ff; }
+.dashboard-nb-item--urgent   { border-left-color: #e74c3c !important; background: rgba(231,76,60,0.04) !important; }
+.dashboard-nb-item--urgent:hover  { background: rgba(231,76,60,0.08) !important; }
+.dashboard-nb-item--important { border-left-color: #f39c12 !important; background: rgba(243,156,18,0.04) !important; }
+.dashboard-nb-item--important:hover { background: rgba(243,156,18,0.08) !important; }
+.dashboard-nb__item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.dashboard-nb__item-title-row {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding-left: 1rem;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
 }
-.dashboard-noticeboard-panel__item--unread {
-  color: #222;
+.dashboard-nb__item-title {
+  font-size: 0.875rem;
   font-weight: 600;
-  padding-left: 0;
+  color: #222;
+  line-height: 1.3;
 }
-.dashboard-noticeboard-panel__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--secondary-color);
+.dashboard-nb__item--unread .dashboard-nb__item-title { color: #111; }
+.dashboard-nb__item-time {
+  font-size: 0.72rem;
+  color: #999;
+  white-space: nowrap;
   flex-shrink: 0;
 }
-.dashboard-noticeboard-panel__footer {
-  margin-top: 0.75rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid #e0d4f7;
+.dashboard-nb__item-snippet {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: #666;
+  line-height: 1.4;
 }
-.dashboard-noticeboard-panel__cta {
+.dashboard-nb__item--unread .dashboard-nb__item-snippet { color: #444; }
+.dashboard-nb__item-body {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #333;
+  border-top: 1px solid #e8e0f7;
+  padding-top: 0.5rem;
+}
+.dashboard-nb__item-body p { margin: 0 0 0.4rem; }
+.dashboard-nb__item-body p:last-child { margin: 0; }
+.dashboard-nb__item-body a { color: var(--secondary-color); }
+.dashboard-nb__priority-badge {
   display: inline-block;
-  background: var(--secondary-color);
-  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.dashboard-nb__priority-badge--urgent    { background: rgba(231,76,60,0.12); color: #c0392b; }
+.dashboard-nb__priority-badge--important { background: rgba(243,156,18,0.15); color: #b7770d; }
+.dashboard-nb__footer {
+  padding: 0.55rem 1rem;
+  border-top: 1px solid #e0d4f7;
+  background: #f0e8ff;
+}
+.dashboard-nb__cta {
   font-size: 0.8rem;
   font-weight: 600;
-  padding: 0.35rem 0.75rem;
-  border-radius: 6px;
+  color: var(--secondary-color);
+  text-decoration: none;
 }
+.dashboard-nb__cta:hover { text-decoration: underline; }
 
 /* ── Certificates shortcut button ───────────────────────── */
 .progress-cert-shortcut {
