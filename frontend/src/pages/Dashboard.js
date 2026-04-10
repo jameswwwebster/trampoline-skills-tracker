@@ -34,9 +34,43 @@ const Dashboard = () => {
       .finally(() => setNoticeboardLoading(false));
   }, []);
 
+  const [expandedPostId, setExpandedPostId] = useState(null);
+
   const unreadCount = noticeboardPosts.filter(p => !p.isRead).length;
-  const latestPost = noticeboardPosts[0] || null;
-  const latestUnread = noticeboardPosts.find(p => !p.isRead) || null;
+
+  const sortedPosts = [...noticeboardPosts].sort((a, b) => {
+    if (a.isRead !== b.isRead) return a.isRead ? 1 : -1;
+    const priorityOrder = { URGENT: 0, IMPORTANT: 1, INFO: 2 };
+    if (a.priority !== b.priority) return (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
+    return 0;
+  });
+
+  const handleExpandPost = async (post) => {
+    setExpandedPostId(prev => prev === post.id ? null : post.id);
+    if (!post.isRead) {
+      try {
+        await bookingApi.markNoticeboardRead(post.id);
+        setNoticeboardPosts(prev => prev.map(p => p.id === post.id ? { ...p, isRead: true } : p));
+      } catch { /* ignore */ }
+    }
+  };
+
+  function stripHtml(html) {
+    return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function timeAgo(dateStr) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  }
 
   // ── Today widget (admin/coach only) ────────────────────────────────────────
   const [todaySessions, setTodaySessions] = useState([]);
@@ -139,32 +173,70 @@ const Dashboard = () => {
   }
 
   // ── Noticeboard panel ──────────────────────────────────────────────────────
+  const PRIORITY_CONFIG = {
+    URGENT:    { label: 'Urgent',    className: 'dashboard-nb-item--urgent' },
+    IMPORTANT: { label: 'Important', className: 'dashboard-nb-item--important' },
+    INFO:      { label: null,        className: '' },
+  };
+
   const noticeboardPanel = (
-    <Link to="/booking/noticeboard" className="dashboard-noticeboard-panel">
-      <div className="dashboard-noticeboard-panel__header">
-        <span className="dashboard-noticeboard-panel__title">Noticeboard</span>
+    <div className="dashboard-nb">
+      <div className="dashboard-nb__header">
+        <span className="dashboard-nb__title">📢 Noticeboard</span>
         {unreadCount > 0 && (
-          <span className="dashboard-noticeboard-panel__badge">{unreadCount} unread</span>
+          <span className="dashboard-nb__badge">{unreadCount} unread</span>
         )}
       </div>
+
       {noticeboardLoading ? (
-        <span className="dashboard-noticeboard-panel__empty">Loading...</span>
-      ) : noticeboardPosts.length === 0 ? (
-        <span className="dashboard-noticeboard-panel__empty">No notices yet.</span>
+        <p className="dashboard-nb__empty">Loading…</p>
+      ) : sortedPosts.length === 0 ? (
+        <p className="dashboard-nb__empty">No notices at the moment.</p>
       ) : (
-        <ul className="dashboard-noticeboard-panel__list">
-          {noticeboardPosts.slice(0, 3).map(post => (
-            <li key={post.id} className={`dashboard-noticeboard-panel__item${post.isRead ? '' : ' dashboard-noticeboard-panel__item--unread'}`}>
-              {!post.isRead && <span className="dashboard-noticeboard-panel__dot" />}
-              {post.title}
-            </li>
-          ))}
+        <ul className="dashboard-nb__list">
+          {sortedPosts.slice(0, 3).map(post => {
+            const cfg = PRIORITY_CONFIG[post.priority] ?? PRIORITY_CONFIG.INFO;
+            const isExpanded = expandedPostId === post.id;
+            const snippet = stripHtml(post.body);
+            return (
+              <li
+                key={post.id}
+                className={`dashboard-nb__item${!post.isRead ? ' dashboard-nb__item--unread' : ''} ${cfg.className}`}
+                onClick={() => handleExpandPost(post)}
+              >
+                <div className="dashboard-nb__item-top">
+                  <div className="dashboard-nb__item-title-row">
+                    {cfg.label && (
+                      <span className={`dashboard-nb__priority-badge dashboard-nb__priority-badge--${post.priority.toLowerCase()}`}>
+                        {cfg.label}
+                      </span>
+                    )}
+                    <span className="dashboard-nb__item-title">{post.title}</span>
+                  </div>
+                  <span className="dashboard-nb__item-time">{timeAgo(post.createdAt)}</span>
+                </div>
+                {!isExpanded && snippet && (
+                  <p className="dashboard-nb__item-snippet">
+                    {snippet.length > 120 ? snippet.slice(0, 120) + '…' : snippet}
+                  </p>
+                )}
+                {isExpanded && (
+                  <div
+                    className="dashboard-nb__item-body"
+                    dangerouslySetInnerHTML={{ __html: post.body }}
+                    onClick={e => e.stopPropagation()}
+                  />
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
-      <div className="dashboard-noticeboard-panel__footer">
-        <span className="dashboard-noticeboard-panel__cta">View noticeboard →</span>
+
+      <div className="dashboard-nb__footer">
+        <Link to="/booking/noticeboard" className="dashboard-nb__cta">View all notices →</Link>
       </div>
-    </Link>
+    </div>
   );
 
   // ── Section tiles ──────────────────────────────────────────────────────────

@@ -52,6 +52,37 @@
   border-left: 3px solid var(--booking-accent);
 }
 
+.noticeboard-post--urgent {
+  border-left: 3px solid #e74c3c;
+  background: rgba(231,76,60,0.03);
+}
+
+.noticeboard-post--important {
+  border-left: 3px solid #f39c12;
+  background: rgba(243,156,18,0.03);
+}
+
+.noticeboard-post__priority-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.noticeboard-post__priority-badge--urgent {
+  background: rgba(231,76,60,0.12);
+  color: #c0392b;
+}
+
+.noticeboard-post__priority-badge--important {
+  background: rgba(243,156,18,0.15);
+  color: #b7770d;
+}
+
 .noticeboard-post__read-action {
   margin-top: 0.75rem;
   padding-top: 0.75rem;

@@ -7,7 +7,13 @@ import RecipientPicker from '../../components/RecipientPicker';
 import './Noticeboard.css';
 import './booking-shared.css';
 
-const EMPTY_FORM = { title: '', body: '', archiveAt: '', recipientFilter: null, videoEmbeds: [] };
+const EMPTY_FORM = { title: '', body: '', archiveAt: '', priority: 'INFO', recipientFilter: null, videoEmbeds: [] };
+
+const PRIORITY_OPTIONS = [
+  { value: 'INFO',      label: 'Info',      description: 'Standard notice' },
+  { value: 'IMPORTANT', label: 'Important', description: 'Highlighted in amber' },
+  { value: 'URGENT',    label: 'Urgent',    description: 'Highlighted in red' },
+];
 const isStaff = (user) => user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
 
 function isValidVideoUrl(url) {
@@ -115,6 +121,37 @@ function PostForm({ initial, onSave, onCancel, groups = [] }) {
             </div>
           ))}
         </div>
+        <div style={{ marginBottom: '0.75rem' }}>
+          <p className="bk-label" style={{ margin: '0 0 0.3rem' }}>Priority</p>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {PRIORITY_OPTIONS.map(opt => (
+              <label
+                key={opt.value}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer',
+                  padding: '0.3rem 0.7rem', borderRadius: '6px', fontSize: '0.875rem', fontWeight: 500,
+                  border: `1px solid ${form.priority === opt.value
+                    ? opt.value === 'URGENT' ? '#e74c3c' : opt.value === 'IMPORTANT' ? '#f39c12' : 'var(--booking-accent)'
+                    : 'var(--booking-border)'}`,
+                  background: form.priority === opt.value
+                    ? opt.value === 'URGENT' ? 'rgba(231,76,60,0.08)' : opt.value === 'IMPORTANT' ? 'rgba(243,156,18,0.08)' : 'rgba(124,53,232,0.06)'
+                    : 'transparent',
+                }}
+              >
+                <input
+                  type="radio"
+                  name="priority"
+                  value={opt.value}
+                  checked={form.priority === opt.value}
+                  onChange={() => setForm(f => ({ ...f, priority: opt.value }))}
+                  style={{ display: 'none' }}
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
         <label className="bk-label" style={{ display: 'block', marginBottom: '1rem' }}>
           Archive after
           <input
@@ -241,15 +278,24 @@ export default function Noticeboard() {
               title: post.title,
               body: post.body,
               archiveAt: post.archiveAt.slice(0, 10),
+              priority: post.priority ?? 'INFO',
               videoEmbeds: post.videoEmbeds ?? [],
             }}
             onSave={handleUpdate}
             onCancel={() => setEditingId(null)}
           />
         ) : (
-          <div key={post.id} className={`noticeboard-post${!post.isRead ? ' noticeboard-post--unread' : ''}`}>
+          <div key={post.id} className={`noticeboard-post${!post.isRead ? ' noticeboard-post--unread' : ''}${post.priority === 'URGENT' ? ' noticeboard-post--urgent' : post.priority === 'IMPORTANT' ? ' noticeboard-post--important' : ''}`}>
             <div className="noticeboard-post__header">
-              <h3 className="noticeboard-post__title">{post.title}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {post.priority === 'URGENT' && (
+                  <span className="noticeboard-post__priority-badge noticeboard-post__priority-badge--urgent">Urgent</span>
+                )}
+                {post.priority === 'IMPORTANT' && (
+                  <span className="noticeboard-post__priority-badge noticeboard-post__priority-badge--important">Important</span>
+                )}
+                <h3 className="noticeboard-post__title">{post.title}</h3>
+              </div>
               <span className="noticeboard-post__meta">
                 {post.author.firstName} {post.author.lastName}
                 {' · '}
