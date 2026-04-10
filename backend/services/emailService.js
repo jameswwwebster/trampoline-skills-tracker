@@ -832,6 +832,8 @@ class EmailService {
     const inviterName = `${invitedBy.firstName} ${invitedBy.lastName}`;
     const gymnástName = `${gymnast.firstName} ${gymnast.lastName}`;
     return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: toEmail,
       subject: `You've been invited to co-manage ${gymnástName} on Trampoline Life`,
       html: brandedHtml(
         `Guardian invite for ${gymnástName}`,
