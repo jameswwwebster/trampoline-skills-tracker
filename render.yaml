@@ -6,7 +6,7 @@ services:
     dockerContext: .
     dockerfilePath: Dockerfile.backend
     plan: starter
-    preDeployCommand: npx prisma migrate resolve --rolled-back 20260410000000_add_noticeboard_priority || true && npx prisma migrate deploy
+    preDeployCommand: npx prisma migrate deploy
     envVars:
       - key: NODE_ENV
         value: production
