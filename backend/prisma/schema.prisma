@@ -536,6 +536,7 @@ model CompetitionEntry {
   waivedReason          String?
   paidExternally        Boolean                  @default(false)
   externalPaymentNote   String?
+  submittedToOrganiser  Boolean                  @default(false)
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
   competitionEvent      CompetitionEvent         @relation(fields: [competitionEventId], references: [id])

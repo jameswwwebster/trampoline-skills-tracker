@@ -106,6 +106,7 @@ router.patch('/:id', auth, requireRole(ADMIN_ROLES), async (req, res) => {
     coachConfirmed: Joi.boolean(),
     status: Joi.string().valid('INVITED', 'DECLINED'),
     categoryIds: Joi.array().items(Joi.string()),
+    submittedToOrganiser: Joi.boolean(),
   }).validate(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
 
@@ -122,6 +123,7 @@ router.patch('/:id', auth, requireRole(ADMIN_ROLES), async (req, res) => {
     const updateData = {};
     if ('coachConfirmed' in value) updateData.coachConfirmed = value.coachConfirmed;
     if ('status' in value) updateData.status = value.status;
+    if ('submittedToOrganiser' in value) updateData.submittedToOrganiser = value.submittedToOrganiser;
 
     if (value.categoryIds !== undefined) {
       await prisma.competitionEntryCategory.deleteMany({ where: { entryId: entry.id } });
@@ -276,12 +278,13 @@ router.post('/:id/confirm-invoice', auth, requireRole(ADMIN_ROLES), async (req, 
       },
     });
 
-    // Send invoice email to all guardians
-    const guardians = await prisma.user.findMany({
-      where: { gymnasts: { some: { id: entry.gymnastId } } },
-      select: { email: true, firstName: true, lastName: true },
+    // Send invoice email to all guardians via the GuardianGymnasts M2M relation
+    const gymnastwithGuardians = await prisma.gymnast.findUnique({
+      where: { id: entry.gymnastId },
+      include: { guardians: { select: { email: true, firstName: true, lastName: true } } },
     });
-    for (const guardian of guardians) {
+    const recipients = gymnastwithGuardians?.guardians ?? [];
+    for (const guardian of recipients) {
       await emailService.sendCompetitionInvoice(
         guardian.email,
         guardian,
@@ -317,11 +320,11 @@ router.post('/:id/resend-invoice', auth, requireRole(ADMIN_ROLES), async (req, r
       data: { invoiceSentAt: new Date() },
     });
 
-    const guardians = await prisma.user.findMany({
-      where: { gymnasts: { some: { id: entry.gymnastId } } },
-      select: { email: true, firstName: true, lastName: true },
+    const gWithGuardians = await prisma.gymnast.findUnique({
+      where: { id: entry.gymnastId },
+      include: { guardians: { select: { email: true, firstName: true, lastName: true } } },
     });
-    for (const guardian of guardians) {
+    for (const guardian of gWithGuardians?.guardians ?? []) {
       await emailService.sendCompetitionInvoice(
         guardian.email,
         guardian,
