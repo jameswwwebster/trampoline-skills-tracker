@@ -532,6 +532,10 @@ model CompetitionEntry {
   adminPriceOverride    Int?
   stripePaymentIntentId String?
   coachConfirmed        Boolean                  @default(false)
+  invoiceSentAt         DateTime?
+  waivedReason          String?
+  paidExternally        Boolean                  @default(false)
+  externalPaymentNote   String?
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
   competitionEvent      CompetitionEvent         @relation(fields: [competitionEventId], references: [id])
@@ -935,9 +939,11 @@ enum MembershipStatus {
 
 enum CompetitionEntryStatus {
   INVITED
+  ACCEPTED
   PAYMENT_PENDING
   PAID
   DECLINED
+  WAIVED
 }
 
 model WaitlistEntry {

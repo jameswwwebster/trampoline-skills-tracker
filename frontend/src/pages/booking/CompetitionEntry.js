@@ -17,35 +17,190 @@ export default function CompetitionEntry() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const loadEntry = () =>
     bookingApi.getMyCompetitionEntries().then(res => {
       const found = res.data.find(e => e.id === entryId);
       if (found) {
         setEntry(found);
         setSelectedCategories(found.categories.map(ec => ec.categoryId));
-        if (found.status === 'PAID') setClientSecret(null);
       }
     });
-  }, [entryId]);
+
+  useEffect(() => { loadEntry(); }, [entryId]);
 
   if (!entry) return <div className="bk-page bk-page--sm"><p className="bk-muted">Loading...</p></div>;
 
+  const ev = entry.competitionEvent;
+
+  // --- Terminal states ---
   if (entry.status === 'PAID') {
     return (
       <div className="bk-page bk-page--sm">
         <div className="bk-card" style={{ textAlign: 'center', padding: '2rem' }}>
-          <p style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Entry confirmed</p>
-          <p className="bk-muted">{entry.competitionEvent.name}</p>
-          <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
+          <p style={{ fontSize: '1.4rem', marginBottom: '0.4rem' }}>Entry confirmed</p>
+          <p className="bk-muted" style={{ marginBottom: '0.25rem' }}>{ev.name}</p>
+          <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>
             {entry.categories.map(ec => ec.category.name).join(', ')}
           </p>
-          <p style={{ fontWeight: 600, marginTop: '0.5rem' }}>£{(entry.totalAmount / 100).toFixed(2)}</p>
+          {entry.paidExternally
+            ? <p className="bk-muted" style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Payment recorded by club</p>
+            : entry.totalAmount > 0 && (
+              <p style={{ fontWeight: 600, marginTop: '0.5rem' }}>£{(entry.totalAmount / 100).toFixed(2)}</p>
+            )
+          }
         </div>
       </div>
     );
   }
 
-  const ev = entry.competitionEvent;
+  if (entry.status === 'WAIVED') {
+    return (
+      <div className="bk-page bk-page--sm">
+        <div className="bk-card" style={{ textAlign: 'center', padding: '2rem' }}>
+          <p style={{ fontSize: '1.4rem', marginBottom: '0.4rem' }}>Entry confirmed</p>
+          <p className="bk-muted" style={{ marginBottom: '0.25rem' }}>{ev.name}</p>
+          <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>
+            {entry.categories.map(ec => ec.category.name).join(', ')}
+          </p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--booking-success)', fontWeight: 600, marginTop: '0.5rem' }}>
+            No payment required
+          </p>
+          {entry.waivedReason && (
+            <p className="bk-muted" style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>{entry.waivedReason}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (entry.status === 'DECLINED') {
+    return (
+      <div className="bk-page bk-page--sm">
+        <div className="bk-card" style={{ textAlign: 'center', padding: '2rem' }}>
+          <p style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: 'var(--booking-text-muted)' }}>
+            Invitation declined
+          </p>
+          <p className="bk-muted" style={{ fontSize: '0.875rem' }}>{ev.name}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- ACCEPTED: waiting for coach ---
+  if (entry.status === 'ACCEPTED') {
+    return (
+      <div className="bk-page bk-page--sm">
+        <h2>{ev.name}</h2>
+        <p className="bk-muted" style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>
+          {ev.location} · {new Date(ev.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+        <div className="bk-card" style={{ borderLeft: '4px solid var(--booking-accent)', padding: '1.25rem' }}>
+          <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>
+            {entry.gymnast.firstName} {entry.gymnast.lastName}
+          </p>
+          <p className="bk-muted" style={{ margin: '0 0 0.75rem', fontSize: '0.875rem' }}>
+            {entry.categories.map(ec => ec.category.name).join(', ')}
+          </p>
+          <p style={{ margin: 0, fontSize: '0.875rem' }}>
+            Your entry has been submitted. A coach will review it and send you an invoice before payment is due.
+          </p>
+        </div>
+        <button
+          className="bk-btn bk-btn--ghost"
+          style={{ marginTop: '1rem', fontSize: '0.85rem' }}
+          onClick={() => navigate('/booking/competitions')}
+        >
+          ← Back to competitions
+        </button>
+      </div>
+    );
+  }
+
+  // --- PAYMENT_PENDING: invoice sent, show Stripe checkout ---
+  if (entry.status === 'PAYMENT_PENDING') {
+    const isLate = new Date() > new Date(ev.entryDeadline);
+
+    if (clientSecret) {
+      return (
+        <div className="bk-page bk-page--sm">
+          <h2>{ev.name}</h2>
+          <p className="bk-muted" style={{ marginBottom: '0.5rem' }}>
+            {entry.gymnast.firstName} {entry.gymnast.lastName}
+          </p>
+          <p style={{ marginBottom: '0.25rem', fontSize: '0.875rem' }}>
+            {entry.categories.map(ec => ec.category.name).join(', ')}
+          </p>
+          {entry.adminPriceOverride !== null ? (
+            <p style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>Club price applied</p>
+          ) : isLate && ev.lateEntryFee ? (
+            <p style={{ color: 'var(--booking-warning)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+              Late entry fee included
+            </p>
+          ) : null}
+          <p style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '1.25rem' }}>
+            Total: £{(total / 100).toFixed(2)}
+          </p>
+          <Elements stripe={stripePromise} options={{ clientSecret }}>
+            <CompetitionPaymentForm entryId={entryId} onSuccess={() => navigate('/booking/competitions')} />
+          </Elements>
+          <button className="bk-btn bk-btn--ghost" style={{ marginTop: '0.75rem', fontSize: '0.85rem' }} onClick={() => setClientSecret(null)}>
+            Back
+          </button>
+        </div>
+      );
+    }
+
+    const handleProceedToPayment = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await bookingApi.checkoutCompetitionEntry(entryId);
+        setClientSecret(res.data.clientSecret);
+        setTotal(res.data.total);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Failed to start checkout.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    return (
+      <div className="bk-page bk-page--sm">
+        <h2>{ev.name}</h2>
+        <p className="bk-muted" style={{ marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+          {ev.location} · {new Date(ev.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+        <div className="bk-card" style={{ marginBottom: '1rem', borderLeft: '4px solid var(--booking-warning)' }}>
+          <p style={{ margin: '0 0 0.35rem', fontWeight: 600 }}>
+            {entry.gymnast.firstName} {entry.gymnast.lastName}
+          </p>
+          <p className="bk-muted" style={{ margin: '0 0 0.5rem', fontSize: '0.875rem' }}>
+            {entry.categories.map(ec => ec.category.name).join(', ')}
+          </p>
+          <p style={{ margin: 0, fontWeight: 700 }}>
+            Amount due: £{(entry.totalAmount / 100).toFixed(2)}
+          </p>
+        </div>
+        {error && <p className="bk-error">{error}</p>}
+        <button
+          className="bk-btn bk-btn--primary bk-btn--full"
+          disabled={loading}
+          onClick={handleProceedToPayment}
+        >
+          {loading ? 'Loading...' : 'Pay now'}
+        </button>
+        <button
+          className="bk-btn bk-btn--ghost bk-btn--full"
+          style={{ marginTop: '0.5rem' }}
+          onClick={() => navigate('/booking/competitions')}
+        >
+          Pay later
+        </button>
+      </div>
+    );
+  }
+
+  // --- INVITED: category selection + accept/decline ---
   const isLate = new Date() > new Date(ev.entryDeadline);
   const deadlinePassed = isLate && ev.lateEntryFee === null;
 
@@ -53,12 +208,10 @@ export default function CompetitionEntry() {
     setSelectedCategories(prev =>
       prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]
     );
-    setClientSecret(null);
   };
 
-  const priceOverride = entry.adminPriceOverride ?? null;
-
   const calcDisplayTotal = () => {
+    const priceOverride = entry.adminPriceOverride ?? null;
     if (priceOverride !== null) return priceOverride;
     const tiers = [...ev.priceTiers].sort((a, b) => a.entryNumber - b.entryNumber);
     let t = 0;
@@ -70,50 +223,30 @@ export default function CompetitionEntry() {
     return t;
   };
 
-  const handleProceedToPayment = async () => {
+  const handleAccept = async () => {
     if (selectedCategories.length === 0) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await bookingApi.checkoutCompetitionEntry(entryId, selectedCategories);
-      setClientSecret(res.data.clientSecret);
-      setTotal(res.data.total);
+      await bookingApi.acceptCompetitionEntry(entryId, selectedCategories);
+      await loadEntry();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to start checkout.');
-    } finally {
+      setError(err.response?.data?.error || 'Failed to accept.');
       setLoading(false);
     }
   };
 
-  if (clientSecret) {
-    return (
-      <div className="bk-page bk-page--sm">
-        <h2>{ev.name}</h2>
-        <p className="bk-muted" style={{ marginBottom: '0.5rem' }}>
-          {entry.gymnast.firstName} {entry.gymnast.lastName}
-        </p>
-        <p style={{ marginBottom: '0.25rem', fontSize: '0.875rem' }}>
-          {selectedCategories.map(cid => ev.categories.find(c => c.id === cid)?.name).filter(Boolean).join(', ')}
-        </p>
-        {priceOverride !== null ? (
-          <p style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>Club price applied</p>
-        ) : isLate && ev.lateEntryFee ? (
-          <p style={{ color: 'var(--booking-warning)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-            Late entry fee of £{(ev.lateEntryFee / 100).toFixed(2)} included
-          </p>
-        ) : null}
-        <p style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '1.25rem' }}>
-          Total: £{(total / 100).toFixed(2)}
-        </p>
-        <Elements stripe={stripePromise} options={{ clientSecret }}>
-          <CompetitionPaymentForm entryId={entryId} onSuccess={() => navigate('/booking/competitions')} />
-        </Elements>
-        <button className="bk-btn bk-btn--ghost" style={{ marginTop: '0.75rem', fontSize: '0.85rem' }} onClick={() => setClientSecret(null)}>
-          Back to category selection
-        </button>
-      </div>
-    );
-  }
+  const handleDecline = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await bookingApi.declineCompetitionEntry(entryId);
+      navigate('/booking/competitions');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to decline.');
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="bk-page bk-page--sm">
@@ -125,13 +258,13 @@ export default function CompetitionEntry() {
         Gymnast: <strong>{entry.gymnast.firstName} {entry.gymnast.lastName}</strong>
       </p>
 
-      {deadlinePassed && (
-        <div className="bk-card" style={{ background: '#fff3cd', borderColor: '#ffc107', marginBottom: '1rem' }}>
-          <p style={{ margin: 0, fontSize: '0.875rem', color: '#856404' }}>The entry deadline has passed. Entries are closed for this competition.</p>
+      {deadlinePassed ? (
+        <div className="bk-card" style={{ background: '#fff3cd', borderColor: '#ffc107' }}>
+          <p style={{ margin: 0, fontSize: '0.875rem', color: '#856404' }}>
+            The entry deadline has passed. Entries are closed for this competition.
+          </p>
         </div>
-      )}
-
-      {!deadlinePassed && (
+      ) : (
         <>
           {isLate && (
             <div className="bk-card" style={{ background: '#fff3cd', borderColor: '#ffc107', marginBottom: '1rem' }}>
@@ -158,15 +291,20 @@ export default function CompetitionEntry() {
           {selectedCategories.length > 0 && (
             <div className="bk-card" style={{ marginBottom: '1rem' }}>
               <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: '0 0 0.35rem' }}>
-                Entry total: £{(calcDisplayTotal() / 100).toFixed(2)}
-                {priceOverride !== null && <span className="bk-muted" style={{ fontWeight: 400, fontSize: '0.8rem' }}> (club price)</span>}
+                Estimated total: £{(calcDisplayTotal() / 100).toFixed(2)}
+                {entry.adminPriceOverride !== null && (
+                  <span className="bk-muted" style={{ fontWeight: 400, fontSize: '0.8rem' }}> (club price)</span>
+                )}
               </p>
-              {priceOverride === null && (
+              {entry.adminPriceOverride === null && (
                 <p className="bk-muted" style={{ fontSize: '0.8rem', margin: 0 }}>
                   {selectedCategories.length} {selectedCategories.length === 1 ? 'category' : 'categories'}
                   {isLate && ev.lateEntryFee ? ` + £${(ev.lateEntryFee / 100).toFixed(2)} late fee` : ''}
                 </p>
               )}
+              <p className="bk-muted" style={{ fontSize: '0.78rem', margin: '0.4rem 0 0' }}>
+                A coach will confirm this before payment is requested.
+              </p>
             </div>
           )}
 
@@ -175,12 +313,17 @@ export default function CompetitionEntry() {
           <button
             className="bk-btn bk-btn--primary bk-btn--full"
             disabled={selectedCategories.length === 0 || loading}
-            onClick={handleProceedToPayment}
+            onClick={handleAccept}
           >
-            {loading ? 'Loading...' : 'Proceed to payment'}
+            {loading ? 'Submitting...' : 'Accept invitation'}
           </button>
 
-          <button className="bk-btn bk-btn--ghost bk-btn--full" style={{ marginTop: '0.5rem' }} onClick={() => navigate('/booking/competitions')}>
+          <button
+            className="bk-btn bk-btn--ghost bk-btn--full"
+            style={{ marginTop: '0.5rem' }}
+            disabled={loading}
+            onClick={handleDecline}
+          >
             Decline
           </button>
         </>

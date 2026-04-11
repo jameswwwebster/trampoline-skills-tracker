@@ -849,6 +849,38 @@ class EmailService {
       text: `Hi,\n\n${inviterName} has invited you to become a co-guardian for ${gymnástName} on Trampoline Life.\n\nAccept the invitation here:\n${inviteUrl}\n\nThis invitation expires in 7 days.`,
     }, { to: toEmail, gymnástName });
   }
+
+  async sendCompetitionInvoice(toEmail, guardian, gymnast, event, categoryNames, totalPence, entryId) {
+    const base = BASE_URL();
+    const payUrl = `${base}/booking/competitions/${entryId}/enter`;
+    const gymnasticName = `${gymnast.firstName} ${gymnast.lastName}`;
+    const guardianName = `${guardian.firstName} ${guardian.lastName}`;
+    const totalStr = `£${(totalPence / 100).toFixed(2)}`;
+    const eventDate = new Date(event.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const catList = categoryNames.map(n => `<li style="margin-bottom:0.2rem">${n}</li>`).join('');
+
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: toEmail,
+      subject: `Competition invoice — ${event.name}`,
+      html: brandedHtml('Competition entry invoice', `
+        <p style="margin-top:0">Hi ${guardianName},</p>
+        <p><strong>${gymnasticName}</strong>'s competition entry has been reviewed and confirmed by your coach.</p>
+        ${infoBox(`
+          <p style="margin:0 0 0.4rem;font-weight:700">${event.name}</p>
+          <p style="margin:0 0 0.2rem;color:#555">${event.location} &middot; ${eventDate}</p>
+          <p style="margin:0.75rem 0 0.3rem;font-weight:600;font-size:0.9rem">Categories entered:</p>
+          <ul style="margin:0;padding-left:1.4rem;font-size:0.9rem">${catList}</ul>
+          <p style="margin:0.75rem 0 0;font-size:1.05rem"><strong>Total due: ${totalStr}</strong></p>
+        `)}
+        <p>Payment is required to complete the entry. Please pay through the app before the competition.</p>
+        ${ctaButton(payUrl, 'Pay now — ' + totalStr)}
+        ${muted('If the button above doesn\'t work, copy and paste this link into your browser: ' + payUrl)}
+        ${muted('If you have any questions, please contact the club.')}
+      `),
+      text: `Hi ${guardianName},\n\n${gymnasticName}'s entry for ${event.name} (${event.location}, ${eventDate}) has been confirmed by your coach.\n\nCategories: ${categoryNames.join(', ')}\n\nTotal due: ${totalStr}\n\nTo pay, visit: ${payUrl}\n\nPayment is required to complete the entry.`,
+    }, { to: toEmail, event: event.name, gymnast: gymnasticName, total: totalStr });
+  }
 }
 
 

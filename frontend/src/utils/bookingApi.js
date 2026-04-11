@@ -345,8 +345,26 @@ export const bookingApi = {
   deleteCompetitionEntry: (entryId) =>
     axios.delete(`${API_URL}/booking/competition-entries/${entryId}`, { headers: getHeaders() }),
 
-  checkoutCompetitionEntry: (entryId, categoryIds) =>
-    axios.post(`${API_URL}/booking/competition-entries/${entryId}/checkout`, { categoryIds }, { headers: getHeaders() }),
+  acceptCompetitionEntry: (entryId, categoryIds) =>
+    axios.post(`${API_URL}/booking/competition-entries/${entryId}/accept`, { categoryIds }, { headers: getHeaders() }),
+
+  declineCompetitionEntry: (entryId) =>
+    axios.post(`${API_URL}/booking/competition-entries/${entryId}/decline`, {}, { headers: getHeaders() }),
+
+  confirmAndSendInvoice: (entryId, priceOverride) =>
+    axios.post(`${API_URL}/booking/competition-entries/${entryId}/confirm-invoice`, priceOverride !== undefined ? { priceOverride } : {}, { headers: getHeaders() }),
+
+  resendCompetitionInvoice: (entryId) =>
+    axios.post(`${API_URL}/booking/competition-entries/${entryId}/resend-invoice`, {}, { headers: getHeaders() }),
+
+  waiveCompetitionEntry: (entryId, reason) =>
+    axios.post(`${API_URL}/booking/competition-entries/${entryId}/waive`, { reason }, { headers: getHeaders() }),
+
+  markCompetitionEntryPaid: (entryId, amount, note) =>
+    axios.post(`${API_URL}/booking/competition-entries/${entryId}/mark-paid`, { amount, note }, { headers: getHeaders() }),
+
+  checkoutCompetitionEntry: (entryId) =>
+    axios.post(`${API_URL}/booking/competition-entries/${entryId}/checkout`, {}, { headers: getHeaders() }),
 };
 
 // Audit log

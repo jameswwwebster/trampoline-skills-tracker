@@ -5,9 +5,11 @@ import './booking-shared.css';
 
 const STATUS_LABELS = {
   INVITED: { label: 'Action needed', color: '#1565c0' },
-  PAYMENT_PENDING: { label: 'Payment pending', color: 'var(--booking-warning, #e67e22)' },
+  ACCEPTED: { label: 'Awaiting coach review', color: 'var(--booking-text-muted)' },
+  PAYMENT_PENDING: { label: 'Payment due', color: 'var(--booking-warning, #e67e22)' },
   PAID: { label: 'Entered', color: 'var(--booking-success)' },
   DECLINED: { label: 'Declined', color: 'var(--booking-text-muted)' },
+  WAIVED: { label: 'Entered (free)', color: 'var(--booking-success)' },
 };
 
 export default function MyCompetitions() {
@@ -25,7 +27,9 @@ export default function MyCompetitions() {
     const s = STATUS_LABELS[entry.status] || { label: entry.status, color: 'inherit' };
     const ev = entry.competitionEvent;
     const isDeadlinePassed = new Date() > new Date(ev.entryDeadline);
-    const canEnter = ['INVITED', 'PAYMENT_PENDING'].includes(entry.status) && (!isDeadlinePassed || ev.lateEntryFee !== null);
+    const canRespond = entry.status === 'INVITED' && (!isDeadlinePassed || ev.lateEntryFee !== null);
+    const canPay = entry.status === 'PAYMENT_PENDING';
+    const canEnter = canRespond || canPay;
 
     return (
       <div key={entry.id} className="bk-card" style={{ marginBottom: '0.75rem' }}>
@@ -49,9 +53,14 @@ export default function MyCompetitions() {
             {entry.totalAmount && <span className="bk-muted" style={{ fontSize: '0.8rem' }}>£{(entry.totalAmount / 100).toFixed(2)}</span>}
           </div>
         </div>
-        {canEnter && (
+        {canRespond && (
           <button className="bk-btn bk-btn--primary bk-btn--sm" style={{ marginTop: '0.75rem' }} onClick={() => navigate(`/booking/competitions/${entry.id}/enter`)}>
-            Enter now
+            Respond to invite
+          </button>
+        )}
+        {canPay && (
+          <button className="bk-btn bk-btn--primary bk-btn--sm" style={{ marginTop: '0.75rem' }} onClick={() => navigate(`/booking/competitions/${entry.id}/enter`)}>
+            Pay now
           </button>
         )}
       </div>
