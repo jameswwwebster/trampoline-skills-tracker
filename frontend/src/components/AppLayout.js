@@ -308,7 +308,7 @@ export default function AppLayout() {
                 <div className="app-layout__dropdown-menu app-layout__dropdown-menu--right">
                   <NavLink to="/booking/my-account" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Account</NavLink>
                   {!isAdmin && <NavLink to="/booking/my-charges" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Charges</NavLink>}
-                  {!isAdmin && <NavLink to="/booking/competitions" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Competitions</NavLink>}
+                  <NavLink to="/booking/competitions" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Competitions</NavLink>
                   {!canManageGymnasts && <NavLink to="/booking/incidents" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Incident Reports</NavLink>}
                   <NavLink to="/profile" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Profile</NavLink>
                   <NavLink to={helpPath} className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Help</NavLink>
@@ -416,7 +416,7 @@ export default function AppLayout() {
           <div className="app-layout__mobile-section-label">Account</div>
           <NavLink to="/booking/my-account" className="app-layout__mobile-link" onClick={closeMobile}>My Account</NavLink>
           {!isAdmin && <NavLink to="/booking/my-charges" className="app-layout__mobile-link" onClick={closeMobile}>My Charges</NavLink>}
-          {!isAdmin && <NavLink to="/booking/competitions" className="app-layout__mobile-link" onClick={closeMobile}>Competitions</NavLink>}
+          <NavLink to="/booking/competitions" className="app-layout__mobile-link" onClick={closeMobile}>Competitions</NavLink>
           {!canManageGymnasts && <NavLink to="/booking/incidents" className="app-layout__mobile-link" onClick={closeMobile}>Incident Reports</NavLink>}
           <NavLink to="/profile" className="app-layout__mobile-link" onClick={closeMobile}>Profile</NavLink>
           <NavLink to={helpPath} className="app-layout__mobile-link" onClick={closeMobile}>Help</NavLink>
