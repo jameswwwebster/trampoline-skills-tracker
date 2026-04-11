@@ -44,6 +44,32 @@ async function getEntryWithEvent(id) {
   });
 }
 
+// GET /api/booking/competition-entries/admin-summary (admin/coach only)
+// Returns entries needing action across all club competitions
+router.get('/admin-summary', auth, requireRole(ADMIN_ROLES), async (req, res) => {
+  try {
+    const entries = await prisma.competitionEntry.findMany({
+      where: {
+        status: { in: ['ACCEPTED', 'PAYMENT_PENDING'] },
+        competitionEvent: { clubId: req.user.clubId },
+      },
+      include: {
+        competitionEvent: { select: { id: true, name: true, startDate: true } },
+        gymnast: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { competitionEvent: { startDate: 'asc' } },
+      take: 20,
+    });
+    res.json({
+      accepted: entries.filter(e => e.status === 'ACCEPTED'),
+      paymentPending: entries.filter(e => e.status === 'PAYMENT_PENDING'),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/booking/competition-entries/mine
 router.get('/mine', auth, async (req, res) => {
   try {

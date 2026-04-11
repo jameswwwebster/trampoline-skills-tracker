@@ -339,6 +339,9 @@ export const bookingApi = {
   getMyCompetitionEntries: () =>
     axios.get(`${API_URL}/booking/competition-entries/mine`, { headers: getHeaders() }),
 
+  getCompetitionEntrySummary: () =>
+    axios.get(`${API_URL}/booking/competition-entries/admin-summary`, { headers: getHeaders() }),
+
   updateCompetitionEntry: (entryId, data) =>
     axios.patch(`${API_URL}/booking/competition-entries/${entryId}`, data, { headers: getHeaders() }),
 
