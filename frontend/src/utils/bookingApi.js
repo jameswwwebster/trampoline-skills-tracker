@@ -332,8 +332,8 @@ export const bookingApi = {
   deleteCompetitionCategory: (eventId, catId) =>
     axios.delete(`${API_URL}/booking/competition-events/${eventId}/categories/${catId}`, { headers: getHeaders() }),
 
-  inviteGymnasts: (eventId, gymnastIds, categoryIds = [], priceOverride = null) =>
-    axios.post(`${API_URL}/booking/competition-events/${eventId}/invite`, { gymnastIds, categoryIds, priceOverride }, { headers: getHeaders() }),
+  inviteGymnasts: (eventId, gymnastIds, categoryIds = [], priceOverride = null, entryType = 'INDIVIDUAL') =>
+    axios.post(`${API_URL}/booking/competition-events/${eventId}/invite`, { gymnastIds, categoryIds, priceOverride, entryType }, { headers: getHeaders() }),
 
   // Competition Entries
   getMyCompetitionEntries: () =>
@@ -368,6 +368,9 @@ export const bookingApi = {
 
   checkoutCompetitionEntry: (entryId) =>
     axios.post(`${API_URL}/booking/competition-entries/${entryId}/checkout`, {}, { headers: getHeaders() }),
+
+  reinviteCompetitionEntry: (entryId) =>
+    axios.post(`${API_URL}/booking/competition-entries/${entryId}/reinvite`, {}, { headers: getHeaders() }),
 };
 
 // Audit log

@@ -498,5 +498,72 @@ router.post('/:id/checkout', auth, async (req, res) => {
   }
 });
 
+// POST /api/booking/competition-entries/:id/reinvite (admin/coach)
+// Re-invites a DECLINED or PAID gymnast to the competition.
+// Preserves any previously paid amount in previousPaidAmount.
+router.post('/:id/reinvite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
+  try {
+    const entry = await getEntryWithEvent(req.params.id);
+    if (!entry) return res.status(404).json({ error: 'Not found' });
+    if (entry.competitionEvent.clubId !== req.user.clubId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    if (!['DECLINED', 'PAID', 'WAIVED'].includes(entry.status)) {
+      return res.status(400).json({ error: 'Can only re-invite gymnasts who have declined, already paid, or been waived' });
+    }
+
+    // Preserve what they previously paid (if anything) so coaches know context
+    const previousPaidAmount = ['PAID', 'WAIVED'].includes(entry.status)
+      ? (entry.totalAmount ?? null)
+      : null;
+
+    // Clear categories so gymnast can re-select for the new entry
+    await prisma.competitionEntryCategory.deleteMany({ where: { entryId: entry.id } });
+
+    const updated = await prisma.competitionEntry.update({
+      where: { id: entry.id },
+      data: {
+        status: 'INVITED',
+        coachConfirmed: false,
+        totalAmount: null,
+        adminPriceOverride: null,
+        stripePaymentIntentId: null,
+        invoiceSentAt: null,
+        paidExternally: false,
+        externalPaymentNote: null,
+        submittedToOrganiser: false,
+        waivedReason: null,
+        previousPaidAmount,
+      },
+      include: {
+        gymnast: true,
+        categories: { include: { category: true } },
+        competitionEvent: { include: { categories: true } },
+      },
+    });
+
+    // Send invite email to all guardians
+    const gWithGuardians = await prisma.gymnast.findUnique({
+      where: { id: entry.gymnastId },
+      include: { guardians: { select: { email: true, firstName: true, lastName: true } } },
+    });
+    for (const guardian of gWithGuardians?.guardians ?? []) {
+      await emailService.sendCompetitionInviteEmail(
+        guardian.email,
+        guardian.firstName,
+        updated.gymnast,
+        updated.competitionEvent,
+        [],
+        null
+      );
+    }
+
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;
 module.exports.calculateEntryTotal = calculateEntryTotal;
