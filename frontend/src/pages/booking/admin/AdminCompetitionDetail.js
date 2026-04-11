@@ -178,6 +178,15 @@ export default function AdminCompetitionDetail() {
     }
   };
 
+  const handleToggleSubmitted = async (entryId, current) => {
+    try {
+      await bookingApi.updateCompetitionEntry(entryId, { submittedToOrganiser: !current });
+      await load();
+    } catch (err) {
+      setMsg(err.response?.data?.error || 'Failed to update.');
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm('Delete this competition? All entries will be removed.')) return;
     try {
@@ -270,6 +279,7 @@ export default function AdminCompetitionDetail() {
           onResendInvoice={handleResendInvoice}
           onWaive={handleWaive}
           onMarkPaid={handleMarkPaid}
+          onToggleSubmitted={handleToggleSubmitted}
         />
       )}
     </div>
@@ -598,6 +608,22 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
   );
 }
 
+// Inline expand panel shared by multiple actions
+function ActionPanel({ title, onConfirm, onClose, working, confirmLabel, children }) {
+  return (
+    <div style={{ background: 'var(--booking-surface,#fff)', border: '1px solid var(--booking-border)', borderRadius: 8, padding: '0.75rem', marginTop: '0.5rem' }}>
+      <p style={{ margin: '0 0 0.6rem', fontSize: '0.85rem', fontWeight: 600 }}>{title}</p>
+      {children}
+      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+        <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={working} onClick={onConfirm}>
+          {working ? 'Saving…' : confirmLabel}
+        </button>
+        <button className="bk-btn bk-btn--sm" onClick={onClose}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 function EntryActions({ entry, onConfirmInvoice, onResendInvoice, onWaive, onMarkPaid }) {
   const [expanded, setExpanded] = useState(null); // 'confirm' | 'waive' | 'paid'
   const [priceOverride, setPriceOverride] = useState('');
@@ -633,74 +659,40 @@ function EntryActions({ entry, onConfirmInvoice, onResendInvoice, onWaive, onMar
 
   if (entry.status === 'ACCEPTED') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-start' }}>
-        {expanded === 'confirm' ? (
-          <div style={{ background: 'var(--booking-bg-light)', border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.6rem 0.75rem', minWidth: 220 }}>
-            <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', fontWeight: 600 }}>Confirm & send invoice</p>
-            <label style={{ fontSize: '0.78rem', display: 'block', marginBottom: '0.3rem' }}>
-              Price override (£) — leave blank for standard
-            </label>
-            <input
-              type="number" step="0.01" min="0"
-              className="bk-input" style={{ maxWidth: 110, marginBottom: '0.5rem' }}
-              placeholder="e.g. 15.00"
-              value={priceOverride} onChange={e => setPriceOverride(e.target.value)}
-            />
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
-              <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={working} onClick={doConfirm}>
-                {working ? 'Sending…' : 'Send invoice'}
-              </button>
-              <button className="bk-btn bk-btn--sm" onClick={close}>Cancel</button>
-            </div>
-          </div>
-        ) : expanded === 'waive' ? (
-          <div style={{ background: 'var(--booking-bg-light)', border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.6rem 0.75rem', minWidth: 220 }}>
-            <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', fontWeight: 600 }}>Waive payment</p>
-            <input
-              className="bk-input" style={{ marginBottom: '0.5rem' }}
-              placeholder="Reason (optional, e.g. judging duties)"
-              value={waiveReason} onChange={e => setWaiveReason(e.target.value)}
-            />
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
-              <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={working} onClick={doWaive}>
-                {working ? 'Saving…' : 'Confirm waive'}
-              </button>
-              <button className="bk-btn bk-btn--sm" onClick={close}>Cancel</button>
-            </div>
-          </div>
-        ) : expanded === 'paid' ? (
-          <div style={{ background: 'var(--booking-bg-light)', border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.6rem 0.75rem', minWidth: 220 }}>
-            <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', fontWeight: 600 }}>Record external payment</p>
-            <label style={{ fontSize: '0.78rem', display: 'block', marginBottom: '0.25rem' }}>Amount (£)</label>
-            <input
-              type="number" step="0.01" min="0"
-              className="bk-input" style={{ maxWidth: 110, marginBottom: '0.35rem' }}
-              placeholder="e.g. 20.00"
-              value={paidAmount} onChange={e => setPaidAmount(e.target.value)}
-            />
-            <input
-              className="bk-input" style={{ marginBottom: '0.5rem' }}
-              placeholder="Note (optional)"
-              value={paidNote} onChange={e => setPaidNote(e.target.value)}
-            />
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
-              <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={working} onClick={doMarkPaid}>
-                {working ? 'Saving…' : 'Mark paid'}
-              </button>
-              <button className="bk-btn bk-btn--sm" onClick={close}>Cancel</button>
-            </div>
-          </div>
+      <div>
+        {expanded ? (
+          <>
+            {expanded === 'confirm' && (
+              <ActionPanel title="Confirm & send invoice" confirmLabel="Send invoice" working={working} onConfirm={doConfirm} onClose={close}>
+                <label style={{ fontSize: '0.82rem', display: 'block', marginBottom: '0.3rem', color: 'var(--booking-text-muted)' }}>
+                  Price override (£) — leave blank for standard pricing
+                </label>
+                <input type="number" step="0.01" min="0" className="bk-input" style={{ marginBottom: '0.25rem' }}
+                  placeholder="e.g. 15.00" value={priceOverride} onChange={e => setPriceOverride(e.target.value)} />
+              </ActionPanel>
+            )}
+            {expanded === 'waive' && (
+              <ActionPanel title="Waive payment" confirmLabel="Confirm waive" working={working} onConfirm={doWaive} onClose={close}>
+                <input className="bk-input" placeholder="Reason (optional, e.g. judging duties)"
+                  value={waiveReason} onChange={e => setWaiveReason(e.target.value)} />
+              </ActionPanel>
+            )}
+            {expanded === 'paid' && (
+              <ActionPanel title="Record external payment" confirmLabel="Mark paid" working={working} onConfirm={doMarkPaid} onClose={close}>
+                <input type="number" step="0.01" min="0" className="bk-input" style={{ marginBottom: '0.4rem' }}
+                  placeholder="Amount (£)" value={paidAmount} onChange={e => setPaidAmount(e.target.value)} />
+                <input className="bk-input" placeholder="Note (optional)"
+                  value={paidNote} onChange={e => setPaidNote(e.target.value)} />
+              </ActionPanel>
+            )}
+          </>
         ) : (
-          <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-            <button className="bk-btn bk-btn--sm bk-btn--primary" style={{ fontSize: '0.78rem' }} onClick={() => setExpanded('confirm')}>
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <button className="bk-btn bk-btn--sm bk-btn--primary" onClick={() => setExpanded('confirm')}>
               Confirm &amp; send invoice
             </button>
-            <button className="bk-btn bk-btn--sm" style={{ fontSize: '0.78rem' }} onClick={() => setExpanded('waive')}>
-              Waive
-            </button>
-            <button className="bk-btn bk-btn--sm" style={{ fontSize: '0.78rem' }} onClick={() => setExpanded('paid')}>
-              Record payment
-            </button>
+            <button className="bk-btn bk-btn--sm" onClick={() => setExpanded('waive')}>Waive</button>
+            <button className="bk-btn bk-btn--sm" onClick={() => setExpanded('paid')}>Record payment</button>
           </div>
         )}
       </div>
@@ -709,60 +701,29 @@ function EntryActions({ entry, onConfirmInvoice, onResendInvoice, onWaive, onMar
 
   if (entry.status === 'PAYMENT_PENDING') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-start' }}>
-        {expanded === 'waive' ? (
-          <div style={{ background: 'var(--booking-bg-light)', border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.6rem 0.75rem', minWidth: 220 }}>
-            <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', fontWeight: 600 }}>Waive payment</p>
-            <input
-              className="bk-input" style={{ marginBottom: '0.5rem' }}
-              placeholder="Reason (optional)"
-              value={waiveReason} onChange={e => setWaiveReason(e.target.value)}
-            />
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
-              <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={working} onClick={doWaive}>
-                {working ? 'Saving…' : 'Confirm waive'}
-              </button>
-              <button className="bk-btn bk-btn--sm" onClick={close}>Cancel</button>
-            </div>
-          </div>
-        ) : expanded === 'paid' ? (
-          <div style={{ background: 'var(--booking-bg-light)', border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.6rem 0.75rem', minWidth: 220 }}>
-            <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', fontWeight: 600 }}>Record external payment</p>
-            <label style={{ fontSize: '0.78rem', display: 'block', marginBottom: '0.25rem' }}>Amount (£)</label>
-            <input
-              type="number" step="0.01" min="0"
-              className="bk-input" style={{ maxWidth: 110, marginBottom: '0.35rem' }}
-              placeholder="e.g. 20.00"
-              value={paidAmount} onChange={e => setPaidAmount(e.target.value)}
-            />
-            <input
-              className="bk-input" style={{ marginBottom: '0.5rem' }}
-              placeholder="Note (optional)"
-              value={paidNote} onChange={e => setPaidNote(e.target.value)}
-            />
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
-              <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={working} onClick={doMarkPaid}>
-                {working ? 'Saving…' : 'Mark paid'}
-              </button>
-              <button className="bk-btn bk-btn--sm" onClick={close}>Cancel</button>
-            </div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-            <button
-              className="bk-btn bk-btn--sm"
-              style={{ fontSize: '0.78rem' }}
-              onClick={async () => { setWorking(true); await onResendInvoice(entry.id); setWorking(false); }}
-              disabled={working}
-            >
+      <div>
+        {expanded === 'waive' && (
+          <ActionPanel title="Waive payment" confirmLabel="Confirm waive" working={working} onConfirm={doWaive} onClose={close}>
+            <input className="bk-input" placeholder="Reason (optional)"
+              value={waiveReason} onChange={e => setWaiveReason(e.target.value)} />
+          </ActionPanel>
+        )}
+        {expanded === 'paid' && (
+          <ActionPanel title="Record external payment" confirmLabel="Mark paid" working={working} onConfirm={doMarkPaid} onClose={close}>
+            <input type="number" step="0.01" min="0" className="bk-input" style={{ marginBottom: '0.4rem' }}
+              placeholder="Amount (£)" value={paidAmount} onChange={e => setPaidAmount(e.target.value)} />
+            <input className="bk-input" placeholder="Note (optional)"
+              value={paidNote} onChange={e => setPaidNote(e.target.value)} />
+          </ActionPanel>
+        )}
+        {!expanded && (
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <button className="bk-btn bk-btn--sm" disabled={working}
+              onClick={async () => { setWorking(true); await onResendInvoice(entry.id); setWorking(false); }}>
               {working ? 'Sending…' : 'Re-send invoice'}
             </button>
-            <button className="bk-btn bk-btn--sm" style={{ fontSize: '0.78rem' }} onClick={() => setExpanded('paid')}>
-              Record payment
-            </button>
-            <button className="bk-btn bk-btn--sm" style={{ fontSize: '0.78rem' }} onClick={() => setExpanded('waive')}>
-              Waive
-            </button>
+            <button className="bk-btn bk-btn--sm" onClick={() => setExpanded('paid')}>Record payment</button>
+            <button className="bk-btn bk-btn--sm" onClick={() => setExpanded('waive')}>Waive</button>
           </div>
         )}
       </div>
@@ -772,15 +733,14 @@ function EntryActions({ entry, onConfirmInvoice, onResendInvoice, onWaive, onMar
   return null;
 }
 
-function EntriesTab({ event, entryCountByStatus, onRemove, onConfirmInvoice, onResendInvoice, onWaive, onMarkPaid }) {
-  // Sort: ACCEPTED first (needs action), then PAYMENT_PENDING, then INVITED, then PAID/WAIVED/DECLINED
+function EntriesTab({ event, entryCountByStatus, onRemove, onConfirmInvoice, onResendInvoice, onWaive, onMarkPaid, onToggleSubmitted }) {
   const ORDER = { ACCEPTED: 0, PAYMENT_PENDING: 1, INVITED: 2, PAID: 3, WAIVED: 4, DECLINED: 5 };
   const sorted = [...event.entries].sort((a, b) => (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9));
 
   return (
     <div>
       {Object.keys(entryCountByStatus).length > 0 && (
-        <div className="bk-row" style={{ gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           {Object.entries(entryCountByStatus).map(([status, count]) => {
             const s = STATUS_LABELS[status] || { label: status, color: 'inherit' };
             return (
@@ -793,89 +753,106 @@ function EntriesTab({ event, entryCountByStatus, onRemove, onConfirmInvoice, onR
         </div>
       )}
 
-      {event.entries.length === 0 && <p className="bk-muted">No entries yet.</p>}
+      {sorted.length === 0 && <p className="bk-muted">No entries yet.</p>}
 
-      {sorted.length > 0 && (
-        <table className="bk-table">
-          <thead>
-            <tr>
-              <th>Gymnast</th>
-              <th>Age</th>
-              <th>BG No.</th>
-              <th>Categories</th>
-              <th style={{ textAlign: 'right' }}>Amount</th>
-              <th>Status</th>
-              <th>Actions</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map(entry => {
-              const s = STATUS_LABELS[entry.status] || { label: entry.status, color: 'inherit' };
-              const ageEoy = entry.gymnast.dateOfBirth
-                ? new Date().getFullYear() - new Date(entry.gymnast.dateOfBirth).getFullYear()
-                : null;
-              return (
-                <tr key={entry.id} style={entry.status === 'ACCEPTED' ? { background: 'rgba(124,53,232,0.03)' } : undefined}>
-                  <td>{entry.gymnast.firstName} {entry.gymnast.lastName}</td>
-                  <td style={{ fontSize: '0.85rem' }}>{ageEoy ?? '—'}</td>
-                  <td style={{ fontSize: '0.85rem' }}>{entry.gymnast.bgNumber || '—'}</td>
-                  <td style={{ fontSize: '0.8rem', color: 'var(--booking-text-muted)' }}>
-                    {entry.categories.length > 0
-                      ? entry.categories.map(ec => ec.category.name).join(', ')
-                      : '—'}
-                  </td>
-                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    {entry.status === 'WAIVED'
-                      ? <span style={{ color: 'var(--booking-success)', fontSize: '0.85rem' }}>Free</span>
-                      : entry.totalAmount !== null
-                        ? <>
-                            £{(entry.totalAmount / 100).toFixed(2)}
-                            {entry.paidExternally && (
-                              <span title={entry.externalPaymentNote || 'External payment'} style={{ fontSize: '0.75rem', color: 'var(--booking-text-muted)', marginLeft: '0.25rem' }}>ext.</span>
-                            )}
-                          </>
-                        : '—'}
-                  </td>
-                  <td>
-                    <span style={{ color: s.color, fontWeight: 600, fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{s.label}</span>
-                    {entry.invoiceSentAt && (
-                      <div style={{ fontSize: '0.73rem', color: 'var(--booking-text-muted)' }}>
-                        {new Date(entry.invoiceSentAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        {sorted.map(entry => {
+          const s = STATUS_LABELS[entry.status] || { label: entry.status, color: 'inherit' };
+          const ageEoy = entry.gymnast.dateOfBirth
+            ? new Date().getFullYear() - new Date(entry.gymnast.dateOfBirth).getFullYear()
+            : null;
+          const isDone = ['PAID', 'WAIVED'].includes(entry.status);
+          return (
+            <div key={entry.id} className="bk-card" style={{
+              borderLeft: `3px solid ${s.color}`,
+              padding: '0.85rem 1rem',
+              background: entry.status === 'ACCEPTED' ? 'rgba(124,53,232,0.03)' : undefined,
+            }}>
+              {/* Top row: name + status */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                <div>
+                  <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+                    {entry.gymnast.firstName} {entry.gymnast.lastName}
+                  </span>
+                  {(ageEoy || entry.gymnast.bgNumber) && (
+                    <span className="bk-muted" style={{ fontSize: '0.8rem', marginLeft: '0.5rem' }}>
+                      {ageEoy ? `age ${ageEoy}` : ''}
+                      {ageEoy && entry.gymnast.bgNumber ? ' · ' : ''}
+                      {entry.gymnast.bgNumber || ''}
+                    </span>
+                  )}
+                </div>
+                <span style={{ color: s.color, fontWeight: 700, fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{s.label}</span>
+              </div>
+
+              {/* Categories */}
+              {entry.categories.length > 0 && (
+                <p className="bk-muted" style={{ fontSize: '0.82rem', margin: '0 0 0.35rem' }}>
+                  {entry.categories.map(ec => ec.category.name).join(', ')}
+                </p>
+              )}
+
+              {/* Amount + invoice date / waive reason */}
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.5rem' }}>
+                {entry.status === 'WAIVED' ? (
+                  <span style={{ fontSize: '0.82rem', color: 'var(--booking-success)', fontWeight: 600 }}>Free entry</span>
+                ) : entry.totalAmount !== null ? (
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                    £{(entry.totalAmount / 100).toFixed(2)}
+                    {entry.paidExternally && (
+                      <span className="bk-muted" style={{ fontWeight: 400, marginLeft: '0.25rem' }}>
+                        (external{entry.externalPaymentNote ? ` — ${entry.externalPaymentNote}` : ''})
+                      </span>
                     )}
-                    {entry.waivedReason && (
-                      <div style={{ fontSize: '0.73rem', color: 'var(--booking-text-muted)' }} title={entry.waivedReason}>
-                        {entry.waivedReason.length > 30 ? entry.waivedReason.slice(0, 28) + '…' : entry.waivedReason}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <EntryActions
-                      entry={entry}
-                      onConfirmInvoice={onConfirmInvoice}
-                      onResendInvoice={onResendInvoice}
-                      onWaive={onWaive}
-                      onMarkPaid={onMarkPaid}
+                  </span>
+                ) : null}
+                {entry.invoiceSentAt && (
+                  <span className="bk-muted" style={{ fontSize: '0.78rem' }}>
+                    Invoice sent {new Date(entry.invoiceSentAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                  </span>
+                )}
+                {entry.waivedReason && (
+                  <span className="bk-muted" style={{ fontSize: '0.78rem' }}>{entry.waivedReason}</span>
+                )}
+              </div>
+
+              {/* Actions */}
+              <EntryActions
+                entry={entry}
+                onConfirmInvoice={onConfirmInvoice}
+                onResendInvoice={onResendInvoice}
+                onWaive={onWaive}
+                onMarkPaid={onMarkPaid}
+              />
+
+              {/* Bottom row: submitted toggle + remove */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.6rem', paddingTop: '0.5rem', borderTop: '1px solid var(--booking-border)' }}>
+                {isDone ? (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={entry.submittedToOrganiser}
+                      onChange={() => onToggleSubmitted(entry.id, entry.submittedToOrganiser)}
                     />
-                  </td>
-                  <td>
-                    {!['PAID', 'WAIVED'].includes(entry.status) && (
-                      <button
-                        className="bk-btn bk-btn--sm"
-                        style={{ color: 'var(--booking-danger)', fontSize: '0.8rem' }}
-                        onClick={() => onRemove(entry.id)}
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+                    {entry.submittedToOrganiser ? 'Submitted to organiser' : 'Mark as submitted to organiser'}
+                  </label>
+                ) : (
+                  <span />
+                )}
+                {!isDone && (
+                  <button
+                    className="bk-btn bk-btn--sm"
+                    style={{ color: 'var(--booking-danger)', fontSize: '0.8rem' }}
+                    onClick={() => onRemove(entry.id)}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
