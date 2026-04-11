@@ -193,8 +193,11 @@ export default function AdminCompetitionDetail() {
       await bookingApi.inviteGymnasts(id, gymnastIds, categoryIds, priceOverride, 'SYNCHRO');
       const [, allRes] = await Promise.all([load(), bookingApi.getAllCompetitionGymnasts(id)]);
       setAllGymnasts(allRes.data);
+      setMsg('Synchro pair invited. Entries are visible in the Entries tab.');
     } catch (err) {
-      setMsg(err.response?.data?.error || 'Failed to invite synchro pair.');
+      const message = err.response?.data?.error || 'Failed to invite synchro pair.';
+      setMsg(message);
+      throw new Error(message); // let InvitesTab know so it doesn't close the form
     } finally {
       setInviting(false);
     }
@@ -689,6 +692,34 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
 
       {/* Synchro pair invites */}
       <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--booking-border)', paddingTop: '1rem' }}>
+        <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: '0 0 0.5rem' }}>Synchro pairs</p>
+        {(() => {
+          // Group SYNCHRO entries by synchroPairId
+          const synchroEntries = (eventEntries || []).filter(e => e.entryType === 'SYNCHRO' && e.synchroPairId);
+          const pairs = {};
+          for (const e of synchroEntries) {
+            if (!pairs[e.synchroPairId]) pairs[e.synchroPairId] = [];
+            pairs[e.synchroPairId].push(e);
+          }
+          const pairList = Object.values(pairs);
+          if (pairList.length === 0) {
+            return <p className="bk-muted" style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>No synchro pairs yet.</p>;
+          }
+          return (
+            <div style={{ marginBottom: '0.75rem' }}>
+              {pairList.map((pair, i) => (
+                <div key={i} style={{ fontSize: '0.875rem', padding: '0.4rem 0.6rem', background: 'var(--booking-bg,#f9fafb)', border: '1px solid var(--booking-border)', borderRadius: 4, marginBottom: '0.35rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 600 }}>
+                    {pair.map(e => `${e.gymnast.firstName} ${e.gymnast.lastName}`).join(' & ')}
+                  </span>
+                  <span className="bk-muted" style={{ fontSize: '0.8rem' }}>
+                    — {STATUS_LABELS[pair[0]?.status]?.label || pair[0]?.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
         <button className="bk-btn bk-btn--ghost" style={{ fontSize: '0.875rem' }} onClick={() => setShowSynchro(v => !v)}>
           {showSynchro ? 'Hide' : '+ Add synchro pair'}
         </button>
