@@ -69,9 +69,9 @@ export default function AdminCompetitionDetail() {
     }
   };
 
-  const handleAddCategory = async (name) => {
+  const handleAddCategory = async (name, skillCompetitionIds = []) => {
     try {
-      await bookingApi.addCompetitionCategory(id, { name, skillCompetitionIds: [] });
+      await bookingApi.addCompetitionCategory(id, { name, skillCompetitionIds });
       await load();
     } catch (err) {
       setMsg(err.response?.data?.error || 'Failed to add category.');
@@ -317,7 +317,18 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   const [catEditValue, setCatEditValue] = useState('');
   const [showAddCat, setShowAddCat] = useState(false);
   const [newCatName, setNewCatName] = useState('');
+  const [newCatSkillIds, setNewCatSkillIds] = useState([]);
+  const [skillCompetitions, setSkillCompetitions] = useState([]);
   const [catSaving, setCatSaving] = useState(false);
+
+  useEffect(() => {
+    bookingApi.getSkillCompetitions()
+      .then(res => {
+        const data = res.data;
+        setSkillCompetitions(Array.isArray(data) ? data : data.competitions || []);
+      })
+      .catch(() => {});
+  }, []);
 
   const fields = [
     { key: 'name', label: 'Name', type: 'text', display: event.name },
@@ -345,11 +356,15 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   const handleAddCat = async () => {
     if (!newCatName.trim()) return;
     setCatSaving(true);
-    await onAddCategory(newCatName.trim());
+    await onAddCategory(newCatName.trim(), newCatSkillIds);
     setNewCatName('');
+    setNewCatSkillIds([]);
     setShowAddCat(false);
     setCatSaving(false);
   };
+
+  const toggleNewCatSkill = (scId) =>
+    setNewCatSkillIds(prev => prev.includes(scId) ? prev.filter(id => id !== scId) : [...prev, scId]);
 
   return (
     <div>
@@ -458,17 +473,37 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
         )}
 
         {showAddCat && (
-          <div className="bk-row" style={{ gap: '0.5rem', marginTop: '0.5rem' }}>
+          <div style={{ marginTop: '0.5rem', border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.75rem', background: 'var(--booking-bg,#f9fafb)' }}>
             <input
               className="bk-input"
-              style={{ maxWidth: 260 }}
+              style={{ marginBottom: '0.6rem' }}
               placeholder="Category name e.g. Women's 13-14"
               value={newCatName}
               onChange={e => setNewCatName(e.target.value)}
               autoFocus
               onKeyDown={e => { if (e.key === 'Enter') handleAddCat(); if (e.key === 'Escape') setShowAddCat(false); }}
             />
-            <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={catSaving || !newCatName.trim()} onClick={handleAddCat}>Add</button>
+            {skillCompetitions.filter(sc => sc.isActive).length > 0 && (
+              <div style={{ marginBottom: '0.6rem' }}>
+                <p style={{ margin: '0 0 0.3rem', fontSize: '0.8rem', fontWeight: 600 }}>
+                  Linked skill levels <span className="bk-muted" style={{ fontWeight: 400 }}>(optional — used to auto-suggest eligible gymnasts)</span>
+                </p>
+                {skillCompetitions.filter(sc => sc.isActive).map(sc => (
+                  <label key={sc.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '0.2rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={newCatSkillIds.includes(sc.id)}
+                      onChange={() => toggleNewCatSkill(sc.id)}
+                    />
+                    {sc.name}
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="bk-row" style={{ gap: '0.5rem' }}>
+              <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={catSaving || !newCatName.trim()} onClick={handleAddCat}>Add category</button>
+              <button className="bk-btn bk-btn--sm" onClick={() => { setShowAddCat(false); setNewCatName(''); setNewCatSkillIds([]); }}>Cancel</button>
+            </div>
           </div>
         )}
       </div>

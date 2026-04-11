@@ -302,6 +302,9 @@ export const bookingApi = {
     axios.delete(`${API_URL}/booking/recurring-credits/${id}`, { headers: getHeaders() }),
 
   // Competition Events (admin)
+  getSkillCompetitions: () =>
+    axios.get(`${API_URL}/competitions`, { headers: getHeaders() }),
+
   getCompetitionEvents: () =>
     axios.get(`${API_URL}/booking/competition-events`, { headers: getHeaders() }),
 
