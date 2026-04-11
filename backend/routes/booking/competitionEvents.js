@@ -269,8 +269,13 @@ router.post('/:id/invite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
     gymnastIds: Joi.array().items(Joi.string()).min(1).required(),
     categoryIds: Joi.array().items(Joi.string()).default([]),
     priceOverride: Joi.number().integer().min(0).allow(null).default(null),
+    entryType: Joi.string().valid('INDIVIDUAL', 'SYNCHRO').default('INDIVIDUAL'),
   }).validate(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
+
+  if (value.entryType === 'SYNCHRO' && value.gymnastIds.length !== 2) {
+    return res.status(400).json({ error: 'Synchro entries require exactly 2 gymnasts' });
+  }
 
   try {
     const event = await prisma.competitionEvent.findFirst({
@@ -285,16 +290,28 @@ router.post('/:id/invite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
     const categoryNameMap = Object.fromEntries(event.categories.map(c => [c.id, c.name]));
     const selectedCategoryNames = value.categoryIds.map(cid => categoryNameMap[cid]).filter(Boolean);
 
+    const isSynchro = value.entryType === 'SYNCHRO';
+    // All gymnasts in a synchro pair share the same synchroPairId
+    const synchroPairId = isSynchro ? require('crypto').randomUUID() : null;
+
     let created = 0;
     for (const gymnastId of value.gymnastIds) {
       const existing = await prisma.competitionEntry.findUnique({
-        where: { competitionEventId_gymnastId: { competitionEventId: event.id, gymnastId } },
+        where: {
+          competitionEventId_gymnastId_entryType: {
+            competitionEventId: event.id,
+            gymnastId,
+            entryType: value.entryType,
+          },
+        },
       });
       if (!existing) {
         await prisma.competitionEntry.create({
           data: {
             competitionEventId: event.id,
             gymnastId,
+            entryType: value.entryType,
+            synchroPairId,
             adminPriceOverride: value.priceOverride,
             categories: value.categoryIds.length > 0 ? {
               create: value.categoryIds.map(cid => ({ categoryId: cid })),
@@ -358,24 +375,45 @@ router.get('/:id/all-gymnasts', auth, requireRole(ADMIN_ROLES), async (req, res)
   try {
     const event = await prisma.competitionEvent.findFirst({
       where: { id: req.params.id, clubId: req.user.clubId },
-      include: { entries: { select: { gymnastId: true, id: true } } },
+      include: {
+        entries: { select: { gymnastId: true, id: true, status: true, entryType: true, synchroPairId: true } },
+      },
     });
     if (!event) return res.status(404).json({ error: 'Not found' });
 
-    const invitedMap = new Map(event.entries.map(e => [e.gymnastId, e.id]));
+    // Build per-gymnast entry maps for INDIVIDUAL and SYNCHRO
+    const individualMap = new Map();
+    const synchroMap = new Map();
+    for (const e of event.entries) {
+      if (e.entryType === 'SYNCHRO') {
+        if (!synchroMap.has(e.gymnastId)) synchroMap.set(e.gymnastId, []);
+        synchroMap.get(e.gymnastId).push(e);
+      } else {
+        individualMap.set(e.gymnastId, e);
+      }
+    }
 
     const gymnasts = await prisma.gymnast.findMany({
       where: { clubId: req.user.clubId, isArchived: false },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
 
-    res.json(gymnasts.map(g => ({
-      id: g.id,
-      firstName: g.firstName,
-      lastName: g.lastName,
-      alreadyInvited: invitedMap.has(g.id),
-      entryId: invitedMap.get(g.id) || null,
-    })));
+    res.json(gymnasts.map(g => {
+      const indEntry = individualMap.get(g.id);
+      return {
+        id: g.id,
+        firstName: g.firstName,
+        lastName: g.lastName,
+        alreadyInvited: !!indEntry,
+        entryId: indEntry?.id || null,
+        entryStatus: indEntry?.status || null,
+        synchroEntries: (synchroMap.get(g.id) || []).map(e => ({
+          entryId: e.id,
+          status: e.status,
+          synchroPairId: e.synchroPairId,
+        })),
+      };
+    }));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

@@ -69,9 +69,9 @@ export default function AdminCompetitionDetail() {
     }
   };
 
-  const handleAddCategory = async (name) => {
+  const handleAddCategory = async (name, skillCompetitionIds = []) => {
     try {
-      await bookingApi.addCompetitionCategory(id, { name, skillCompetitionIds: [] });
+      await bookingApi.addCompetitionCategory(id, { name, skillCompetitionIds });
       await load();
     } catch (err) {
       setMsg(err.response?.data?.error || 'Failed to add category.');
@@ -187,6 +187,30 @@ export default function AdminCompetitionDetail() {
     }
   };
 
+  const handleInviteSynchro = async (gymnastIds, categoryIds, priceOverride) => {
+    setInviting(true);
+    try {
+      await bookingApi.inviteGymnasts(id, gymnastIds, categoryIds, priceOverride, 'SYNCHRO');
+      const [, allRes] = await Promise.all([load(), bookingApi.getAllCompetitionGymnasts(id)]);
+      setAllGymnasts(allRes.data);
+    } catch (err) {
+      setMsg(err.response?.data?.error || 'Failed to invite synchro pair.');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleReinvite = async (entryId) => {
+    if (!window.confirm('Re-invite this gymnast? This will reset the entry to INVITED and send them a new invite email.')) return;
+    try {
+      await bookingApi.reinviteCompetitionEntry(entryId);
+      await load();
+      setMsg('Re-invite sent.');
+    } catch (err) {
+      setMsg(err.response?.data?.error || 'Failed to re-invite.');
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm('Delete this competition? All entries will be removed.')) return;
     try {
@@ -265,6 +289,7 @@ export default function AdminCompetitionDetail() {
           inviting={inviting}
           onInvite={handleInvite}
           onUninvite={handleUninvite}
+          onInviteSynchro={handleInviteSynchro}
           eventEntries={event.entries}
           eventCategories={event.categories}
         />
@@ -280,6 +305,7 @@ export default function AdminCompetitionDetail() {
           onWaive={handleWaive}
           onMarkPaid={handleMarkPaid}
           onToggleSubmitted={handleToggleSubmitted}
+          onReinvite={handleReinvite}
         />
       )}
     </div>
@@ -291,7 +317,18 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   const [catEditValue, setCatEditValue] = useState('');
   const [showAddCat, setShowAddCat] = useState(false);
   const [newCatName, setNewCatName] = useState('');
+  const [newCatSkillIds, setNewCatSkillIds] = useState([]);
+  const [skillCompetitions, setSkillCompetitions] = useState([]);
   const [catSaving, setCatSaving] = useState(false);
+
+  useEffect(() => {
+    bookingApi.getSkillCompetitions()
+      .then(res => {
+        const data = res.data;
+        setSkillCompetitions(Array.isArray(data) ? data : data.competitions || []);
+      })
+      .catch(() => {});
+  }, []);
 
   const fields = [
     { key: 'name', label: 'Name', type: 'text', display: event.name },
@@ -319,11 +356,15 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   const handleAddCat = async () => {
     if (!newCatName.trim()) return;
     setCatSaving(true);
-    await onAddCategory(newCatName.trim());
+    await onAddCategory(newCatName.trim(), newCatSkillIds);
     setNewCatName('');
+    setNewCatSkillIds([]);
     setShowAddCat(false);
     setCatSaving(false);
   };
+
+  const toggleNewCatSkill = (scId) =>
+    setNewCatSkillIds(prev => prev.includes(scId) ? prev.filter(id => id !== scId) : [...prev, scId]);
 
   return (
     <div>
@@ -432,17 +473,37 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
         )}
 
         {showAddCat && (
-          <div className="bk-row" style={{ gap: '0.5rem', marginTop: '0.5rem' }}>
+          <div style={{ marginTop: '0.5rem', border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.75rem', background: 'var(--booking-bg,#f9fafb)' }}>
             <input
               className="bk-input"
-              style={{ maxWidth: 260 }}
+              style={{ marginBottom: '0.6rem' }}
               placeholder="Category name e.g. Women's 13-14"
               value={newCatName}
               onChange={e => setNewCatName(e.target.value)}
               autoFocus
               onKeyDown={e => { if (e.key === 'Enter') handleAddCat(); if (e.key === 'Escape') setShowAddCat(false); }}
             />
-            <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={catSaving || !newCatName.trim()} onClick={handleAddCat}>Add</button>
+            {skillCompetitions.filter(sc => sc.isActive).length > 0 && (
+              <div style={{ marginBottom: '0.6rem' }}>
+                <p style={{ margin: '0 0 0.3rem', fontSize: '0.8rem', fontWeight: 600 }}>
+                  Linked skill levels <span className="bk-muted" style={{ fontWeight: 400 }}>(optional — used to auto-suggest eligible gymnasts)</span>
+                </p>
+                {skillCompetitions.filter(sc => sc.isActive).map(sc => (
+                  <label key={sc.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '0.2rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={newCatSkillIds.includes(sc.id)}
+                      onChange={() => toggleNewCatSkill(sc.id)}
+                    />
+                    {sc.name}
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="bk-row" style={{ gap: '0.5rem' }}>
+              <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={catSaving || !newCatName.trim()} onClick={handleAddCat}>Add category</button>
+              <button className="bk-btn bk-btn--sm" onClick={() => { setShowAddCat(false); setNewCatName(''); setNewCatSkillIds([]); }}>Cancel</button>
+            </div>
           </div>
         )}
       </div>
@@ -450,17 +511,38 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   );
 }
 
-function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, onUninvite, eventEntries, eventCategories }) {
+function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, onUninvite, onInviteSynchro, eventEntries, eventCategories }) {
   const [showAll, setShowAll] = useState(false);
   const [pendingGym, setPendingGym] = useState(null); // { id, firstName, lastName }
   const [pendingCatIds, setPendingCatIds] = useState([]);
   const [pendingPrice, setPendingPrice] = useState('');
+  const [showSynchro, setShowSynchro] = useState(false);
+  const [synchroGym1, setSynchroGym1] = useState('');
+  const [synchroGym2, setSynchroGym2] = useState('');
+  const [synchroCatIds, setSynchroCatIds] = useState([]);
+  const [synchroPrice, setSynchroPrice] = useState('');
+  const [synchroWorking, setSynchroWorking] = useState(false);
 
   if (eligibleError) return <p style={{ color: 'var(--booking-danger)', fontSize: '0.875rem' }}>{eligibleError}</p>;
   if (eligible === null) return <p className="bk-muted">Loading...</p>;
 
-  const entryMap = Object.fromEntries((eventEntries || []).map(e => [e.gymnast.id, e.id]));
+  const entryMap = Object.fromEntries((eventEntries || []).map(e => [e.gymnast?.id, e.id]));
   const notInvited = (allGymnasts || []).filter(g => !g.alreadyInvited);
+
+  const handleSynchroInvite = async () => {
+    if (!synchroGym1 || !synchroGym2 || synchroGym1 === synchroGym2) return;
+    setSynchroWorking(true);
+    try {
+      const priceOverride = synchroPrice !== '' ? Math.round(parseFloat(synchroPrice) * 100) : null;
+      await onInviteSynchro([synchroGym1, synchroGym2], synchroCatIds, priceOverride);
+      setShowSynchro(false);
+      setSynchroGym1(''); setSynchroGym2(''); setSynchroCatIds([]); setSynchroPrice('');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to invite synchro pair.');
+    } finally {
+      setSynchroWorking(false);
+    }
+  };
 
   const startInvite = (g, preSelectCatId = null) => {
     setPendingGym(g);
@@ -604,6 +686,85 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
           </div>
         )}
       </div>
+
+      {/* Synchro pair invites */}
+      <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--booking-border)', paddingTop: '1rem' }}>
+        <button className="bk-btn bk-btn--ghost" style={{ fontSize: '0.875rem' }} onClick={() => setShowSynchro(v => !v)}>
+          {showSynchro ? 'Hide' : '+ Add synchro pair'}
+        </button>
+        {showSynchro && (
+          <div style={{ marginTop: '0.75rem', background: 'var(--booking-bg,#f9fafb)', border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.85rem' }}>
+            <p style={{ margin: '0 0 0.6rem', fontSize: '0.85rem', fontWeight: 600 }}>Invite a synchro pair</p>
+            <p className="bk-muted" style={{ fontSize: '0.8rem', margin: '0 0 0.6rem' }}>
+              Each gymnast gets their own entry and invoice. Select two different gymnasts.
+            </p>
+            <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>Gymnast 1</label>
+                <select className="bk-input" value={synchroGym1} onChange={e => setSynchroGym1(e.target.value)}>
+                  <option value="">Select gymnast…</option>
+                  {(allGymnasts || []).map(g => (
+                    <option key={g.id} value={g.id} disabled={g.id === synchroGym2}>
+                      {g.firstName} {g.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>Gymnast 2</label>
+                <select className="bk-input" value={synchroGym2} onChange={e => setSynchroGym2(e.target.value)}>
+                  <option value="">Select gymnast…</option>
+                  {(allGymnasts || []).map(g => (
+                    <option key={g.id} value={g.id} disabled={g.id === synchroGym1}>
+                      {g.firstName} {g.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {eventCategories.length > 0 && (
+              <div style={{ marginBottom: '0.6rem' }}>
+                <p style={{ margin: '0 0 0.3rem', fontSize: '0.8rem', fontWeight: 600 }}>Categories (applied to both):</p>
+                {eventCategories.map(cat => (
+                  <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '0.2rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={synchroCatIds.includes(cat.id)}
+                      onChange={() => setSynchroCatIds(prev => prev.includes(cat.id) ? prev.filter(c => c !== cat.id) : [...prev, cat.id])}
+                    />
+                    {cat.name}
+                  </label>
+                ))}
+              </div>
+            )}
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+              Price per gymnast (£) — leave blank for standard pricing
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              className="bk-input"
+              style={{ maxWidth: 120, marginBottom: '0.6rem' }}
+              value={synchroPrice}
+              placeholder="e.g. 15.00"
+              onChange={e => setSynchroPrice(e.target.value)}
+            />
+            <div className="bk-row" style={{ gap: '0.5rem' }}>
+              <button
+                className="bk-btn bk-btn--sm bk-btn--primary"
+                disabled={synchroWorking || !synchroGym1 || !synchroGym2 || synchroGym1 === synchroGym2}
+                onClick={handleSynchroInvite}
+              >
+                {synchroWorking ? 'Inviting…' : 'Invite pair'}
+              </button>
+              <button className="bk-btn bk-btn--sm" onClick={() => { setShowSynchro(false); setSynchroGym1(''); setSynchroGym2(''); setSynchroCatIds([]); setSynchroPrice(''); }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -733,9 +894,18 @@ function EntryActions({ entry, onConfirmInvoice, onResendInvoice, onWaive, onMar
   return null;
 }
 
-function EntriesTab({ event, entryCountByStatus, onRemove, onConfirmInvoice, onResendInvoice, onWaive, onMarkPaid, onToggleSubmitted }) {
+function EntriesTab({ event, entryCountByStatus, onRemove, onConfirmInvoice, onResendInvoice, onWaive, onMarkPaid, onToggleSubmitted, onReinvite }) {
   const ORDER = { ACCEPTED: 0, PAYMENT_PENDING: 1, INVITED: 2, PAID: 3, WAIVED: 4, DECLINED: 5 };
   const sorted = [...event.entries].sort((a, b) => (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9));
+
+  // Build a map from synchroPairId → list of gymnast names (for displaying synchro partners)
+  const synchroPairMap = {};
+  for (const e of event.entries) {
+    if (e.synchroPairId) {
+      if (!synchroPairMap[e.synchroPairId]) synchroPairMap[e.synchroPairId] = [];
+      synchroPairMap[e.synchroPairId].push(e);
+    }
+  }
 
   return (
     <div>
@@ -762,6 +932,10 @@ function EntriesTab({ event, entryCountByStatus, onRemove, onConfirmInvoice, onR
             ? new Date().getFullYear() - new Date(entry.gymnast.dateOfBirth).getFullYear()
             : null;
           const isDone = ['PAID', 'WAIVED'].includes(entry.status);
+          const isSynchro = entry.entryType === 'SYNCHRO';
+          const synchroPartner = isSynchro && entry.synchroPairId
+            ? (synchroPairMap[entry.synchroPairId] || []).find(e => e.id !== entry.id)
+            : null;
           return (
             <div key={entry.id} className="bk-card" style={{
               borderLeft: `3px solid ${s.color}`,
@@ -781,14 +955,33 @@ function EntriesTab({ event, entryCountByStatus, onRemove, onConfirmInvoice, onR
                       {entry.gymnast.bgNumber || ''}
                     </span>
                   )}
+                  {isSynchro && (
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, background: '#e8f4fd', color: '#1565c0', borderRadius: 4, padding: '1px 6px', marginLeft: '0.5rem' }}>
+                      Synchro
+                    </span>
+                  )}
                 </div>
                 <span style={{ color: s.color, fontWeight: 700, fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{s.label}</span>
               </div>
+
+              {/* Synchro partner */}
+              {synchroPartner && (
+                <p className="bk-muted" style={{ fontSize: '0.82rem', margin: '0 0 0.25rem' }}>
+                  Partner: {synchroPartner.gymnast.firstName} {synchroPartner.gymnast.lastName}
+                </p>
+              )}
 
               {/* Categories */}
               {entry.categories.length > 0 && (
                 <p className="bk-muted" style={{ fontSize: '0.82rem', margin: '0 0 0.35rem' }}>
                   {entry.categories.map(ec => ec.category.name).join(', ')}
+                </p>
+              )}
+
+              {/* Previous paid amount (shown on re-invited entries) */}
+              {entry.previousPaidAmount !== null && entry.previousPaidAmount !== undefined && (
+                <p style={{ fontSize: '0.78rem', color: 'var(--booking-warning, #e67e22)', margin: '0 0 0.35rem' }}>
+                  Note: previously paid £{(entry.previousPaidAmount / 100).toFixed(2)} for this competition
                 </p>
               )}
 
@@ -825,7 +1018,7 @@ function EntriesTab({ event, entryCountByStatus, onRemove, onConfirmInvoice, onR
                 onMarkPaid={onMarkPaid}
               />
 
-              {/* Bottom row: submitted toggle + remove */}
+              {/* Bottom row: submitted toggle + remove/re-invite */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.6rem', paddingTop: '0.5rem', borderTop: '1px solid var(--booking-border)' }}>
                 {isDone ? (
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', cursor: 'pointer' }}>
@@ -839,15 +1032,26 @@ function EntriesTab({ event, entryCountByStatus, onRemove, onConfirmInvoice, onR
                 ) : (
                   <span />
                 )}
-                {!isDone && (
-                  <button
-                    className="bk-btn bk-btn--sm"
-                    style={{ color: 'var(--booking-danger)', fontSize: '0.8rem' }}
-                    onClick={() => onRemove(entry.id)}
-                  >
-                    Remove
-                  </button>
-                )}
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  {entry.status === 'DECLINED' && (
+                    <button
+                      className="bk-btn bk-btn--sm bk-btn--primary"
+                      style={{ fontSize: '0.8rem' }}
+                      onClick={() => onReinvite(entry.id)}
+                    >
+                      Re-invite
+                    </button>
+                  )}
+                  {!isDone && entry.status !== 'DECLINED' && (
+                    <button
+                      className="bk-btn bk-btn--sm"
+                      style={{ color: 'var(--booking-danger)', fontSize: '0.8rem' }}
+                      onClick={() => onRemove(entry.id)}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );

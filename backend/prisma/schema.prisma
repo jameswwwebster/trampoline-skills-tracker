@@ -537,13 +537,16 @@ model CompetitionEntry {
   paidExternally        Boolean                  @default(false)
   externalPaymentNote   String?
   submittedToOrganiser  Boolean                  @default(false)
+  entryType             String                   @default("INDIVIDUAL")
+  synchroPairId         String?
+  previousPaidAmount    Int?
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
   competitionEvent      CompetitionEvent         @relation(fields: [competitionEventId], references: [id])
   gymnast               Gymnast                  @relation(fields: [gymnastId], references: [id])
   categories            CompetitionEntryCategory[]
 
-  @@unique([competitionEventId, gymnastId])
+  @@unique([competitionEventId, gymnastId, entryType])
   @@map("competition_entries")
 }
 
