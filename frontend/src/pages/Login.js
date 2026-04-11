@@ -12,7 +12,7 @@ const Login = () => {
   const { login, devLogin, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const returnTo = searchParams.get('returnTo');
+  const returnTo = searchParams.get('next') || searchParams.get('returnTo');
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   useEffect(() => {
