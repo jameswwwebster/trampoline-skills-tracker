@@ -756,10 +756,11 @@ class EmailService {
           ${categoriesHtml}
           ${priceHtml}
         `)}
+        <p>Please log in to accept or decline. If you accept, your coach will review the entry and send a payment request through the app — no payment is needed right now.</p>
         ${ctaButton(`${BASE_URL()}/booking/competitions`, 'View and respond')}
         ${muted('If you have any questions, please contact the club.')}
       `),
-      text: `Hi ${firstName},\n\n${gymnast.firstName} ${gymnast.lastName} has been invited to ${event.name} at ${event.location} on ${date}.\n\nEntry deadline: ${deadline}${categoryNames.length > 0 ? '\nCategories: ' + categoryNames.join(', ') : ''}${priceOverridePence !== null ? '\nEntry price: £' + (priceOverridePence / 100).toFixed(2) : ''}\n\nLog in to respond: ${BASE_URL()}/booking/competitions\n\nIf you have any questions, please contact the club.`,
+      text: `Hi ${firstName},\n\n${gymnast.firstName} ${gymnast.lastName} has been invited to ${event.name} at ${event.location} on ${date}.\n\nEntry deadline: ${deadline}${categoryNames.length > 0 ? '\nCategories: ' + categoryNames.join(', ') : ''}${priceOverridePence !== null ? '\nEntry price: £' + (priceOverridePence / 100).toFixed(2) : ''}\n\nPlease log in to accept or decline. If you accept, your coach will review the entry and send a payment request through the app — no payment is needed right now.\n\nLog in to respond: ${BASE_URL()}/booking/competitions\n\nIf you have any questions, please contact the club.`,
     }, { to: email, event: event.name, gymnast: `${gymnast.firstName} ${gymnast.lastName}` });
   }
 
@@ -873,12 +874,12 @@ class EmailService {
           <ul style="margin:0;padding-left:1.4rem;font-size:0.9rem">${catList}</ul>
           <p style="margin:0.75rem 0 0;font-size:1.05rem"><strong>Total due: ${totalStr}</strong></p>
         `)}
-        <p>Payment is required to complete the entry. Please pay through the app before the competition.</p>
+        <p>To secure the entry, payment must be received before the competition. <strong>Entries will not be submitted to the organiser until payment is complete.</strong></p>
         ${ctaButton(payUrl, 'Pay now — ' + totalStr)}
         ${muted('If the button above doesn\'t work, copy and paste this link into your browser: ' + payUrl)}
         ${muted('If you have any questions, please contact the club.')}
       `),
-      text: `Hi ${guardianName},\n\n${gymnasticName}'s entry for ${event.name} (${event.location}, ${eventDate}) has been confirmed by your coach.\n\nCategories: ${categoryNames.join(', ')}\n\nTotal due: ${totalStr}\n\nTo pay, visit: ${payUrl}\n\nPayment is required to complete the entry.`,
+      text: `Hi ${guardianName},\n\n${gymnasticName}'s entry for ${event.name} (${event.location}, ${eventDate}) has been confirmed by your coach.\n\nCategories: ${categoryNames.join(', ')}\n\nTotal due: ${totalStr}\n\nTo secure the entry, payment must be received before the competition. Entries will not be submitted to the organiser until payment is complete.\n\nPay here: ${payUrl}\n\nIf you have any questions, please contact the club.`,
     }, { to: toEmail, event: event.name, gymnast: gymnasticName, total: totalStr });
   }
 }
