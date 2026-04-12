@@ -284,8 +284,11 @@ router.post('/:id/confirm-invoice', auth, requireRole(ADMIN_ROLES), async (req, 
       include: { guardians: { select: { email: true, firstName: true, lastName: true } } },
     });
     const recipients = gymnastwithGuardians?.guardians ?? [];
+    if (recipients.length === 0) {
+      console.warn(`⚠️  competition invoice: no guardians found for gymnast ${entry.gymnastId} — email not sent`);
+    }
     for (const guardian of recipients) {
-      await emailService.sendCompetitionInvoice(
+      const result = await emailService.sendCompetitionInvoice(
         guardian.email,
         guardian,
         updated.gymnast,
@@ -294,6 +297,9 @@ router.post('/:id/confirm-invoice', auth, requireRole(ADMIN_ROLES), async (req, 
         total,
         updated.id
       );
+      if (!result?.success) {
+        console.error(`❌ competition invoice email failed for ${guardian.email}:`, result?.error);
+      }
     }
 
     res.json(updated);

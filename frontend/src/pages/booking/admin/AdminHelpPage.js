@@ -122,6 +122,7 @@ export default function AdminHelpPage() {
         <p style={S.p}>Clicking a member opens their full profile. From here you can see:</p>
         <ul style={{ paddingLeft: '1.2rem', marginBottom: '0.75rem' }}>
           <li style={S.li}>All gymnasts linked to the account, with date of birth, health notes, and emergency contact</li>
+          <li style={S.li}>Co-guardian and named contact details (see below)</li>
           <li style={S.li}>Consent status — photo consent, health declaration, and code of conduct acceptance</li>
           <li style={S.li}>British Gymnastics membership numbers and their verification status</li>
           <li style={S.li}>Active memberships, standing slots, and booking history per gymnast</li>
@@ -180,6 +181,20 @@ export default function AdminHelpPage() {
           one with the appropriate start date rather than editing in place — this preserves the attendance history
           on the old slot.
         </Tip>
+
+        <Divider />
+        <h4 style={S.h4}>Co-guardians and named contacts</h4>
+        <p style={S.p}>
+          Each gymnast can have a <strong>co-guardian</strong> — a second adult who is linked to the gymnast's
+          account and receives competition invite and invoice emails alongside the primary guardian. Co-guardians
+          are added from the gymnast's profile on the member detail page.
+        </p>
+        <p style={S.p}>
+          A <strong>named contact</strong> is an emergency contact separate from the guardians — for example,
+          a grandparent or childminder who should be called if a guardian cannot be reached. Named contacts
+          have a name, phone number, and relationship label. They are stored on the gymnast's profile and are
+          visible to coaches and admins, but they do not have a login or receive any app communications.
+        </p>
 
         <Divider />
         <h4 style={S.h4}>Archiving and removing members</h4>
@@ -733,6 +748,119 @@ export default function AdminHelpPage() {
           active membership, all members with a gymnast attending a specific session template, or members who
           joined after a certain date. Group membership is evaluated dynamically at the moment a message or
           noticeboard post is sent, so the list is always current.
+        </p>
+      </Section>
+
+      {/* ── COMPETITIONS ────────────────────────────────────────────── */}
+      <Section title="Competitions">
+        <p style={S.p}>
+          Go to <strong>Competitions</strong> under the Admin nav to create and manage competition events.
+          The competitions system handles the full entry lifecycle — from inviting gymnasts through to
+          confirming payment and marking entries as submitted to the organiser.
+        </p>
+
+        <h4 style={S.h4}>Creating a competition</h4>
+        <p style={S.p}>
+          Click <strong>New competition</strong> and fill in the name, date, venue, and any description.
+          Once created, add categories from the competition detail page. Each category has a name and a price.
+          You can optionally link a category to one or more skill levels — this is used to automatically
+          determine which gymnasts are eligible and to filter the invite list.
+        </p>
+
+        <Divider />
+        <h4 style={S.h4}>Inviting gymnasts</h4>
+        <p style={S.p}>
+          From the <strong>Invites</strong> tab, use the invite form to select gymnasts and send invitations.
+          For each invite you choose:
+        </p>
+        <ul style={{ paddingLeft: '1.2rem', marginBottom: '0.75rem' }}>
+          <li style={S.li}><strong>Gymnast(s)</strong> — one or more gymnasts to invite</li>
+          <li style={S.li}><strong>Category/categories</strong> — the category (or categories) they are entered into</li>
+          <li style={S.li}><strong>Price</strong> — defaults to the category price; can be overridden per gymnast</li>
+        </ul>
+        <p style={S.p}>
+          An invitation email is sent to all guardians of each gymnast, explaining that payment will be
+          requested separately after they accept.
+        </p>
+        <Tip>
+          <strong>Synchro pairs:</strong> Use the Synchro pair invite form to enter two gymnasts together.
+          Each gymnast receives a separate invite and pays their own entry fee, but both entries are linked
+          as a pair. The partner's name is shown on each entry in the Entries tab.
+        </Tip>
+
+        <Divider />
+        <h4 style={S.h4}>Entry statuses</h4>
+        <dl style={{ marginBottom: '0.5rem' }}>
+          <dt style={S.dt}>INVITED</dt>
+          <dd style={S.dd}>Invitation sent. The gymnast's guardian has not yet responded.</dd>
+          <dt style={S.dt}>ACCEPTED</dt>
+          <dd style={S.dd}>Guardian accepted the invitation. Awaiting invoice from the coach.</dd>
+          <dt style={S.dt}>DECLINED</dt>
+          <dd style={S.dd}>Guardian declined. A Re-invite button is shown — use it to send a new invitation if circumstances change.</dd>
+          <dt style={S.dt}>PAID</dt>
+          <dd style={S.dd}>Invoice sent and payment confirmed. The entry is ready to submit to the organiser.</dd>
+          <dt style={S.dt}>WAIVED</dt>
+          <dd style={S.dd}>Entry fee waived by an admin.</dd>
+        </dl>
+
+        <Divider />
+        <h4 style={S.h4}>Sending an invoice</h4>
+        <p style={S.p}>
+          Once a gymnast accepts, go to the <strong>Entries</strong> tab, find their entry, and click
+          <strong>Send invoice</strong>. This emails the guardian with the amount due and a note that the entry
+          will not be submitted to the organiser until payment is received. The charge appears in the guardian's
+          app cart.
+        </p>
+        <p style={S.p}>
+          Payment is processed through the normal Stripe checkout. When paid, the entry status automatically
+          advances to PAID.
+        </p>
+
+        <Divider />
+        <h4 style={S.h4}>Marking entries as submitted</h4>
+        <p style={S.pLast}>
+          Once you have submitted entries to the competition organiser, toggle <strong>Submitted to organiser</strong>
+          on each paid entry. This is a manual confirmation step — it has no automated effect but gives you
+          a clear record of what has been sent.
+        </p>
+      </Section>
+
+      {/* ── INCIDENTS & WELFARE ─────────────────────────────────────── */}
+      <Section title="Incidents &amp; welfare">
+        <p style={S.p}>
+          Two report types are available under <strong>Incidents &amp; Welfare</strong> in the Admin nav —
+          first aid incident reports and welfare concern reports. Both are visible to coaches and admins only;
+          members cannot see these records.
+        </p>
+
+        <h4 style={S.h4}>First aid incident reports</h4>
+        <p style={S.p}>
+          File a report any time a first aid situation occurs at a session. Record:
+        </p>
+        <ul style={{ paddingLeft: '1.2rem', marginBottom: '0.75rem' }}>
+          <li style={S.li}>The gymnast involved</li>
+          <li style={S.li}>Date and time of the incident</li>
+          <li style={S.li}>Description of what happened</li>
+          <li style={S.li}>First aid treatment given</li>
+          <li style={S.li}>Whether follow-up is required</li>
+        </ul>
+        <p style={S.p}>
+          Reports are stored permanently and can be reviewed by any coach or admin. Tiles on the admin
+          dashboard indicate whether recent reports exist.
+        </p>
+        <Note>
+          <strong>Important:</strong> Filing an incident report in the app does not replace any external
+          reporting obligations (e.g. to British Gymnastics or local authorities). Use this as an internal
+          record alongside any required external procedures.
+        </Note>
+
+        <Divider />
+        <h4 style={S.h4}>Welfare concern reports</h4>
+        <p style={S.pLast}>
+          File a welfare concern report to document a safeguarding matter. Record the gymnast, the date, a
+          description of the concern, and any actions already taken. Welfare reports are kept separately from
+          incident reports and are only visible to coaches and admins — they are never shown to the gymnast's
+          guardian through the app.
         </p>
       </Section>
 

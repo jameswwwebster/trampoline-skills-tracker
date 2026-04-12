@@ -116,6 +116,29 @@ export default function HelpPage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
+        <h3 style={{ marginBottom: '0.5rem' }}>Competitions</h3>
+        <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
+          When the club enters gymnasts into competitions, you will receive an invitation by email and see a
+          notification on your dashboard. Go to <strong>My Competitions</strong> in the Bookings menu to view
+          all current and past invitations.
+        </p>
+        <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
+          For each invitation you can <strong>Accept</strong> or <strong>Decline</strong>. If you accept, your
+          coach will review the entry and send a payment request through the app — no payment is needed at the
+          point of accepting.
+        </p>
+        <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
+          Once the coach sends an invoice, the charge will appear under <strong>My Charges</strong>. Pay through
+          the cart in the same way as any other charge. Entries are not submitted to the competition organiser
+          until payment is complete.
+        </p>
+        <p style={{ color: 'var(--booking-text-muted)' }}>
+          If your gymnast is competing as part of a synchro pair, both gymnasts in the pair will receive
+          separate invitations and each guardian pays their own entry fee independently.
+        </p>
+      </section>
+
+      <section style={{ marginBottom: '2rem' }}>
         <h3 style={{ marginBottom: '0.5rem' }}>Noticeboard</h3>
         <p style={{ color: 'var(--booking-text-muted)' }}>
           The <strong>Noticeboard</strong> shows announcements and updates posted by the club. Unread notices

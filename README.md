@@ -1,23 +1,30 @@
 # Trampoline Tracker
 
-A web application for tracking gymnast progress through trampoline skill levels and routines.
+A web application for managing a gymnastics club — bookings, payments, skill progression, competitions, and communications, all under one roof.
 
 ## Features
 
-- **Multi-role Authentication**: Club Admin, Coach, Gymnast, and Parent/Guardian roles
-- **Club Management**: Create and manage gymnastics clubs
-- **Gymnast Tracking**: Track multiple gymnasts and their progress
-- **Skill Levels**: 10 sequential levels plus side paths for specialized training
-- **Progress Monitoring**: Track skill and routine completion
-- **Guardian Access**: Parents can request access to view their child's progress
-- **Role-based Permissions**: Different access levels for different user types
+- **Multi-role authentication** — Club Admin, Coach, Adult (guardian), and Gymnast roles with fine-grained permissions
+- **Club management** — branding, theming, custom fields, email settings
+- **Member & gymnast management** — profiles, guardian relationships, co-guardians, named contacts, BG membership numbers, health notes, photo consents
+- **Skill levels & progress tracking** — 10+ sequential levels with side paths, skills with FIG difficulty scores and notation, routines, completion tracking, certificates
+- **Booking system** — session templates, calendar, multi-gymnast checkout, Stripe payments, credits, waitlist, closures
+- **Memberships (recurring billing)** — Stripe subscriptions, standing slots, pause/resume/cancel, pro-rata first payment
+- **Competition management** — invite gymnasts (individual or synchro pairs), category and price selection, accept/decline flow, payment invoicing, entry submission tracking
+- **Shop** — product variants, cart checkout, order fulfilment workflow
+- **Communications** — noticeboard (pinned posts with priority), email messaging with recipient groups and scheduled delivery
+- **Incident & welfare reporting** — first aid incident records and welfare concern reports, visible to coaches and admins
+- **Audit logging** — all admin actions logged with actor and metadata
+- **Transactional emails** — 15+ email types gated by club email settings
 
 ## Tech Stack
 
 - **Frontend**: React 18, React Router, Axios
 - **Backend**: Node.js, Express, Prisma ORM
 - **Database**: PostgreSQL
+- **Payments**: Stripe (Payment Intents, Subscriptions, Webhooks)
 - **Authentication**: JWT tokens
+- **Email**: Nodemailer (Gmail SMTP)
 
 ## Project Structure
 
@@ -25,14 +32,28 @@ A web application for tracking gymnast progress through trampoline skill levels 
 trampoline-tracker/
 ├── backend/
 │   ├── prisma/
-│   │   └── schema.prisma
+│   │   ├── schema.prisma
+│   │   └── migrations/
 │   ├── routes/
 │   │   ├── auth.js
 │   │   ├── clubs.js
 │   │   ├── gymnasts.js
 │   │   ├── levels.js
 │   │   ├── skills.js
-│   │   └── progress.js
+│   │   ├── progress.js
+│   │   └── booking/
+│   │       ├── sessions.js
+│   │       ├── bookings.js
+│   │       ├── charges.js
+│   │       ├── credits.js
+│   │       ├── memberships.js
+│   │       ├── competitionEvents.js
+│   │       ├── competitionEntries.js
+│   │       └── ...
+│   ├── services/
+│   │   ├── emailService.js
+│   │   ├── stripeService.js
+│   │   └── ...
 │   ├── middleware/
 │   │   └── auth.js
 │   ├── package.json
@@ -42,6 +63,9 @@ trampoline-tracker/
 │   │   ├── components/
 │   │   ├── contexts/
 │   │   ├── pages/
+│   │   │   ├── booking/
+│   │   │   │   └── admin/
+│   │   │   └── public/
 │   │   └── App.js
 │   ├── public/
 │   └── package.json
@@ -53,11 +77,8 @@ trampoline-tracker/
 ### 1. Clone and Install Dependencies
 
 ```bash
-# Clone the repository
 git clone <repository-url>
 cd trampoline-tracker
-
-# Install dependencies for backend and frontend
 cd backend && npm install && cd ../frontend && npm install && cd ..
 ```
 
@@ -79,17 +100,26 @@ NODE_ENV="development"
 
 # CORS
 FRONTEND_URL="http://localhost:3000"
+
+# Stripe
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+
+# Email (Gmail SMTP)
+GMAIL_USER="your@gmail.com"
+GMAIL_PASS="your-app-password"
 ```
 
 ### 3. Database Setup
 
 ```bash
-# Generate Prisma client
 cd backend
-npx prisma generate
 
 # Run database migrations
 npx prisma migrate dev
+
+# Generate Prisma client
+npx prisma generate
 
 # Seed the database with trampoline skills and levels
 npm run db:seed
@@ -115,71 +145,52 @@ The application will be available at:
 ## User Roles
 
 ### Club Admin
-- Create and manage club settings
-- Full access to all club data
-- Can create coaches and manage all gymnasts
-- Can mark progress for any gymnast
+- Full access to all club data and configuration
+- Create and manage members, gymnasts, sessions, closures, competitions
+- Manage memberships, credits, charges, and shop products
+- Send messages and manage noticeboard
+- View audit log and incident/welfare reports
 
 ### Coach
-- Can create and manage gymnasts
-- Can mark skill and level progress
-- Can approve guardian access requests
-- View all gymnasts in their club
+- All admin tools except creating/deleting closures and full system configuration
+- Mark skill and level progress for gymnasts
+- Verify BG membership numbers
+- Create and manage competitions, invite gymnasts
+- View and file incident and welfare reports
+
+### Adult (Parent/Guardian)
+- Book sessions for linked gymnasts, manage cancellations
+- View and pay charges and memberships
+- Accept or decline competition invitations on behalf of gymnasts
+- View gymnast skill progress (read-only)
+- Read noticeboard and account information
 
 ### Gymnast
-- Can view their own progress
-- Read-only access to their skill and level data
-
-### Parent/Guardian
-- Can request access to view their child's progress
-- Read-only access to approved gymnast data
-- Must be approved by coaches for access
+- View own progress (skills, levels, certificates)
+- Access via share code or direct login
 
 ## Database Schema
 
-The application uses these main entities:
+Key entities:
 
-- **User**: Authentication and role management
-- **Club**: Organization management
-- **Gymnast**: Athlete profiles
-- **Level**: Skill progression levels (1-10 + side paths)
-- **Skill**: Individual skills within levels
-- **Routine**: Required routines for levels
-- **SkillProgress**: Tracks skill completion
-- **LevelProgress**: Tracks level completion
-- **GuardianRequest**: Manages parent access requests
-
-## Local-only Development
-
-This repository is configured for local development only (separate React frontend and Express backend). Cloud hosting and containerization guides have been removed.
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user
-
-### Clubs
-- `GET /api/clubs` - List all clubs
-- `POST /api/clubs` - Create new club
-- `GET /api/clubs/:id` - Get club details
-
-### Gymnasts
-- `GET /api/gymnasts` - List club gymnasts
-- `POST /api/gymnasts` - Create new gymnast
-
-### Levels & Skills
-- `GET /api/levels` - List all levels and skills
-- `GET /api/skills` - List all skills
-
-### Progress
-- `GET /api/progress/gymnast/:id` - Get gymnast progress
+- **User** — authentication, roles, and guardian relationships
+- **Club** — organisation settings and branding
+- **Gymnast** — athlete profiles with health, consent, and BG membership data
+- **Level / Skill / Routine** — skill progression hierarchy with FIG data
+- **SkillProgress / LevelProgress** — completion tracking per gymnast
+- **Certificate** — awarded certificates with template-based PDF generation
+- **SessionTemplate / Session** — recurring schedule and individual instances
+- **Booking** — session bookings with Stripe payment tracking
+- **Membership** — Stripe subscription records with standing slots
+- **Credit / Charge** — account balance adjustments
+- **CompetitionEvent / CompetitionEntry** — competition management and entry tracking
+- **IncidentReport / WelfareReport** — safeguarding and first aid records
+- **Noticeboard / Message** — club communications
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/my-feature`)
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
@@ -187,7 +198,3 @@ This repository is configured for local development only (separate React fronten
 ## License
 
 This project is licensed under the MIT License.
-
-## Support
-
-For support or questions, please open an issue in the repository. 
