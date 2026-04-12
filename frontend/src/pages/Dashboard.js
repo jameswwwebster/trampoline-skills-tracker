@@ -102,7 +102,7 @@ const Dashboard = () => {
     bookingApi.getAdminCharges()
       .then(r => {
         const now2 = new Date();
-        setOverdueCount(r.data.filter(c => new Date(c.dueDate) < now2 && c.status !== 'PAID').length);
+        setOverdueCount(r.data.filter(c => new Date(c.dueDate) < now2 && !c.paidAt).length);
       })
       .catch(() => {});
 
