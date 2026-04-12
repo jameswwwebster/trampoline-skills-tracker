@@ -205,35 +205,10 @@ const GymnastProgress = ({ gymnastId }) => {
         axios.get(`/api/gymnasts/${gymnastId}`),
         axios.get('/api/levels')
       ]);
-      
+
       setGymnast(gymnastResponse.data);
       setLevels(levelsResponse.data);
-      
-      // Auto-collapse levels after data update
-      if (gymnastResponse.data && levelsResponse.data.length > 0) {
-        const currentLevelNum = getCurrentLevelNumber(gymnastResponse.data, levelsResponse.data);
-        const availableLvls = levelsResponse.data.filter(level => 
-          isSideTrackAvailable(level, currentLevelNum)
-        );
-
-        const levelProgressData = availableLvls.map(level => {
-          const completedSkills = gymnastResponse.data.skillProgress
-            .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id)
-            .map(sp => sp.skill);
-
-          const totalSkills = level.skills ? level.skills.length : 0;
-          const completedCount = completedSkills.length;
-          const progressPercentage = totalSkills > 0 ? (completedCount / totalSkills) * 100 : 0;
-          
-          return {
-            level,
-            progressPercentage
-          };
-        });
-
-        const autoCollapsed = getAutoCollapsedLevels(levelProgressData, currentLevelNum);
-        setCollapsedLevels(autoCollapsed);
-      }
+      // Preserve the user's current expand/collapse state — do not re-collapse levels
     } catch (error) {
       console.error('Failed to refresh progress:', error);
     }
