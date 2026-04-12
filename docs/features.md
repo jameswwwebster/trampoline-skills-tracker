@@ -114,6 +114,8 @@
 - Guardian request connection to their child (self-serve)
 - COACH/ADMIN approves guardian requests
 - Create new parent account if guardian doesn't exist yet
+- Add a **co-guardian** (second adult linked to the gymnast's account, receives emails and can manage bookings)
+- Add a **named contact** (emergency contact separate from the primary guardian; name, phone, relationship)
 
 ### Gymnast Profile Data
 - Update health notes / learning differences
@@ -149,6 +151,9 @@
 ### Skills
 - Create skills per level with order
 - Update skill info (name, description, order)
+- Add FIG difficulty score (DD) per skill (decimal, e.g. 0.4)
+- Add FIG notation string per skill (e.g. "o<")
+- FIG data displayed on routines and cheat sheets; DD auto-totalled per routine
 - Include skills in routines
 
 ### Routines
@@ -162,6 +167,23 @@
 - Track completion dates
 - View progress timeline per gymnast (COACH/ADMIN)
 - Children / parents view own progress (read-only)
+
+---
+
+## 5b. Incident & Welfare Reporting
+
+### First Aid Incident Reports
+- Coaches and admins can file a first aid incident report for any gymnast
+- Records: date/time, gymnast, description of incident, first aid given, follow-up required flag
+- Staff (COACH/ADMIN) can view all incident reports for the club
+- Incident report tile shown on admin dashboard
+
+### Welfare Reports
+- Coaches and admins can file a welfare concern report for any gymnast
+- Records: date/time, gymnast, concern description, actions taken
+- Staff (COACH/ADMIN) can view all welfare reports for the club
+- Welfare report tile shown on admin dashboard
+- Separate access control — welfare reports are not shown to adults
 
 ---
 
@@ -248,6 +270,47 @@
 
 ---
 
+## 7b. Competition Management
+
+### Competitions & Events
+- Admin creates competition events (name, date, venue, description)
+- Add categories to a competition, each with a name, price, and optional linked skill levels
+- When adding a category to an existing competition, select which active skill levels qualify
+- Gymnasts are shown only in their highest eligible category based on skill level completion
+
+### Inviting Gymnasts
+- Admin views all eligible gymnasts and their current entry status per competition
+- **Individual invite**: select gymnast(s), choose categories, set price (overridable per gymnast), send invite
+- **Synchro pair invite**: select two gymnasts, assign a shared pair ID; each gymnast gets a separate entry and separate payment; both entries linked by `synchroPairId`
+- **Re-invite**: send a new invitation to a gymnast who previously declined (resets to INVITED, preserves `previousPaidAmount` for reference if they were previously paid)
+- Invite email sent to all guardians: explains that payment will be requested through the app after they accept
+
+### Entry Statuses
+- `INVITED` — invitation sent, awaiting response
+- `ACCEPTED` — gymnast has accepted; awaiting invoice
+- `DECLINED` — gymnast declined the invitation
+- `PAID` — invoice sent and payment confirmed
+- `WAIVED` — entry fee waived by admin
+
+### Payment Flow
+- Admin sends invoice to accepted entries; invoice email explains entries won't be submitted until paid
+- Guardian pays via the app cart/checkout (competition entry appears as a charge)
+- On payment confirmed (Stripe webhook), entry status advances to PAID
+- Admin can toggle **submitted to organiser** per entry once paid
+
+### Entries View (Admin)
+- EntriesTab shows all entries grouped by status
+- Synchro entries show a badge and partner's name
+- Re-invite button available on DECLINED entries
+- `previousPaidAmount` shown as a note if gymnast is being re-invited after paying previously
+
+### My Competitions (Guardian/Gymnast)
+- Members see a dashboard tile showing pending competition invitations
+- Competitions page lists all invitations with status, entry details, and accept/decline actions
+- Accepted entries show payment status
+
+---
+
 ## 8. Transactional Emails
 
 All emails gated by `club.emailEnabled`. Sent via Gmail SMTP (nodemailer). All use the branded HTML template with solid purple header and CTA button.
@@ -269,6 +332,8 @@ All emails gated by `club.emailEnabled`. Sent via Gmail SMTP (nodemailer). All u
 | Inactivity warning | Account inactive for ~6 months | User — 1-week warning before auto-deletion |
 | Guardian connection confirmed | Guardian linked to gymnast | Guardian |
 | Guardian invitation | Gymnast created with guardian email | Guardian — accept link |
+| Competition invite | Admin invites gymnast to competition | Guardian(s) — accept/decline link, note that payment comes later |
+| Competition invoice | Admin sends invoice after gymnast accepts | Guardian(s) — amount due, note that entry won't be submitted until paid |
 
 ---
 
@@ -286,6 +351,8 @@ All emails gated by `club.emailEnabled`. Sent via Gmail SMTP (nodemailer). All u
 - Completions by competition type
 - Gymnast list per level
 - Total member counts
+- Admin dashboard tiles: overdue charges count, today's sessions, recent incident/welfare reports
+- Member/guardian dashboard tile: pending competition invitations
 
 ---
 
@@ -311,7 +378,7 @@ All emails gated by `club.emailEnabled`. Sent via Gmail SMTP (nodemailer). All u
 Priority order as agreed:
 
 1. ~~**Basic club info / home page** — a public-facing landing page at `/` with club details, session times, and a link to the booking system~~ ✓ Done
-2. **Competition management** — entry management, heat sheets, results, possibly linked to the existing skills/levels system
+2. ~~**Competition management** — entry management, heat sheets, results, possibly linked to the existing skills/levels system~~ ✓ Done (invite/accept/pay/submit flow; heat sheets and results not yet implemented)
 3. ~~**Email / messaging system** — direct messaging and bulk emails from admin to members or groups (separate from transactional emails already in place)~~ ✓ Done
 4. **Finance summary** — admin view of revenue: bookings, memberships, credits issued/used, outstanding balances
 5. **Coach invoicing** — coaches submit invoices through the system for sessions coached; admin reviews and approves
