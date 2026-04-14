@@ -1,0 +1,16 @@
+{
+  "name": "Trampoline Life",
+  "short_name": "TL",
+  "description": "Trampoline and DMT club management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/favicon-root.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ]
+}
