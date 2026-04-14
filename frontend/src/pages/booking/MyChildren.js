@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import PushNotificationSettings from '../../components/PushNotificationSettings';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { bookingApi } from '../../utils/bookingApi';
@@ -1267,6 +1268,10 @@ export default function MyChildren() {
       <h2>My Account</h2>
 
       {user && <ContactDetailsSection user={user} onSaved={refreshUser} />}
+
+      <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
+        <PushNotificationSettings />
+      </div>
 
       {credits.length > 0 && (
         <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
