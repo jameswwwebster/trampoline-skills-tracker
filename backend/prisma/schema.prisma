@@ -72,6 +72,8 @@ model User {
   guardianInvitesSent      GuardianInvite[]   @relation("GuardianInvitesSent")
   guardianInvitesAccepted  GuardianInvite[]   @relation("GuardianInvitesAccepted")
   namedContactsCreated     NamedContact[]     @relation("NamedContactsCreated")
+  pushSubscriptions            PushSubscription[]
+  pushNotificationPreferences  PushNotificationPreference[]
 
   @@map("users")
 }
@@ -1196,4 +1198,30 @@ model IncidentForward {
   forwardedBy      User           @relation("IncidentForwardedBy", fields: [forwardedById], references: [id])
 
   @@map("incident_forwards")
+}
+
+enum PushNotificationType {
+  SESSION_REMINDER
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("push_subscriptions")
+}
+
+model PushNotificationPreference {
+  userId           String
+  notificationType PushNotificationType
+  enabled          Boolean              @default(true)
+  user             User                 @relation(fields: [userId], references: [id])
+
+  @@id([userId, notificationType])
+  @@map("push_notification_preferences")
 }
