@@ -28,11 +28,11 @@ const incidentRoutes = require('./routes/incidents');
 const welfareRoutes = require('./routes/welfare');
 const guardianInviteRoutes = require('./routes/guardianInvites');
 const namedContactRoutes = require('./routes/namedContacts');
-const pushRoutes = require('./routes/push');
 const { sendToCoaches, getUKHHMM, getUKDateBounds } = require('./services/pushNotificationService');
 
 const app = express();
 const prisma = new PrismaClient();
+const pushRoutes = require('./routes/push')(prisma);
 
 // Test Canvas availability at startup
 console.log('🔍 Testing Canvas availability...');
