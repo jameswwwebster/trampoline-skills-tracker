@@ -405,6 +405,7 @@ p, li, td, th {
 /* Profile tabs styling */
 .profile-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   border-bottom: 1px solid #e9ecef;
   margin-bottom: 0;
