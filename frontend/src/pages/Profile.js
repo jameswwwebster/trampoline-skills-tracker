@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import PushNotificationSettings from '../components/PushNotificationSettings';
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
@@ -153,6 +154,12 @@ const Profile = () => {
             >
               Change Password
             </button>
+            <button
+              className={`profile-tab ${activeTab === 'notifications' ? 'active' : ''}`}
+              onClick={() => setActiveTab('notifications')}
+            >
+              Notifications
+            </button>
           </div>
         </div>
 
@@ -274,6 +281,13 @@ const Profile = () => {
                 {loading ? 'Changing...' : 'Change Password'}
               </button>
             </form>
+          )}
+
+          {/* Notifications Tab */}
+          {activeTab === 'notifications' && (
+            <div>
+              <PushNotificationSettings />
+            </div>
           )}
 
         </div>
