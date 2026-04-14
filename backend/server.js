@@ -595,7 +595,7 @@ cron.schedule('* * * * *', async () => {
     });
 
     for (const instance of instances) {
-      await sendToCoaches(instance.template.clubId, 'SESSION_REMINDER', {
+      await sendToCoaches(prisma, instance.template.clubId, 'SESSION_REMINDER', {
         title: 'Session starting in 5 minutes',
         body: "Don't forget to take the register!",
         url: '/booking/admin',

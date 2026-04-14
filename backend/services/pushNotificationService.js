@@ -1,13 +1,13 @@
 const webpush = require('web-push');
-const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient();
-
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT,
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
-);
+// Only initialise VAPID when keys are present (skipped in test environments)
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
 
 /**
  * Returns the current time in Europe/London formatted as "HH:MM".
@@ -50,16 +50,15 @@ function getUKDateBounds(now) {
 
 /**
  * Send a push notification to all coaches in the given club who have the
- * specified notification type enabled (or have no preference row for it —
- * absence defaults to enabled).
+ * specified notification type enabled (or have no preference row — absence
+ * defaults to enabled). Stale subscriptions (410/404) are silently removed.
  *
- * Stale subscriptions (410/404) are silently removed.
- *
+ * @param {import('@prisma/client').PrismaClient} prisma
  * @param {string} clubId
  * @param {'SESSION_REMINDER'} notificationType
  * @param {{ title: string, body: string, url?: string }} payload
  */
-async function sendToCoaches(clubId, notificationType, payload) {
+async function sendToCoaches(prisma, clubId, notificationType, payload) {
   const subscriptions = await prisma.pushSubscription.findMany({
     where: {
       user: {
