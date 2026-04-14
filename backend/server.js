@@ -28,6 +28,8 @@ const incidentRoutes = require('./routes/incidents');
 const welfareRoutes = require('./routes/welfare');
 const guardianInviteRoutes = require('./routes/guardianInvites');
 const namedContactRoutes = require('./routes/namedContacts');
+const pushRoutes = require('./routes/push');
+const { sendToCoaches, getUKHHMM, getUKDateBounds } = require('./services/pushNotificationService');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -170,6 +172,7 @@ app.use('/api/incidents', incidentRoutes);
 app.use('/api/welfare', welfareRoutes);
 app.use('/api/guardian-invites', guardianInviteRoutes);
 app.use('/api/named-contacts', namedContactRoutes);
+app.use('/api/push', pushRoutes);
 
 // Booking routes
 app.use('/api/booking/sessions', require('./routes/booking/sessions'));
@@ -569,6 +572,37 @@ cron.schedule('* * * * *', async () => {
     }
   } catch (err) {
     console.error('Incident notification cron error:', err);
+  }
+});
+
+// Session reminder push notifications — runs every minute
+// Sends to all subscribed coaches 5 minutes before a session starts
+// TODO: use club.timezone when multi-timezone support is needed
+cron.schedule('* * * * *', async () => {
+  try {
+    const now = new Date();
+    const in5 = new Date(now.getTime() + 5 * 60 * 1000);
+    const targetTime = getUKHHMM(in5);
+    const { gte, lt } = getUKDateBounds(in5);
+
+    const instances = await prisma.sessionInstance.findMany({
+      where: {
+        date: { gte, lt },
+        cancelledAt: null,
+        template: { startTime: targetTime },
+      },
+      include: { template: true },
+    });
+
+    for (const instance of instances) {
+      await sendToCoaches(instance.template.clubId, 'SESSION_REMINDER', {
+        title: 'Session starting in 5 minutes',
+        body: "Don't forget to take the register!",
+        url: '/booking/admin',
+      });
+    }
+  } catch (err) {
+    console.error('Session reminder push error:', err);
   }
 });
 
