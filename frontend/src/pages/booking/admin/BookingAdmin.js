@@ -182,17 +182,46 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
   const [removeError, setRemoveError] = useState(null);
   const [standingSlots, setStandingSlots] = useState(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [absentGymnastIds, setAbsentGymnastIds] = useState([]);
+  const [togglingAbsence, setTogglingAbsence] = useState(null);
   const totalGymnasts = sessionDetail.bookings?.reduce((n, b) => n + b.lines.length, 0) ?? 0;
   const capacity = sessionDetail.capacity;
 
   useEffect(() => {
     if (!sessionDetail.templateId) return;
     setSlotsLoading(true);
-    bookingApi.getCommitmentsForTemplate(sessionDetail.templateId)
-      .then(res => setStandingSlots(res.data))
-      .catch(() => setStandingSlots([]))
+    Promise.all([
+      bookingApi.getCommitmentsForTemplate(sessionDetail.templateId),
+      bookingApi.getAttendance(selectedSession),
+    ]).then(([commitmentsRes, attendanceRes]) => {
+      setStandingSlots(commitmentsRes.data);
+      setAbsentGymnastIds(
+        attendanceRes.data.attendees
+          .filter(a => a.status === 'ABSENT')
+          .map(a => a.gymnastId)
+      );
+    }).catch(() => { setStandingSlots([]); setAbsentGymnastIds([]); })
       .finally(() => setSlotsLoading(false));
-  }, [sessionDetail.templateId]);
+  }, [sessionDetail.templateId, selectedSession]);
+
+  const handleToggleAbsence = async (gymnast) => {
+    const isAbsent = absentGymnastIds.includes(gymnast.id);
+    setTogglingAbsence(gymnast.id);
+    try {
+      if (isAbsent) {
+        await bookingApi.deleteAttendance(selectedSession, gymnast.id);
+        setAbsentGymnastIds(prev => prev.filter(id => id !== gymnast.id));
+      } else {
+        await bookingApi.createAttendance(selectedSession, { gymnastId: gymnast.id, status: 'ABSENT' });
+        setAbsentGymnastIds(prev => [...prev, gymnast.id]);
+      }
+      onAdded(); // refresh session detail so capacity bar updates
+    } catch {
+      // silently ignore — the toggle will revert visually on next load
+    } finally {
+      setTogglingAbsence(null);
+    }
+  };
 
   const handleRemove = async (bookingId, issueCredit) => {
     setRemoving(bookingId);
@@ -293,11 +322,34 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
             const startsBadge = isFuture
               ? new Date(c.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
               : null;
+            const isAbsent = absentGymnastIds.includes(c.gymnast.id);
+            const isToggling = togglingAbsence === c.gymnast.id;
             return (
-              <div key={c.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--booking-bg-light)' }}>
+              <div key={c.id} style={{
+                padding: '0.5rem 0', borderBottom: '1px solid var(--booking-bg-light)',
+                opacity: isAbsent ? 0.55 : 1,
+              }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.9rem' }}>{c.gymnast.firstName} {c.gymnast.lastName}</span>
+                  <span style={{ fontSize: '0.9rem', textDecoration: isAbsent ? 'line-through' : 'none' }}>
+                    {c.gymnast.firstName} {c.gymnast.lastName}
+                  </span>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    {!isFuture && c.status === 'ACTIVE' && (
+                      <button
+                        type="button"
+                        disabled={isToggling}
+                        onClick={() => handleToggleAbsence(c.gymnast)}
+                        style={{
+                          padding: '1px 6px', borderRadius: 4, fontSize: '0.75rem', cursor: 'pointer',
+                          background: isAbsent ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.08)',
+                          color: isAbsent ? 'var(--booking-success)' : 'var(--booking-danger)',
+                          border: `1px solid ${isAbsent ? 'rgba(39,174,96,0.3)' : 'rgba(231,76,60,0.3)'}`,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {isToggling ? '…' : isAbsent ? '↩ Undo absent' : 'Won\'t attend'}
+                      </button>
+                    )}
                     {CONSENT_BADGES.map(({ type, label }) => {
                       const granted = c.gymnast.consents?.find(con => con.type === type)?.granted;
                       return (

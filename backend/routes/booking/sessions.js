@@ -39,11 +39,16 @@ router.get('/', auth, async (req, res) => {
       const bookingCount = confirmedBookings.reduce((sum, b) => sum + b.lines.length, 0);
       const sessionDate = new Date(instance.date);
       sessionDate.setHours(0, 0, 0, 0);
+      const absentGymnastIds = (await prisma.attendance.findMany({
+        where: { sessionInstanceId: instance.id, status: 'ABSENT' },
+        select: { gymnastId: true },
+      })).map(a => a.gymnastId);
       const activeCommitments = await prisma.commitment.count({
         where: {
           templateId: instance.templateId,
           status: 'ACTIVE',
           OR: [{ startDate: null }, { startDate: { lte: sessionDate } }],
+          ...(absentGymnastIds.length > 0 ? { gymnastId: { notIn: absentGymnastIds } } : {}),
         },
       });
       const bookedCount = bookingCount + activeCommitments;
@@ -131,11 +136,16 @@ router.get('/:instanceId', auth, async (req, res) => {
     const bookingCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
     const sessionDate = new Date(instance.date);
     sessionDate.setHours(0, 0, 0, 0);
+    const absentGymnastIds = (await prisma.attendance.findMany({
+      where: { sessionInstanceId: instance.id, status: 'ABSENT' },
+      select: { gymnastId: true },
+    })).map(a => a.gymnastId);
     const activeCommitments = await prisma.commitment.count({
       where: {
         templateId: instance.templateId,
         status: 'ACTIVE',
         OR: [{ startDate: null }, { startDate: { lte: sessionDate } }],
+        ...(absentGymnastIds.length > 0 ? { gymnastId: { notIn: absentGymnastIds } } : {}),
       },
     });
     const bookedCount = bookingCount + activeCommitments;
