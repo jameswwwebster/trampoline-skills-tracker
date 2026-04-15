@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { bookingApi } from '../../../utils/bookingApi';
 import CalendarNav from '../CalendarNav';
 import '../booking-shared.css';
@@ -444,7 +444,9 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
 // ─── BookingAdmin ─────────────────────────────────────────────────────────────
 
 export default function BookingAdmin() {
+  const location = useLocation();
   const lastNavigatedDate = React.useRef(new Date());
+  const preselectRef = useRef(location.state?.preselect || null);
   const [sessions, setSessions] = useState([]);
   const [closures, setClosures] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -494,6 +496,10 @@ export default function BookingAdmin() {
     ]).then(results => {
       setSessions(results.slice(0, -1).flatMap(r => r.data));
       setClosures(results[results.length - 1].data);
+      if (preselectRef.current) {
+        setSelectedSession(preselectRef.current);
+        preselectRef.current = null;
+      }
     }).catch(console.error)
       .finally(() => setLoading(false));
   };

@@ -363,18 +363,14 @@ const Dashboard = () => {
         <div className="dashboard-today__sessions">
           {todaySessions.map(s => {
             const isActive = activeSessions.some(a => a.id === s.id);
-            return isActive ? (
+            return (
               <button
                 key={s.id}
-                className="dashboard-today__register-btn"
-                onClick={() => navigate(`/booking/admin/register/${s.id}`)}
+                className={isActive ? 'dashboard-today__register-btn' : 'dashboard-today__session-btn'}
+                onClick={() => navigate('/booking/admin', { state: { preselect: s.id } })}
               >
-                Register — {s.startTime}–{s.endTime} ({s.type === 'DMT' ? 'DMT' : 'Trampoline'})
+                {isActive && 'Register — '}{s.startTime}–{s.endTime} ({s.type === 'DMT' ? 'DMT' : 'Trampoline'})
               </button>
-            ) : (
-              <span key={s.id} className="dashboard-today__session">
-                {s.startTime}–{s.endTime} ({s.type === 'DMT' ? 'DMT' : 'Trampoline'})
-              </span>
             );
           })}
         </div>
