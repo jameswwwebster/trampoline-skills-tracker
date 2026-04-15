@@ -7,61 +7,72 @@ import '../BookingCalendar.css';
 
 const waLink = (phone) => `https://wa.me/${phone.replace(/\D/g, '').replace(/^0/, '44')}`;
 
-// ─── ManualAddForm (unchanged) ───────────────────────────────────────────────
+// ─── ManualAddForm ───────────────────────────────────────────────────────────
 
 function ManualAddForm({ sessionId, bookedGymnastIds, onAdded }) {
-  const [users, setUsers] = useState([]);
-  const [gymnasts, setGymnasts] = useState([]);
-  const [userId, setUserId] = useState('');
-  const [userSearch, setUserSearch] = useState('');
-  const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const [gymnastIds, setGymnastIds] = useState([]);
+  const [allGymnasts, setAllGymnasts] = useState([]);
+  const [search, setSearch] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selected, setSelected] = useState([]); // array of gymnast objects
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const API_URL = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api`;
     const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
-    Promise.all([
-      fetch(`${API_URL}/users`, { headers }).then(r => r.json()),
-      fetch(`${API_URL}/gymnasts`, { headers }).then(r => r.json()),
-    ]).then(([u, g]) => {
-      setUsers(Array.isArray(u) ? u : u.users || []);
-      setGymnasts(Array.isArray(g) ? g : g.gymnasts || []);
-    }).catch(console.error);
+    fetch(`${API_URL}/gymnasts`, { headers })
+      .then(r => r.json())
+      .then(g => setAllGymnasts(Array.isArray(g) ? g : g.gymnasts || []))
+      .catch(console.error);
   }, []);
 
-  const filteredUsers = userSearch.trim().length > 0
-    ? users.filter(u => `${u.firstName} ${u.lastName}`.toLowerCase().includes(userSearch.toLowerCase()))
+  // Gymnasts matching the search, excluding already-booked and already-selected
+  const filtered = search.trim().length > 0
+    ? allGymnasts.filter(g =>
+        !g.isArchived &&
+        !bookedGymnastIds.includes(g.id) &&
+        !selected.some(s => s.id === g.id) &&
+        `${g.firstName} ${g.lastName}`.toLowerCase().includes(search.toLowerCase())
+      )
     : [];
 
-  const selectedUser = users.find(u => u.id === userId);
+  // Derive the booking userId for a gymnast: own account first, then first guardian
+  const getAccountHolder = (g) =>
+    g.userId || g.guardians?.[0]?.id || null;
 
-  // Gymnasts belonging to the selected account holder, excluding already-booked ones
-  const availableGymnasts = userId
-    ? gymnasts.filter(g => !g.isArchived && g.userId === userId && !bookedGymnastIds.includes(g.id))
-    : [];
-
-  const toggleGymnast = (id) =>
-    setGymnastIds(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]);
-
-  const handleSelectUser = (u) => {
-    setUserId(u.id);
-    setUserSearch(`${u.firstName} ${u.lastName}`);
-    setShowUserDropdown(false);
-    setGymnastIds([]);
+  const handleSelect = (g) => {
+    setSelected(prev => [...prev, g]);
+    setSearch('');
+    setShowDropdown(false);
   };
+
+  const handleRemove = (id) =>
+    setSelected(prev => prev.filter(g => g.id !== id));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!userId || gymnastIds.length === 0) return;
+    if (selected.length === 0) return;
     setSubmitting(true);
     setError(null);
+
+    // Group gymnasts by account holder
+    const groups = {};
+    for (const g of selected) {
+      const uid = getAccountHolder(g);
+      if (!uid) {
+        setError(`${g.firstName} ${g.lastName} has no associated account — ask them to create an account first.`);
+        setSubmitting(false);
+        return;
+      }
+      if (!groups[uid]) groups[uid] = [];
+      groups[uid].push(g.id);
+    }
+
     try {
-      await bookingApi.adminAddToSession({ sessionInstanceId: sessionId, gymnastIds, userId });
-      setUserId('');
-      setUserSearch('');
-      setGymnastIds([]);
+      for (const [userId, gymnastIds] of Object.entries(groups)) {
+        await bookingApi.adminAddToSession({ sessionInstanceId: sessionId, gymnastIds, userId });
+      }
+      setSelected([]);
       onAdded();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to add to session.');
@@ -74,35 +85,40 @@ function ManualAddForm({ sessionId, bookedGymnastIds, onAdded }) {
     <form onSubmit={handleSubmit} className="bk-form-card" style={{ marginTop: '1rem' }}>
       <h4 style={{ margin: '0 0 0.75rem' }}>Add participant</h4>
 
-      {/* Step 1: account holder */}
+      {/* Gymnast search */}
       <label className="bk-label" style={{ fontWeight: 'normal', display: 'block', marginBottom: '0.75rem' }}>
-        Account holder
+        Search gymnast
         <div style={{ position: 'relative', marginTop: '0.25rem' }}>
           <input
             className="bk-input"
-            placeholder="Search by name..."
-            value={userSearch}
-            onChange={e => { setUserSearch(e.target.value); setUserId(''); setGymnastIds([]); setShowUserDropdown(true); }}
-            onFocus={() => setShowUserDropdown(true)}
-            onBlur={() => setTimeout(() => setShowUserDropdown(false), 150)}
+            placeholder="Search by gymnast name..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setShowDropdown(true); }}
+            onFocus={() => setShowDropdown(true)}
+            onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
             autoComplete="off"
           />
-          {showUserDropdown && filteredUsers.length > 0 && (
+          {showDropdown && filtered.length > 0 && (
             <div style={{
               position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
               background: 'var(--booking-bg-white)', border: '1px solid var(--booking-border)',
               borderRadius: 'var(--booking-radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               maxHeight: 200, overflowY: 'auto',
             }}>
-              {filteredUsers.map(u => (
+              {filtered.map(g => (
                 <div
-                  key={u.id}
-                  onMouseDown={() => handleSelectUser(u)}
+                  key={g.id}
+                  onMouseDown={() => handleSelect(g)}
                   style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.875rem' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--booking-bg-light)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  {u.firstName} {u.lastName}
+                  {g.firstName} {g.lastName}
+                  {g.guardians?.length > 0 && (
+                    <span style={{ color: 'var(--booking-text-muted)', marginLeft: '0.5rem', fontSize: '0.8rem' }}>
+                      ({g.guardians.map(gu => `${gu.firstName} ${gu.lastName}`).join(', ')})
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -110,52 +126,43 @@ function ManualAddForm({ sessionId, bookedGymnastIds, onAdded }) {
         </div>
       </label>
 
-      {/* Step 2: gymnasts (only shown after account holder selected) */}
-      {selectedUser && (
+      {/* Selected gymnasts */}
+      {selected.length > 0 && (
         <div style={{ marginBottom: '0.75rem' }}>
           <p className="bk-label" style={{ fontWeight: 'normal', marginBottom: '0.4rem' }}>
-            Gymnast{availableGymnasts.length !== 1 ? 's' : ''}
+            To add
           </p>
-          {availableGymnasts.length === 0 ? (
-            <p style={{ fontSize: '0.875rem', color: 'var(--booking-text-muted)', margin: 0 }}>
-              All of {selectedUser.firstName}'s gymnasts are already booked into this session.
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {availableGymnasts.map(g => {
-                const selected = gymnastIds.includes(g.id);
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => toggleGymnast(g.id)}
-                    style={{
-                      padding: '0.35rem 0.75rem',
-                      border: `1px solid ${selected ? 'var(--booking-accent)' : 'var(--booking-border)'}`,
-                      borderRadius: 'var(--booking-radius)',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem',
-                      background: selected ? 'rgba(124,53,232,0.1)' : 'var(--booking-bg-white)',
-                      color: selected ? 'var(--booking-accent)' : 'inherit',
-                      fontWeight: selected ? 600 : 400,
-                    }}
-                  >
-                    {selected ? '✓ ' : ''}{g.firstName} {g.lastName}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+            {selected.map(g => (
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => handleRemove(g.id)}
+                style={{
+                  padding: '0.35rem 0.75rem',
+                  border: '1px solid var(--booking-accent)',
+                  borderRadius: 'var(--booking-radius)',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  background: 'rgba(124,53,232,0.1)',
+                  color: 'var(--booking-accent)',
+                  fontWeight: 600,
+                }}
+              >
+                {g.firstName} {g.lastName} &times;
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {error && <p className="bk-error">{error}</p>}
       <button
         type="submit"
-        disabled={submitting || !userId || gymnastIds.length === 0}
+        disabled={submitting || selected.length === 0}
         className="bk-btn bk-btn--primary bk-btn--sm"
       >
-        {submitting ? 'Adding...' : `Add ${gymnastIds.length > 1 ? `${gymnastIds.length} gymnasts` : 'gymnast'} to session`}
+        {submitting ? 'Adding...' : `Add ${selected.length > 1 ? `${selected.length} gymnasts` : 'gymnast'} to session`}
       </button>
     </form>
   );
@@ -239,6 +246,38 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
           </p>
         )}
       </div>
+
+      <button
+        className="bk-btn bk-btn--primary"
+        style={{ width: '100%', marginBottom: '0.5rem' }}
+        onClick={() => navigate(`/booking/admin/register/${selectedSession}`)}
+      >
+        Open register
+      </button>
+
+      <button
+        className="bk-btn"
+        style={{ width: '100%', marginBottom: '0.5rem', border: '1px solid var(--booking-accent)', color: 'var(--booking-accent)' }}
+        onClick={() => navigate(`/gymnasts?session=${selectedSession}`)}
+      >
+        Track these gymnasts →
+      </button>
+
+      <button
+        className="bk-btn bk-btn--primary"
+        style={{ width: '100%', marginBottom: '1rem' }}
+        onClick={() => setShowManualAdd(v => !v)}
+      >
+        {showManualAdd ? 'Cancel' : '+ Add participant manually'}
+      </button>
+
+      {showManualAdd && (
+        <ManualAddForm
+          sessionId={selectedSession}
+          bookedGymnastIds={sessionDetail.bookings?.flatMap(b => b.lines.map(l => l.gymnast.id)) ?? []}
+          onAdded={onAdded}
+        />
+      )}
 
       {sessionDetail.templateId && (
         <div className="bk-card" style={{ marginBottom: '1rem' }}>
@@ -398,37 +437,6 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
         )}
       </div>
 
-      <button
-        className="bk-btn bk-btn--primary"
-        style={{ width: '100%', marginBottom: '0.5rem' }}
-        onClick={() => navigate(`/booking/admin/register/${selectedSession}`)}
-      >
-        Open register
-      </button>
-
-      <button
-        className="bk-btn"
-        style={{ width: '100%', marginBottom: '0.5rem', border: '1px solid var(--booking-accent)', color: 'var(--booking-accent)' }}
-        onClick={() => navigate(`/gymnasts?session=${selectedSession}`)}
-      >
-        Track these gymnasts →
-      </button>
-
-      <button
-        className="bk-btn bk-btn--primary"
-        style={{ width: '100%' }}
-        onClick={() => setShowManualAdd(v => !v)}
-      >
-        {showManualAdd ? 'Cancel' : '+ Add participant manually'}
-      </button>
-
-      {showManualAdd && (
-        <ManualAddForm
-          sessionId={selectedSession}
-          bookedGymnastIds={sessionDetail.bookings?.flatMap(b => b.lines.map(l => l.gymnast.id)) ?? []}
-          onAdded={onAdded}
-        />
-      )}
     </div>
   );
 }

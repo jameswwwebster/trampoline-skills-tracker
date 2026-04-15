@@ -369,11 +369,11 @@ const Dashboard = () => {
                 className="dashboard-today__register-btn"
                 onClick={() => navigate(`/booking/admin/register/${s.id}`)}
               >
-                Register — {s.startTime}–{s.endTime}
+                Register — {s.startTime}–{s.endTime}{s.type === 'DMT' ? ' (DMT)' : ''}
               </button>
             ) : (
               <span key={s.id} className="dashboard-today__session">
-                {s.startTime}–{s.endTime}
+                {s.startTime}–{s.endTime}{s.type === 'DMT' ? ' (DMT)' : ''}
               </span>
             );
           })}
