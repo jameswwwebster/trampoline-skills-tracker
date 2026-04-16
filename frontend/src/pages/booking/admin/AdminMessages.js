@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
 import RichTextEditor from '../../../components/RichTextEditor';
 import RecipientPicker from '../../../components/RecipientPicker';
+import Toast from '../../../components/Toast';
+import useToast from '../../../hooks/useToast';
 import '../booking-shared.css';
 
 const STATUS_COLOURS = {
@@ -72,6 +74,7 @@ export default function AdminMessages() {
   const [form, setForm] = useState({ subject: '', htmlBody: '', recipientFilter: defaultFilter(), scheduledAt: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const { toast, showToast, dismissToast } = useToast();
 
   const load = () => {
     setLoading(true);
@@ -141,7 +144,7 @@ export default function AdminMessages() {
       await bookingApi.sendMessage(id);
       load();
     } catch {
-      alert('Failed to send');
+      showToast('Failed to send', 'error');
     }
   };
 
@@ -151,7 +154,7 @@ export default function AdminMessages() {
       await bookingApi.deleteMessage(id);
       load();
     } catch {
-      alert('Failed to delete');
+      showToast('Failed to delete', 'error');
     }
   };
 
@@ -273,6 +276,7 @@ export default function AdminMessages() {
           ))}
         </div>
       )}
+      {toast && <Toast message={toast.message} type={toast.type} onDismiss={dismissToast} />}
     </div>
   );
 }

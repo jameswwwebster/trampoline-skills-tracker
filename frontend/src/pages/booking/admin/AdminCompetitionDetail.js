@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { bookingApi } from '../../../utils/bookingApi';
+import Toast from '../../../components/Toast';
+import useToast from '../../../hooks/useToast';
 import '../booking-shared.css';
 
 const STATUS_LABELS = {
@@ -525,6 +527,7 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
   const [synchroCatIds, setSynchroCatIds] = useState([]);
   const [synchroPrice, setSynchroPrice] = useState('');
   const [synchroWorking, setSynchroWorking] = useState(false);
+  const { toast: synchroToast, showToast: showSynchroToast, dismissToast: dismissSynchroToast } = useToast();
 
   if (eligibleError) return <p style={{ color: 'var(--booking-danger)', fontSize: '0.875rem' }}>{eligibleError}</p>;
   if (eligible === null) return <p className="bk-muted">Loading...</p>;
@@ -541,7 +544,7 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
       setShowSynchro(false);
       setSynchroGym1(''); setSynchroGym2(''); setSynchroCatIds([]); setSynchroPrice('');
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to invite synchro pair.');
+      showSynchroToast(err.response?.data?.error || 'Failed to invite synchro pair.', 'error');
     } finally {
       setSynchroWorking(false);
     }
@@ -796,6 +799,7 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
           </div>
         )}
       </div>
+      {synchroToast && <Toast message={synchroToast.message} type={synchroToast.type} onDismiss={dismissSynchroToast} />}
     </div>
   );
 }

@@ -3,6 +3,8 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import { bookingApi, getTemplates, createTemplate, updateTemplate, toggleTemplate, deleteTemplate } from '../../../utils/bookingApi';
+import Toast from '../../../components/Toast';
+import useToast from '../../../hooks/useToast';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -10,6 +12,8 @@ const EMPTY_FORM = { dayOfWeek: '1', startTime: '', endTime: '', openSlots: '12'
 
 // Minimal TipTap toolbar
 function Toolbar({ editor }) {
+  const [linkInput, setLinkInput] = useState(null); // null = closed, string = url value
+
   if (!editor) return null;
   const btn = (label, action, active) => (
     <button
@@ -27,18 +31,41 @@ function Toolbar({ editor }) {
       }}
     >{label}</button>
   );
+
+  const applyLink = (url) => {
+    setLinkInput(null);
+    if (url) editor.chain().focus().setLink({ href: url }).run();
+  };
+
   return (
-    <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', padding: '0.4rem', borderBottom: '1px solid var(--booking-border)', background: 'var(--booking-bg-light)' }}>
-      {btn('B', () => editor.chain().focus().toggleBold().run(), editor.isActive('bold'))}
-      {btn('I', () => editor.chain().focus().toggleItalic().run(), editor.isActive('italic'))}
-      {btn('• List', () => editor.chain().focus().toggleBulletList().run(), editor.isActive('bulletList'))}
-      {btn('1. List', () => editor.chain().focus().toggleOrderedList().run(), editor.isActive('orderedList'))}
-      {btn('Link', () => {
-        const url = window.prompt('URL');
-        if (url) editor.chain().focus().setLink({ href: url }).run();
-      }, editor.isActive('link'))}
-      {editor.isActive('link') && btn('Unlink', () => editor.chain().focus().unsetLink().run(), false)}
-    </div>
+    <>
+      <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', padding: '0.4rem', borderBottom: '1px solid var(--booking-border)', background: 'var(--booking-bg-light)' }}>
+        {btn('B', () => editor.chain().focus().toggleBold().run(), editor.isActive('bold'))}
+        {btn('I', () => editor.chain().focus().toggleItalic().run(), editor.isActive('italic'))}
+        {btn('• List', () => editor.chain().focus().toggleBulletList().run(), editor.isActive('bulletList'))}
+        {btn('1. List', () => editor.chain().focus().toggleOrderedList().run(), editor.isActive('orderedList'))}
+        {btn('Link', () => setLinkInput(editor.getAttributes('link').href || ''), editor.isActive('link'))}
+        {editor.isActive('link') && btn('Unlink', () => editor.chain().focus().unsetLink().run(), false)}
+      </div>
+      {linkInput !== null && (
+        <div style={{ display: 'flex', gap: '0.4rem', padding: '0.4rem', borderBottom: '1px solid var(--booking-border)', background: 'var(--booking-bg-light)', alignItems: 'center' }}>
+          <input
+            autoFocus
+            type="url"
+            placeholder="https://"
+            value={linkInput}
+            onChange={e => setLinkInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); applyLink(linkInput); }
+              if (e.key === 'Escape') setLinkInput(null);
+            }}
+            style={{ flex: 1, fontSize: '0.85rem', padding: '0.25rem 0.4rem', border: '1px solid var(--booking-border)', borderRadius: 4 }}
+          />
+          <button type="button" onMouseDown={e => { e.preventDefault(); applyLink(linkInput); }} style={{ padding: '0.25rem 0.5rem', border: '1px solid var(--booking-border)', borderRadius: 4, cursor: 'pointer', fontSize: '0.8rem' }}>Apply</button>
+          <button type="button" onMouseDown={e => { e.preventDefault(); setLinkInput(null); }} style={{ padding: '0.25rem 0.5rem', border: '1px solid var(--booking-border)', borderRadius: 4, cursor: 'pointer', fontSize: '0.8rem' }}>Cancel</button>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -101,6 +128,7 @@ export default function SessionTemplates() {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [openPanels, setOpenPanels] = useState({});
   const [panelData, setPanelData] = useState({});
+  const { toast, showToast, dismissToast } = useToast();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -137,7 +165,7 @@ export default function SessionTemplates() {
       await bookingApi.updateCommitmentStatus(commitmentId, 'PAUSED');
       loadPanel(templateId);
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to pause commitment');
+      showToast(err.response?.data?.error || 'Failed to pause commitment', 'error');
     }
   };
 
@@ -146,7 +174,7 @@ export default function SessionTemplates() {
       await bookingApi.updateCommitmentStatus(commitmentId, 'ACTIVE');
       loadPanel(templateId);
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to activate commitment');
+      showToast(err.response?.data?.error || 'Failed to activate commitment', 'error');
     }
   };
 
@@ -156,7 +184,7 @@ export default function SessionTemplates() {
       await bookingApi.deleteCommitment(commitmentId);
       loadPanel(templateId);
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to remove commitment');
+      showToast(err.response?.data?.error || 'Failed to remove commitment', 'error');
     }
   };
 
@@ -564,6 +592,7 @@ export default function SessionTemplates() {
           noLabel="Yes, delete only"
         />
       )}
+      {toast && <Toast message={toast.message} type={toast.type} onDismiss={dismissToast} />}
     </div>
   );
 }

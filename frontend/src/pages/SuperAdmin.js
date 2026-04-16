@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Toast from '../components/Toast';
+import useToast from '../hooks/useToast';
 
 const SuperAdmin = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -16,6 +18,13 @@ const SuperAdmin = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [userPage, setUserPage] = useState(1);
   const [gymnastPage, setGymnastPage] = useState(1);
+  const { toast, showToast, dismissToast } = useToast();
+  // Set password modal state
+  const [setPasswordModal, setSetPasswordModal] = useState(null); // { userId, userEmail }
+  const [setPasswordValue, setSetPasswordValue] = useState('');
+  const [setPasswordWorking, setSetPasswordWorking] = useState(false);
+  // Reset password result modal state
+  const [tempPasswordModal, setTempPasswordModal] = useState(null); // temporary password string
 
   useEffect(() => {
     fetchStats();
@@ -106,44 +115,48 @@ const SuperAdmin = () => {
   const handleResetPassword = async (userId) => {
     try {
       const response = await axios.post(`/api/super-admin/users/${userId}/reset-password`);
-      alert(`Temporary password: ${response.data.temporaryPassword}\n\nSend this securely to the user!`);
+      setTempPasswordModal(response.data.temporaryPassword);
     } catch (error) {
       console.error('Failed to reset password:', error);
       setError('Failed to reset password');
     }
   };
 
-  const handleSetPassword = async (userId, userEmail) => {
-    const newPassword = prompt(`Set new password for ${userEmail}:\n\nPassword must be at least 6 characters long.`);
-    
-    if (!newPassword) return; // User cancelled
-    
-    if (newPassword.length < 6) {
-      alert('Password must be at least 6 characters long.');
+  const openSetPassword = (userId, userEmail) => {
+    setSetPasswordModal({ userId, userEmail });
+    setSetPasswordValue('');
+  };
+
+  const handleSetPasswordConfirm = async () => {
+    if (!setPasswordModal) return;
+    if (setPasswordValue.length < 6) {
+      showToast('Password must be at least 6 characters long.', 'error');
       return;
     }
-    
-    if (window.confirm(`Are you sure you want to set a new password for ${userEmail}?`)) {
-      try {
-        await axios.post(`/api/super-admin/users/${userId}/set-password`, {
-          password: newPassword
-        });
-        alert('Password updated successfully!');
-      } catch (error) {
-        console.error('Failed to set password:', error);
-        setError('Failed to set password');
-      }
+    setSetPasswordWorking(true);
+    try {
+      await axios.post(`/api/super-admin/users/${setPasswordModal.userId}/set-password`, {
+        password: setPasswordValue,
+      });
+      showToast('Password updated successfully!', 'success');
+      setSetPasswordModal(null);
+      setSetPasswordValue('');
+    } catch (error) {
+      console.error('Failed to set password:', error);
+      setError('Failed to set password');
+    } finally {
+      setSetPasswordWorking(false);
     }
   };
 
   const handleClubEdit = async (clubId) => {
     // TODO: Implement club editing functionality
-    alert('Club editing functionality will be implemented');
+    showToast('Club editing functionality will be implemented', 'warning');
   };
 
   const handleClubConnectAs = async (clubId) => {
     // TODO: Implement connect-as functionality
-    alert('Connect-as functionality will be implemented');
+    showToast('Connect-as functionality will be implemented', 'warning');
   };
 
   const handleClubDelete = async (clubId) => {
@@ -152,7 +165,7 @@ const SuperAdmin = () => {
         await axios.delete(`/api/super-admin/clubs/${clubId}`);
         fetchClubs();
         setError(null);
-        alert('Club deleted successfully');
+        showToast('Club deleted successfully', 'success');
       } catch (error) {
         console.error('Failed to delete club:', error);
         setError('Failed to delete club');
@@ -162,7 +175,7 @@ const SuperAdmin = () => {
 
   const handleUserEdit = async (userId) => {
     // TODO: Implement user editing functionality
-    alert('User editing functionality will be implemented');
+    showToast('User editing functionality will be implemented', 'warning');
   };
 
   const handleUserDelete = async (userId) => {
@@ -171,7 +184,7 @@ const SuperAdmin = () => {
         await axios.delete(`/api/super-admin/users/${userId}`);
         fetchUsers(userPage, userSearchTerm);
         setError(null);
-        alert('User deleted successfully');
+        showToast('User deleted successfully', 'success');
       } catch (error) {
         console.error('Failed to delete user:', error);
         setError('Failed to delete user');
@@ -450,7 +463,7 @@ const SuperAdmin = () => {
                         </button>
                         <button
                           className="btn btn-outline btn-sm"
-                          onClick={() => handleSetPassword(user.id, user.email)}
+                          onClick={() => openSetPassword(user.id, user.email)}
                           title="Set Password (Manual)"
                         >
                           Set Password
@@ -677,6 +690,54 @@ const SuperAdmin = () => {
           </div>
         </div>
       )}
+
+      {/* Set Password Modal */}
+      {setPasswordModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          onClick={() => setSetPasswordModal(null)}>
+          <div style={{ background: '#fff', borderRadius: 8, padding: '1.5rem', maxWidth: 400, width: '100%', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}
+            onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem' }}>Set password for {setPasswordModal.userEmail}</h3>
+            <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: '#666' }}>Password must be at least 6 characters long.</p>
+            <input
+              type="password"
+              className="form-control"
+              placeholder="New password"
+              value={setPasswordValue}
+              onChange={e => setSetPasswordValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSetPasswordConfirm(); if (e.key === 'Escape') setSetPasswordModal(null); }}
+              autoFocus
+              style={{ marginBottom: '1rem' }}
+            />
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-outline btn-sm" onClick={() => setSetPasswordModal(null)}>Cancel</button>
+              <button className="btn btn-sm" style={{ background: '#2980b9', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: 4, cursor: 'pointer' }} disabled={setPasswordWorking} onClick={handleSetPasswordConfirm}>
+                {setPasswordWorking ? 'Saving...' : 'Set Password'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Temporary Password Modal */}
+      {tempPasswordModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          onClick={() => setTempPasswordModal(null)}>
+          <div style={{ background: '#fff', borderRadius: 8, padding: '1.5rem', maxWidth: 400, width: '100%', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}
+            onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Temporary Password</h3>
+            <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>Send this securely to the user:</p>
+            <div style={{ background: '#f4f4f4', borderRadius: 4, padding: '0.6rem 0.9rem', fontFamily: 'monospace', fontSize: '1rem', marginBottom: '1rem', wordBreak: 'break-all' }}>
+              {tempPasswordModal}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="btn btn-outline btn-sm" onClick={() => setTempPasswordModal(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onDismiss={dismissToast} />}
     </div>
   );
 };
