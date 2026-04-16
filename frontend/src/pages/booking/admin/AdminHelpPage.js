@@ -214,7 +214,9 @@ export default function AdminHelpPage() {
       <Section title="Sessions">
         <p style={S.p}>
           The <strong>Sessions</strong> admin view shows all upcoming session instances across all templates.
-          Use the month navigation to move between months. Click any session to open its detail page.
+          Use the month navigation to move between months. Click any session to open its detail page. Sessions
+          are labelled as <strong>Trampoline</strong> or <strong>DMT</strong> throughout — including on the
+          home dashboard, where clicking a session tile takes you directly to its detail page.
         </p>
 
         <h4 style={S.h4}>What you can see on a session detail page</h4>
@@ -226,10 +228,27 @@ export default function AdminHelpPage() {
         </ul>
 
         <Divider />
+        <h4 style={S.h4}>Marking a standing-slot gymnast as absent</h4>
+        <p style={S.p}>
+          If a gymnast with a standing slot won't be attending a specific session, you can mark them absent
+          from the session detail page. This frees their slot so the capacity is available for other bookings.
+        </p>
+        <p style={S.p}>
+          Open the session, find the gymnast in the <strong>Standing slots</strong> list, and click
+          <strong> Mark absent</strong>. The gymnast will be shown with a strikethrough and the session
+          capacity is updated immediately. To undo the mark, click <strong>Mark attending</strong> on the
+          same row.
+        </p>
+        <Note>
+          Marking a gymnast absent here only affects this one session instance — it does not pause or change
+          their standing slot. Their regular place is restored automatically from the next session onwards.
+        </Note>
+
+        <Divider />
         <h4 style={S.h4}>Manually adding a gymnast to a session</h4>
         <p style={S.p}>
-          Use <strong>Add gymnast</strong> on the session detail page to place any gymnast directly into a
-          session, bypassing payment. This is useful for:
+          Use <strong>Add participant</strong> on the session detail page to place any gymnast directly into a
+          session, bypassing payment. Search by gymnast name to find them. This is useful for:
         </p>
         <ul style={{ paddingLeft: '1.2rem', marginBottom: '0.75rem' }}>
           <li style={S.li}>Make-up sessions for gymnasts who missed a standing slot</li>

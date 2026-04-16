@@ -214,6 +214,7 @@
 - Cancel sessions (reason tracked, existing bookings unaffected until separately cancelled)
 - View calendar of sessions with per-day availability
 - Define closure periods (gym closures, bank holidays)
+- Mark a standing-slot gymnast as absent for a specific session instance — frees the slot for other bookings; absent gymnasts excluded from capacity count
 
 ### Booking & Payment
 - Create bookings for self and/or children (£6.00 per gymnast per session)
@@ -230,7 +231,9 @@
 
 ### Waitlist
 - Join waitlist when session is full
-- Automatic email offer when a slot opens (24-hour offer expiry)
+- Automatic email offer when a slot opens
+  - More than 6 hours before the session: exclusive 2-hour offer to the next person in the queue; if not claimed, automatically moves to the next person
+  - Within 6 hours of the session: all waiting members notified simultaneously; first to claim gets the place
 - Claim offered spot (converts waitlist entry to booking)
 - Leave waitlist
 - Statuses: WAITING → OFFERED → CLAIMED / EXPIRED
@@ -351,7 +354,7 @@ All emails gated by `club.emailEnabled`. Sent via Gmail SMTP (nodemailer). All u
 - Completions by competition type
 - Gymnast list per level
 - Total member counts
-- Admin dashboard tiles: overdue charges count, today's sessions, recent incident/welfare reports
+- Admin dashboard tiles: overdue charges count, today's sessions (with Trampoline/DMT type labels, clickable to navigate directly to the session detail page), recent incident/welfare reports
 - Member/guardian dashboard tile: pending competition invitations
 
 ---
@@ -395,7 +398,7 @@ Priority order as agreed:
 | BG number statuses | PENDING (entered, awaiting verification) / INVALID (failed check) / CONFIRMED |
 | BG number grace period | Bookings allowed while PENDING; blocked if INVALID or no number past threshold |
 | BG Insurance | Required after 2 past confirmed sessions; blocks booking if unconfirmed |
-| Session capacity | Bookings (CONFIRMED + PENDING) count against capacity; members excluded |
+| Session capacity | Confirmed bookings + active standing slots count against capacity; absent-marked standing slot gymnasts and members are excluded |
 | Age restriction | Per-session minimum age enforced at booking time |
 | Credit order | Applied oldest-expiring first; partial use creates remainder credit |
 | Credit expiry | Cancellation credits: 1 month. Admin-assigned: configurable (default 90 days) |

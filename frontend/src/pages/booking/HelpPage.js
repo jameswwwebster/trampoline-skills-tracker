@@ -83,9 +83,13 @@ export default function HelpPage() {
           place in a session each week. Standing slots are managed by the club and attached to the gymnast's
           membership.
         </p>
-        <p style={{ color: 'var(--booking-text-muted)' }}>
+        <p style={{ color: 'var(--booking-text-muted)', marginBottom: '0.5rem' }}>
           You can see your gymnast's standing slots on the <strong>Account</strong> page alongside their
           membership details.
+        </p>
+        <p style={{ color: 'var(--booking-text-muted)' }}>
+          If your gymnast won't be attending their regular session on a particular week, please let the club
+          know in advance. Staff can mark them absent for that session, which frees their place for another gymnast.
         </p>
       </section>
 
