@@ -450,11 +450,12 @@ router.post('/:id/categories', auth, requireRole(ADMIN_ROLES), async (req, res) 
   }
 });
 
-// PATCH /:id/categories/:catId — rename a category
+// PATCH /:id/categories/:catId — rename a category and/or update its linked skill levels
 router.patch('/:id/categories/:catId', auth, requireRole(ADMIN_ROLES), async (req, res) => {
   const { error, value } = Joi.object({
-    name: Joi.string().required(),
-  }).validate(req.body);
+    name: Joi.string().optional(),
+    skillCompetitionIds: Joi.array().items(Joi.string()).optional(),
+  }).min(1).validate(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
 
   try {
@@ -468,9 +469,19 @@ router.patch('/:id/categories/:catId', auth, requireRole(ADMIN_ROLES), async (re
     });
     if (!category) return res.status(404).json({ error: 'Category not found' });
 
+    // If skill competition IDs are provided, replace the linked skill levels entirely
+    if (value.skillCompetitionIds !== undefined) {
+      await prisma.competitionCategorySkillLevel.deleteMany({ where: { categoryId: category.id } });
+      if (value.skillCompetitionIds.length > 0) {
+        await prisma.competitionCategorySkillLevel.createMany({
+          data: value.skillCompetitionIds.map(sid => ({ categoryId: category.id, skillCompetitionId: sid })),
+        });
+      }
+    }
+
     const updated = await prisma.competitionCategory.update({
       where: { id: category.id },
-      data: { name: value.name },
+      data: value.name ? { name: value.name } : {},
       include: { skillCompetitions: true },
     });
     res.json(updated);

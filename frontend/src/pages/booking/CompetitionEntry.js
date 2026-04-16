@@ -14,6 +14,7 @@ export default function CompetitionEntry() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [clientSecret, setClientSecret] = useState(null);
   const [total, setTotal] = useState(null);
+  const [creditApplied, setCreditApplied] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -137,6 +138,11 @@ export default function CompetitionEntry() {
               Late entry fee included
             </p>
           ) : null}
+          {creditApplied > 0 && (
+            <p style={{ fontSize: '0.875rem', color: 'var(--booking-success)', marginBottom: '0.25rem' }}>
+              Credit applied: −£{(creditApplied / 100).toFixed(2)}
+            </p>
+          )}
           <p style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '1.25rem' }}>
             Total: £{(total / 100).toFixed(2)}
           </p>
@@ -155,8 +161,14 @@ export default function CompetitionEntry() {
       setError(null);
       try {
         const res = await bookingApi.checkoutCompetitionEntry(entryId);
+        if (res.data.paid) {
+          // Credits covered the full amount — reload entry to show PAID state
+          await loadEntry();
+          return;
+        }
         setClientSecret(res.data.clientSecret);
         setTotal(res.data.total);
+        setCreditApplied(res.data.creditApplied || 0);
       } catch (err) {
         setError(err.response?.data?.error || 'Failed to start checkout.');
       } finally {
