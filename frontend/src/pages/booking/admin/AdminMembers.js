@@ -1066,7 +1066,7 @@ function MembershipsPanel() {
     setLoading(true);
     bookingApi.getMemberships()
       .then(res => setMemberships(res.data))
-      .catch(() => {})
+      .catch(() => setError('Failed to load memberships. Please refresh.'))
       .finally(() => setLoading(false));
   };
   useEffect(load, []);
@@ -1115,6 +1115,7 @@ function MembershipsPanel() {
   const visible = memberships.filter(m => m.status !== 'CANCELLED');
 
   if (loading) return <p className="bk-muted">Loading...</p>;
+  if (error && visible.length === 0) return <p className="bk-error">{error}</p>;
   if (visible.length === 0) return <p className="bk-muted">No active memberships.</p>;
 
   const unnotifiedCount = memberships.filter(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt).length;
@@ -1172,18 +1173,20 @@ function MembershipsPanel() {
 function CreditsPanel() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     setLoading(true);
     bookingApi.getAllCredits()
       .then(r => setUsers(r.data))
-      .catch(() => {})
+      .catch(() => setError('Failed to load credits. Please refresh.'))
       .finally(() => setLoading(false));
   }, []);
 
   const withCredits = users.filter(u => u.totalCredits > 0);
 
   if (loading) return <p className="bk-muted">Loading...</p>;
+  if (error) return <p className="bk-error">{error}</p>;
   if (withCredits.length === 0) return <p className="bk-muted">No active credits.</p>;
 
   return (
@@ -1302,7 +1305,8 @@ function MemberDetail({ userId, onRemoved }) {
     ]).then(([mRes, memRes]) => {
       setMember(mRes.data);
       setMemberships(Array.isArray(memRes.data) ? memRes.data : []);
-    }).finally(() => setLoading(false));
+    }).catch(err => { console.error(err); })
+    .finally(() => setLoading(false));
   };
 
   const loadCharges = async () => {
@@ -1803,6 +1807,7 @@ export default function AdminMembers() {
   const [childrenByUser, setChildrenByUser] = useState({}); // userId → "First Last, ..."
   const [gymnastsCountByUser, setGymnastsCountByUser] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState('');
   const [letterFilter, setLetterFilter] = useState('');
@@ -1845,6 +1850,7 @@ export default function AdminMembers() {
         setMembers(users);
         setChildrenByUser(map);
       })
+      .catch(() => setLoadError('Failed to load members. Please refresh.'))
       .finally(() => setLoading(false));
 
   useEffect(() => { load(); }, []);
@@ -1883,6 +1889,7 @@ export default function AdminMembers() {
   const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   if (loading) return <p className="bk-center">Loading...</p>;
+  if (loadError) return <div className="bk-page bk-page--xl"><p className="bk-error">{loadError}</p></div>;
 
   return (
     <div className="bk-page bk-page--xl">
