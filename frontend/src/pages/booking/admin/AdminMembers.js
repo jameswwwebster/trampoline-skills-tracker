@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi, getTemplates } from '../../../utils/bookingApi';
 import AdminRemovedMembers from './AdminRemovedMembers';
+import Toast from '../../../components/Toast';
+import useToast from '../../../hooks/useToast';
 import '../booking-shared.css';
 
 const waLink = (phone) => `https://wa.me/${phone.replace(/\D/g, '').replace(/^0/, '44')}`;
@@ -1241,6 +1243,7 @@ function MemberDetail({ userId, onRemoved }) {
   const [chargeFormError, setChargeFormError] = useState(null);
   const [submittingCharge, setSubmittingCharge] = useState(false);
   const [templates, setTemplates] = useState([]);
+  const { toast: detailToast, showToast: showDetailToast, dismissToast: dismissDetailToast } = useToast();
 
   useEffect(() => { getTemplates().then(r => setTemplates(r.data)).catch(() => {}); }, []);
 
@@ -1361,7 +1364,7 @@ function MemberDetail({ userId, onRemoved }) {
       await bookingApi.deleteCredit(creditId);
       await load();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to delete credit');
+      showDetailToast(err.response?.data?.error || 'Failed to delete credit', 'error');
     }
   };
 
@@ -1371,7 +1374,7 @@ function MemberDetail({ userId, onRemoved }) {
       await bookingApi.deleteCharge(chargeId);
       await loadCharges();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to delete charge');
+      showDetailToast(err.response?.data?.error || 'Failed to delete charge', 'error');
     }
   };
 
@@ -1381,7 +1384,7 @@ function MemberDetail({ userId, onRemoved }) {
       await bookingApi.markAdultAsGymnast(userId);
       load(); // refresh the member list
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to create gymnast record');
+      showDetailToast(err.response?.data?.error || 'Failed to create gymnast record', 'error');
     }
   };
 
@@ -1788,6 +1791,7 @@ function MemberDetail({ userId, onRemoved }) {
           </form>
         )}
       </div>
+      {detailToast && <Toast message={detailToast.message} type={detailToast.type} onDismiss={dismissDetailToast} />}
     </div>
   );
 }

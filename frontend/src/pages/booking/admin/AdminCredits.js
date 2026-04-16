@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
+import Toast from '../../../components/Toast';
+import useToast from '../../../hooks/useToast';
 import '../booking-shared.css';
 
 function formatDate(iso) {
@@ -10,6 +12,7 @@ function formatDate(iso) {
 export default function AdminCredits() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { toast, showToast, dismissToast } = useToast();
 
   // ── Recurring credits ─────────────────────────────────────────────────────
   const [members, setMembers] = useState([]);
@@ -63,7 +66,7 @@ export default function AdminCredits() {
       await bookingApi.deleteRecurringCredit(id);
       loadRecurring();
     } catch {
-      alert('Failed to cancel rule.');
+      showToast('Failed to cancel rule.', 'error');
     }
   };
 
@@ -195,6 +198,7 @@ export default function AdminCredits() {
           </tbody>
         </table>
       )}
+      {toast && <Toast message={toast.message} type={toast.type} onDismiss={dismissToast} />}
     </div>
   );
 }

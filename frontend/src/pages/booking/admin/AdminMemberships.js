@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { bookingApi, getTemplates } from '../../../utils/bookingApi';
+import Toast from '../../../components/Toast';
+import useToast from '../../../hooks/useToast';
 import '../booking-shared.css';
 
 const STATUS_LABELS = {
@@ -29,6 +31,7 @@ export default function AdminMemberships() {
   const [resetSkipEmail, setResetSkipEmail] = useState(false);
   const [cancellingOverdue, setCancellingOverdue] = useState(false);
   const [cancelOverdueResult, setCancelOverdueResult] = useState(null);
+  const { toast, showToast, dismissToast } = useToast();
 
   const load = () => {
     bookingApi.getMemberships().then(res => setMemberships(res.data));
@@ -77,20 +80,20 @@ export default function AdminMemberships() {
       await bookingApi.updateMembership(id, { status });
       load();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to update membership.');
+      showToast(err.response?.data?.error || 'Failed to update membership.', 'error');
     }
   };
 
   const handleEditAmount = async (id) => {
     const pence = Math.round(parseFloat(editAmount) * 100);
-    if (!pence || pence < 1) return alert('Enter a valid amount.');
+    if (!pence || pence < 1) { showToast('Enter a valid amount.', 'error'); return; }
     try {
       await bookingApi.updateMembership(id, { monthlyAmount: pence });
       setEditingId(null);
       setEditAmount('');
       load();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to update amount.');
+      showToast(err.response?.data?.error || 'Failed to update amount.', 'error');
     }
   };
 
@@ -100,7 +103,7 @@ export default function AdminMemberships() {
       await bookingApi.deleteMembership(id);
       load();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to cancel membership.');
+      showToast(err.response?.data?.error || 'Failed to cancel membership.', 'error');
     }
   };
 
@@ -372,6 +375,7 @@ export default function AdminMemberships() {
         </table>
         );
       })()}
+      {toast && <Toast message={toast.message} type={toast.type} onDismiss={dismissToast} />}
     </div>
   );
 }
