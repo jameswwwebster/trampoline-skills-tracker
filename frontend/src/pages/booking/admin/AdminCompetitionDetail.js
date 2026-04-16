@@ -78,12 +78,12 @@ export default function AdminCompetitionDetail() {
     }
   };
 
-  const handleRenameCategory = async (catId, name) => {
+  const handleRenameCategory = async (catId, name, skillCompetitionIds) => {
     try {
-      await bookingApi.updateCompetitionCategory(id, catId, { name });
+      await bookingApi.updateCompetitionCategory(id, catId, { name, skillCompetitionIds });
       await load();
     } catch (err) {
-      setMsg(err.response?.data?.error || 'Failed to rename category.');
+      setMsg(err.response?.data?.error || 'Failed to update category.');
     }
   };
 
@@ -318,6 +318,7 @@ export default function AdminCompetitionDetail() {
 function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCancel, onEditValueChange, onAddCategory, onRenameCategory, onRemoveCategory }) {
   const [catEditId, setCatEditId] = useState(null);
   const [catEditValue, setCatEditValue] = useState('');
+  const [catEditSkillIds, setCatEditSkillIds] = useState([]);
   const [showAddCat, setShowAddCat] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [newCatSkillIds, setNewCatSkillIds] = useState([]);
@@ -336,6 +337,7 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   const fields = [
     { key: 'name', label: 'Name', type: 'text', display: event.name },
     { key: 'location', label: 'Location', type: 'text', display: event.location },
+    { key: 'description', label: 'Description', type: 'textarea', display: event.description || '—', editVal: event.description || '' },
     { key: 'startDate', label: 'Start date', type: 'date', display: new Date(event.startDate).toLocaleDateString('en-GB') },
     { key: 'endDate', label: 'End date', type: 'date', display: event.endDate ? new Date(event.endDate).toLocaleDateString('en-GB') : '—' },
     { key: 'entryDeadline', label: 'Entry deadline', type: 'date', display: new Date(event.entryDeadline).toLocaleDateString('en-GB') },
@@ -351,10 +353,13 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   const handleCatRename = async (catId) => {
     if (!catEditValue.trim()) return;
     setCatSaving(true);
-    await onRenameCategory(catId, catEditValue.trim());
+    await onRenameCategory(catId, catEditValue.trim(), catEditSkillIds);
     setCatEditId(null);
     setCatSaving(false);
   };
+
+  const toggleCatEditSkill = (scId) =>
+    setCatEditSkillIds(prev => prev.includes(scId) ? prev.filter(id => id !== scId) : [...prev, scId]);
 
   const handleAddCat = async () => {
     if (!newCatName.trim()) return;
@@ -378,23 +383,36 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
               <td style={{ fontWeight: 500, width: '160px' }}>{f.label}</td>
               <td>
                 {editField === f.key ? (
-                  <div className="bk-row" style={{ gap: '0.5rem' }}>
-                    <input
-                      type={f.type}
-                      step={f.type === 'number' ? '0.01' : undefined}
-                      min={f.type === 'number' ? '0' : undefined}
-                      className="bk-input"
-                      style={{ maxWidth: 200 }}
-                      value={editValue}
-                      onChange={e => onEditValueChange(e.target.value)}
-                      autoFocus
-                    />
-                    <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={saving} onClick={() => onSave(f.key, editValue)}>Save</button>
-                    <button className="bk-btn bk-btn--sm" onClick={onCancel}>Cancel</button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 400 }}>
+                    {f.type === 'textarea' ? (
+                      <textarea
+                        className="bk-input"
+                        rows={4}
+                        style={{ resize: 'vertical' }}
+                        value={editValue}
+                        onChange={e => onEditValueChange(e.target.value)}
+                        autoFocus
+                      />
+                    ) : (
+                      <input
+                        type={f.type}
+                        step={f.type === 'number' ? '0.01' : undefined}
+                        min={f.type === 'number' ? '0' : undefined}
+                        className="bk-input"
+                        style={{ maxWidth: 200 }}
+                        value={editValue}
+                        onChange={e => onEditValueChange(e.target.value)}
+                        autoFocus
+                      />
+                    )}
+                    <div className="bk-row" style={{ gap: '0.5rem' }}>
+                      <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={saving} onClick={() => onSave(f.key, editValue)}>Save</button>
+                      <button className="bk-btn bk-btn--sm" onClick={onCancel}>Cancel</button>
+                    </div>
                   </div>
                 ) : (
                   <span
-                    style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}
+                    style={{ cursor: 'pointer', textDecoration: 'underline dotted', whiteSpace: 'pre-wrap' }}
                     title="Click to edit"
                     onClick={() => onEdit(f.key, f.editVal !== undefined ? f.editVal : f.display)}
                   >
@@ -433,24 +451,47 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
         {event.categories.map(cat => (
           <div key={cat.id} style={{ fontSize: '0.875rem', marginBottom: '0.4rem' }}>
             {catEditId === cat.id ? (
-              <div className="bk-row" style={{ gap: '0.5rem' }}>
+              <div style={{ border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.75rem', background: 'var(--booking-bg,#f9fafb)' }}>
                 <input
                   className="bk-input"
-                  style={{ maxWidth: 260 }}
+                  style={{ marginBottom: '0.6rem' }}
                   value={catEditValue}
                   onChange={e => setCatEditValue(e.target.value)}
                   autoFocus
-                  onKeyDown={e => { if (e.key === 'Enter') handleCatRename(cat.id); if (e.key === 'Escape') setCatEditId(null); }}
+                  onKeyDown={e => { if (e.key === 'Escape') setCatEditId(null); }}
                 />
-                <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={catSaving} onClick={() => handleCatRename(cat.id)}>Save</button>
-                <button className="bk-btn bk-btn--sm" onClick={() => setCatEditId(null)}>Cancel</button>
+                {skillCompetitions.filter(sc => sc.isActive).length > 0 && (
+                  <div style={{ marginBottom: '0.6rem' }}>
+                    <p style={{ margin: '0 0 0.3rem', fontSize: '0.8rem', fontWeight: 600 }}>
+                      Linked skill levels <span className="bk-muted" style={{ fontWeight: 400 }}>(optional)</span>
+                    </p>
+                    {skillCompetitions.filter(sc => sc.isActive).map(sc => (
+                      <label key={sc.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '0.2rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={catEditSkillIds.includes(sc.id)}
+                          onChange={() => toggleCatEditSkill(sc.id)}
+                        />
+                        {sc.name}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <div className="bk-row" style={{ gap: '0.5rem' }}>
+                  <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={catSaving || !catEditValue.trim()} onClick={() => handleCatRename(cat.id)}>Save</button>
+                  <button className="bk-btn bk-btn--sm" onClick={() => setCatEditId(null)}>Cancel</button>
+                </div>
               </div>
             ) : (
               <div className="bk-row" style={{ gap: '0.5rem', alignItems: 'center' }}>
                 <span
                   style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}
-                  title="Click to rename"
-                  onClick={() => { setCatEditId(cat.id); setCatEditValue(cat.name); }}
+                  title="Click to edit"
+                  onClick={() => {
+                    setCatEditId(cat.id);
+                    setCatEditValue(cat.name);
+                    setCatEditSkillIds((cat.skillCompetitions || []).map(sc => sc.skillCompetitionId || sc.id));
+                  }}
                 >
                   {cat.name}
                 </span>

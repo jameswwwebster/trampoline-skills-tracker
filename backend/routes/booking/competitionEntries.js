@@ -279,6 +279,7 @@ router.post('/:id/confirm-invoice', auth, requireRole(ADMIN_ROLES), async (req, 
     });
 
     // Send invoice email to all guardians via the GuardianGymnasts M2M relation
+    const club = await prisma.club.findUnique({ where: { id: req.user.clubId }, select: { emailEnabled: true } });
     const gymnastwithGuardians = await prisma.gymnast.findUnique({
       where: { id: entry.gymnastId },
       include: { guardians: { select: { email: true, firstName: true, lastName: true } } },
@@ -287,19 +288,23 @@ router.post('/:id/confirm-invoice', auth, requireRole(ADMIN_ROLES), async (req, 
     if (recipients.length === 0) {
       console.warn(`⚠️  competition invoice: no guardians found for gymnast ${entry.gymnastId} — email not sent`);
     }
-    for (const guardian of recipients) {
-      const result = await emailService.sendCompetitionInvoice(
-        guardian.email,
-        guardian,
-        updated.gymnast,
-        updated.competitionEvent,
-        updated.categories.map(ec => ec.category.name),
-        total,
-        updated.id
-      );
-      if (!result?.success) {
-        console.error(`❌ competition invoice email failed for ${guardian.email}:`, result?.error);
+    if (club?.emailEnabled) {
+      for (const guardian of recipients) {
+        const result = await emailService.sendCompetitionInvoice(
+          guardian.email,
+          guardian,
+          updated.gymnast,
+          updated.competitionEvent,
+          updated.categories.map(ec => ec.category.name),
+          total,
+          updated.id
+        );
+        if (!result?.success) {
+          console.error(`❌ competition invoice email failed for ${guardian.email}:`, result?.error);
+        }
       }
+    } else {
+      console.log(`ℹ️  competition invoice: email skipped — club emailEnabled is false`);
     }
 
     res.json(updated);
@@ -326,20 +331,23 @@ router.post('/:id/resend-invoice', auth, requireRole(ADMIN_ROLES), async (req, r
       data: { invoiceSentAt: new Date() },
     });
 
-    const gWithGuardians = await prisma.gymnast.findUnique({
-      where: { id: entry.gymnastId },
-      include: { guardians: { select: { email: true, firstName: true, lastName: true } } },
-    });
-    for (const guardian of gWithGuardians?.guardians ?? []) {
-      await emailService.sendCompetitionInvoice(
-        guardian.email,
-        guardian,
-        entry.gymnast,
-        entry.competitionEvent,
-        entry.categories.map(ec => ec.category.name),
-        entry.totalAmount,
-        entry.id
-      );
+    const resendClub = await prisma.club.findUnique({ where: { id: req.user.clubId }, select: { emailEnabled: true } });
+    if (resendClub?.emailEnabled) {
+      const gWithGuardians = await prisma.gymnast.findUnique({
+        where: { id: entry.gymnastId },
+        include: { guardians: { select: { email: true, firstName: true, lastName: true } } },
+      });
+      for (const guardian of gWithGuardians?.guardians ?? []) {
+        await emailService.sendCompetitionInvoice(
+          guardian.email,
+          guardian,
+          entry.gymnast,
+          entry.competitionEvent,
+          entry.categories.map(ec => ec.category.name),
+          entry.totalAmount,
+          entry.id
+        );
+      }
     }
 
     res.json({ ok: true });
@@ -444,7 +452,8 @@ router.delete('/:id', auth, requireRole(ADMIN_ROLES), async (req, res) => {
 });
 
 // POST /api/booking/competition-entries/:id/checkout
-// Initiates Stripe payment for entries in PAYMENT_PENDING state
+// Initiates Stripe payment for entries in PAYMENT_PENDING state.
+// Available credits are applied first; if they cover the full amount, entry is marked PAID immediately.
 router.post('/:id/checkout', auth, async (req, res) => {
   try {
     const entry = await getEntryWithEvent(req.params.id);
@@ -459,12 +468,50 @@ router.post('/:id/checkout', auth, async (req, res) => {
       return res.status(400).json({ error: 'Payment is not available for this entry' });
     }
 
+    const gross = entry.totalAmount;
+
+    // Apply available credits (oldest expiring first)
+    const availableCredits = await prisma.credit.findMany({
+      where: { userId: req.user.id, usedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { expiresAt: 'asc' },
+    });
+    let remaining = gross;
+    const creditsToUse = [];
+    for (const credit of availableCredits) {
+      if (remaining <= 0) break;
+      const consume = Math.min(credit.amount, remaining);
+      remaining -= consume;
+      creditsToUse.push({ id: credit.id, consume, remainder: credit.amount - consume, expiresAt: credit.expiresAt });
+    }
+    const creditApplied = gross - remaining;
+
+    // Consume credits
+    for (const c of creditsToUse) {
+      await prisma.credit.update({
+        where: { id: c.id },
+        data: { amount: c.consume, usedAt: new Date() },
+      });
+      if (c.remainder > 0) {
+        await prisma.credit.create({
+          data: { userId: req.user.id, amount: c.remainder, expiresAt: c.expiresAt },
+        });
+      }
+    }
+
+    // If credits cover the full amount, mark as PAID immediately
+    if (remaining <= 0) {
+      await prisma.competitionEntry.update({
+        where: { id: entry.id },
+        data: { status: 'PAID', paidExternally: false },
+      });
+      return res.json({ paid: true, creditApplied });
+    }
+
     if (!process.env.STRIPE_SECRET_KEY) {
       return res.status(500).json({ error: 'Stripe not configured' });
     }
 
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const total = entry.totalAmount;
 
     const guardian = await prisma.user.findUnique({ where: { id: req.user.id } });
     let stripeCustomerId = guardian.stripeCustomerId;
@@ -479,7 +526,7 @@ router.post('/:id/checkout', auth, async (req, res) => {
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: total,
+      amount: remaining,
       currency: 'gbp',
       customer: stripeCustomerId,
       automatic_payment_methods: { enabled: true },
@@ -497,7 +544,7 @@ router.post('/:id/checkout', auth, async (req, res) => {
       data: { stripePaymentIntentId: paymentIntent.id },
     });
 
-    res.json({ clientSecret: paymentIntent.client_secret, total });
+    res.json({ clientSecret: paymentIntent.client_secret, total: remaining, creditApplied });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
