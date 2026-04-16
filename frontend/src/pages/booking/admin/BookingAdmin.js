@@ -347,7 +347,7 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
                           fontWeight: 600,
                         }}
                       >
-                        {isToggling ? '…' : isAbsent ? '↩ Undo absent' : 'Won\'t attend'}
+                        {isToggling ? '…' : isAbsent ? '↩ Mark attending' : 'Mark absent'}
                       </button>
                     )}
                     {CONSENT_BADGES.map(({ type, label }) => {
