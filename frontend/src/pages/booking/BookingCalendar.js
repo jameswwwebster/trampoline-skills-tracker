@@ -9,6 +9,7 @@ export default function BookingCalendar() {
   const [sessions, setSessions] = useState([]);
   const [closures, setClosures] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [cart, setCart] = useState(() => {
     try {
@@ -36,6 +37,7 @@ export default function BookingCalendar() {
 
   const handleNavigate = (date) => {
     setSelectedSessionId(null);
+    setLoadError(false);
     const y = date.getFullYear();
     const m = date.getMonth() + 1;
     setLoading(true);
@@ -55,7 +57,7 @@ export default function BookingCalendar() {
     ]).then((results) => {
       setSessions(results.slice(0, -1).flatMap(r => r.data));
       setClosures(results[results.length - 1].data);
-    }).catch(console.error).finally(() => setLoading(false));
+    }).catch(err => { console.error(err); setLoadError(true); }).finally(() => setLoading(false));
   };
 
   const hasStarted = (s) => {
@@ -102,6 +104,9 @@ export default function BookingCalendar() {
 
   return (
     <>
+      {loadError && (
+        <div className="bk-error">Failed to load sessions. Please refresh.</div>
+      )}
       <CalendarNav
         sessions={sessions}
         onNavigate={handleNavigate}

@@ -4,15 +4,17 @@ import { bookingApi } from '../../../utils/bookingApi';
 export default function AdminCharges() {
   const [charges, setCharges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     bookingApi.getAdminCharges()
       .then(r => setCharges(r.data))
-      .catch(() => {})
+      .catch(() => setError('Failed to load charges. Please refresh.'))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="bk-page"><p>Loading…</p></div>;
+  if (error) return <div className="bk-page" style={{ maxWidth: '800px' }}><p className="bk-error">{error}</p></div>;
 
   return (
     <div className="bk-page" style={{ maxWidth: '800px' }}>

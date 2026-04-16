@@ -24,6 +24,8 @@ export default function MyBookings() {
   const [waitlist, setWaitlist] = useState([]);
   const [commitments, setCommitments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [cancelError, setCancelError] = useState(null);
   const [cancelling, setCancelling] = useState(null);
   const navigate = useNavigate();
 
@@ -36,6 +38,8 @@ export default function MyBookings() {
       setBookings(bRes.data.filter(b => b.status === 'CONFIRMED'));
       setWaitlist(wRes.data);
       setCommitments(cRes.data);
+    }).catch(() => {
+      setError('Failed to load bookings. Please refresh.');
     }).finally(() => setLoading(false));
   };
 
@@ -48,19 +52,24 @@ export default function MyBookings() {
       : 'Cancel this booking? A credit will be issued for each gymnast.';
     if (!window.confirm(msg)) return;
     setCancelling(bookingId);
+    setCancelError(null);
     try {
       await bookingApi.cancelBooking(bookingId);
       load();
+    } catch {
+      setCancelError('Failed to cancel booking. Please try again.');
     } finally {
       setCancelling(null);
     }
   };
 
   if (loading) return <p className="bk-center">Loading...</p>;
+  if (error) return <div className="bk-page bk-page--md"><p className="bk-error">{error}</p></div>;
 
   return (
     <div className="bk-page bk-page--md">
       <h2>My Bookings</h2>
+      {cancelError && <p className="bk-error">{cancelError}</p>}
 
       {waitlist.filter(e => e.status === 'OFFERED').map(e => {
         const d = new Date(e.sessionInstance.date);

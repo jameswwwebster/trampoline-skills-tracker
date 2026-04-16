@@ -61,7 +61,7 @@ export default function SessionDetail({
         }
       }
       setConflictingGymnastIds(conflictIds);
-    }).catch(console.error).finally(() => setLoading(false));
+    }).catch(err => { console.error(err); setError('Failed to load session. Please refresh.'); }).finally(() => setLoading(false));
 
     loadGymnasts();
   }, [instanceId]);
@@ -163,6 +163,7 @@ export default function SessionDetail({
   };
 
   if (loading) return <div className="session-detail__loading">Loading session...</div>;
+  if (!session && error) return <div className="session-detail__error">{error}</div>;
   if (!session) return <div className="session-detail__error">Session not found.</div>;
 
   const sessionDate = new Date(session.date);
