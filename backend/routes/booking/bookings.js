@@ -68,6 +68,30 @@ const batchBookingSchema = Joi.object({
   })).min(1).unique('sessionInstanceId').required(),
 });
 
+// Returns how many slots are still available in an instance.
+// Mirrors the logic in sessions.js: counts confirmed bookings + active standing
+// slots (with startDate filter), then subtracts gymnasts marked absent so that
+// freeing a standing slot via the absence toggle is reflected at checkout.
+async function getAvailableSlots(instance) {
+  const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+  const sessionDate = new Date(instance.date);
+  sessionDate.setHours(0, 0, 0, 0);
+  const absentGymnastIds = (await prisma.attendance.findMany({
+    where: { sessionInstanceId: instance.id, status: 'ABSENT' },
+    select: { gymnastId: true },
+  })).map(a => a.gymnastId);
+  const activeCommitments = await prisma.commitment.count({
+    where: {
+      templateId: instance.templateId,
+      status: 'ACTIVE',
+      OR: [{ startDate: null }, { startDate: { lte: sessionDate } }],
+      ...(absentGymnastIds.length > 0 ? { gymnastId: { notIn: absentGymnastIds } } : {}),
+    },
+  });
+  const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
+  return Math.max(0, capacity - bookedCount - activeCommitments);
+}
+
 // POST /api/booking/bookings
 // Create a booking + Stripe Payment Intent
 router.post('/', auth, async (req, res) => {
@@ -122,12 +146,8 @@ router.post('/', auth, async (req, res) => {
     });
 
     if (!offeredEntry) {
-      const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
-      const activeCommitments = await prisma.commitment.count({
-        where: { templateId: instance.templateId, status: 'ACTIVE' },
-      });
-      const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
-      if (bookedCount + activeCommitments + gymnastIds.length > capacity) {
+      const available = await getAvailableSlots(instance);
+      if (available < gymnastIds.length) {
         return res.status(400).json({ error: 'Not enough slots available' });
       }
     }
@@ -440,12 +460,8 @@ router.post('/batch', auth, async (req, res) => {
         return res.status(400).json({ error: `Already booked: ${names}` });
       }
 
-      const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
-      const activeCommitmentsCount = await prisma.commitment.count({
-        where: { templateId: instance.templateId, status: 'ACTIVE' },
-      });
-      const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
-      if (bookedCount + activeCommitmentsCount + gymnastIds.length > capacity) {
+      const available = await getAvailableSlots(instance);
+      if (available < gymnastIds.length) {
         return res.status(400).json({ error: `Not enough slots available for session at ${instance.date} ${instance.template.startTime}` });
       }
 
@@ -887,12 +903,8 @@ router.post('/combined', auth, async (req, res) => {
           return res.status(400).json({ error: `Already booked: ${names}` });
         }
 
-        const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
-        const activeCommitmentsCount = await prisma.commitment.count({
-          where: { templateId: instance.templateId, status: 'ACTIVE' },
-        });
-        const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
-        if (bookedCount + activeCommitmentsCount + gymnastIds.length > capacity) {
+        const available = await getAvailableSlots(instance);
+        if (available < gymnastIds.length) {
           return res.status(400).json({ error: `Not enough slots for session at ${instance.date} ${instance.template.startTime}` });
         }
 
