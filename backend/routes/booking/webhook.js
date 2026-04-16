@@ -10,10 +10,12 @@ async function handleInvoicePaid(invoice, prisma, emailService) {
     include: { gymnast: true, club: true },
   });
   if (!membership) return;
+  let wasUpdated = false;
   if (membership.status !== 'ACTIVE') {
     await prisma.membership.update({ where: { id: membership.id }, data: { status: 'ACTIVE', needsPaymentMethod: false } });
+    wasUpdated = true;
   }
-  if (membership.club.emailEnabled && invoice.amount_paid > 0) {
+  if (wasUpdated && membership.club.emailEnabled && invoice.amount_paid > 0) {
     const guardian = await prisma.user.findFirst({
       where: { guardedGymnasts: { some: { id: membership.gymnastId } } },
       select: { email: true, firstName: true, lastName: true },
@@ -90,29 +92,33 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
 
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
-    // Only confirm if still PENDING — cron may have already cancelled it
-    await prisma.booking.updateMany({
+    // Only confirm if still PENDING — cron may have already cancelled it.
+    // Result count is used as an idempotency signal: if 0 rows updated this
+    // is a duplicate delivery and we skip side-effects (emails etc).
+    const { count: confirmedCount } = await prisma.booking.updateMany({
       where: { stripePaymentIntentId: paymentIntent.id, status: 'PENDING' },
       data: { status: 'CONFIRMED' },
     });
-    console.log(`Booking confirmed for payment intent ${paymentIntent.id}`);
+    console.log(`Booking confirmed for payment intent ${paymentIntent.id} (${confirmedCount} updated)`);
 
-    // Send booking receipt to the parent (non-blocking, swallows errors internally)
-    const confirmedBookings = await prisma.booking.findMany({
-      where: { stripePaymentIntentId: paymentIntent.id, status: 'CONFIRMED' },
-      select: { id: true, userId: true },
-    });
-    if (confirmedBookings.length > 0) {
-      emailService.trySendBookingReceipt(
-        confirmedBookings[0].userId,
-        confirmedBookings.map(b => b.id),
-        prisma,
-      );
+    if (confirmedCount > 0) {
+      // Send booking receipt to the parent (non-blocking, swallows errors internally)
+      const confirmedBookings = await prisma.booking.findMany({
+        where: { stripePaymentIntentId: paymentIntent.id, status: 'CONFIRMED' },
+        select: { id: true, userId: true },
+      });
+      if (confirmedBookings.length > 0) {
+        emailService.trySendBookingReceipt(
+          confirmedBookings[0].userId,
+          confirmedBookings.map(b => b.id),
+          prisma,
+        );
+      }
     }
 
-    // Mark charges paid
+    // Mark charges paid (idempotent — paidAt already set on duplicate)
     await prisma.charge.updateMany({
-      where: { paidOnPaymentIntentId: paymentIntent.id },
+      where: { paidOnPaymentIntentId: paymentIntent.id, paidAt: null },
       data: { paidAt: new Date() },
     });
 

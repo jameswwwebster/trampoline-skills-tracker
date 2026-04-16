@@ -31,6 +31,7 @@ export default function AdminMemberships() {
   const [resetSkipEmail, setResetSkipEmail] = useState(false);
   const [cancellingOverdue, setCancellingOverdue] = useState(false);
   const [cancelOverdueResult, setCancelOverdueResult] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const { toast, showToast, dismissToast } = useToast();
 
   const load = () => {
@@ -107,32 +108,6 @@ export default function AdminMemberships() {
     }
   };
 
-  const openResetPicker = () => {
-    const overdue = memberships.filter(m => m.status === 'PENDING_PAYMENT');
-    setResetSelected(overdue.map(m => m.id));
-    setShowResetPicker(true);
-    setCancelOverdueResult(null);
-  };
-
-  const handleResetSelected = async () => {
-    if (resetSelected.length === 0) return;
-    setCancellingOverdue(true);
-    setShowResetPicker(false);
-    let reset = 0;
-    let failed = 0;
-    for (const id of resetSelected) {
-      try {
-        await bookingApi.resetMembership(id, resetSkipEmail);
-        reset++;
-      } catch {
-        failed++;
-      }
-    }
-    setCancelOverdueResult(`Reset ${reset}${failed > 0 ? `, ${failed} failed` : ''}.`);
-    setCancellingOverdue(false);
-    load();
-  };
-
   const handleNotifyScheduled = async () => {
     const scheduled = memberships.filter(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt);
     if (!window.confirm(`Send a "membership scheduled" email to ${scheduled.length} guardian${scheduled.length !== 1 ? 's' : ''}?`)) return;
@@ -152,56 +127,66 @@ export default function AdminMemberships() {
     <div className="bk-page bk-page--lg">
       <h2>Memberships</h2>
 
-      <form onSubmit={handleSubmit} className="bk-form-card" style={{ marginBottom: '2rem' }}>
-        <h3 style={{ margin: '0 0 1rem' }}>Add member</h3>
-        <div className="bk-grid-2">
-          <label className="bk-label">Gymnast
-            <select value={form.gymnastId} onChange={e => setForm(f => ({ ...f, gymnastId: e.target.value }))} required className="bk-input" style={{ marginTop: '0.25rem' }}>
-              <option value="">Select gymnast</option>
-              {gymnasts.filter(g => !g.isArchived).map(g => <option key={g.id} value={g.id}>{g.firstName} {g.lastName}</option>)}
-            </select>
-          </label>
-          <label className="bk-label">Monthly amount (£)
-            <input type="number" step="0.01" min="0" value={form.monthlyAmount} onChange={e => setForm(f => ({ ...f, monthlyAmount: e.target.value }))} required placeholder="e.g. 40.00" className="bk-input" style={{ marginTop: '0.25rem' }} />
-          </label>
-        </div>
-        <label className="bk-label">Start date
-          <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} required className="bk-input" style={{ marginTop: '0.25rem' }} />
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
-          <input type="checkbox" checked={form.chargeFullMonth} onChange={e => setForm(f => ({ ...f, chargeFullMonth: e.target.checked }))} />
-          Charge full month (no proration) — use when the member is paying for a full calendar month regardless of start date
-        </label>
-        <label className="bk-label">Standing slots
-          <div style={{ marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            {templates.filter(t => t.isActive).map(t => {
-              const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-              const label = `${days[t.dayOfWeek]} ${t.startTime}–${t.endTime}`;
-              const checked = form.templateIds.includes(t.id);
-              return (
-                <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'normal', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    className="auth-checkbox"
-                    checked={checked}
-                    onChange={() => setForm(f => ({
-                      ...f,
-                      templateIds: checked ? f.templateIds.filter(id => id !== t.id) : [...f.templateIds, t.id],
-                    }))}
-                  />
-                  {label}{t.type === 'DMT' ? ' · DMT' : ' · Trampoline'}
-                </label>
-              );
-            })}
-            {templates.length === 0 && <span className="bk-muted" style={{ fontSize: '0.85rem' }}>No session templates found</span>}
-          </div>
-        </label>
-        {error && <p className="bk-error">{error}</p>}
-        {submitMsg && <p style={{ color: 'var(--booking-success)', fontSize: '0.875rem' }}>{submitMsg}</p>}
-        <button type="submit" disabled={submitting} className="bk-btn bk-btn--primary">
-          {submitting ? 'Creating...' : 'Add member'}
+      <div style={{ marginBottom: '2rem' }}>
+        <button
+          className="bk-btn bk-btn--ghost"
+          style={{ fontSize: '0.875rem', marginBottom: showAddForm ? '1rem' : 0 }}
+          onClick={() => setShowAddForm(v => !v)}
+        >
+          {showAddForm ? '▲ Hide add member' : '▼ Add member'}
         </button>
-      </form>
+        {showAddForm && (
+          <form onSubmit={handleSubmit} className="bk-form-card" style={{ marginTop: 0 }}>
+            <div className="bk-grid-2">
+              <label className="bk-label">Gymnast
+                <select value={form.gymnastId} onChange={e => setForm(f => ({ ...f, gymnastId: e.target.value }))} required className="bk-input" style={{ marginTop: '0.25rem' }}>
+                  <option value="">Select gymnast</option>
+                  {gymnasts.filter(g => !g.isArchived).map(g => <option key={g.id} value={g.id}>{g.firstName} {g.lastName}</option>)}
+                </select>
+              </label>
+              <label className="bk-label">Monthly amount (£)
+                <input type="number" step="0.01" min="0" value={form.monthlyAmount} onChange={e => setForm(f => ({ ...f, monthlyAmount: e.target.value }))} required placeholder="e.g. 40.00" className="bk-input" style={{ marginTop: '0.25rem' }} />
+              </label>
+            </div>
+            <label className="bk-label">Start date
+              <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} required className="bk-input" style={{ marginTop: '0.25rem' }} />
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+              <input type="checkbox" checked={form.chargeFullMonth} onChange={e => setForm(f => ({ ...f, chargeFullMonth: e.target.checked }))} />
+              Charge full month (no proration) — use when the member is paying for a full calendar month regardless of start date
+            </label>
+            <label className="bk-label">Standing slots
+              <div style={{ marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                {templates.filter(t => t.isActive).map(t => {
+                  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                  const label = `${days[t.dayOfWeek]} ${t.startTime}–${t.endTime}`;
+                  const checked = form.templateIds.includes(t.id);
+                  return (
+                    <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'normal', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        className="auth-checkbox"
+                        checked={checked}
+                        onChange={() => setForm(f => ({
+                          ...f,
+                          templateIds: checked ? f.templateIds.filter(id => id !== t.id) : [...f.templateIds, t.id],
+                        }))}
+                      />
+                      {label}{t.type === 'DMT' ? ' · DMT' : ' · Trampoline'}
+                    </label>
+                  );
+                })}
+                {templates.length === 0 && <span className="bk-muted" style={{ fontSize: '0.85rem' }}>No session templates found</span>}
+              </div>
+            </label>
+            {error && <p className="bk-error">{error}</p>}
+            {submitMsg && <p style={{ color: 'var(--booking-success)', fontSize: '0.875rem' }}>{submitMsg}</p>}
+            <button type="submit" disabled={submitting} className="bk-btn bk-btn--primary">
+              {submitting ? 'Creating...' : 'Add member'}
+            </button>
+          </form>
+        )}
+      </div>
 
       {memberships.some(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt) && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
@@ -214,59 +199,6 @@ export default function AdminMemberships() {
             {notifying ? 'Sending…' : `Notify scheduled members (${memberships.filter(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt).length})`}
           </button>
           {notifyResult && <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>{notifyResult}</span>}
-        </div>
-      )}
-
-      {memberships.some(m => m.status === 'PENDING_PAYMENT') && (
-        <div style={{ marginBottom: '1rem' }}>
-          {!showResetPicker ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <button
-                className="bk-btn bk-btn--ghost"
-                style={{ fontSize: '0.85rem', color: 'var(--booking-danger)', borderColor: 'var(--booking-danger)' }}
-                disabled={cancellingOverdue}
-                onClick={openResetPicker}
-              >
-                {cancellingOverdue ? 'Resetting…' : `Reset overdue memberships…`}
-              </button>
-              {cancelOverdueResult && <span style={{ fontSize: '0.85rem', color: 'var(--booking-text-muted)' }}>{cancelOverdueResult}</span>}
-            </div>
-          ) : (
-            <div className="bk-card" style={{ maxWidth: 420 }}>
-              <p style={{ margin: '0 0 0.75rem', fontWeight: 600, fontSize: '0.9rem' }}>Select people to reset</p>
-              <p className="bk-muted" style={{ margin: '0 0 0.75rem', fontSize: '0.8rem' }}>Each selected membership will be cancelled and recreated with the same amount starting today. Guardians will receive an email to set up payment.</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.75rem' }}>
-                {memberships.filter(m => m.status === 'PENDING_PAYMENT').map(m => (
-                  <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
-                    <input
-                      type="checkbox"
-                      checked={resetSelected.includes(m.id)}
-                      onChange={() => setResetSelected(s => s.includes(m.id) ? s.filter(id => id !== m.id) : [...s, m.id])}
-                    />
-                    {m.gymnast.firstName} {m.gymnast.lastName}
-                    <span className="bk-muted" style={{ fontSize: '0.8rem' }}>£{(m.monthlyAmount / 100).toFixed(2)}/mo</span>
-                  </label>
-                ))}
-              </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-                <input type="checkbox" checked={resetSkipEmail} onChange={e => setResetSkipEmail(e.target.checked)} />
-                <span>Don't send email notifications</span>
-              </label>
-              <div className="bk-row" style={{ gap: '0.5rem' }}>
-                <button
-                  className="bk-btn bk-btn--sm"
-                  style={{ background: 'var(--booking-danger)', color: '#fff', border: 'none' }}
-                  disabled={resetSelected.length === 0}
-                  onClick={handleResetSelected}
-                >
-                  Reset {resetSelected.length > 0 ? `${resetSelected.length} ` : ''}selected
-                </button>
-                <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => setShowResetPicker(false)}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       )}
 

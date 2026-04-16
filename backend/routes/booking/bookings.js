@@ -285,51 +285,79 @@ router.post('/', auth, async (req, res) => {
       clientSecret = paymentIntent.client_secret;
     }
 
-    // Create booking (PENDING until webhook confirms, or CONFIRMED if no charge)
-    const booking = await prisma.booking.create({
-      data: {
-        userId: req.user.id,
-        sessionInstanceId,
-        stripePaymentIntentId: paymentIntentId,
-        status: chargeAmount === 0 ? 'CONFIRMED' : 'PENDING',
-        totalAmount,
-        lines: {
-          create: gymnastIds.map(id => ({
-            gymnastId: id,
-            amount: instance.template.pricePerGymnast,
-          })),
-        },
-      },
-      include: { lines: true },
-    });
+    // Create booking + mark credits used atomically to prevent double-spending
+    let booking;
+    try {
+      booking = await prisma.$transaction(async (tx) => {
+        // Re-verify credits are still unused (guards against concurrent requests)
+        if (creditsToUse.length > 0) {
+          const stillAvailable = await tx.credit.findMany({
+            where: { id: { in: creditsToUse.map(c => c.id) }, usedAt: null },
+          });
+          if (stillAvailable.length !== creditsToUse.length) {
+            const err = new Error('One or more credits were already used by another request.');
+            err.status = 409;
+            throw err;
+          }
+        }
 
-    // Mark credits as used — set amount to what was consumed, create remainder credit if any
-    for (const c of creditsToUse) {
-      await prisma.credit.update({
-        where: { id: c.id },
-        data: { amount: c.consume, usedAt: new Date(), usedOnBookingId: booking.id },
-      });
-      if (c.remainder > 0) {
-        await prisma.credit.create({
-          data: { userId: req.user.id, amount: c.remainder, expiresAt: c.expiresAt },
+        const newBooking = await tx.booking.create({
+          data: {
+            userId: req.user.id,
+            sessionInstanceId,
+            stripePaymentIntentId: paymentIntentId,
+            status: chargeAmount === 0 ? 'CONFIRMED' : 'PENDING',
+            totalAmount,
+            lines: {
+              create: gymnastIds.map(id => ({
+                gymnastId: id,
+                amount: instance.template.pricePerGymnast,
+              })),
+            },
+          },
+          include: { lines: true },
         });
+
+        // Mark credits as used — set amount to what was consumed, create remainder credit if any
+        for (const c of creditsToUse) {
+          await tx.credit.update({
+            where: { id: c.id },
+            data: { amount: c.consume, usedAt: new Date(), usedOnBookingId: newBooking.id },
+          });
+          if (c.remainder > 0) {
+            await tx.credit.create({
+              data: { userId: req.user.id, amount: c.remainder, expiresAt: c.expiresAt },
+            });
+          }
+        }
+
+        return newBooking;
+      });
+    } catch (txErr) {
+      // If the Stripe intent was already created, void it so the user isn't charged
+      if (paymentIntentId) {
+        await getStripe().paymentIntents.cancel(paymentIntentId).catch(() => {});
       }
+      const status = txErr.status || 500;
+      return res.status(status).json({ error: txErr.message || 'Booking failed.' });
     }
 
     if (chargeAmount === 0) {
       emailService.trySendBookingReceipt(req.user.id, [booking.id], prisma);
     }
 
-    // If user had an OFFERED waitlist entry, mark it CLAIMED and expire others
+    // If user had an OFFERED waitlist entry, mark it CLAIMED and expire others atomically
     if (offeredEntry) {
-      await prisma.waitlistEntry.update({
-        where: { id: offeredEntry.id },
-        data: { status: 'CLAIMED' },
-      });
-      await prisma.waitlistEntry.updateMany({
-        where: { sessionInstanceId, status: 'OFFERED', id: { not: offeredEntry.id } },
-        data: { status: 'EXPIRED' },
-      });
+      await prisma.$transaction([
+        prisma.waitlistEntry.update({
+          where: { id: offeredEntry.id },
+          data: { status: 'CLAIMED' },
+        }),
+        prisma.waitlistEntry.updateMany({
+          where: { sessionInstanceId, status: 'OFFERED', id: { not: offeredEntry.id } },
+          data: { status: 'EXPIRED' },
+        }),
+      ]);
       // Cascade to next WAITING person if any
       processWaitlist(sessionInstanceId).catch(err => console.error('Waitlist cascade failed:', err));
     }
