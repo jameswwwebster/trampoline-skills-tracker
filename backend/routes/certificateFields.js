@@ -1,9 +1,8 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 // Get all fields for a specific template
 router.get('/template/:templateId', auth, async (req, res) => {

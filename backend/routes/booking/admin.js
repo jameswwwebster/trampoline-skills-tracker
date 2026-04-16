@@ -1,10 +1,9 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const { audit } = require('../../services/auditLogService');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../../prisma');
 
 // DELETE /api/booking/admin/gymnasts/:id
 // Remove a gymnast (child) — cleans up all booking data

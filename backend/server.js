@@ -6,7 +6,7 @@ const path = require('path');
 require('dotenv').config();
  
 
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('./prisma');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const clubRoutes = require('./routes/clubs');
@@ -31,8 +31,6 @@ const namedContactRoutes = require('./routes/namedContacts');
 const { sendToCoaches, getUKHHMM, getUKDateBounds } = require('./services/pushNotificationService');
 
 const app = express();
-const prisma = new PrismaClient();
-const pushRoutes = require('./routes/push')(prisma);
 
 // Test Canvas availability at startup
 console.log('🔍 Testing Canvas availability...');
@@ -172,7 +170,7 @@ app.use('/api/incidents', incidentRoutes);
 app.use('/api/welfare', welfareRoutes);
 app.use('/api/guardian-invites', guardianInviteRoutes);
 app.use('/api/named-contacts', namedContactRoutes);
-app.use('/api/push', pushRoutes);
+app.use('/api/push', require('./routes/push'));
 
 // Booking routes
 app.use('/api/booking/sessions', require('./routes/booking/sessions'));

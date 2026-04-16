@@ -1,10 +1,9 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const Joi = require('joi');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../../prisma');
 
 const closureSchema = Joi.object({
   startDate: Joi.date().required(),

@@ -1,9 +1,8 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 // Get dashboard metrics for coaches and admins
 router.get('/metrics', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {

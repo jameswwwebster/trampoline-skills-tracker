@@ -1,9 +1,8 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../../prisma');
 
 // GET /api/booking/admin/payments?month=YYYY-MM
 // Returns all paid charges and used credits for the club, optionally filtered to a month.

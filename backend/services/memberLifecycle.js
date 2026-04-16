@@ -1,6 +1,5 @@
 // backend/services/memberLifecycle.js
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 /**
  * Delete a member, saving an ArchivedMemberSummary if they have booking/membership history.

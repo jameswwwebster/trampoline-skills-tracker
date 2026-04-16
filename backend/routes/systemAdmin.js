@@ -1,10 +1,9 @@
 const express = require('express');
 const Joi = require('joi');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireSystemAdmin } = require('../middleware/auth');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 // Validation schemas
 const archiveClubSchema = Joi.object({

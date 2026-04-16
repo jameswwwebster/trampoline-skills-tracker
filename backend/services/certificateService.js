@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../prisma');
 
 // Try to load Canvas, but make it optional
 let createCanvas, loadImage, registerFont;
@@ -35,7 +35,7 @@ try {
 
 class CertificateService {
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = prisma;
     this.fontPath = path.join(__dirname, '../fonts/LilitaOne-Regular.ttf');
     const storageRoot = process.env.STORAGE_ROOT || path.join(__dirname, '..');
     this.certificatesDir = path.join(storageRoot, 'generated-certificates');

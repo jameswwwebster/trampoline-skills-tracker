@@ -1,9 +1,8 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const emailService = require('../../services/emailService');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../../prisma');
 
 async function handleInvoicePaid(invoice, prisma, emailService) {
   const membership = await prisma.membership.findFirst({

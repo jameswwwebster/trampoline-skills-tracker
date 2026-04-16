@@ -1,10 +1,9 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { auth } = require('../../middleware/auth');
 const { processWaitlist } = require('../../services/waitlistService');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../../prisma');
 
 // POST /api/booking/waitlist/:instanceId — join waitlist
 router.post('/:instanceId', auth, async (req, res) => {

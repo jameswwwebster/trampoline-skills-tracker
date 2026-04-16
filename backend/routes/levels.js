@@ -1,10 +1,9 @@
 const express = require('express');
 const Joi = require('joi');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 // Batch-fetch difficulty/figNotation for implicit skill names, returns name→skill map
 async function lookupImplicitSkillDDs(names) {

@@ -1,10 +1,9 @@
 const express = require('express');
 const Joi = require('joi');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 const STAFF_ROLES = ['CLUB_ADMIN', 'COACH', 'WELFARE'];
 

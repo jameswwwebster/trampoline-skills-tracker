@@ -1,10 +1,9 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
 const { audit } = require('../services/auditLogService');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 // Only CLUB_ADMIN and WELFARE can access welfare reports
 const WELFARE_ROLES = ['CLUB_ADMIN', 'WELFARE'];

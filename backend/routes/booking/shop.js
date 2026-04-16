@@ -1,12 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { PrismaClient } = require('@prisma/client');
 const { auth } = require('../../middleware/auth');
 const { SHOP_PRODUCTS } = require('../../data/shopProducts');
 const { audit } = require('../../services/auditLogService');
 
-const prisma = new PrismaClient();
+const prisma = require('../../prisma');
 
 // POST /api/booking/shop/orders
 // Creates a pending ShopOrder + Stripe PaymentIntent

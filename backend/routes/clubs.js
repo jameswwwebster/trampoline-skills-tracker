@@ -1,6 +1,5 @@
 const express = require('express');
 const Joi = require('joi');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
 const { createDefaultDataForClub } = require('../services/defaultDataService');
 const multer = require('multer');
@@ -8,7 +7,7 @@ const path = require('path');
 const fs = require('fs').promises;
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({

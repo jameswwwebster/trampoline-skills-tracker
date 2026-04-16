@@ -1,5 +1,4 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const Joi = require('joi');
 const getStripe = () => require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -9,7 +8,7 @@ const emailService = require('../../services/emailService');
 const { SHOP_PRODUCTS } = require('../../data/shopProducts');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../../prisma');
 
 /**
  * Returns gymnasts blocked from booking due to BG number requirements.

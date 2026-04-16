@@ -1,11 +1,10 @@
 const express = require('express');
 const Joi = require('joi');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
 const { audit } = require('../services/auditLogService');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 // Validation schemas
 const createGymnastSchema = Joi.object({

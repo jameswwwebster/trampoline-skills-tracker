@@ -1,10 +1,9 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const { audit } = require('../../services/auditLogService');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../../prisma');
 
 // GET /api/booking/sessions?year=2026&month=3
 // Returns all session instances for a calendar month with booking counts

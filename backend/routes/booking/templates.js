@@ -1,11 +1,10 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const Joi = require('joi');
 const { auth, requireRole } = require('../../middleware/auth');
 const { generateRollingInstances } = require('../../services/sessionGenerator');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../../prisma');
 
 const templateSchema = Joi.object({
   dayOfWeek: Joi.number().integer().min(0).max(6).required(),

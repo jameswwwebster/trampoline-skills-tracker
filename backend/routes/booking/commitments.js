@@ -1,10 +1,9 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const { audit } = require('../../services/auditLogService');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../../prisma');
 
 // GET /api/commitments/mine-all — auth only, all commitments for the requesting user's gymnasts
 router.get('/mine-all', auth, async (req, res) => {

@@ -1,8 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
 
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 // Helper function to map categories from JSON to string format
 const mapCategoryToString = (category) => {

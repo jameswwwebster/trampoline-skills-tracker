@@ -1,13 +1,12 @@
 // backend/routes/booking/recurringCredits.js
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const Joi = require('joi');
 const { audit } = require('../../services/auditLogService');
 const emailService = require('../../services/emailService');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../../prisma');
 
 /** Last millisecond of the current calendar month in UTC. */
 function endOfMonthUtc() {

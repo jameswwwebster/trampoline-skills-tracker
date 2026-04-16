@@ -1,6 +1,7 @@
 const express = require('express');
 const Joi = require('joi');
 const { auth } = require('../middleware/auth');
+const prisma = require('../prisma');
 
 const VALID_TYPES = ['SESSION_REMINDER'];
 
@@ -12,8 +13,7 @@ const subscribeSchema = Joi.object({
   }).required(),
 });
 
-module.exports = (prisma) => {
-  const router = express.Router();
+const router = express.Router();
 
   // GET /api/push/vapid-public-key
   router.get('/vapid-public-key', (req, res) => {
@@ -110,5 +110,4 @@ module.exports = (prisma) => {
     }
   });
 
-  return router;
-};
+module.exports = router;

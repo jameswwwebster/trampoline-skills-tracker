@@ -1,11 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../../middleware/auth');
 const { audit } = require('../../services/auditLogService');
 const shopEmailService = require('../../services/shopEmailService');
 
-const prisma = new PrismaClient();
+const prisma = require('../../prisma');
 const STAFF_ROLES = ['CLUB_ADMIN', 'COACH'];
 
 // GET /api/booking/shop/admin/orders

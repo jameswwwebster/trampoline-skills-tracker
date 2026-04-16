@@ -1,6 +1,5 @@
 // backend/services/messageSender.js
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 const emailService = require('./emailService');
 const { resolveRecipients } = require('./recipientResolver');
 

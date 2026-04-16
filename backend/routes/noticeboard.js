@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
 const Joi = require('joi');
 const { resolveRecipients } = require('../services/recipientResolver');
@@ -10,7 +9,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 const ADMIN_ROLES = ['CLUB_ADMIN', 'COACH'];
 
 const noticeboardStorage = multer.diskStorage({

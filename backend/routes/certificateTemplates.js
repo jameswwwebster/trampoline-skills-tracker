@@ -2,12 +2,11 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
-const { PrismaClient } = require('@prisma/client');
 const { auth, requireRole } = require('../middleware/auth');
 const { createStorageConfig, createFileServer } = require('../config/storage');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 // IMPORTANT: AWS ECS uses ephemeral file systems!
 // Files uploaded to the local filesystem will be lost when the container restarts.

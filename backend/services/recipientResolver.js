@@ -1,6 +1,5 @@
 // backend/services/recipientResolver.js
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 /**
  * Resolve a recipientFilter JSON into an array of { id, email, firstName } objects.
