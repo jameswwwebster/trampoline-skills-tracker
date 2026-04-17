@@ -514,20 +514,23 @@ router.post('/:id/reinvite', auth, requireRole(ADMIN_ROLES), async (req, res) =>
     });
 
     // Send invite email to all guardians
-    const gWithGuardians = await prisma.gymnast.findUnique({
-      where: { id: entry.gymnastId },
-      include: { guardians: { select: { email: true, firstName: true, lastName: true } } },
-    });
-    const categoryNames = updated.categories.map(ec => ec.category.name);
-    for (const guardian of gWithGuardians?.guardians ?? []) {
-      await emailService.sendCompetitionInviteEmail(
-        guardian.email,
-        guardian.firstName,
-        updated.gymnast,
-        updated.competitionEvent,
-        categoryNames,
-        updated.totalAmount ?? 0,
-      );
+    const club = await prisma.club.findUnique({ where: { id: req.user.clubId }, select: { emailEnabled: true } });
+    if (club?.emailEnabled) {
+      const gWithGuardians = await prisma.gymnast.findUnique({
+        where: { id: entry.gymnastId },
+        include: { guardians: { select: { email: true, firstName: true, lastName: true } } },
+      });
+      const categoryNames = updated.categories.map(ec => ec.category.name);
+      for (const guardian of gWithGuardians?.guardians ?? []) {
+        await emailService.sendCompetitionInviteEmail(
+          guardian.email,
+          guardian.firstName,
+          updated.gymnast,
+          updated.competitionEvent,
+          categoryNames,
+          updated.totalAmount ?? 0,
+        );
+      }
     }
 
     res.json(updated);
