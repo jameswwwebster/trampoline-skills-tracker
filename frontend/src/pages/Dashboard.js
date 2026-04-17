@@ -415,40 +415,14 @@ const Dashboard = () => {
           </div>
           {noticeboardPanel}
           {/* Existing metrics below */}
-          {compSummary && (compSummary.accepted.length > 0 || compSummary.paymentPending.length > 0) && (
+          {compSummary && compSummary.paymentPending.length > 0 && (
             <div className="card" style={{ marginBottom: '1.25rem' }}>
               <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 className="card-title" style={{ margin: 0 }}>Competition Entries</h3>
                 <Link to="/booking/admin/competitions" style={{ fontSize: '0.85rem', color: 'var(--primary-color)' }}>Manage →</Link>
               </div>
-              {compSummary.accepted.length > 0 && (
-                <div style={{ marginTop: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                    <span style={{ background: '#7c35e8', color: '#fff', borderRadius: 4, padding: '0.15rem 0.5rem', fontSize: '0.78rem', fontWeight: 700 }}>
-                      {compSummary.accepted.length}
-                    </span>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Awaiting your review</span>
-                  </div>
-                  {compSummary.accepted.slice(0, 3).map(e => (
-                    <Link
-                      key={e.id}
-                      to={`/booking/admin/competitions/${e.competitionEvent.id}`}
-                      className="dashboard-metric-link"
-                      style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.5rem', borderBottom: '1px solid #eee', fontSize: '0.85rem' }}
-                    >
-                      <span>{e.gymnast.firstName} {e.gymnast.lastName}</span>
-                      <span style={{ color: '#888', fontSize: '0.8rem' }}>{e.competitionEvent.name}</span>
-                    </Link>
-                  ))}
-                  {compSummary.accepted.length > 3 && (
-                    <p style={{ fontSize: '0.8rem', color: '#888', margin: '0.35rem 0.5rem 0' }}>
-                      +{compSummary.accepted.length - 3} more
-                    </p>
-                  )}
-                </div>
-              )}
               {compSummary.paymentPending.length > 0 && (
-                <div style={{ marginTop: compSummary.accepted.length > 0 ? '1rem' : '0.75rem' }}>
+                <div style={{ marginTop: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
                     <span style={{ background: '#e67e22', color: '#fff', borderRadius: 4, padding: '0.15rem 0.5rem', fontSize: '0.78rem', fontWeight: 700 }}>
                       {compSummary.paymentPending.length}

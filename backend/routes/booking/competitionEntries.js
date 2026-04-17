@@ -215,7 +215,7 @@ router.post('/:id/decline', auth, async (req, res) => {
       where: { id: entry.gymnastId, guardians: { some: { id: req.user.id } } },
     });
     if (!gymnast) return res.status(403).json({ error: 'Forbidden' });
-    if (!['INVITED', 'ACCEPTED'].includes(entry.status)) {
+    if (entry.status !== 'INVITED') {
       return res.status(400).json({ error: 'Cannot decline at this stage' });
     }
 
@@ -223,96 +223,6 @@ router.post('/:id/decline', auth, async (req, res) => {
       where: { id: entry.id },
       data: { status: 'DECLINED' },
     });
-    res.json(updated);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// POST /api/booking/competition-entries/:id/confirm-invoice (admin/coach)
-// Coach reviews the accepted entry and sends the invoice to the guardian(s)
-router.post('/:id/confirm-invoice', auth, requireRole(ADMIN_ROLES), async (req, res) => {
-  const { error, value } = Joi.object({
-    priceOverride: Joi.number().integer().min(0).optional(),
-  }).validate(req.body);
-  if (error) return res.status(400).json({ error: error.details[0].message });
-
-  try {
-    const entry = await getEntryWithEvent(req.params.id);
-    if (!entry) return res.status(404).json({ error: 'Not found' });
-    if (entry.competitionEvent.clubId !== req.user.clubId) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    if (entry.status !== 'ACCEPTED') {
-      return res.status(400).json({ error: 'Entry must be in ACCEPTED state to confirm' });
-    }
-    if (entry.categories.length === 0) {
-      return res.status(400).json({ error: 'Entry has no categories selected' });
-    }
-
-    const now = new Date();
-    const isLate = now > new Date(entry.competitionEvent.entryDeadline);
-
-    let total;
-    if (value.priceOverride !== undefined) {
-      total = value.priceOverride;
-    } else if (entry.adminPriceOverride !== null && entry.adminPriceOverride !== undefined) {
-      total = entry.adminPriceOverride;
-    } else {
-      total = calculateEntryTotal(
-        entry.categories.length,
-        entry.competitionEvent.priceTiers,
-        entry.competitionEvent.lateEntryFee,
-        isLate
-      );
-    }
-
-    const updated = await prisma.competitionEntry.update({
-      where: { id: entry.id },
-      data: {
-        status: 'PAYMENT_PENDING',
-        coachConfirmed: true,
-        totalAmount: total,
-        invoiceSentAt: now,
-        adminPriceOverride: value.priceOverride !== undefined ? value.priceOverride : entry.adminPriceOverride,
-      },
-      include: {
-        gymnast: true,
-        categories: { include: { category: true } },
-        competitionEvent: { include: { categories: true } },
-      },
-    });
-
-    // Send invoice email to all guardians via the GuardianGymnasts M2M relation
-    const club = await prisma.club.findUnique({ where: { id: req.user.clubId }, select: { emailEnabled: true } });
-    const gymnastwithGuardians = await prisma.gymnast.findUnique({
-      where: { id: entry.gymnastId },
-      include: { guardians: { select: { email: true, firstName: true, lastName: true } } },
-    });
-    const recipients = gymnastwithGuardians?.guardians ?? [];
-    if (recipients.length === 0) {
-      console.warn(`⚠️  competition invoice: no guardians found for gymnast ${entry.gymnastId} — email not sent`);
-    }
-    if (club?.emailEnabled) {
-      for (const guardian of recipients) {
-        const result = await emailService.sendCompetitionInvoice(
-          guardian.email,
-          guardian,
-          updated.gymnast,
-          updated.competitionEvent,
-          updated.categories.map(ec => ec.category.name),
-          total,
-          updated.id
-        );
-        if (!result?.success) {
-          console.error(`❌ competition invoice email failed for ${guardian.email}:`, result?.error);
-        }
-      }
-    } else {
-      console.log(`ℹ️  competition invoice: email skipped — club emailEnabled is false`);
-    }
-
     res.json(updated);
   } catch (err) {
     console.error(err);
@@ -576,7 +486,6 @@ router.post('/:id/reinvite', auth, requireRole(ADMIN_ROLES), async (req, res) =>
       ? (entry.totalAmount ?? null)
       : null;
 
-    // Clear categories so gymnast can re-select for the new entry
     await prisma.competitionEntryCategory.deleteMany({ where: { entryId: entry.id } });
 
     const updated = await prisma.competitionEntry.update({
