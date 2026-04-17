@@ -351,8 +351,8 @@ export const bookingApi = {
   deleteCompetitionEntry: (entryId) =>
     axios.delete(`${API_URL}/booking/competition-entries/${entryId}`, { headers: getHeaders() }),
 
-  acceptCompetitionEntry: (entryId, categoryIds) =>
-    axios.post(`${API_URL}/booking/competition-entries/${entryId}/accept`, { categoryIds }, { headers: getHeaders() }),
+  acceptCompetitionEntry: (entryId) =>
+    axios.post(`${API_URL}/booking/competition-entries/${entryId}/accept`, {}, { headers: getHeaders() }),
 
   declineCompetitionEntry: (entryId) =>
     axios.post(`${API_URL}/booking/competition-entries/${entryId}/decline`, {}, { headers: getHeaders() }),
