@@ -904,22 +904,13 @@ function ActionPanel({ title, onConfirm, onClose, working, confirmLabel, childre
 }
 
 function EntryActions({ entry, onConfirmInvoice, onResendInvoice, onWaive, onMarkPaid }) {
-  const [expanded, setExpanded] = useState(null); // 'confirm' | 'waive' | 'paid'
-  const [priceOverride, setPriceOverride] = useState('');
+  const [expanded, setExpanded] = useState(null);
   const [waiveReason, setWaiveReason] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
   const [paidNote, setPaidNote] = useState('');
   const [working, setWorking] = useState(false);
 
-  const close = () => { setExpanded(null); setPriceOverride(''); setWaiveReason(''); setPaidAmount(''); setPaidNote(''); };
-
-  const doConfirm = async () => {
-    setWorking(true);
-    const override = priceOverride !== '' ? Math.round(parseFloat(priceOverride) * 100) : undefined;
-    await onConfirmInvoice(entry.id, override);
-    setWorking(false);
-    close();
-  };
+  const close = () => { setExpanded(null); setWaiveReason(''); setPaidAmount(''); setPaidNote(''); };
 
   const doWaive = async () => {
     setWorking(true);
@@ -935,48 +926,6 @@ function EntryActions({ entry, onConfirmInvoice, onResendInvoice, onWaive, onMar
     setWorking(false);
     close();
   };
-
-  if (entry.status === 'ACCEPTED') {
-    return (
-      <div>
-        {expanded ? (
-          <>
-            {expanded === 'confirm' && (
-              <ActionPanel title="Confirm & send invoice" confirmLabel="Send invoice" working={working} onConfirm={doConfirm} onClose={close}>
-                <label style={{ fontSize: '0.82rem', display: 'block', marginBottom: '0.3rem', color: 'var(--booking-text-muted)' }}>
-                  Price override (£) — leave blank for standard pricing
-                </label>
-                <input type="number" step="0.01" min="0" className="bk-input" style={{ marginBottom: '0.25rem' }}
-                  placeholder="e.g. 15.00" value={priceOverride} onChange={e => setPriceOverride(e.target.value)} />
-              </ActionPanel>
-            )}
-            {expanded === 'waive' && (
-              <ActionPanel title="Waive payment" confirmLabel="Confirm waive" working={working} onConfirm={doWaive} onClose={close}>
-                <input className="bk-input" placeholder="Reason (optional, e.g. judging duties)"
-                  value={waiveReason} onChange={e => setWaiveReason(e.target.value)} />
-              </ActionPanel>
-            )}
-            {expanded === 'paid' && (
-              <ActionPanel title="Record external payment" confirmLabel="Mark paid" working={working} onConfirm={doMarkPaid} onClose={close}>
-                <input type="number" step="0.01" min="0" className="bk-input" style={{ marginBottom: '0.4rem' }}
-                  placeholder="Amount (£)" value={paidAmount} onChange={e => setPaidAmount(e.target.value)} />
-                <input className="bk-input" placeholder="Note (optional)"
-                  value={paidNote} onChange={e => setPaidNote(e.target.value)} />
-              </ActionPanel>
-            )}
-          </>
-        ) : (
-          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-            <button className="bk-btn bk-btn--sm bk-btn--primary" onClick={() => setExpanded('confirm')}>
-              Confirm &amp; send invoice
-            </button>
-            <button className="bk-btn bk-btn--sm" onClick={() => setExpanded('waive')}>Waive</button>
-            <button className="bk-btn bk-btn--sm" onClick={() => setExpanded('paid')}>Record payment</button>
-          </div>
-        )}
-      </div>
-    );
-  }
 
   if (entry.status === 'PAYMENT_PENDING') {
     return (
@@ -1013,7 +962,7 @@ function EntryActions({ entry, onConfirmInvoice, onResendInvoice, onWaive, onMar
 }
 
 function EntriesTab({ event, entryCountByStatus, onRemove, onConfirmInvoice, onResendInvoice, onWaive, onMarkPaid, onToggleSubmitted, onReinvite }) {
-  const ORDER = { ACCEPTED: 0, PAYMENT_PENDING: 1, INVITED: 2, PAID: 3, WAIVED: 4, DECLINED: 5 };
+  const ORDER = { PAYMENT_PENDING: 0, INVITED: 1, PAID: 2, WAIVED: 3, DECLINED: 4 };
   const sorted = [...event.entries].sort((a, b) => (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9));
 
   // Build a map from synchroPairId → list of gymnast names (for displaying synchro partners)
