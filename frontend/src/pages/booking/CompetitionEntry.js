@@ -225,8 +225,8 @@ export default function CompetitionEntry() {
   const calcDisplayTotal = () => {
     const priceOverride = entry.adminPriceOverride ?? null;
     if (priceOverride !== null) return priceOverride;
+    if (selectedCategories.length === 0 || ev.priceTiers.length === 0) return 0;
     const tiers = [...ev.priceTiers].sort((a, b) => a.entryNumber - b.entryNumber);
-    if (selectedCategories.length === 0 || tiers.length === 0) return 0;
     const tierIndex = Math.min(selectedCategories.length - 1, tiers.length - 1);
     let t = tiers[tierIndex].price;
     if (isLate && ev.lateEntryFee) t += ev.lateEntryFee;

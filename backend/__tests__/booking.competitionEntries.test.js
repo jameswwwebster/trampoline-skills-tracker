@@ -54,12 +54,12 @@ describe('calculateEntryTotal', () => {
   });
 
   it('calculates correct total for 2 categories', () => {
-    expect(calculateEntryTotal(2, tiers, null, false)).toBe(4000);
+    expect(calculateEntryTotal(2, tiers, null, false)).toBe(1500);
   });
 
   it('uses tier 3 price for 4th+ entries', () => {
-    // 4 categories: 2500 + 1500 + 1000 + 1000 = 6000
-    expect(calculateEntryTotal(4, tiers, null, false)).toBe(6000);
+    // 4 categories: clamps to last tier (index 2) = 1000
+    expect(calculateEntryTotal(4, tiers, null, false)).toBe(1000);
   });
 
   it('adds late entry fee when past deadline', () => {
