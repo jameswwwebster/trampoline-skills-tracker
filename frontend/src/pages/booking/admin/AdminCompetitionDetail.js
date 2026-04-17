@@ -617,6 +617,7 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
   };
 
   const confirmInvite = async () => {
+    if (pendingCatIds.length === 0) return;
     const priceOverride = pendingPrice !== '' ? Math.round(parseFloat(pendingPrice) * 100) : null;
     await onInvite(pendingGym.id, pendingCatIds, priceOverride);
     cancelInvite();
@@ -841,6 +842,11 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
                   </label>
                 ))}
               </div>
+            )}
+            {synchroCatIds.length === 0 && (
+              <p style={{ fontSize: '0.8rem', color: 'var(--booking-danger)', margin: '0 0 0.4rem' }}>
+                Select at least one category before sending.
+              </p>
             )}
             {(() => {
               const suggested = calcSuggestedPrice(synchroCatIds.length);
