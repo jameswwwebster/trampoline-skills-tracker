@@ -732,15 +732,14 @@ class EmailService {
     }
   }
 
-  async sendCompetitionInviteEmail(email, firstName, gymnast, event, categoryNames, priceOverridePence) {
+  async sendCompetitionInviteEmail(email, firstName, gymnast, event, categoryNames, totalAmountPence) {
     const date = new Date(event.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     const deadline = new Date(event.entryDeadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const totalStr = `£${(totalAmountPence / 100).toFixed(2)}`;
     const categoriesHtml = categoryNames.length > 0
       ? `<p style="margin:0.2rem 0"><strong>Categories:</strong> ${categoryNames.join(', ')}</p>`
       : '';
-    const priceHtml = priceOverridePence !== null
-      ? `<p style="margin:0.2rem 0"><strong>Entry price:</strong> £${(priceOverridePence / 100).toFixed(2)} (club price)</p>`
-      : '';
+    const entryUrl = `${BASE_URL()}/booking/competitions`;
     return this._send({
       from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
       to: email,
@@ -754,13 +753,14 @@ class EmailService {
           <p style="margin:0.2rem 0"><strong>Date:</strong> ${date}</p>
           <p style="margin:0.2rem 0"><strong>Entry deadline:</strong> ${deadline}</p>
           ${categoriesHtml}
-          ${priceHtml}
+          <p style="margin:0.75rem 0 0;font-size:1.05rem"><strong>Total: ${totalStr}</strong></p>
         `)}
-        <p>Please log in to accept or decline. If you accept, your coach will review the entry and send a payment request through the app — no payment is needed right now.</p>
-        ${ctaButton(`${BASE_URL()}/booking/competitions`, 'View and respond')}
+        <p><strong>Entries will not be submitted to the competition organiser until payment is complete.</strong></p>
+        <p>Log in to accept and pay, or decline the invitation.</p>
+        ${ctaButton(entryUrl, 'Accept and pay — ' + totalStr)}
         ${muted('If you have any questions, please contact the club.')}
       `),
-      text: `Hi ${firstName},\n\n${gymnast.firstName} ${gymnast.lastName} has been invited to ${event.name} at ${event.location} on ${date}.\n\nEntry deadline: ${deadline}${categoryNames.length > 0 ? '\nCategories: ' + categoryNames.join(', ') : ''}${priceOverridePence !== null ? '\nEntry price: £' + (priceOverridePence / 100).toFixed(2) : ''}\n\nPlease log in to accept or decline. If you accept, your coach will review the entry and send a payment request through the app — no payment is needed right now.\n\nLog in to respond: ${BASE_URL()}/booking/competitions\n\nIf you have any questions, please contact the club.`,
+      text: `Hi ${firstName},\n\n${gymnast.firstName} ${gymnast.lastName} has been invited to ${event.name} at ${event.location} on ${date}.\n\nEntry deadline: ${deadline}${categoryNames.length > 0 ? '\nCategories: ' + categoryNames.join(', ') : ''}\nTotal: ${totalStr}\n\nEntries will not be submitted to the competition organiser until payment is complete.\n\nLog in to accept and pay, or decline: ${entryUrl}\n\nIf you have any questions, please contact the club.`,
     }, { to: email, event: event.name, gymnast: `${gymnast.firstName} ${gymnast.lastName}` });
   }
 

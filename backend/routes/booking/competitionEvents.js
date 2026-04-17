@@ -8,6 +8,15 @@ const prisma = require('../../prisma');
 
 const ADMIN_ROLES = ['CLUB_ADMIN', 'COACH'];
 
+function calcTotal(numCategories, tiers, lateEntryFee, isLate) {
+  if (numCategories === 0 || tiers.length === 0) return 0;
+  const sorted = [...tiers].sort((a, b) => a.entryNumber - b.entryNumber);
+  const tierIndex = Math.min(numCategories - 1, sorted.length - 1);
+  let total = sorted[tierIndex].price;
+  if (isLate && lateEntryFee) total += lateEntryFee;
+  return total;
+}
+
 const eventSchema = Joi.object({
   name: Joi.string().required(),
   location: Joi.string().required(),
@@ -266,7 +275,7 @@ router.get('/:id/eligible', auth, requireRole(ADMIN_ROLES), async (req, res) => 
 router.post('/:id/invite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
   const { error, value } = Joi.object({
     gymnastIds: Joi.array().items(Joi.string()).min(1).required(),
-    categoryIds: Joi.array().items(Joi.string()).default([]),
+    categoryIds: Joi.array().items(Joi.string()).min(1).required(),
     priceOverride: Joi.number().integer().min(0).allow(null).default(null),
     entryType: Joi.string().valid('INDIVIDUAL', 'SYNCHRO').default('INDIVIDUAL'),
   }).validate(req.body);
@@ -282,6 +291,7 @@ router.post('/:id/invite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
       include: {
         club: { select: { emailEnabled: true } },
         categories: { select: { id: true, name: true } },
+        priceTiers: { orderBy: { entryNumber: 'asc' } },
       },
     });
     if (!event) return res.status(404).json({ error: 'Not found' });
@@ -305,16 +315,27 @@ router.post('/:id/invite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
         },
       });
       if (!existing) {
+        const now = new Date();
+        const isLate = now > new Date(event.entryDeadline);
+        const totalAmount = value.priceOverride !== null && value.priceOverride !== undefined
+          ? value.priceOverride
+          : calcTotal(
+              value.categoryIds.length,
+              event.priceTiers,
+              event.lateEntryFee,
+              isLate,
+            );
         await prisma.competitionEntry.create({
           data: {
             competitionEventId: event.id,
             gymnastId,
             entryType: value.entryType,
             synchroPairId,
-            adminPriceOverride: value.priceOverride,
-            categories: value.categoryIds.length > 0 ? {
+            adminPriceOverride: value.priceOverride ?? null,
+            totalAmount,
+            categories: {
               create: value.categoryIds.map(cid => ({ categoryId: cid })),
-            } : undefined,
+            },
           },
         });
         created++;
@@ -335,7 +356,7 @@ router.post('/:id/invite', auth, requireRole(ADMIN_ROLES), async (req, res) => {
                   gymnast,
                   event,
                   selectedCategoryNames,
-                  value.priceOverride
+                  totalAmount,
                 );
               }
             } catch (emailErr) {
