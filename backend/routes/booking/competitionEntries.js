@@ -384,6 +384,7 @@ router.post('/:id/checkout', auth, async (req, res) => {
     }
 
     const gross = entry.totalAmount;
+    console.log('[checkout] entry', entry.id, 'status', entry.status, 'totalAmount', gross, 'userId', req.user.id);
 
     // Apply available credits (oldest expiring first)
     const availableCredits = await prisma.credit.findMany({
@@ -428,7 +429,10 @@ router.post('/:id/checkout', auth, async (req, res) => {
 
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+    console.log('[checkout] creating PaymentIntent, remaining', remaining);
     const guardian = await prisma.user.findUnique({ where: { id: req.user.id } });
+    console.log('[checkout] guardian', guardian ? guardian.id : 'NULL');
+    if (!guardian) return res.status(500).json({ error: 'User account not found' });
     let stripeCustomerId = guardian.stripeCustomerId;
     if (!stripeCustomerId) {
       const customer = await stripe.customers.create({
@@ -440,6 +444,7 @@ router.post('/:id/checkout', auth, async (req, res) => {
       await prisma.user.update({ where: { id: guardian.id }, data: { stripeCustomerId } });
     }
 
+    console.log('[checkout] creating PaymentIntent with amount', remaining, 'customer', stripeCustomerId);
     const paymentIntent = await stripe.paymentIntents.create({
       amount: remaining,
       currency: 'gbp',
@@ -451,7 +456,7 @@ router.post('/:id/checkout', auth, async (req, res) => {
         gymnastId: entry.gymnastId,
         clubId: entry.competitionEvent.clubId,
       },
-      description: `Competition entry: ${entry.competitionEvent.name} — ${entry.gymnast.firstName} ${entry.gymnast.lastName}`,
+      description: `Competition entry: ${entry.competitionEvent.name} - ${entry.gymnast.firstName} ${entry.gymnast.lastName}`,
     });
 
     await prisma.competitionEntry.update({
@@ -461,7 +466,7 @@ router.post('/:id/checkout', auth, async (req, res) => {
 
     res.json({ clientSecret: paymentIntent.client_secret, total: remaining, creditApplied });
   } catch (err) {
-    console.error(err);
+    console.error('[checkout] error:', err.message, err.stack);
     res.status(500).json({ error: 'Server error' });
   }
 });
