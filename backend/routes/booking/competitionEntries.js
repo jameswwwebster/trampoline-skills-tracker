@@ -17,12 +17,10 @@ const ADMIN_ROLES = ['CLUB_ADMIN', 'COACH'];
  * @returns {number} total in pence
  */
 function calculateEntryTotal(numCategories, tiers, lateEntryFee, isLate) {
+  if (numCategories === 0 || tiers.length === 0) return 0;
   const sorted = [...tiers].sort((a, b) => a.entryNumber - b.entryNumber);
-  let total = 0;
-  for (let i = 0; i < numCategories; i++) {
-    const tierIndex = Math.min(i, sorted.length - 1);
-    total += sorted[tierIndex].price;
-  }
+  const tierIndex = Math.min(numCategories - 1, sorted.length - 1);
+  let total = sorted[tierIndex].price;
   if (isLate && lateEntryFee) total += lateEntryFee;
   return total;
 }
