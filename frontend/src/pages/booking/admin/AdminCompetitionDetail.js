@@ -297,6 +297,9 @@ export default function AdminCompetitionDetail() {
           onInviteSynchro={handleInviteSynchro}
           eventEntries={event.entries}
           eventCategories={event.categories}
+          priceTiers={event.priceTiers}
+          lateEntryFee={event.lateEntryFee}
+          entryDeadline={event.entryDeadline}
         />
       )}
 
@@ -557,7 +560,7 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   );
 }
 
-function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, onUninvite, onInviteSynchro, eventEntries, eventCategories }) {
+function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, onUninvite, onInviteSynchro, eventEntries, eventCategories, priceTiers, lateEntryFee, entryDeadline }) {
   const [showAll, setShowAll] = useState(false);
   const [pendingGym, setPendingGym] = useState(null); // { id, firstName, lastName }
   const [pendingCatIds, setPendingCatIds] = useState([]);
@@ -569,6 +572,16 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
   const [synchroPrice, setSynchroPrice] = useState('');
   const [synchroWorking, setSynchroWorking] = useState(false);
   const { toast: synchroToast, showToast: showSynchroToast, dismissToast: dismissSynchroToast } = useToast();
+
+  const calcSuggestedPrice = (numCats) => {
+    if (numCats === 0 || !priceTiers || priceTiers.length === 0) return null;
+    const sorted = [...priceTiers].sort((a, b) => a.entryNumber - b.entryNumber);
+    const tierIndex = Math.min(numCats - 1, sorted.length - 1);
+    let total = sorted[tierIndex].price;
+    const isLate = entryDeadline && new Date() > new Date(entryDeadline);
+    if (isLate && lateEntryFee) total += lateEntryFee;
+    return total;
+  };
 
   if (eligibleError) return <p style={{ color: 'var(--booking-danger)', fontSize: '0.875rem' }}>{eligibleError}</p>;
   if (eligible === null) return <p className="bk-muted">Loading...</p>;
@@ -658,22 +671,39 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
                     ))}
                   </div>
                 )}
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                  Price override (£) — leave blank to use standard pricing
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  className="bk-input"
-                  style={{ maxWidth: 120, marginBottom: '0.6rem' }}
-                  value={pendingPrice}
-                  placeholder="e.g. 15.00"
-                  onChange={e => setPendingPrice(e.target.value)}
-                />
+                {pendingCatIds.length === 0 && (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--booking-danger)', margin: '0 0 0.4rem' }}>
+                    Select at least one category before sending.
+                  </p>
+                )}
+                {(() => {
+                  const suggested = calcSuggestedPrice(pendingCatIds.length);
+                  const suggestedStr = suggested !== null ? `£${(suggested / 100).toFixed(2)}` : null;
+                  return (
+                    <>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                        Price (£){suggestedStr ? ` — suggested: ${suggestedStr}` : ''}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="bk-input"
+                        style={{ maxWidth: 120, marginBottom: '0.6rem' }}
+                        value={pendingPrice}
+                        placeholder={suggestedStr ? suggestedStr.replace('£', '') : 'e.g. 15.00'}
+                        onChange={e => setPendingPrice(e.target.value)}
+                      />
+                    </>
+                  );
+                })()}
                 <div className="bk-row" style={{ gap: '0.5rem' }}>
-                  <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={inviting} onClick={confirmInvite}>
-                    {inviting ? 'Inviting...' : 'Confirm invite'}
+                  <button
+                    className="bk-btn bk-btn--sm bk-btn--primary"
+                    disabled={inviting || pendingCatIds.length === 0}
+                    onClick={confirmInvite}
+                  >
+                    {inviting ? 'Inviting...' : 'Send invite'}
                   </button>
                   <button className="bk-btn bk-btn--sm" onClick={cancelInvite}>Cancel</button>
                 </div>
@@ -812,9 +842,15 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
                 ))}
               </div>
             )}
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-              Price per gymnast (£) — leave blank for standard pricing
-            </label>
+            {(() => {
+              const suggested = calcSuggestedPrice(synchroCatIds.length);
+              const suggestedStr = suggested !== null ? `£${(suggested / 100).toFixed(2)}` : null;
+              return (
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                  Price per gymnast (£){suggestedStr ? ` — suggested: ${suggestedStr}` : ''}
+                </label>
+              );
+            })()}
             <input
               type="number"
               step="0.01"
@@ -828,7 +864,7 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
             <div className="bk-row" style={{ gap: '0.5rem' }}>
               <button
                 className="bk-btn bk-btn--sm bk-btn--primary"
-                disabled={synchroWorking || !synchroGym1 || !synchroGym2 || synchroGym1 === synchroGym2}
+                disabled={synchroWorking || !synchroGym1 || !synchroGym2 || synchroGym1 === synchroGym2 || synchroCatIds.length === 0}
                 onClick={handleSynchroInvite}
               >
                 {synchroWorking ? 'Inviting…' : 'Invite pair'}
