@@ -202,6 +202,7 @@ export default function CompetitionEntry() {
       await loadEntry();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to proceed to payment.');
+    } finally {
       setLoading(false);
     }
   };
