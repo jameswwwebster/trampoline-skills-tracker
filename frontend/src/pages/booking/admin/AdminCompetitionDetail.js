@@ -1007,7 +1007,6 @@ function EntriesTab({ event, entryCountByStatus, onRemove, onConfirmInvoice, onR
             <div key={entry.id} className="bk-card" style={{
               borderLeft: `3px solid ${s.color}`,
               padding: '0.85rem 1rem',
-              background: entry.status === 'ACCEPTED' ? 'rgba(124,53,232,0.03)' : undefined,
             }}>
               {/* Top row: name + status */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.3rem' }}>
