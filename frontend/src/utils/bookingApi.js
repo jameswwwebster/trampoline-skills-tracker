@@ -363,6 +363,9 @@ export const bookingApi = {
   resendCompetitionInvoice: (entryId) =>
     axios.post(`${API_URL}/booking/competition-entries/${entryId}/resend-invoice`, {}, { headers: getHeaders() }),
 
+  sendCompetitionReminder: (entryId) =>
+    axios.post(`${API_URL}/booking/competition-entries/${entryId}/send-reminder`, {}, { headers: getHeaders() }),
+
   waiveCompetitionEntry: (entryId, reason) =>
     axios.post(`${API_URL}/booking/competition-entries/${entryId}/waive`, { reason }, { headers: getHeaders() }),
 

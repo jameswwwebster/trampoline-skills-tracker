@@ -153,10 +153,10 @@ export default function AdminCompetitionDetail() {
 
   const handleResendInvoice = async (entryId) => {
     try {
-      await bookingApi.resendCompetitionInvoice(entryId);
-      setMsg('Invoice resent.');
+      await bookingApi.sendCompetitionReminder(entryId);
+      setMsg('Reminder sent.');
     } catch (err) {
-      setMsg(err.response?.data?.error || 'Failed to resend.');
+      setMsg(err.response?.data?.error || 'Failed to send reminder.');
     }
   };
 
@@ -957,7 +957,7 @@ function EntryActions({ entry, onConfirmInvoice, onResendInvoice, onWaive, onMar
           <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
             <button className="bk-btn bk-btn--sm" disabled={working}
               onClick={async () => { setWorking(true); await onResendInvoice(entry.id); setWorking(false); }}>
-              {working ? 'Sending…' : 'Re-send invoice'}
+              {working ? 'Sending…' : 'Send reminder'}
             </button>
             <button className="bk-btn bk-btn--sm" onClick={() => setExpanded('paid')}>Record payment</button>
             <button className="bk-btn bk-btn--sm" onClick={() => setExpanded('waive')}>Waive</button>
