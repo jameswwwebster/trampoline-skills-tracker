@@ -5,7 +5,6 @@ import './booking-shared.css';
 
 const STATUS_LABELS = {
   INVITED: { label: 'Action needed', color: '#1565c0' },
-  ACCEPTED: { label: 'Awaiting coach review', color: 'var(--booking-text-muted)' },
   PAYMENT_PENDING: { label: 'Payment due', color: 'var(--booking-warning, #e67e22)' },
   PAID: { label: 'Entered', color: 'var(--booking-success)' },
   DECLINED: { label: 'Declined', color: 'var(--booking-text-muted)' },
@@ -55,7 +54,7 @@ export default function MyCompetitions() {
         </div>
         {canRespond && (
           <button className="bk-btn bk-btn--primary bk-btn--sm" style={{ marginTop: '0.75rem' }} onClick={() => navigate(`/booking/competitions/${entry.id}/enter`)}>
-            Respond to invite
+            View invite
           </button>
         )}
         {canPay && (
