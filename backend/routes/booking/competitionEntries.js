@@ -487,15 +487,11 @@ router.post('/:id/reinvite', auth, requireRole(ADMIN_ROLES), async (req, res) =>
       ? (entry.totalAmount ?? null)
       : null;
 
-    await prisma.competitionEntryCategory.deleteMany({ where: { entryId: entry.id } });
-
     const updated = await prisma.competitionEntry.update({
       where: { id: entry.id },
       data: {
         status: 'INVITED',
         coachConfirmed: false,
-        totalAmount: null,
-        adminPriceOverride: null,
         stripePaymentIntentId: null,
         invoiceSentAt: null,
         paidExternally: false,
@@ -503,11 +499,17 @@ router.post('/:id/reinvite', auth, requireRole(ADMIN_ROLES), async (req, res) =>
         submittedToOrganiser: false,
         waivedReason: null,
         previousPaidAmount,
+        // totalAmount and adminPriceOverride preserved — categories preserved
       },
       include: {
         gymnast: true,
         categories: { include: { category: true } },
-        competitionEvent: { include: { categories: true } },
+        competitionEvent: {
+          include: {
+            categories: true,
+            priceTiers: { orderBy: { entryNumber: 'asc' } },
+          },
+        },
       },
     });
 
@@ -516,14 +518,15 @@ router.post('/:id/reinvite', auth, requireRole(ADMIN_ROLES), async (req, res) =>
       where: { id: entry.gymnastId },
       include: { guardians: { select: { email: true, firstName: true, lastName: true } } },
     });
+    const categoryNames = updated.categories.map(ec => ec.category.name);
     for (const guardian of gWithGuardians?.guardians ?? []) {
       await emailService.sendCompetitionInviteEmail(
         guardian.email,
         guardian.firstName,
         updated.gymnast,
         updated.competitionEvent,
-        [],
-        null
+        categoryNames,
+        updated.totalAmount ?? 0,
       );
     }
 
