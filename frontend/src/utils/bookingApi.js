@@ -357,9 +357,6 @@ export const bookingApi = {
   declineCompetitionEntry: (entryId) =>
     axios.post(`${API_URL}/booking/competition-entries/${entryId}/decline`, {}, { headers: getHeaders() }),
 
-  confirmAndSendInvoice: (entryId, priceOverride) =>
-    axios.post(`${API_URL}/booking/competition-entries/${entryId}/confirm-invoice`, priceOverride !== undefined ? { priceOverride } : {}, { headers: getHeaders() }),
-
   sendCompetitionReminder: (entryId) =>
     axios.post(`${API_URL}/booking/competition-entries/${entryId}/send-reminder`, {}, { headers: getHeaders() }),
 

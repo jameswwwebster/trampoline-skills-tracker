@@ -735,7 +735,7 @@ class EmailService {
   async sendCompetitionInviteEmail(email, firstName, gymnast, event, categoryNames, totalAmountPence) {
     const date = new Date(event.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     const deadline = new Date(event.entryDeadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-    const totalStr = `£${(totalAmountPence / 100).toFixed(2)}`;
+    const totalStr = totalAmountPence ? `£${(totalAmountPence / 100).toFixed(2)}` : null;
     const categoriesHtml = categoryNames.length > 0
       ? `<p style="margin:0.2rem 0"><strong>Categories:</strong> ${categoryNames.join(', ')}</p>`
       : '';
@@ -753,14 +753,14 @@ class EmailService {
           <p style="margin:0.2rem 0"><strong>Date:</strong> ${date}</p>
           <p style="margin:0.2rem 0"><strong>Entry deadline:</strong> ${deadline}</p>
           ${categoriesHtml}
-          <p style="margin:0.75rem 0 0;font-size:1.05rem"><strong>Total: ${totalStr}</strong></p>
+          ${totalStr ? `<p style="margin:0.75rem 0 0;font-size:1.05rem"><strong>Total: ${totalStr}</strong></p>` : ''}
         `)}
         <p><strong>Entries will not be submitted to the competition organiser until payment is complete.</strong></p>
         <p>Log in to accept and pay, or decline the invitation.</p>
-        ${ctaButton(entryUrl, 'Accept and pay — ' + totalStr)}
+        ${ctaButton(entryUrl, totalStr ? 'Accept and pay — ' + totalStr : 'Accept and pay')}
         ${muted('If you have any questions, please contact the club.')}
       `),
-      text: `Hi ${firstName},\n\n${gymnast.firstName} ${gymnast.lastName} has been invited to ${event.name} at ${event.location} on ${date}.\n\nEntry deadline: ${deadline}${categoryNames.length > 0 ? '\nCategories: ' + categoryNames.join(', ') : ''}\nTotal: ${totalStr}\n\nEntries will not be submitted to the competition organiser until payment is complete.\n\nLog in to accept and pay, or decline: ${entryUrl}\n\nIf you have any questions, please contact the club.`,
+      text: `Hi ${firstName},\n\n${gymnast.firstName} ${gymnast.lastName} has been invited to ${event.name} at ${event.location} on ${date}.\n\nEntry deadline: ${deadline}${categoryNames.length > 0 ? '\nCategories: ' + categoryNames.join(', ') : ''}${totalStr ? '\nTotal: ' + totalStr : ''}\n\nEntries will not be submitted to the competition organiser until payment is complete.\n\nLog in to accept and pay, or decline: ${entryUrl}\n\nIf you have any questions, please contact the club.`,
     }, { to: email, event: event.name, gymnast: `${gymnast.firstName} ${gymnast.lastName}` });
   }
 

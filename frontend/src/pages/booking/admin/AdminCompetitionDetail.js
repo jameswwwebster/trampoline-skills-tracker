@@ -8,7 +8,7 @@ import '../booking-shared.css';
 const STATUS_LABELS = {
   INVITED: { label: 'Invited', color: '#1565c0' },
   ACCEPTED: { label: 'Accepted — awaiting review', color: '#7c35e8' },
-  PAYMENT_PENDING: { label: 'Invoice sent', color: 'var(--booking-warning, #e67e22)' },
+  PAYMENT_PENDING: { label: 'Awaiting payment', color: 'var(--booking-warning, #e67e22)' },
   PAID: { label: 'Paid', color: 'var(--booking-success)' },
   DECLINED: { label: 'Declined', color: 'var(--booking-text-muted)' },
   WAIVED: { label: 'Waived', color: 'var(--booking-success)' },
@@ -903,7 +903,7 @@ function ActionPanel({ title, onConfirm, onClose, working, confirmLabel, childre
   );
 }
 
-function EntryActions({ entry, onConfirmInvoice, onResendInvoice, onWaive, onMarkPaid }) {
+function EntryActions({ entry, onConfirmInvoice, onResendInvoice, onWaive, onMarkPaid, onReinvite }) {
   const [expanded, setExpanded] = useState(null);
   const [waiveReason, setWaiveReason] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
@@ -952,6 +952,7 @@ function EntryActions({ entry, onConfirmInvoice, onResendInvoice, onWaive, onMar
             </button>
             <button className="bk-btn bk-btn--sm" onClick={() => setExpanded('paid')}>Record payment</button>
             <button className="bk-btn bk-btn--sm" onClick={() => setExpanded('waive')}>Waive</button>
+            <button className="bk-btn bk-btn--sm" onClick={() => onReinvite(entry.id)}>Re-invite</button>
           </div>
         )}
       </div>
@@ -1082,6 +1083,7 @@ function EntriesTab({ event, entryCountByStatus, onRemove, onConfirmInvoice, onR
                 onResendInvoice={onResendInvoice}
                 onWaive={onWaive}
                 onMarkPaid={onMarkPaid}
+                onReinvite={onReinvite}
               />
 
               {/* Bottom row: submitted toggle + remove/re-invite */}

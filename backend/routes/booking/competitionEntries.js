@@ -167,14 +167,12 @@ router.post('/:id/accept', auth, async (req, res) => {
 
     const now = new Date();
     const isLate = now > new Date(entry.competitionEvent.entryDeadline);
-    const total = entry.adminPriceOverride !== null && entry.adminPriceOverride !== undefined
-      ? entry.adminPriceOverride
-      : calculateEntryTotal(
-          entry.categories.length,
-          entry.competitionEvent.priceTiers,
-          entry.competitionEvent.lateEntryFee,
-          isLate,
-        );
+    const total = entry.totalAmount ?? calculateEntryTotal(
+      entry.categories.length,
+      entry.competitionEvent.priceTiers,
+      entry.competitionEvent.lateEntryFee,
+      isLate,
+    );
 
     const updated = await prisma.competitionEntry.update({
       where: { id: entry.id },
@@ -478,7 +476,7 @@ router.post('/:id/reinvite', auth, requireRole(ADMIN_ROLES), async (req, res) =>
     if (entry.competitionEvent.clubId !== req.user.clubId) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    if (!['DECLINED', 'PAID', 'WAIVED'].includes(entry.status)) {
+    if (!['PAYMENT_PENDING', 'DECLINED', 'PAID', 'WAIVED'].includes(entry.status)) {
       return res.status(400).json({ error: 'Can only re-invite gymnasts who have declined, already paid, or been waived' });
     }
 
@@ -528,7 +526,7 @@ router.post('/:id/reinvite', auth, requireRole(ADMIN_ROLES), async (req, res) =>
           updated.gymnast,
           updated.competitionEvent,
           categoryNames,
-          updated.totalAmount ?? 0,
+          updated.totalAmount,
         );
       }
     }
