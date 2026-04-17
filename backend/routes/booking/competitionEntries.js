@@ -230,49 +230,6 @@ router.post('/:id/decline', auth, async (req, res) => {
   }
 });
 
-// POST /api/booking/competition-entries/:id/resend-invoice (admin/coach)
-router.post('/:id/resend-invoice', auth, requireRole(ADMIN_ROLES), async (req, res) => {
-  try {
-    const entry = await getEntryWithEvent(req.params.id);
-    if (!entry) return res.status(404).json({ error: 'Not found' });
-    if (entry.competitionEvent.clubId !== req.user.clubId) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    if (entry.status !== 'PAYMENT_PENDING') {
-      return res.status(400).json({ error: 'Invoice can only be resent for entries awaiting payment' });
-    }
-
-    await prisma.competitionEntry.update({
-      where: { id: entry.id },
-      data: { invoiceSentAt: new Date() },
-    });
-
-    const resendClub = await prisma.club.findUnique({ where: { id: req.user.clubId }, select: { emailEnabled: true } });
-    if (resendClub?.emailEnabled) {
-      const gWithGuardians = await prisma.gymnast.findUnique({
-        where: { id: entry.gymnastId },
-        include: { guardians: { select: { email: true, firstName: true, lastName: true } } },
-      });
-      for (const guardian of gWithGuardians?.guardians ?? []) {
-        await emailService.sendCompetitionInvoice(
-          guardian.email,
-          guardian,
-          entry.gymnast,
-          entry.competitionEvent,
-          entry.categories.map(ec => ec.category.name),
-          entry.totalAmount,
-          entry.id
-        );
-      }
-    }
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
 // POST /api/booking/competition-entries/:id/send-reminder (admin/coach)
 // Sends a payment reminder to the guardian for a PAYMENT_PENDING entry.
 router.post('/:id/send-reminder', auth, requireRole(ADMIN_ROLES), async (req, res) => {

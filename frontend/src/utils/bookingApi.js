@@ -360,9 +360,6 @@ export const bookingApi = {
   confirmAndSendInvoice: (entryId, priceOverride) =>
     axios.post(`${API_URL}/booking/competition-entries/${entryId}/confirm-invoice`, priceOverride !== undefined ? { priceOverride } : {}, { headers: getHeaders() }),
 
-  resendCompetitionInvoice: (entryId) =>
-    axios.post(`${API_URL}/booking/competition-entries/${entryId}/resend-invoice`, {}, { headers: getHeaders() }),
-
   sendCompetitionReminder: (entryId) =>
     axios.post(`${API_URL}/booking/competition-entries/${entryId}/send-reminder`, {}, { headers: getHeaders() }),
 
