@@ -47,7 +47,7 @@ router.get('/admin-summary', auth, requireRole(ADMIN_ROLES), async (req, res) =>
   try {
     const entries = await prisma.competitionEntry.findMany({
       where: {
-        status: { in: ['ACCEPTED', 'PAYMENT_PENDING'] },
+        status: { in: ['PAYMENT_PENDING'] },
         competitionEvent: { clubId: req.user.clubId },
       },
       include: {
@@ -58,8 +58,7 @@ router.get('/admin-summary', auth, requireRole(ADMIN_ROLES), async (req, res) =>
       take: 20,
     });
     res.json({
-      accepted: entries.filter(e => e.status === 'ACCEPTED'),
-      paymentPending: entries.filter(e => e.status === 'PAYMENT_PENDING'),
+      paymentPending: entries,
     });
   } catch (err) {
     console.error(err);
@@ -148,12 +147,9 @@ router.patch('/:id', auth, requireRole(ADMIN_ROLES), async (req, res) => {
 });
 
 // POST /api/booking/competition-entries/:id/accept (guardian)
+// Accepts the invitation and moves directly to PAYMENT_PENDING.
+// Categories and price are set by the coach at invite time — guardian cannot change them.
 router.post('/:id/accept', auth, async (req, res) => {
-  const { error, value } = Joi.object({
-    categoryIds: Joi.array().items(Joi.string()).min(1).required(),
-  }).validate(req.body);
-  if (error) return res.status(400).json({ error: error.details[0].message });
-
   try {
     const entry = await getEntryWithEvent(req.params.id);
     if (!entry) return res.status(404).json({ error: 'Not found' });
@@ -165,25 +161,38 @@ router.post('/:id/accept', auth, async (req, res) => {
     if (entry.status !== 'INVITED') {
       return res.status(400).json({ error: 'Entry has already been responded to' });
     }
-
-    const validCatIds = new Set(entry.competitionEvent.categories.map(c => c.id));
-    for (const cid of value.categoryIds) {
-      if (!validCatIds.has(cid)) {
-        return res.status(400).json({ error: `Invalid category ${cid}` });
-      }
+    if (entry.categories.length === 0) {
+      return res.status(400).json({ error: 'No categories have been set for this entry. Please contact the club.' });
     }
 
-    await prisma.competitionEntryCategory.deleteMany({ where: { entryId: entry.id } });
-    await prisma.competitionEntryCategory.createMany({
-      data: value.categoryIds.map(cid => ({ entryId: entry.id, categoryId: cid })),
-    });
+    const now = new Date();
+    const isLate = now > new Date(entry.competitionEvent.entryDeadline);
+    const total = entry.adminPriceOverride !== null && entry.adminPriceOverride !== undefined
+      ? entry.adminPriceOverride
+      : calculateEntryTotal(
+          entry.categories.length,
+          entry.competitionEvent.priceTiers,
+          entry.competitionEvent.lateEntryFee,
+          isLate,
+        );
+
     const updated = await prisma.competitionEntry.update({
       where: { id: entry.id },
-      data: { status: 'ACCEPTED' },
+      data: {
+        status: 'PAYMENT_PENDING',
+        coachConfirmed: true,
+        totalAmount: total,
+        invoiceSentAt: now,
+      },
       include: {
         gymnast: true,
         categories: { include: { category: true } },
-        competitionEvent: { include: { categories: true } },
+        competitionEvent: {
+          include: {
+            categories: true,
+            priceTiers: { orderBy: { entryNumber: 'asc' } },
+          },
+        },
       },
     });
     res.json(updated);
