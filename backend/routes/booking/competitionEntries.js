@@ -384,7 +384,6 @@ router.post('/:id/checkout', auth, async (req, res) => {
     }
 
     const gross = entry.totalAmount;
-    console.log('[checkout] entry', entry.id, 'status', entry.status, 'totalAmount', gross, 'userId', req.user.id);
 
     // Apply available credits (oldest expiring first)
     const availableCredits = await prisma.credit.findMany({
@@ -423,15 +422,18 @@ router.post('/:id/checkout', auth, async (req, res) => {
       return res.json({ paid: true, creditApplied });
     }
 
+    // Stripe minimum for GBP is 30p — amounts below that can't be processed
+    if (remaining < 30) {
+      return res.status(400).json({ error: 'The entry fee is below the minimum required for payment processing. Please contact the club.' });
+    }
+
     if (!process.env.STRIPE_SECRET_KEY) {
       return res.status(500).json({ error: 'Stripe not configured' });
     }
 
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-    console.log('[checkout] creating PaymentIntent, remaining', remaining);
     const guardian = await prisma.user.findUnique({ where: { id: req.user.id } });
-    console.log('[checkout] guardian', guardian ? guardian.id : 'NULL');
     if (!guardian) return res.status(500).json({ error: 'User account not found' });
     let stripeCustomerId = guardian.stripeCustomerId;
     if (!stripeCustomerId) {
@@ -444,7 +446,6 @@ router.post('/:id/checkout', auth, async (req, res) => {
       await prisma.user.update({ where: { id: guardian.id }, data: { stripeCustomerId } });
     }
 
-    console.log('[checkout] creating PaymentIntent with amount', remaining, 'customer', stripeCustomerId);
     const paymentIntent = await stripe.paymentIntents.create({
       amount: remaining,
       currency: 'gbp',
@@ -466,7 +467,7 @@ router.post('/:id/checkout', auth, async (req, res) => {
 
     res.json({ clientSecret: paymentIntent.client_secret, total: remaining, creditApplied });
   } catch (err) {
-    console.error('[checkout] error:', err.message, err.stack);
+    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
