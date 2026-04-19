@@ -162,9 +162,10 @@ const Dashboard = () => {
     }
   };
 
-  // ── Competition cells ──────────────────────────────────────────────────────
+  // ── Competition panel ──────────────────────────────────────────────────────
   const [myCompEntries, setMyCompEntries] = useState([]);
   const [compSummary, setCompSummary] = useState(null); // admin only
+  const [upcomingEvents, setUpcomingEvents] = useState([]); // admin only
 
   useEffect(() => {
     if (!isAdminOrCoach) {
@@ -178,6 +179,9 @@ const Dashboard = () => {
     if (isAdminOrCoach) {
       bookingApi.getCompetitionEntrySummary()
         .then(r => setCompSummary(r.data))
+        .catch(() => {});
+      bookingApi.getCompetitionEvents()
+        .then(r => setUpcomingEvents(r.data.filter(e => new Date(e.startDate) >= new Date())))
         .catch(() => {});
     }
   }, [isAdminOrCoach]);
@@ -302,58 +306,107 @@ const Dashboard = () => {
     </div>
   );
 
-  // ── Member competition cell ────────────────────────────────────────────────
+  // ── Competition panels ────────────────────────────────────────────────────
   const COMP_STATUS = {
-    INVITED:         { label: 'Respond',         color: '#1565c0',                         action: true },
-    ACCEPTED:        { label: 'Awaiting review',  color: 'var(--text-muted, #888)',         action: false },
-    PAYMENT_PENDING: { label: 'Pay now',          color: 'var(--warning-color, #e67e22)',   action: true },
-    PAID:            { label: 'Entered',          color: 'var(--success-color, #27ae60)',   action: false },
-    WAIVED:          { label: 'Entered',          color: 'var(--success-color, #27ae60)',   action: false },
-    DECLINED:        { label: 'Declined',         color: 'var(--text-muted, #888)',         action: false },
+    INVITED:         { label: 'View invite', color: '#1565c0',                       action: true },
+    ACCEPTED:        { label: 'Awaiting review', color: 'var(--text-muted, #888)',   action: false },
+    PAYMENT_PENDING: { label: 'Pay now',     color: 'var(--warning-color, #e67e22)', action: true },
+    PAID:            { label: 'Entered',     color: 'var(--success-color, #27ae60)', action: false },
+    WAIVED:          { label: 'Entered',     color: 'var(--success-color, #27ae60)', action: false },
+    DECLINED:        { label: 'Declined',    color: 'var(--text-muted, #888)',       action: false },
   };
 
   const upcomingCompEntries = myCompEntries
     .filter(e => new Date(e.competitionEvent.startDate) >= new Date() && e.status !== 'DECLINED')
-    .slice(0, 4);
+    .slice(0, 5);
+  const compActionCount = upcomingCompEntries.filter(e => COMP_STATUS[e.status]?.action).length;
 
-  const memberCompCell = upcomingCompEntries.length > 0 ? (
-    <div className="card" style={{ marginBottom: '1.25rem' }}>
-      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 className="card-title" style={{ margin: 0 }}>Competitions</h3>
-        <Link to="/booking/competitions" style={{ fontSize: '0.85rem', color: 'var(--primary-color)' }}>View all →</Link>
+  const memberCompPanel = (
+    <div className="dashboard-comp">
+      <div className="dashboard-comp__header">
+        <span className="dashboard-comp__title">🏆 Competitions</span>
+        {compActionCount > 0 && (
+          <span className="dashboard-comp__badge">{compActionCount} need{compActionCount === 1 ? 's' : ''} attention</span>
+        )}
       </div>
-      <div style={{ marginTop: '0.5rem' }}>
-        {upcomingCompEntries.map(entry => {
-          const ev = entry.competitionEvent;
-          const cfg = COMP_STATUS[entry.status] || { label: entry.status, color: 'inherit', action: false };
-          return (
-            <div
-              key={entry.id}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0', borderBottom: '1px solid #eee' }}
-            >
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{ev.name}</div>
-                <div style={{ fontSize: '0.8rem', color: '#888' }}>
-                  {entry.gymnast.firstName} {entry.gymnast.lastName} &middot;{' '}
-                  {new Date(ev.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+      {upcomingCompEntries.length === 0 ? (
+        <p className="dashboard-comp__empty">No upcoming competitions.</p>
+      ) : (
+        <ul className="dashboard-comp__list">
+          {upcomingCompEntries.map(entry => {
+            const ev = entry.competitionEvent;
+            const cfg = COMP_STATUS[entry.status] || { label: entry.status, color: 'inherit', action: false };
+            return (
+              <li key={entry.id} className="dashboard-comp__item">
+                <div className="dashboard-comp__item-main">
+                  <div className="dashboard-comp__item-name">{ev.name}</div>
+                  <div className="dashboard-comp__item-meta">
+                    {entry.gymnast.firstName} {entry.gymnast.lastName} &middot;{' '}
+                    {new Date(ev.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </div>
                 </div>
-              </div>
-              {cfg.action ? (
-                <Link
-                  to={`/booking/competitions/${entry.id}/enter`}
-                  style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', background: cfg.color, padding: '0.3rem 0.75rem', borderRadius: 5, textDecoration: 'none', whiteSpace: 'nowrap' }}
-                >
-                  {cfg.label}
-                </Link>
-              ) : (
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: cfg.color, whiteSpace: 'nowrap' }}>{cfg.label}</span>
-              )}
-            </div>
-          );
-        })}
+                {cfg.action ? (
+                  <Link
+                    to={`/booking/competitions/${entry.id}/enter`}
+                    className="dashboard-comp__action-btn"
+                    style={{ background: cfg.color }}
+                  >
+                    {cfg.label}
+                  </Link>
+                ) : (
+                  <span className="dashboard-comp__status" style={{ color: cfg.color }}>{cfg.label}</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div className="dashboard-comp__footer">
+        <Link to="/booking/competitions" className="dashboard-comp__cta">View all competitions →</Link>
       </div>
     </div>
-  ) : null;
+  );
+
+  const pendingPaymentCount = compSummary?.paymentPending.length ?? 0;
+
+  const adminCompPanel = (
+    <div className="dashboard-comp">
+      <div className="dashboard-comp__header">
+        <span className="dashboard-comp__title">🏆 Competitions</span>
+        {pendingPaymentCount > 0 && (
+          <span className="dashboard-comp__badge">{pendingPaymentCount} awaiting payment</span>
+        )}
+      </div>
+      {upcomingEvents.length === 0 ? (
+        <p className="dashboard-comp__empty">No upcoming competitions.</p>
+      ) : (
+        <ul className="dashboard-comp__list">
+          {upcomingEvents.slice(0, 4).map(ev => {
+            const pending = compSummary?.paymentPending.filter(e => e.competitionEvent.id === ev.id) ?? [];
+            return (
+              <Link key={ev.id} to={`/booking/admin/competitions/${ev.id}`} className="dashboard-comp__item">
+                <div className="dashboard-comp__item-main">
+                  <div className="dashboard-comp__item-name">{ev.name}</div>
+                  <div className="dashboard-comp__item-meta">
+                    {new Date(ev.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {' · '}{ev._count.entries} entr{ev._count.entries === 1 ? 'y' : 'ies'}
+                  </div>
+                </div>
+                {pending.length > 0 && (
+                  <span className="dashboard-comp__action-btn" style={{ background: '#e67e22' }}>
+                    {pending.length} awaiting
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </ul>
+      )}
+      <div className="dashboard-comp__footer">
+        <Link to="/booking/admin/competitions" className="dashboard-comp__cta">Manage competitions →</Link>
+      </div>
+    </div>
+  );
 
   // ── Today widget ───────────────────────────────────────────────────────────
   const todayWidget = showTodayWidget && (
@@ -414,41 +467,7 @@ const Dashboard = () => {
             )}
           </div>
           {noticeboardPanel}
-          {/* Existing metrics below */}
-          {compSummary && compSummary.paymentPending.length > 0 && (
-            <div className="card" style={{ marginBottom: '1.25rem' }}>
-              <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 className="card-title" style={{ margin: 0 }}>Competition Entries</h3>
-                <Link to="/booking/admin/competitions" style={{ fontSize: '0.85rem', color: 'var(--primary-color)' }}>Manage →</Link>
-              </div>
-              {compSummary.paymentPending.length > 0 && (
-                <div style={{ marginTop: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                    <span style={{ background: '#e67e22', color: '#fff', borderRadius: 4, padding: '0.15rem 0.5rem', fontSize: '0.78rem', fontWeight: 700 }}>
-                      {compSummary.paymentPending.length}
-                    </span>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Awaiting payment</span>
-                  </div>
-                  {compSummary.paymentPending.slice(0, 3).map(e => (
-                    <Link
-                      key={e.id}
-                      to={`/booking/admin/competitions/${e.competitionEvent.id}`}
-                      className="dashboard-metric-link"
-                      style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.5rem', borderBottom: '1px solid #eee', fontSize: '0.85rem' }}
-                    >
-                      <span>{e.gymnast.firstName} {e.gymnast.lastName}</span>
-                      <span style={{ color: '#888', fontSize: '0.8rem' }}>{e.competitionEvent.name}</span>
-                    </Link>
-                  ))}
-                  {compSummary.paymentPending.length > 3 && (
-                    <p style={{ fontSize: '0.8rem', color: '#888', margin: '0.35rem 0.5rem 0' }}>
-                      +{compSummary.paymentPending.length - 3} more
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+          {adminCompPanel}
 
           <div className="grid">
             {(isCoach || isClubAdmin) && (
@@ -596,8 +615,8 @@ const Dashboard = () => {
       ) : (
         <>
           {noticeboardPanel}
+          {memberCompPanel}
           {memberTiles}
-          {memberCompCell}
         </>
       )}
 

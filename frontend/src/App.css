@@ -6216,6 +6216,96 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
 }
 .dashboard-nb__cta:hover { text-decoration: underline; }
 
+/* ── Competition panel ───────────────────────────────────── */
+.dashboard-comp {
+  border: 2px solid #d97706;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  background: #fffbeb;
+}
+.dashboard-comp__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.7rem 1rem 0.5rem;
+}
+.dashboard-comp__title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #d97706;
+}
+.dashboard-comp__badge {
+  background: #d97706;
+  color: white;
+  border-radius: 10px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.dashboard-comp__empty {
+  font-size: 0.875rem;
+  color: #888;
+  padding: 0 1rem 0.75rem;
+  margin: 0;
+}
+.dashboard-comp__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dashboard-comp__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid #fde68a;
+  text-decoration: none;
+  color: inherit;
+}
+a.dashboard-comp__item:hover { background: #fef9ec; }
+.dashboard-comp__item-main { min-width: 0; flex: 1; }
+.dashboard-comp__item-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #222;
+  line-height: 1.3;
+}
+.dashboard-comp__item-meta {
+  font-size: 0.775rem;
+  color: #888;
+  margin-top: 0.1rem;
+}
+.dashboard-comp__footer {
+  padding: 0.55rem 1rem;
+  border-top: 1px solid #fde68a;
+  background: #fef3c7;
+}
+.dashboard-comp__cta {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #d97706;
+  text-decoration: none;
+}
+.dashboard-comp__cta:hover { text-decoration: underline; }
+.dashboard-comp__action-btn {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  border-radius: 4px;
+  padding: 0.25rem 0.65rem;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dashboard-comp__status {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* ── Certificates shortcut button ───────────────────────── */
 .progress-cert-shortcut {
   display: inline-block;
