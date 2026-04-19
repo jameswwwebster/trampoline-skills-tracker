@@ -48,6 +48,15 @@ function muted(text) {
   return `<p style="margin-bottom:0;color:#888888;font-size:0.85rem">${text}</p>`;
 }
 
+// Escapes HTML special chars, converts URLs to links, and converts newlines to <br>.
+// Safe to call on untrusted text before embedding in HTML email bodies.
+function linkifyHtml(text) {
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    .replace(/(https?:\/\/[^\s&<>"]+)/g, '<a href="$1" style="color:#7c35e8">$1</a>')
+    .replace(/\n/g, '<br>');
+}
+
 // ---------------------------------------------------------------------------
 
 class EmailService {
@@ -739,6 +748,9 @@ class EmailService {
     const categoriesHtml = categoryNames.length > 0
       ? `<p style="margin:0.2rem 0"><strong>Categories:</strong> ${categoryNames.join(', ')}</p>`
       : '';
+    const descriptionHtml = event.description
+      ? `<p style="margin:0.75rem 0 0;font-size:0.9rem;line-height:1.5">${linkifyHtml(event.description)}</p>`
+      : '';
     const entryUrl = `${BASE_URL()}/booking/competitions`;
     return this._send({
       from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
@@ -754,13 +766,14 @@ class EmailService {
           <p style="margin:0.2rem 0"><strong>Entry deadline:</strong> ${deadline}</p>
           ${categoriesHtml}
           ${totalStr ? `<p style="margin:0.75rem 0 0;font-size:1.05rem"><strong>Total: ${totalStr}</strong></p>` : ''}
+          ${descriptionHtml}
         `)}
         <p><strong>Entries will not be submitted to the competition organiser until payment is complete.</strong></p>
         <p>Log in to accept and pay, or decline the invitation.</p>
         ${ctaButton(entryUrl, totalStr ? 'Accept and pay — ' + totalStr : 'Accept and pay')}
         ${muted('If you have any questions, please contact the club.')}
       `),
-      text: `Hi ${firstName},\n\n${gymnast.firstName} ${gymnast.lastName} has been invited to ${event.name} at ${event.location} on ${date}.\n\nEntry deadline: ${deadline}${categoryNames.length > 0 ? '\nCategories: ' + categoryNames.join(', ') : ''}${totalStr ? '\nTotal: ' + totalStr : ''}\n\nEntries will not be submitted to the competition organiser until payment is complete.\n\nLog in to accept and pay, or decline: ${entryUrl}\n\nIf you have any questions, please contact the club.`,
+      text: `Hi ${firstName},\n\n${gymnast.firstName} ${gymnast.lastName} has been invited to ${event.name} at ${event.location} on ${date}.\n\nEntry deadline: ${deadline}${categoryNames.length > 0 ? '\nCategories: ' + categoryNames.join(', ') : ''}${totalStr ? '\nTotal: ' + totalStr : ''}${event.description ? '\n\n' + event.description : ''}\n\nEntries will not be submitted to the competition organiser until payment is complete.\n\nLog in to accept and pay, or decline: ${entryUrl}\n\nIf you have any questions, please contact the club.`,
     }, { to: email, event: event.name, gymnast: `${gymnast.firstName} ${gymnast.lastName}` });
   }
 
