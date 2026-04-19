@@ -178,6 +178,9 @@ router.delete('/:id', auth, requireRole(ADMIN_ROLES), async (req, res) => {
       where: { id: req.params.id, clubId: req.user.clubId },
     });
     if (!existing) return res.status(404).json({ error: 'Not found' });
+    // Entries have no cascade on the event relation — delete them first.
+    // CompetitionEntryCategory rows cascade from their entry.
+    await prisma.competitionEntry.deleteMany({ where: { competitionEventId: req.params.id } });
     await prisma.competitionEvent.delete({ where: { id: req.params.id } });
     res.json({ ok: true });
   } catch (err) {
