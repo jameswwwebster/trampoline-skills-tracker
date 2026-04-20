@@ -71,18 +71,18 @@ export default function AdminCompetitionDetail() {
     }
   };
 
-  const handleAddCategory = async (name, skillCompetitionIds = []) => {
+  const handleAddCategory = async (name, skillCompetitionIds = [], minAge = null, maxAge = null) => {
     try {
-      await bookingApi.addCompetitionCategory(id, { name, skillCompetitionIds });
+      await bookingApi.addCompetitionCategory(id, { name, skillCompetitionIds, minAge, maxAge });
       await load();
     } catch (err) {
       setMsg(err.response?.data?.error || 'Failed to add category.');
     }
   };
 
-  const handleRenameCategory = async (catId, name, skillCompetitionIds) => {
+  const handleRenameCategory = async (catId, name, skillCompetitionIds, minAge = null, maxAge = null) => {
     try {
-      await bookingApi.updateCompetitionCategory(id, catId, { name, skillCompetitionIds });
+      await bookingApi.updateCompetitionCategory(id, catId, { name, skillCompetitionIds, minAge, maxAge });
       await load();
     } catch (err) {
       setMsg(err.response?.data?.error || 'Failed to update category.');
@@ -329,6 +329,10 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   const [newCatSkillIds, setNewCatSkillIds] = useState([]);
   const [skillCompetitions, setSkillCompetitions] = useState([]);
   const [catSaving, setCatSaving] = useState(false);
+  const [catEditMinAge, setCatEditMinAge] = useState('');
+  const [catEditMaxAge, setCatEditMaxAge] = useState('');
+  const [newCatMinAge, setNewCatMinAge] = useState('');
+  const [newCatMaxAge, setNewCatMaxAge] = useState('');
 
   useEffect(() => {
     bookingApi.getSkillCompetitions()
@@ -358,7 +362,13 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   const handleCatRename = async (catId) => {
     if (!catEditValue.trim()) return;
     setCatSaving(true);
-    await onRenameCategory(catId, catEditValue.trim(), catEditSkillIds);
+    await onRenameCategory(
+      catId,
+      catEditValue.trim(),
+      catEditSkillIds,
+      catEditMinAge !== '' ? parseInt(catEditMinAge, 10) : null,
+      catEditMaxAge !== '' ? parseInt(catEditMaxAge, 10) : null,
+    );
     setCatEditId(null);
     setCatSaving(false);
   };
@@ -369,9 +379,16 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
   const handleAddCat = async () => {
     if (!newCatName.trim()) return;
     setCatSaving(true);
-    await onAddCategory(newCatName.trim(), newCatSkillIds);
+    await onAddCategory(
+      newCatName.trim(),
+      newCatSkillIds,
+      newCatMinAge !== '' ? parseInt(newCatMinAge, 10) : null,
+      newCatMaxAge !== '' ? parseInt(newCatMaxAge, 10) : null,
+    );
     setNewCatName('');
     setNewCatSkillIds([]);
+    setNewCatMinAge('');
+    setNewCatMaxAge('');
     setShowAddCat(false);
     setCatSaving(false);
   };
@@ -465,6 +482,26 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
                   autoFocus
                   onKeyDown={e => { if (e.key === 'Escape') setCatEditId(null); }}
                 />
+                <div className="bk-row" style={{ gap: '0.5rem', marginBottom: '0.6rem' }}>
+                  <input
+                    type="number"
+                    min="0"
+                    className="bk-input"
+                    placeholder="Min age"
+                    value={catEditMinAge}
+                    onChange={e => setCatEditMinAge(e.target.value)}
+                    style={{ width: 80 }}
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    className="bk-input"
+                    placeholder="Max age"
+                    value={catEditMaxAge}
+                    onChange={e => setCatEditMaxAge(e.target.value)}
+                    style={{ width: 80 }}
+                  />
+                </div>
                 {skillCompetitions.filter(sc => sc.isActive).length > 0 && (
                   <div style={{ marginBottom: '0.6rem' }}>
                     <p style={{ margin: '0 0 0.3rem', fontSize: '0.8rem', fontWeight: 600 }}>
@@ -496,10 +533,17 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
                     setCatEditId(cat.id);
                     setCatEditValue(cat.name);
                     setCatEditSkillIds((cat.skillCompetitions || []).map(sc => sc.skillCompetitionId || sc.id));
+                    setCatEditMinAge(cat.minAge !== null && cat.minAge !== undefined ? String(cat.minAge) : '');
+                    setCatEditMaxAge(cat.maxAge !== null && cat.maxAge !== undefined ? String(cat.maxAge) : '');
                   }}
                 >
                   {cat.name}
                 </span>
+                {(cat.minAge !== null && cat.minAge !== undefined) && (
+                  <span className="bk-muted" style={{ fontSize: '0.8rem' }}>
+                    · {cat.maxAge !== null && cat.maxAge !== undefined ? `${cat.minAge}–${cat.maxAge}` : `${cat.minAge}+`}
+                  </span>
+                )}
                 {cat.skillCompetitions?.length > 0 && (
                   <span className="bk-muted" style={{ fontSize: '0.8rem' }}>
                     ({cat.skillCompetitions.length} skill level{cat.skillCompetitions.length !== 1 ? 's' : ''} linked)
@@ -532,6 +576,26 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
               autoFocus
               onKeyDown={e => { if (e.key === 'Enter') handleAddCat(); if (e.key === 'Escape') setShowAddCat(false); }}
             />
+            <div className="bk-row" style={{ gap: '0.5rem', marginBottom: '0.6rem' }}>
+              <input
+                type="number"
+                min="0"
+                className="bk-input"
+                placeholder="Min age"
+                value={newCatMinAge}
+                onChange={e => setNewCatMinAge(e.target.value)}
+                style={{ width: 80 }}
+              />
+              <input
+                type="number"
+                min="0"
+                className="bk-input"
+                placeholder="Max age"
+                value={newCatMaxAge}
+                onChange={e => setNewCatMaxAge(e.target.value)}
+                style={{ width: 80 }}
+              />
+            </div>
             {skillCompetitions.filter(sc => sc.isActive).length > 0 && (
               <div style={{ marginBottom: '0.6rem' }}>
                 <p style={{ margin: '0 0 0.3rem', fontSize: '0.8rem', fontWeight: 600 }}>
