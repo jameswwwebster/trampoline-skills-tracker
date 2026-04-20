@@ -29,6 +29,8 @@ const eventSchema = Joi.object({
     Joi.object({
       name: Joi.string().required(),
       skillCompetitionIds: Joi.array().items(Joi.string()).default([]),
+      minAge: Joi.number().integer().min(0).optional().allow(null),
+      maxAge: Joi.number().integer().min(0).optional().allow(null),
     })
   ).required(),
   priceTiers: Joi.array().items(
@@ -101,6 +103,8 @@ router.post('/', auth, requireRole(ADMIN_ROLES), async (req, res) => {
         categories: {
           create: value.categories.map(c => ({
             name: c.name,
+            minAge: c.minAge ?? null,
+            maxAge: c.maxAge ?? null,
             ...(c.skillCompetitionIds.length > 0 ? {
               skillCompetitions: {
                 create: c.skillCompetitionIds.map(sid => ({ skillCompetitionId: sid })),
@@ -448,6 +452,8 @@ router.post('/:id/categories', auth, requireRole(ADMIN_ROLES), async (req, res) 
   const { error, value } = Joi.object({
     name: Joi.string().required(),
     skillCompetitionIds: Joi.array().items(Joi.string()).default([]),
+    minAge: Joi.number().integer().min(0).optional().allow(null),
+    maxAge: Joi.number().integer().min(0).optional().allow(null),
   }).validate(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
 
@@ -461,6 +467,8 @@ router.post('/:id/categories', auth, requireRole(ADMIN_ROLES), async (req, res) 
       data: {
         competitionEventId: event.id,
         name: value.name,
+        minAge: value.minAge ?? null,
+        maxAge: value.maxAge ?? null,
         skillCompetitions: value.skillCompetitionIds.length > 0 ? {
           create: value.skillCompetitionIds.map(sid => ({ skillCompetitionId: sid })),
         } : undefined,
@@ -479,6 +487,8 @@ router.patch('/:id/categories/:catId', auth, requireRole(ADMIN_ROLES), async (re
   const { error, value } = Joi.object({
     name: Joi.string().optional(),
     skillCompetitionIds: Joi.array().items(Joi.string()).optional(),
+    minAge: Joi.number().integer().min(0).optional().allow(null),
+    maxAge: Joi.number().integer().min(0).optional().allow(null),
   }).min(1).validate(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
 
@@ -505,7 +515,11 @@ router.patch('/:id/categories/:catId', auth, requireRole(ADMIN_ROLES), async (re
 
     const updated = await prisma.competitionCategory.update({
       where: { id: category.id },
-      data: value.name ? { name: value.name } : {},
+      data: {
+        ...(value.name ? { name: value.name } : {}),
+        ...('minAge' in value ? { minAge: value.minAge ?? null } : {}),
+        ...('maxAge' in value ? { maxAge: value.maxAge ?? null } : {}),
+      },
       include: { skillCompetitions: true },
     });
     res.json(updated);
