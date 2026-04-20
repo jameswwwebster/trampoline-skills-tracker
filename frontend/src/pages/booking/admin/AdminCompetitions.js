@@ -68,6 +68,17 @@ export default function AdminCompetitions() {
     setSubmitting(true);
     setError(null);
     try {
+      const ageError = form.categories.some(c => {
+        const min = c.minAge !== '' ? parseInt(c.minAge, 10) : null;
+        const max = c.maxAge !== '' ? parseInt(c.maxAge, 10) : null;
+        return min !== null && max !== null && min > max;
+      });
+      if (ageError) {
+        setError('Min age must not exceed max age.');
+        setSubmitting(false);
+        return;
+      }
+
       const payload = {
         name: form.name,
         location: form.location,

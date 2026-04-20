@@ -361,6 +361,11 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
 
   const handleCatRename = async (catId) => {
     if (!catEditValue.trim()) return;
+    const minA = catEditMinAge !== '' ? parseInt(catEditMinAge, 10) : null;
+    const maxA = catEditMaxAge !== '' ? parseInt(catEditMaxAge, 10) : null;
+    if (minA !== null && maxA !== null && minA > maxA) {
+      return;
+    }
     setCatSaving(true);
     await onRenameCategory(
       catId,
@@ -378,6 +383,11 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
 
   const handleAddCat = async () => {
     if (!newCatName.trim()) return;
+    const minA = newCatMinAge !== '' ? parseInt(newCatMinAge, 10) : null;
+    const maxA = newCatMaxAge !== '' ? parseInt(newCatMaxAge, 10) : null;
+    if (minA !== null && maxA !== null && minA > maxA) {
+      return;
+    }
     setCatSaving(true);
     await onAddCategory(
       newCatName.trim(),
