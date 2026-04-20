@@ -615,7 +615,7 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
             )}
             <div className="bk-row" style={{ gap: '0.5rem' }}>
               <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={catSaving || !newCatName.trim()} onClick={handleAddCat}>Add category</button>
-              <button className="bk-btn bk-btn--sm" onClick={() => { setShowAddCat(false); setNewCatName(''); setNewCatSkillIds([]); }}>Cancel</button>
+              <button className="bk-btn bk-btn--sm" onClick={() => { setShowAddCat(false); setNewCatName(''); setNewCatSkillIds([]); setNewCatMinAge(''); setNewCatMaxAge(''); }}>Cancel</button>
             </div>
           </div>
         )}
