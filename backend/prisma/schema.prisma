@@ -496,6 +496,8 @@ model CompetitionCategory {
   id                 String                          @id @default(cuid())
   competitionEventId String
   name               String
+  minAge             Int?
+  maxAge             Int?
   competitionEvent   CompetitionEvent                @relation(fields: [competitionEventId], references: [id], onDelete: Cascade)
   skillCompetitions  CompetitionCategorySkillLevel[]
   entryCategories    CompetitionEntryCategory[]
