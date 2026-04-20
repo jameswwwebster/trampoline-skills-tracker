@@ -245,7 +245,18 @@ router.get('/:id/eligible', auth, requireRole(ADMIN_ROLES), async (req, res) => 
         });
       }
 
-      return { categoryId: cat.id, categoryName: cat.name, maxLevelNumber, gymnasts };
+      const compYear = new Date(event.startDate).getFullYear();
+      if (cat.minAge !== null || cat.maxAge !== null) {
+        gymnasts = gymnasts.filter(g => {
+          if (!g.dateOfBirth) return true;
+          const age = compYear - new Date(g.dateOfBirth).getFullYear();
+          if (cat.minAge !== null && age < cat.minAge) return false;
+          if (cat.maxAge !== null && age > cat.maxAge) return false;
+          return true;
+        });
+      }
+
+      return { categoryId: cat.id, categoryName: cat.name, maxLevelNumber, minAge: cat.minAge, maxAge: cat.maxAge, gymnasts };
     }));
 
     // Each gymnast appears only in their highest-ranked eligible category
@@ -261,6 +272,8 @@ router.get('/:id/eligible', auth, requireRole(ADMIN_ROLES), async (req, res) => 
     const result = rawResult.map(cat => ({
       categoryId: cat.categoryId,
       categoryName: cat.categoryName,
+      minAge: cat.minAge,
+      maxAge: cat.maxAge,
       gymnasts: cat.gymnasts
         .filter(g => gymnastHighestRank[g.id] === cat.maxLevelNumber)
         .map(g => ({
@@ -268,6 +281,7 @@ router.get('/:id/eligible', auth, requireRole(ADMIN_ROLES), async (req, res) => 
           firstName: g.firstName,
           lastName: g.lastName,
           alreadyInvited: alreadyInvited.has(g.id),
+          dateOfBirth: g.dateOfBirth,
         })),
     }));
 
@@ -431,6 +445,7 @@ router.get('/:id/all-gymnasts', auth, requireRole(ADMIN_ROLES), async (req, res)
         id: g.id,
         firstName: g.firstName,
         lastName: g.lastName,
+        dateOfBirth: g.dateOfBirth,
         alreadyInvited: !!indEntry,
         entryId: indEntry?.id || null,
         entryStatus: indEntry?.status || null,
