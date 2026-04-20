@@ -636,6 +636,8 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
   const [synchroPrice, setSynchroPrice] = useState('');
   const [synchroWorking, setSynchroWorking] = useState(false);
   const { toast: synchroToast, showToast: showSynchroToast, dismissToast: dismissSynchroToast } = useToast();
+  const [nameFilter, setNameFilter] = useState('');
+  const [activeAgeTab, setActiveAgeTab] = useState('all');
 
   const calcSuggestedPrice = (numCats) => {
     if (numCats === 0 || !priceTiers || priceTiers.length === 0) return null;
@@ -652,6 +654,15 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
 
   const entryMap = Object.fromEntries((eventEntries || []).map(e => [e.gymnast?.id, e.id]));
   const notInvited = (allGymnasts || []).filter(g => !g.alreadyInvited);
+
+  const ageTabs = (eligible || [])
+    .filter(cat => cat.minAge !== null && cat.minAge !== undefined)
+    .map(cat => ({
+      key: cat.maxAge !== null && cat.maxAge !== undefined ? `${cat.minAge}–${cat.maxAge}` : `${cat.minAge}+`,
+      minAge: cat.minAge,
+      maxAge: cat.maxAge,
+    }))
+    .filter((tab, i, arr) => arr.findIndex(t => t.key === tab.key) === i);
 
   const handleSynchroInvite = async () => {
     if (!synchroGym1 || !synchroGym2 || synchroGym1 === synchroGym2) return;
@@ -782,12 +793,57 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
 
   return (
     <div>
+      <input
+        className="bk-input"
+        placeholder="Search by name..."
+        value={nameFilter}
+        onChange={e => setNameFilter(e.target.value)}
+        style={{ marginBottom: '0.75rem', maxWidth: 280 }}
+      />
+
+      {ageTabs.length > 0 && (
+        <div className="bk-row" style={{ gap: '0.25rem', marginBottom: '1rem', borderBottom: '1px solid var(--booking-border)', paddingBottom: 0 }}>
+          {['all', ...ageTabs.map(t => t.key)].map(tabKey => (
+            <button
+              key={tabKey}
+              className="bk-btn bk-btn--ghost"
+              style={{
+                fontSize: '0.8rem',
+                borderBottom: activeAgeTab === tabKey ? '2px solid var(--booking-primary)' : '2px solid transparent',
+                borderRadius: 0,
+                paddingBottom: '0.5rem',
+              }}
+              onClick={() => setActiveAgeTab(tabKey)}
+            >
+              {tabKey === 'all' ? 'All' : tabKey}
+            </button>
+          ))}
+        </div>
+      )}
+
       {eligible.length > 0 && (
         <>
           <p className="bk-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
             Gymnasts below have completed the linked skill tracker levels for each category.
           </p>
           {eligible.map(cat => {
+            // Age tab filter
+            if (activeAgeTab !== 'all') {
+              const catTabKey = (cat.minAge !== null && cat.minAge !== undefined)
+                ? (cat.maxAge !== null && cat.maxAge !== undefined ? `${cat.minAge}–${cat.maxAge}` : `${cat.minAge}+`)
+                : null;
+              if (catTabKey !== activeAgeTab) return null;
+            }
+
+            // Name filter
+            const visibleGymnasts = nameFilter.trim()
+              ? cat.gymnasts.filter(g =>
+                  `${g.firstName} ${g.lastName}`.toLowerCase().includes(nameFilter.trim().toLowerCase())
+                )
+              : cat.gymnasts;
+
+            if (visibleGymnasts.length === 0 && nameFilter.trim()) return null;
+
             const noFilter = allGymnasts && cat.gymnasts.length === allGymnasts.length;
             return (
               <div key={cat.categoryId} style={{ marginBottom: '1.5rem' }}>
@@ -797,11 +853,11 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
                     No skill level filter set — showing all gymnasts.
                   </p>
                 )}
-                {cat.gymnasts.length === 0 && <p className="bk-muted" style={{ fontSize: '0.85rem' }}>No eligible gymnasts found.</p>}
-                {cat.gymnasts.length > 0 && (
+                {visibleGymnasts.length === 0 && <p className="bk-muted" style={{ fontSize: '0.85rem' }}>No eligible gymnasts found.</p>}
+                {visibleGymnasts.length > 0 && (
                   <table className="bk-table">
                     <tbody>
-                      {cat.gymnasts.map(g => renderGymnastRow(g, cat.categoryId))}
+                      {visibleGymnasts.map(g => renderGymnastRow(g, cat.categoryId))}
                     </tbody>
                   </table>
                 )}
@@ -818,13 +874,22 @@ function InvitesTab({ eligible, eligibleError, allGymnasts, inviting, onInvite, 
         {showAll && (
           <div style={{ marginTop: '0.75rem' }}>
             {notInvited.length === 0 && <p className="bk-muted" style={{ fontSize: '0.85rem' }}>All gymnasts have already been invited.</p>}
-            {notInvited.length > 0 && (
-              <table className="bk-table">
-                <tbody>
-                  {notInvited.map(g => renderGymnastRow(g, null))}
-                </tbody>
-              </table>
-            )}
+            {notInvited.length > 0 && (() => {
+              const filtered = nameFilter.trim()
+                ? notInvited.filter(g =>
+                    `${g.firstName} ${g.lastName}`.toLowerCase().includes(nameFilter.trim().toLowerCase())
+                  )
+                : notInvited;
+              return filtered.length === 0
+                ? <p className="bk-muted" style={{ fontSize: '0.85rem' }}>No gymnasts match your search.</p>
+                : (
+                  <table className="bk-table">
+                    <tbody>
+                      {filtered.map(g => renderGymnastRow(g, null))}
+                    </tbody>
+                  </table>
+                );
+            })()}
           </div>
         )}
       </div>
