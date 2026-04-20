@@ -19,7 +19,7 @@ const EMPTY_FORM = {
   entryDeadline: '',
   lateEntryFee: '',
   description: '',
-  categories: [{ name: '', skillCompetitionIds: [] }],
+  categories: [{ name: '', minAge: '', maxAge: '', skillCompetitionIds: [] }],
   priceTiers: [
     { entryNumber: 1, price: '' },
     { entryNumber: 2, price: '' },
@@ -44,7 +44,7 @@ export default function AdminCompetitions() {
   useEffect(load, []);
 
   const addCategory = () =>
-    setForm(f => ({ ...f, categories: [...f.categories, { name: '', skillCompetitionIds: [] }] }));
+    setForm(f => ({ ...f, categories: [...f.categories, { name: '', minAge: '', maxAge: '', skillCompetitionIds: [] }] }));
 
   const removeCategory = (i) =>
     setForm(f => ({ ...f, categories: f.categories.filter((_, idx) => idx !== i) }));
@@ -79,6 +79,8 @@ export default function AdminCompetitions() {
         categories: form.categories.filter(c => c.name.trim()).map(c => ({
           name: c.name.trim(),
           skillCompetitionIds: c.skillCompetitionIds,
+          minAge: c.minAge !== '' ? parseInt(c.minAge, 10) : null,
+          maxAge: c.maxAge !== '' ? parseInt(c.maxAge, 10) : null,
         })),
         priceTiers: form.priceTiers
           .filter(t => t.price !== '')
@@ -168,6 +170,24 @@ export default function AdminCompetitions() {
                     value={cat.name}
                     onChange={e => updateCategory(i, 'name', e.target.value)}
                     style={{ flex: 1 }}
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    className="bk-input"
+                    placeholder="Min age"
+                    value={cat.minAge}
+                    onChange={e => updateCategory(i, 'minAge', e.target.value)}
+                    style={{ width: 80 }}
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    className="bk-input"
+                    placeholder="Max age"
+                    value={cat.maxAge}
+                    onChange={e => updateCategory(i, 'maxAge', e.target.value)}
+                    style={{ width: 80 }}
                   />
                   {form.categories.length > 1 && (
                     <button type="button" className="bk-btn bk-btn--sm" style={{ color: 'var(--booking-danger)' }} onClick={() => removeCategory(i)}>Remove</button>
