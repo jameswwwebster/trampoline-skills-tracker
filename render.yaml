@@ -41,7 +41,7 @@ services:
     routes:
       - type: redirect
         source: /book-and-bounce
-        destination: /booking
+        destination: /
       - type: redirect
         source: /club-policies
         destination: /
