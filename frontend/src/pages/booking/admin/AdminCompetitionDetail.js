@@ -480,7 +480,7 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
                   value={catEditValue}
                   onChange={e => setCatEditValue(e.target.value)}
                   autoFocus
-                  onKeyDown={e => { if (e.key === 'Escape') setCatEditId(null); }}
+                  onKeyDown={e => { if (e.key === 'Escape') { setCatEditId(null); setCatEditMinAge(''); setCatEditMaxAge(''); } }}
                 />
                 <div className="bk-row" style={{ gap: '0.5rem', marginBottom: '0.6rem' }}>
                   <input
@@ -521,7 +521,7 @@ function DetailsTab({ event, editField, editValue, saving, onEdit, onSave, onCan
                 )}
                 <div className="bk-row" style={{ gap: '0.5rem' }}>
                   <button className="bk-btn bk-btn--sm bk-btn--primary" disabled={catSaving || !catEditValue.trim()} onClick={() => handleCatRename(cat.id)}>Save</button>
-                  <button className="bk-btn bk-btn--sm" onClick={() => setCatEditId(null)}>Cancel</button>
+                  <button className="bk-btn bk-btn--sm" onClick={() => { setCatEditId(null); setCatEditMinAge(''); setCatEditMaxAge(''); }}>Cancel</button>
                 </div>
               </div>
             ) : (
