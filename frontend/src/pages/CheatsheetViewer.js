@@ -164,6 +164,16 @@ const CheatsheetViewer = () => {
     };
   }, [cheatsheetId, cheatsheetTitles, cheatsheetDescriptions]);
 
+  // Enable pinch-to-zoom on this page only; restore the app-wide restriction on unmount
+  useEffect(() => {
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    const original = viewportMeta?.getAttribute('content');
+    viewportMeta?.setAttribute('content', 'width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover');
+    return () => {
+      if (original) viewportMeta?.setAttribute('content', original);
+    };
+  }, []);
+
   useEffect(() => {
     const pageNumber = pageMap[cheatsheetId] || 1;
     
@@ -233,10 +243,10 @@ const CheatsheetViewer = () => {
         <Link to="/cheatsheets" className="back-link">← Back</Link>
         <h2>{cheatsheetTitles[cheatsheetId] || 'Cheatsheet'}</h2>
       </div>
-      
+      <p className="zoom-hint">Pinch to zoom · scroll to pan</p>
       <div className="viewer-container">
-        <img 
-          src={imageUrl} 
+        <img
+          src={imageUrl}
           alt={`${cheatsheetTitles[cheatsheetId] || 'Cheatsheet'} - 2026 British Gymnastics competition requirements and qualification pathways`}
           className="cheatsheet-image"
           crossOrigin="anonymous"
