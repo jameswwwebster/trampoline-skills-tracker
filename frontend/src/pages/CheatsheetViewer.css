@@ -28,8 +28,29 @@
 .back-link {
   position: absolute;
   left: 1.5rem;
+  color: #0066cc;
+  text-decoration: none;
+  font-weight: 500;
 }
 
+.download-btn {
+  position: absolute;
+  right: 1.25rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #0066cc;
+  padding: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.download-btn:hover {
+  background: #f0f0f0;
+}
 
 .viewer-container {
   flex: 1;
@@ -53,6 +74,10 @@
   border-radius: 8px;
   user-select: none;
   -webkit-user-drag: none;
+}
+
+.zoom-hint {
+  display: none;
 }
 
 .loading-container,
@@ -99,47 +124,56 @@
   color: white;
 }
 
-/* Mobile optimizations */
 @media (max-width: 768px) {
   .viewer-header {
     padding: 0.75rem 1rem;
   }
 
   .viewer-header h2 {
-    font-size: 1rem;
+    font-size: 0.9rem;
+    max-width: calc(100% - 6rem);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .back-link {
     font-size: 0.9rem;
-    padding: 0.4rem 0.8rem;
     left: 1rem;
   }
 
-  .viewer-container {
-    padding: 10px;
+  .download-btn {
+    right: 0.75rem;
   }
 }
 
-.zoom-hint {
-  display: none;
-}
-
-/* Touch-friendly zoom on mobile */
+/* Touch devices: in-app zoom replaces browser scroll */
 @media (hover: none) and (pointer: coarse) {
   .viewer-container {
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
+    padding: 0;
     align-items: flex-start;
     justify-content: flex-start;
+  }
+
+  .cheatsheet-image {
+    touch-action: none;
+    border-radius: 0;
+    box-shadow: none;
+    min-width: unset;
+    max-width: none;
+    width: 100%;
   }
 
   .zoom-hint {
     display: block;
     text-align: center;
-    font-size: 0.75rem;
-    color: #999;
-    padding: 0.35rem 0.75rem;
+    font-size: 0.72rem;
+    color: #aaa;
+    padding: 0.3rem 0;
     flex-shrink: 0;
     background: #f5f5f5;
+    letter-spacing: 0.01em;
   }
 }
-
