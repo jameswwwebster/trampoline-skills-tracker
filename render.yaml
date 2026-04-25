@@ -39,6 +39,15 @@ services:
       - key: REACT_APP_API_URL
         sync: false
     routes:
+      - type: redirect
+        source: /book-and-bounce
+        destination: /
+      - type: redirect
+        source: /club-policies
+        destination: /
+      - type: redirect
+        source: /ndp-19-20
+        destination: /
       - type: rewrite
         source: /.well-known/*
         destination: /.well-known/:splat
