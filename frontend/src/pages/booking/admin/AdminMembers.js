@@ -1883,7 +1883,7 @@ export default function AdminMembers() {
   const q = search.toLowerCase();
   const filtered = members.filter(u => {
     const matchesSearch = `${u.firstName} ${u.lastName} ${u.email} ${childrenByUser[u.id] || ''}`.toLowerCase().includes(q);
-    const matchesLetter = !letterFilter || (u.lastName || u.firstName || '').toUpperCase().startsWith(letterFilter);
+    const matchesLetter = !letterFilter || (u.firstName || u.lastName || '').toUpperCase().startsWith(letterFilter);
     const matchesRole = !roleFilter || u.role === roleFilter;
     return matchesSearch && matchesLetter && matchesRole;
   });

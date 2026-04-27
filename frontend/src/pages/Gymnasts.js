@@ -45,6 +45,21 @@ const Gymnasts = () => {
 
     const savedSearchTerm = localStorage.getItem('gymnastSearchTerm');
     if (savedSearchTerm) setSearchTerm(savedSearchTerm);
+
+    const savedSessionFilter = localStorage.getItem('gymnastSessionFilter');
+    if (savedSessionFilter) {
+      setSelectedSessionId(savedSessionFilter);
+      setSessionLoading(true);
+      bookingApi.getAttendance(savedSessionFilter)
+        .then(res => {
+          setSessionGymnasts(new Set(res.data.attendees.map(a => a.gymnastId)));
+          setShowSessionOnly(true);
+        })
+        .catch(() => {
+          localStorage.removeItem('gymnastSessionFilter');
+        })
+        .finally(() => setSessionLoading(false));
+    }
   }, []);
 
   // Save preferences to localStorage when they change
@@ -82,6 +97,8 @@ const Gymnasts = () => {
     if (!sessionId) {
       setSelectedSessionId(null);
       setSessionGymnasts(new Set());
+      setShowSessionOnly(false);
+      localStorage.removeItem('gymnastSessionFilter');
       return;
     }
     setSelectedSessionId(sessionId);
@@ -182,6 +199,7 @@ const Gymnasts = () => {
     // Fetch attendees and activate the session filter
     setSelectedSessionId(sessionParam);
     setSessionLoading(true);
+    localStorage.setItem('gymnastSessionFilter', sessionParam);
     bookingApi.getAttendance(sessionParam)
       .then(res => {
         setSessionGymnasts(new Set(res.data.attendees.map(a => a.gymnastId)));
@@ -190,6 +208,7 @@ const Gymnasts = () => {
       .catch(() => {
         setError('Failed to load session attendees. Please try again.');
         setSelectedSessionId(null);
+        localStorage.removeItem('gymnastSessionFilter');
       })
       .finally(() => setSessionLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

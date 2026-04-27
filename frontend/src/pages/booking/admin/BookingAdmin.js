@@ -183,7 +183,6 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
   const [standingSlots, setStandingSlots] = useState(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [absentGymnastIds, setAbsentGymnastIds] = useState([]);
-  const [togglingAbsence, setTogglingAbsence] = useState(null);
   const totalGymnasts = sessionDetail.bookings?.reduce((n, b) => n + b.lines.length, 0) ?? 0;
   const capacity = sessionDetail.capacity;
 
@@ -203,25 +202,6 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
     }).catch(() => { setStandingSlots([]); setAbsentGymnastIds([]); })
       .finally(() => setSlotsLoading(false));
   }, [sessionDetail.templateId, selectedSession]);
-
-  const handleToggleAbsence = async (gymnast) => {
-    const isAbsent = absentGymnastIds.includes(gymnast.id);
-    setTogglingAbsence(gymnast.id);
-    try {
-      if (isAbsent) {
-        await bookingApi.deleteAttendance(selectedSession, gymnast.id);
-        setAbsentGymnastIds(prev => prev.filter(id => id !== gymnast.id));
-      } else {
-        await bookingApi.createAttendance(selectedSession, { gymnastId: gymnast.id, status: 'ABSENT' });
-        setAbsentGymnastIds(prev => [...prev, gymnast.id]);
-      }
-      onAdded(); // refresh session detail so capacity bar updates
-    } catch {
-      // silently ignore — the toggle will revert visually on next load
-    } finally {
-      setTogglingAbsence(null);
-    }
-  };
 
   const handleRemove = async (bookingId, issueCredit) => {
     setRemoving(bookingId);
@@ -323,7 +303,6 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
               ? new Date(c.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
               : null;
             const isAbsent = absentGymnastIds.includes(c.gymnast.id);
-            const isToggling = togglingAbsence === c.gymnast.id;
             return (
               <div key={c.id} style={{
                 padding: '0.5rem 0', borderBottom: '1px solid var(--booking-bg-light)',
@@ -334,22 +313,6 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
                     {c.gymnast.firstName} {c.gymnast.lastName}
                   </span>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center', justifyContent: 'flex-end' }}>
-                    {!isFuture && c.status === 'ACTIVE' && (
-                      <button
-                        type="button"
-                        disabled={isToggling}
-                        onClick={() => handleToggleAbsence(c.gymnast)}
-                        style={{
-                          padding: '1px 6px', borderRadius: 4, fontSize: '0.75rem', cursor: 'pointer',
-                          background: isAbsent ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.08)',
-                          color: isAbsent ? 'var(--booking-success)' : 'var(--booking-danger)',
-                          border: `1px solid ${isAbsent ? 'rgba(39,174,96,0.3)' : 'rgba(231,76,60,0.3)'}`,
-                          fontWeight: 600,
-                        }}
-                      >
-                        {isToggling ? '…' : isAbsent ? '↩ Mark attending' : 'Mark absent'}
-                      </button>
-                    )}
                     {CONSENT_BADGES.map(({ type, label }) => {
                       const granted = c.gymnast.consents?.find(con => con.type === type)?.granted;
                       return (
@@ -596,27 +559,44 @@ export default function BookingAdmin() {
             {!isClosed && daySessions.length === 0 && (
               <p className="booking-calendar__day-empty">No sessions</p>
             )}
-            {!isClosed && daySessions.map(s => (
-              <button
-                key={s.id}
-                className={`booking-calendar__day-session booking-calendar__day-session--${sessionDotClass(s)}`}
-                style={{ textDecoration: s.cancelledAt ? 'line-through' : 'none' }}
-                onClick={() => handleSelect(s.id)}
-              >
-                <span className="booking-calendar__day-session-time">{s.startTime}–{s.endTime}
-                  {s.type === 'DMT' && (
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#fff', background: '#e67e22', borderRadius: 3, padding: '0 4px', marginLeft: '0.4rem', lineHeight: 1.6 }}>DMT</span>
-                  )}
-                  {s.type === 'TRAMPOLINE' && (
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#fff', background: 'var(--booking-accent)', borderRadius: 3, padding: '0 4px', marginLeft: '0.4rem', lineHeight: 1.6 }}>Trampoline</span>
-                  )}
-                  {s.minAge && (
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--booking-text-on-dark)', background: 'var(--booking-danger)', borderRadius: 3, padding: '0 4px', marginLeft: '0.4rem', lineHeight: 1.6 }}>{s.minAge}+</span>
-                  )}
-                </span>
-                <span className="booking-calendar__day-session-status">{s.bookedCount}/{s.bookedCount + s.availableSlots}</span>
-              </button>
-            ))}
+            {!isClosed && (() => {
+              const TYPE_ORDER = { TRAMPOLINE: 0, DMT: 1 };
+              const sorted = [...daySessions].sort((a, b) => {
+                const ta = TYPE_ORDER[a.type] ?? 2;
+                const tb = TYPE_ORDER[b.type] ?? 2;
+                return ta !== tb ? ta - tb : a.startTime.localeCompare(b.startTime);
+              });
+              const hasMultipleTypes = new Set(sorted.map(s => s.type)).size > 1;
+              return sorted.map((s, idx) => {
+                const prevType = idx > 0 ? sorted[idx - 1].type : null;
+                const isNewGroup = hasMultipleTypes && idx > 0 && s.type !== prevType;
+                return (
+                  <React.Fragment key={s.id}>
+                    {isNewGroup && (
+                      <div style={{ borderTop: '1px solid var(--booking-border)', margin: '0.3rem 0' }} />
+                    )}
+                    <button
+                      className={`booking-calendar__day-session booking-calendar__day-session--${sessionDotClass(s)}`}
+                      style={{ textDecoration: s.cancelledAt ? 'line-through' : 'none' }}
+                      onClick={() => handleSelect(s.id)}
+                    >
+                      <span className="booking-calendar__day-session-time">{s.startTime}–{s.endTime}
+                        {s.type === 'DMT' && (
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#fff', background: '#e67e22', borderRadius: 3, padding: '0 4px', marginLeft: '0.4rem', lineHeight: 1.6 }}>DMT</span>
+                        )}
+                        {s.type === 'TRAMPOLINE' && (
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#fff', background: 'var(--booking-accent)', borderRadius: 3, padding: '0 4px', marginLeft: '0.4rem', lineHeight: 1.6 }}>Trampoline</span>
+                        )}
+                        {s.minAge && (
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--booking-text-on-dark)', background: 'var(--booking-danger)', borderRadius: 3, padding: '0 4px', marginLeft: '0.4rem', lineHeight: 1.6 }}>{s.minAge}+</span>
+                        )}
+                      </span>
+                      <span className="booking-calendar__day-session-status">{s.bookedCount}/{s.bookedCount + s.availableSlots}</span>
+                    </button>
+                  </React.Fragment>
+                );
+              });
+            })()}
           </>
         )}
         renderMonthCell={(date, daySessions, isToday, isPast, isClosed) => (
