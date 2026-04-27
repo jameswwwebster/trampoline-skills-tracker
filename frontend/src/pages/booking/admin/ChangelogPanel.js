@@ -29,8 +29,8 @@ export default function ChangelogPanel() {
             {formatDate(release.date)}
           </p>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-            {release.entries.map((entry, i) => (
-              <li key={i} style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--booking-text)' }}>
+            {release.entries.map((entry) => (
+              <li key={entry.text} style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--booking-text)' }}>
                 <span style={{
                   flexShrink: 0,
                   fontSize: '0.7rem', fontWeight: 700, padding: '1px 6px', borderRadius: 3,
@@ -46,6 +46,8 @@ export default function ChangelogPanel() {
       ))}
       {changelog.length > INITIAL_SHOW && (
         <button
+          type="button"
+          aria-expanded={showAll}
           onClick={() => setShowAll(v => !v)}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
