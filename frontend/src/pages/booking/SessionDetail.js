@@ -27,6 +27,8 @@ export default function SessionDetail({
   const [waitlistBusy, setWaitlistBusy] = useState(false);
   const [pendingMemberId, setPendingMemberId] = useState(null); // gymnast awaiting member confirmation
   const [myCommitments, setMyCommitments] = useState([]); // [{ gymnastId, status }]
+  const [showSelfDobForm, setShowSelfDobForm] = useState(false);
+  const [selfDob, setSelfDob] = useState('');
   const [conflictingGymnastIds, setConflictingGymnastIds] = useState(new Set());
 
   const loadGymnasts = () =>
@@ -66,9 +68,13 @@ export default function SessionDetail({
     loadGymnasts();
   }, [instanceId]);
 
-  const handleBookForMyself = async () => {
+  const handleSelfDobSubmit = async (e) => {
+    e.preventDefault();
+    if (!selfDob) return;
     try {
-      const res = await bookingApi.createSelfGymnast();
+      const res = await bookingApi.createSelfGymnast({ dateOfBirth: selfDob });
+      setShowSelfDobForm(false);
+      setSelfDob('');
       await loadGymnasts();
       setLocalSelectedGymnastIds(ids => ids.includes(res.data.id) ? ids : [...ids, res.data.id]);
     } catch (err) {
@@ -418,10 +424,30 @@ export default function SessionDetail({
             )}
 
             <div className="session-detail__actions">
-              {!hasSelf && (
-                <button className="session-detail__add-btn" onClick={handleBookForMyself}>
+              {!hasSelf && !showSelfDobForm && (
+                <button className="session-detail__add-btn" onClick={() => setShowSelfDobForm(true)}>
                   + Book for myself
                 </button>
+              )}
+              {!hasSelf && showSelfDobForm && (
+                <form onSubmit={handleSelfDobSubmit} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                  <label className="bk-label" style={{ margin: 0, fontSize: '0.875rem' }}>
+                    Date of birth
+                    <input
+                      type="date"
+                      className="bk-input"
+                      value={selfDob}
+                      onChange={e => setSelfDob(e.target.value)}
+                      required
+                      style={{ marginTop: '0.2rem', width: '9rem' }}
+                    />
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'flex-end', paddingBottom: '0.05rem' }}>
+                    <button type="submit" className="bk-btn bk-btn--primary bk-btn--sm" disabled={!selfDob}>Confirm</button>
+                    <button type="button" className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }}
+                      onClick={() => { setShowSelfDobForm(false); setSelfDob(''); }}>Cancel</button>
+                  </div>
+                </form>
               )}
             </div>
 
