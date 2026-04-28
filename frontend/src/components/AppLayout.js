@@ -295,6 +295,16 @@ export default function AppLayout() {
         </div>
         <div className="app-layout__mobile-links">
 
+          {canManageGymnasts && (
+            <NavLink
+              to="/admin-hub"
+              className="app-layout__mobile-link app-layout__mobile-link--admin"
+              onClick={closeMobile}
+            >
+              Admin{pendingOrderCount > 0 ? ` (${pendingOrderCount})` : ''}
+            </NavLink>
+          )}
+
           <NavLink to="/dashboard" className="app-layout__mobile-link" onClick={closeMobile} end>Home</NavLink>
 
           <div className="app-layout__mobile-section-label">Bookings</div>
@@ -333,16 +343,6 @@ export default function AppLayout() {
           <NavLink to="/profile" className="app-layout__mobile-link" onClick={closeMobile}>Profile</NavLink>
           <NavLink to={helpPath} className="app-layout__mobile-link" onClick={closeMobile}>Help</NavLink>
           {isSuperAdmin && <NavLink to="/super-admin" className="app-layout__mobile-link" onClick={closeMobile}>Super Admin</NavLink>}
-
-          {canManageGymnasts && (
-            <NavLink
-              to="/admin-hub"
-              className="app-layout__mobile-link app-layout__mobile-link--admin"
-              onClick={closeMobile}
-            >
-              Admin{pendingOrderCount > 0 ? ` (${pendingOrderCount})` : ''}
-            </NavLink>
-          )}
 
         </div>
         <div className="app-layout__mobile-footer">

@@ -209,27 +209,24 @@
   opacity: 1;
 }
 
-/* Admin nav link — filled pill so it stands out as a major CTA */
+/* Admin nav link — solid accent pill so it stands out as a major CTA */
 .app-layout__link--admin {
-  background: var(--booking-accent-gradient);
+  background: var(--booking-accent);
   color: #fff !important;
   font-weight: 700;
   border-radius: var(--booking-radius);
   padding: 0.4rem 0.9rem;
   margin-left: 0.25rem;
-  box-shadow: 0 2px 8px rgba(124,53,232,0.35);
-  transition: filter 0.12s, transform 0.12s, box-shadow 0.12s;
+  transition: background 0.12s;
 }
 
 .app-layout__link--admin:hover,
 .app-layout__link--admin.active {
-  filter: brightness(1.08);
-  box-shadow: 0 3px 12px rgba(124,53,232,0.5);
-  background: var(--booking-accent-gradient);
+  background: var(--booking-accent-dark);
   color: #fff;
 }
 
-/* Order-count badge sits on the gradient button — give it contrast */
+/* Order-count badge sits on the filled button — give it contrast */
 .app-layout__link--admin .app-layout__badge {
   background: #fff;
   color: var(--booking-accent-dark);
@@ -480,23 +477,22 @@
   margin-top: 0.5rem;
 }
 
-/* Admin link in mobile — filled CTA button so it reads as a primary action */
+/* Admin link in mobile — solid accent pill, sized to its label */
 .app-layout__mobile-link--admin {
-  background: var(--booking-accent-gradient);
+  display: inline-block;
+  background: var(--booking-accent);
   color: #fff !important;
   font-weight: 700;
-  margin: 1rem;
-  padding: 0.85rem 1rem;
+  margin: 0.75rem 1rem 0.5rem;
+  padding: 0.5rem 1rem;
   border-radius: var(--booking-radius);
   text-align: center;
-  box-shadow: 0 2px 10px rgba(124,53,232,0.35);
   width: auto;
 }
 
 .app-layout__mobile-link--admin:hover,
 .app-layout__mobile-link--admin.active {
-  filter: brightness(1.08);
-  background: var(--booking-accent-gradient);
+  background: var(--booking-accent-dark);
 }
 
 /* Sub-label within mobile Admin section */
