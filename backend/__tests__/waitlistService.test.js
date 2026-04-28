@@ -36,9 +36,11 @@ afterAll(async () => {
  */
 async function makeFullSession(hoursFromNow, waitlistUserIds) {
   const target = new Date(Date.now() + hoursFromNow * 60 * 60 * 1000);
-  // Use local midnight so setHours(sh, sm) in processWaitlist reconstructs target correctly
-  const sessionDate = new Date(target);
-  sessionDate.setHours(0, 0, 0, 0);
+  // SessionInstance.date is @db.Date — Prisma round-trips as UTC midnight of the
+  // stored calendar day. Build a UTC-midnight Date matching target's LOCAL day
+  // so processWaitlist's `new Date(instance.date); setHours(sh, sm)` lands on
+  // the same wall-clock moment as target, regardless of timezone.
+  const sessionDate = new Date(Date.UTC(target.getFullYear(), target.getMonth(), target.getDate()));
   const startTime = `${String(target.getHours()).padStart(2, '0')}:${String(target.getMinutes()).padStart(2, '0')}`;
 
   const template = await prisma.sessionTemplate.create({
