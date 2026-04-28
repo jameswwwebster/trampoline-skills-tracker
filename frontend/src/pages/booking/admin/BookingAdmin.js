@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { bookingApi } from '../../../utils/bookingApi';
 import CalendarNav from '../CalendarNav';
-import ChangelogPanel from './ChangelogPanel';
 import '../booking-shared.css';
 import '../BookingCalendar.css';
 
@@ -672,8 +671,6 @@ export default function BookingAdmin() {
           </div>
         </div>
       )}
-
-      <ChangelogPanel />
 
     </div>
   );

@@ -22,7 +22,7 @@ function getTotalCartCount() {
 export default function AppLayout() {
   const {
     user, logout, loading,
-    isClubAdmin, isAdult, canManageGymnasts, isSuperAdmin, canViewWelfare,
+    isAdult, canManageGymnasts, isSuperAdmin,
   } = useAuth();
   const { branding } = useBranding();
   const location = useLocation();
@@ -52,7 +52,6 @@ export default function AppLayout() {
   const [hasOverdueCharge, setHasOverdueCharge] = useState(false);
   const [hasAnyCharge, setHasAnyCharge] = useState(false);
   const [cartCount, setCartCount] = useState(getTotalCartCount);
-  const [activeSessions, setActiveSessions] = useState([]);
   const [pendingOrderCount, setPendingOrderCount] = useState(0);
 
   const dropdownRef = useRef(null);
@@ -122,24 +121,6 @@ export default function AppLayout() {
       .catch(() => {});
   }, [user, isAdmin]);
 
-  // ── Active sessions (admin/coach only — for Register link) ─────────────────
-  useEffect(() => {
-    if (!isAdmin) return;
-    const now = new Date();
-    bookingApi.getSessions(now.getFullYear(), now.getMonth() + 1)
-      .then(res => {
-        const todayStr = now.toISOString().split('T')[0];
-        const todays = res.data.filter(s => new Date(s.date).toISOString().split('T')[0] === todayStr);
-        const nowMins = now.getHours() * 60 + now.getMinutes();
-        setActiveSessions(todays.filter(s => {
-          const [sh, sm] = s.startTime.split(':').map(Number);
-          const [eh, em] = s.endTime.split(':').map(Number);
-          return nowMins >= sh * 60 + sm - 15 && nowMins <= eh * 60 + em;
-        }));
-      })
-      .catch(() => {});
-  }, [isAdmin]);
-
   // ── Pending shop orders count (admin/coach only) ────────────────────────────
   useEffect(() => {
     if (!canManageGymnasts) return;
@@ -157,39 +138,6 @@ export default function AppLayout() {
   const handleLogout = () => { logout(); navigate('/'); };
 
   const helpPath = isAdmin ? '/booking/admin/help' : '/booking/help';
-
-  // ── Register item helper ────────────────────────────────────────────────────
-  const registerItems = canManageGymnasts ? (
-    activeSessions.length === 0 ? (
-      <span className="app-layout__dropdown-item app-layout__dropdown-item--muted">
-        Register (no active session)
-      </span>
-    ) : activeSessions.map(s => (
-      <button
-        key={s.id}
-        className="app-layout__dropdown-item app-layout__dropdown-item--active-session"
-        onClick={() => { setOpenDropdown(null); navigate(`/booking/admin/register/${s.id}`); }}
-      >
-        Register — {s.startTime}–{s.endTime}
-      </button>
-    ))
-  ) : null;
-
-  const mobileRegisterItems = canManageGymnasts ? (
-    activeSessions.length > 0 ? activeSessions.map(s => (
-      <button
-        key={s.id}
-        className="app-layout__mobile-link app-layout__mobile-register"
-        onClick={() => { closeMobile(); navigate(`/booking/admin/register/${s.id}`); }}
-      >
-        Register — {s.startTime}–{s.endTime}
-      </button>
-    )) : (
-      <span className="app-layout__mobile-link app-layout__mobile-link--muted">
-        Register (no active session)
-      </span>
-    )
-  ) : null;
 
   return (
     <div className="app-layout">
@@ -319,51 +267,15 @@ export default function AppLayout() {
 
             {/* Admin */}
             {canManageGymnasts && (
-              <div className="app-layout__dropdown">
-                <button
-                  className={`app-layout__dropdown-btn app-layout__dropdown-btn--admin${openDropdown === 'admin' ? ' active' : ''}`}
-                  style={{ position: 'relative' }}
-                  onClick={() => toggleDropdown('admin')}
-                >
-                  Admin ▾
-                  {pendingOrderCount > 0 && <span className="app-layout__badge">{pendingOrderCount}</span>}
-                </button>
-                {openDropdown === 'admin' && (
-                  <div className="app-layout__dropdown-menu app-layout__dropdown-menu--right">
-                    <div className="app-layout__dropdown-label">Sessions</div>
-                    <NavLink to="/booking/admin" end className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Sessions</NavLink>
-                    <NavLink to="/booking/admin/session-management" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Session Management</NavLink>
-                    <NavLink to="/booking/admin/closures" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Closures</NavLink>
-                    {registerItems}
-                    <div className="app-layout__dropdown-label">Members</div>
-                    <NavLink to="/booking/admin/members" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Members</NavLink>
-                    <NavLink to="/booking/admin/bg-numbers" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>BG Numbers</NavLink>
-                    <NavLink to="/booking/admin/memberships" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Memberships</NavLink>
-                    <NavLink to="/booking/admin/competitions" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Competitions</NavLink>
-                    <NavLink to="/booking/admin/credits" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Credits</NavLink>
-                    <NavLink to="/booking/admin/charges" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Charges</NavLink>
-                    <NavLink to="/booking/admin/payments" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Payments</NavLink>
-                    <div className="app-layout__dropdown-label">Communications</div>
-                    <NavLink to="/booking/admin/messages" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Messages</NavLink>
-                    <NavLink to="/booking/admin/incidents" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Incidents</NavLink>
-                    {canViewWelfare && <NavLink to="/booking/admin/welfare" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Welfare</NavLink>}
-                    <NavLink to="/booking/admin/shop-orders" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Shop Orders</NavLink>
-                    <div className="app-layout__dropdown-label">Skill Tracking</div>
-                    <NavLink to="/certificates" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Certificates</NavLink>
-                    {isClubAdmin && <>
-                      <NavLink to="/levels" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Levels & Skills</NavLink>
-                      <NavLink to="/competitions" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Competition Categories</NavLink>
-                      <NavLink to="/certificate-designer" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Certificate Setup</NavLink>
-                    </>}
-                    {isClubAdmin && <>
-                      <div className="app-layout__dropdown-label">Settings</div>
-                      <NavLink to="/club-settings" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Club Settings</NavLink>
-                      <NavLink to="/branding" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Club Branding</NavLink>
-                    </>}
-                    <NavLink to="/booking/admin/audit-log" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Audit Log</NavLink>
-                  </div>
-                )}
-              </div>
+              <NavLink
+                to="/admin-hub"
+                className="app-layout__link app-layout__link--admin"
+                style={{ position: 'relative' }}
+                onClick={() => setOpenDropdown(null)}
+              >
+                Admin
+                {pendingOrderCount > 0 && <span className="app-layout__badge">{pendingOrderCount}</span>}
+              </NavLink>
             )}
           </div>
 
@@ -422,42 +334,15 @@ export default function AppLayout() {
           <NavLink to={helpPath} className="app-layout__mobile-link" onClick={closeMobile}>Help</NavLink>
           {isSuperAdmin && <NavLink to="/super-admin" className="app-layout__mobile-link" onClick={closeMobile}>Super Admin</NavLink>}
 
-          {canManageGymnasts && <>
-            <div className="app-layout__mobile-section-label app-layout__mobile-section-label--admin">Admin</div>
-            <div className="app-layout__mobile-sub-label">Sessions</div>
-            <NavLink to="/booking/admin" end className="app-layout__mobile-link" onClick={closeMobile}>Sessions</NavLink>
-            <NavLink to="/booking/admin/session-management" className="app-layout__mobile-link" onClick={closeMobile}>Session Management</NavLink>
-            <NavLink to="/booking/admin/closures" className="app-layout__mobile-link" onClick={closeMobile}>Closures</NavLink>
-            {mobileRegisterItems}
-            <div className="app-layout__mobile-sub-label">Members</div>
-            <NavLink to="/booking/admin/members" className="app-layout__mobile-link" onClick={closeMobile}>Members</NavLink>
-            <NavLink to="/booking/admin/bg-numbers" className="app-layout__mobile-link" onClick={closeMobile}>BG Numbers</NavLink>
-            <NavLink to="/booking/admin/memberships" className="app-layout__mobile-link" onClick={closeMobile}>Memberships</NavLink>
-            <NavLink to="/booking/admin/competitions" className="app-layout__mobile-link" onClick={closeMobile}>Competitions</NavLink>
-            <NavLink to="/booking/admin/credits" className="app-layout__mobile-link" onClick={closeMobile}>Credits</NavLink>
-            <NavLink to="/booking/admin/charges" className="app-layout__mobile-link" onClick={closeMobile}>Charges</NavLink>
-            <NavLink to="/booking/admin/payments" className="app-layout__mobile-link" onClick={closeMobile}>Payments</NavLink>
-            <div className="app-layout__mobile-sub-label">
-              Communications{pendingOrderCount > 0 && <span style={{ marginLeft: '0.4rem', background: 'var(--booking-accent)', color: '#fff', borderRadius: '99px', padding: '0 5px', fontSize: '0.65rem', fontWeight: 700 }}>{pendingOrderCount}</span>}
-            </div>
-            <NavLink to="/booking/admin/messages" className="app-layout__mobile-link" onClick={closeMobile}>Messages</NavLink>
-            <NavLink to="/booking/admin/incidents" className="app-layout__mobile-link" onClick={closeMobile}>Incidents</NavLink>
-            {canViewWelfare && <NavLink to="/booking/admin/welfare" className="app-layout__mobile-link" onClick={closeMobile}>Welfare</NavLink>}
-            <NavLink to="/booking/admin/shop-orders" className="app-layout__mobile-link" onClick={closeMobile}>Shop Orders</NavLink>
-            <div className="app-layout__mobile-sub-label">Skill Tracking</div>
-            <NavLink to="/certificates" className="app-layout__mobile-link" onClick={closeMobile}>Certificates</NavLink>
-            {isClubAdmin && <>
-              <NavLink to="/levels" className="app-layout__mobile-link" onClick={closeMobile}>Levels & Skills</NavLink>
-              <NavLink to="/competitions" className="app-layout__mobile-link" onClick={closeMobile}>Competition Categories</NavLink>
-              <NavLink to="/certificate-designer" className="app-layout__mobile-link" onClick={closeMobile}>Certificate Setup</NavLink>
-            </>}
-            {isClubAdmin && <>
-              <div className="app-layout__mobile-sub-label">Settings</div>
-              <NavLink to="/club-settings" className="app-layout__mobile-link" onClick={closeMobile}>Club Settings</NavLink>
-              <NavLink to="/branding" className="app-layout__mobile-link" onClick={closeMobile}>Club Branding</NavLink>
-            </>}
-            <NavLink to="/booking/admin/audit-log" className="app-layout__mobile-link" onClick={closeMobile}>Audit Log</NavLink>
-          </>}
+          {canManageGymnasts && (
+            <NavLink
+              to="/admin-hub"
+              className="app-layout__mobile-link app-layout__mobile-link--admin"
+              onClick={closeMobile}
+            >
+              Admin{pendingOrderCount > 0 ? ` (${pendingOrderCount})` : ''}
+            </NavLink>
+          )}
 
         </div>
         <div className="app-layout__mobile-footer">

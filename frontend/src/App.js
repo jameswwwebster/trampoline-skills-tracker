@@ -45,6 +45,7 @@ import AdminMembers from './pages/booking/admin/AdminMembers';
 import AdminMessages from './pages/booking/admin/AdminMessages';
 import AdminBgNumbers from './pages/booking/admin/AdminBgNumbers';
 import AuditLog from './pages/booking/admin/AuditLog';
+import AdminChangelog from './pages/booking/admin/AdminChangelog';
 import ShopListing from './pages/booking/shop/ShopListing';
 import ShopProduct from './pages/booking/shop/ShopProduct';
 import ShopConfirmation from './pages/booking/shop/ShopConfirmation';
@@ -206,6 +207,7 @@ function AppContent() {
             <Route path="admin/messages" element={<AdminMessages />} />
             <Route path="admin/bg-numbers" element={<AdminBgNumbers />} />
             <Route path="admin/audit-log" element={<AuditLog />} />
+            <Route path="admin/changelog" element={<AdminChangelog />} />
             <Route path="shop" element={<ShopListing />} />
             <Route path="shop/cart" element={<Navigate to="/booking/cart" replace />} />
             <Route path="shop/:productId" element={<ShopProduct />} />

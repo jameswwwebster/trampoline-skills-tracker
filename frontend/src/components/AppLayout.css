@@ -209,6 +209,19 @@
   opacity: 1;
 }
 
+/* Admin nav link — same accent treatment as the old dropdown button */
+.app-layout__link--admin {
+  color: var(--booking-accent);
+  opacity: 0.9;
+}
+
+.app-layout__link--admin:hover,
+.app-layout__link--admin.active {
+  background: rgba(124,53,232,0.4);
+  color: #fff;
+  opacity: 1;
+}
+
 .app-layout__dropdown-menu {
   position: absolute;
   top: calc(100% + 4px);
@@ -452,6 +465,19 @@
   color: var(--booking-accent);
   border-top: 1px solid rgba(255,255,255,0.1);
   margin-top: 0.5rem;
+}
+
+/* Admin link in mobile — accent colour, separator above */
+.app-layout__mobile-link--admin {
+  color: var(--booking-accent);
+  font-weight: 600;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  margin-top: 0.5rem;
+}
+
+.app-layout__mobile-link--admin:hover,
+.app-layout__mobile-link--admin.active {
+  color: #fff;
 }
 
 /* Sub-label within mobile Admin section */

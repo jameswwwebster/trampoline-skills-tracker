@@ -19,7 +19,7 @@ export default function ChangelogPanel() {
   const visible = showAll ? changelog : changelog.slice(0, INITIAL_SHOW);
 
   return (
-    <div style={{ marginTop: '2rem', borderTop: '1px solid var(--booking-border)', paddingTop: '1.5rem' }}>
+    <div>
       <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--booking-text)' }}>
         Recent updates
       </h3>

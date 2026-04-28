@@ -4,6 +4,8 @@ const changelog = [
     date: '2026-04-28',
     entries: [
       { type: 'fix', text: 'Joining the waitlist now correctly accounts for standing-slot commitments — it no longer claims a session has space when the booking page says it is full' },
+      { type: 'improvement', text: 'Side menu cleanup: the long Admin dropdown is replaced by a single "Admin" link to the admin dashboard' },
+      { type: 'improvement', text: 'Recent updates moved to the admin dashboard (Logs section), where it sits alongside the audit log' },
     ],
   },
   {

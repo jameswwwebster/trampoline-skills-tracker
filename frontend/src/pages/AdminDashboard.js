@@ -19,6 +19,7 @@ import {
   PaintBrushIcon,
   QuestionMarkCircleIcon,
   ClipboardDocumentListIcon,
+  SparklesIcon,
   ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 
@@ -96,6 +97,7 @@ const AdminDashboard = () => {
 
       <Section title="Logs">
         <Tile to="/booking/admin/audit-log" icon={ClipboardDocumentListIcon} label="Audit Log" />
+        <Tile to="/booking/admin/changelog" icon={SparklesIcon} label="Recent Updates" />
       </Section>
     </div>
   );
