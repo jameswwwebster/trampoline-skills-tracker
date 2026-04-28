@@ -209,17 +209,30 @@
   opacity: 1;
 }
 
-/* Admin nav link — same accent treatment as the old dropdown button */
+/* Admin nav link — filled pill so it stands out as a major CTA */
 .app-layout__link--admin {
-  color: var(--booking-accent);
-  opacity: 0.9;
+  background: var(--booking-accent-gradient);
+  color: #fff !important;
+  font-weight: 700;
+  border-radius: var(--booking-radius);
+  padding: 0.4rem 0.9rem;
+  margin-left: 0.25rem;
+  box-shadow: 0 2px 8px rgba(124,53,232,0.35);
+  transition: filter 0.12s, transform 0.12s, box-shadow 0.12s;
 }
 
 .app-layout__link--admin:hover,
 .app-layout__link--admin.active {
-  background: rgba(124,53,232,0.4);
+  filter: brightness(1.08);
+  box-shadow: 0 3px 12px rgba(124,53,232,0.5);
+  background: var(--booking-accent-gradient);
   color: #fff;
-  opacity: 1;
+}
+
+/* Order-count badge sits on the gradient button — give it contrast */
+.app-layout__link--admin .app-layout__badge {
+  background: #fff;
+  color: var(--booking-accent-dark);
 }
 
 .app-layout__dropdown-menu {
@@ -467,17 +480,23 @@
   margin-top: 0.5rem;
 }
 
-/* Admin link in mobile — accent colour, separator above */
+/* Admin link in mobile — filled CTA button so it reads as a primary action */
 .app-layout__mobile-link--admin {
-  color: var(--booking-accent);
-  font-weight: 600;
-  border-top: 1px solid rgba(255,255,255,0.1);
-  margin-top: 0.5rem;
+  background: var(--booking-accent-gradient);
+  color: #fff !important;
+  font-weight: 700;
+  margin: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--booking-radius);
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(124,53,232,0.35);
+  width: auto;
 }
 
 .app-layout__mobile-link--admin:hover,
 .app-layout__mobile-link--admin.active {
-  color: #fff;
+  filter: brightness(1.08);
+  background: var(--booking-accent-gradient);
 }
 
 /* Sub-label within mobile Admin section */
