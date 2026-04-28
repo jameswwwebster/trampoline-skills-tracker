@@ -24,10 +24,25 @@ router.post('/:instanceId', auth, async (req, res) => {
       return res.status(400).json({ error: 'Session is cancelled' });
     }
 
-    // Check session is actually full
-    const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+    // Check session is actually full — must mirror getAvailableSlots in bookings.js
+    // (counts confirmed bookings + active commitments, minus absent gymnasts)
+    const bookingCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+    const sessionDate = new Date(instance.date);
+    sessionDate.setHours(0, 0, 0, 0);
+    const absentGymnastIds = (await prisma.attendance.findMany({
+      where: { sessionInstanceId: instance.id, status: 'ABSENT' },
+      select: { gymnastId: true },
+    })).map(a => a.gymnastId);
+    const activeCommitments = await prisma.commitment.count({
+      where: {
+        templateId: instance.templateId,
+        status: 'ACTIVE',
+        OR: [{ startDate: null }, { startDate: { lte: sessionDate } }],
+        ...(absentGymnastIds.length > 0 ? { gymnastId: { notIn: absentGymnastIds } } : {}),
+      },
+    });
     const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
-    if (bookedCount < capacity) {
+    if (bookingCount + activeCommitments < capacity) {
       return res.status(400).json({ error: 'Session has available slots — book directly' });
     }
 

@@ -24,10 +24,24 @@ async function processWaitlist(sessionInstanceId) {
 
   if (!instance || instance.cancelledAt) return;
 
-  const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+  const bookingCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+  const sessionDate = new Date(instance.date);
+  sessionDate.setHours(0, 0, 0, 0);
+  const absentGymnastIds = (await prisma.attendance.findMany({
+    where: { sessionInstanceId: instance.id, status: 'ABSENT' },
+    select: { gymnastId: true },
+  })).map(a => a.gymnastId);
+  const activeCommitments = await prisma.commitment.count({
+    where: {
+      templateId: instance.templateId,
+      status: 'ACTIVE',
+      OR: [{ startDate: null }, { startDate: { lte: sessionDate } }],
+      ...(absentGymnastIds.length > 0 ? { gymnastId: { notIn: absentGymnastIds } } : {}),
+    },
+  });
   const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
 
-  if (bookedCount >= capacity) return; // still full
+  if (bookingCount + activeCommitments >= capacity) return; // still full
   if (instance.waitlistEntries.length === 0) return; // nobody waiting
 
   // Determine offer type based on session proximity

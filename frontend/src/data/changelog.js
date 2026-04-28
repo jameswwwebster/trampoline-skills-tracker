@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-04-28',
+    entries: [
+      { type: 'fix', text: 'Joining the waitlist now correctly accounts for standing-slot commitments — it no longer claims a session has space when the booking page says it is full' },
+    ],
+  },
+  {
     date: '2026-04-27',
     entries: [
       { type: 'fix', text: '"Book for myself" now asks for date of birth before creating your gymnast record' },
