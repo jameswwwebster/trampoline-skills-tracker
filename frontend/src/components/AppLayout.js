@@ -152,7 +152,16 @@ export default function AppLayout() {
           </NavLink>
           <div className="app-layout__user">
             <span className="app-layout__username">{user?.firstName} {user?.lastName}</span>
-            <button className="app-layout__logout" onClick={handleLogout}>Log out</button>
+            {canManageGymnasts && (
+              <NavLink
+                to="/admin-hub"
+                className="app-layout__link--admin"
+                style={{ position: 'relative' }}
+              >
+                Admin
+                {pendingOrderCount > 0 && <span className="app-layout__badge">{pendingOrderCount}</span>}
+              </NavLink>
+            )}
             <button
               className="app-layout__hamburger"
               onClick={() => setIsMobileMenuOpen(o => !o)}
@@ -265,18 +274,6 @@ export default function AppLayout() {
               )}
             </div>
 
-            {/* Admin */}
-            {canManageGymnasts && (
-              <NavLink
-                to="/admin-hub"
-                className="app-layout__link app-layout__link--admin"
-                style={{ position: 'relative' }}
-                onClick={() => setOpenDropdown(null)}
-              >
-                Admin
-                {pendingOrderCount > 0 && <span className="app-layout__badge">{pendingOrderCount}</span>}
-              </NavLink>
-            )}
           </div>
 
         </div>
@@ -294,16 +291,6 @@ export default function AppLayout() {
           <button className="app-layout__mobile-close" onClick={closeMobile} aria-label="Close menu">×</button>
         </div>
         <div className="app-layout__mobile-links">
-
-          {canManageGymnasts && (
-            <NavLink
-              to="/admin-hub"
-              className="app-layout__mobile-link app-layout__mobile-link--admin"
-              onClick={closeMobile}
-            >
-              Admin{pendingOrderCount > 0 ? ` (${pendingOrderCount})` : ''}
-            </NavLink>
-          )}
 
           <NavLink to="/dashboard" className="app-layout__mobile-link" onClick={closeMobile} end>Home</NavLink>
 

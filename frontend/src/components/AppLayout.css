@@ -67,24 +67,6 @@
   white-space: nowrap;
 }
 
-.app-layout__logout {
-  background: none;
-  border: 1px solid rgba(255,255,255,0.25);
-  color: rgba(255,255,255,0.65);
-  border-radius: var(--booking-radius);
-  padding: 0.25rem 0.65rem;
-  font-family: var(--booking-font);
-  font-size: 0.8rem;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-.app-layout__logout:hover {
-  border-color: rgba(255,255,255,0.6);
-  color: #fff;
-}
-
 /* Link row */
 .app-layout__links {
   display: flex;
@@ -214,9 +196,11 @@
   background: var(--booking-accent);
   color: #fff !important;
   font-weight: 700;
+  font-size: 0.85rem;
   border-radius: var(--booking-radius);
-  padding: 0.4rem 0.9rem;
-  margin-left: 0.25rem;
+  padding: 0.35rem 0.85rem;
+  text-decoration: none;
+  white-space: nowrap;
   transition: background 0.12s;
 }
 
@@ -475,24 +459,6 @@
   color: var(--booking-accent);
   border-top: 1px solid rgba(255,255,255,0.1);
   margin-top: 0.5rem;
-}
-
-/* Admin link in mobile — solid accent pill, sized to its label */
-.app-layout__mobile-link--admin {
-  display: inline-block;
-  background: var(--booking-accent);
-  color: #fff !important;
-  font-weight: 700;
-  margin: 0.75rem 1rem 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: var(--booking-radius);
-  text-align: center;
-  width: auto;
-}
-
-.app-layout__mobile-link--admin:hover,
-.app-layout__mobile-link--admin.active {
-  background: var(--booking-accent-dark);
 }
 
 /* Sub-label within mobile Admin section */
