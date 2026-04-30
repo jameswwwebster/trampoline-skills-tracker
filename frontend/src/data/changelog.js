@@ -6,6 +6,8 @@ const changelog = [
       { type: 'feature', text: 'Skill editor now suggests difficulty and FIG notation automatically using FIG Code of Points 2025-2028 §17.1, with a breakdown of how the score was calculated' },
       { type: 'feature', text: 'New "All Skills" page in the admin hub (Skill Tracking) — sortable, searchable list of every skill with its level, FIG notation, difficulty, and routine usage' },
       { type: 'improvement', text: 'Routine construction: replaced the dropdown with a search box that matches by name OR FIG notation, with a single button to add unmatched text as an implicit skill' },
+      { type: 'feature', text: 'Skills can now belong to multiple levels. When editing a level, "Add from library" lets you attach existing skills by searching name or FIG notation' },
+      { type: 'feature', text: 'Library populated with 90 named skills from FIG Code of Points 2025-2028 Section II.C (Triple Full, Quadruple Full, all the in-out doubles, full triples and quadruple combos, etc.) — search them up and add to your levels as needed' },
     ],
   },
   {

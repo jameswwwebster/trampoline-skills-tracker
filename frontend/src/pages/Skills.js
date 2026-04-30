@@ -34,15 +34,21 @@ export default function Skills() {
   const levelOptions = useMemo(() => {
     const seen = new Map();
     for (const s of skills) {
-      if (!seen.has(s.level.id)) seen.set(s.level.id, s.level);
+      for (const l of (s.levels || [])) {
+        if (l.id && !seen.has(l.id)) seen.set(l.id, l);
+      }
     }
-    return Array.from(seen.values()).sort((a, b) => a.number - b.number);
+    return Array.from(seen.values()).sort((a, b) => (a.number || 0) - (b.number || 0));
   }, [skills]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return skills.filter(s => {
-      if (levelFilter && s.level.id !== levelFilter) return false;
+      if (levelFilter === '__library__') {
+        if ((s.levels || []).length > 0) return false;
+      } else if (levelFilter) {
+        if (!(s.levels || []).some(l => l.id === levelFilter)) return false;
+      }
       if (!q) return true;
       const name = (s.name || '').toLowerCase();
       const fig = (s.figNotation || '').toLowerCase();
@@ -55,9 +61,10 @@ export default function Skills() {
     const { key, dir } = sort;
     arr.sort((a, b) => {
       let va, vb;
+      const firstLevelNum = s => ((s.levels && s.levels[0] && s.levels[0].number) || 999);
       switch (key) {
         case 'name':       va = a.name || ''; vb = b.name || ''; break;
-        case 'level':      va = a.level.number; vb = b.level.number; break;
+        case 'level':      va = firstLevelNum(a); vb = firstLevelNum(b); break;
         case 'fig':        va = a.figNotation || ''; vb = b.figNotation || ''; break;
         case 'difficulty': va = a.difficulty != null ? Number(a.difficulty) : -1;
                            vb = b.difficulty != null ? Number(b.difficulty) : -1; break;
@@ -110,6 +117,7 @@ export default function Skills() {
           style={{ padding: '0.5rem', border: '1px solid #ccc', borderRadius: 4 }}
         >
           <option value="">All levels</option>
+          <option value="__library__">Library only (unattached)</option>
           {levelOptions.map(l => (
             <option key={l.id} value={l.id}>L{l.identifier} — {l.name}</option>
           ))}
@@ -134,15 +142,20 @@ export default function Skills() {
               </tr>
             </thead>
             <tbody>
-              {sorted.map(s => (
-                <tr key={s.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '0.5rem' }}>{s.name}</td>
-                  <td style={{ padding: '0.5rem' }}>L{s.level.identifier}</td>
-                  <td style={{ padding: '0.5rem', fontFamily: 'monospace' }}>{s.figNotation || '—'}</td>
-                  <td style={{ padding: '0.5rem' }}>{s.difficulty != null ? Number(s.difficulty).toFixed(1) : '—'}</td>
-                  <td style={{ padding: '0.5rem' }}>{s.routineCount}</td>
-                </tr>
-              ))}
+              {sorted.map(s => {
+                const levelLabel = (s.levels && s.levels.length > 0)
+                  ? s.levels.map(l => `L${l.identifier}`).join(', ')
+                  : <span style={{ color: '#888', fontStyle: 'italic' }}>Library</span>;
+                return (
+                  <tr key={s.id} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '0.5rem' }}>{s.name}</td>
+                    <td style={{ padding: '0.5rem' }}>{levelLabel}</td>
+                    <td style={{ padding: '0.5rem', fontFamily: 'monospace' }}>{s.figNotation || '—'}</td>
+                    <td style={{ padding: '0.5rem' }}>{s.difficulty != null ? Number(s.difficulty).toFixed(1) : '—'}</td>
+                    <td style={{ padding: '0.5rem' }}>{s.routineCount}</td>
+                  </tr>
+                );
+              })}
               {sorted.length === 0 && (
                 <tr><td colSpan={5} style={{ padding: '1rem', textAlign: 'center', color: '#888' }}>No skills match.</td></tr>
               )}

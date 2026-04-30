@@ -27,6 +27,7 @@ const Levels = () => {
   const [editingSkill, setEditingSkill] = useState(null);
   const [editingRoutine, setEditingRoutine] = useState(null);
   const [showAddSkillForm, setShowAddSkillForm] = useState(null);
+  const [showAttachExistingSkill, setShowAttachExistingSkill] = useState(null);
   const [showAddRoutineForm, setShowAddRoutineForm] = useState(null);
   const [showAddSkillToRoutineForm, setShowAddSkillToRoutineForm] = useState(null);
   const [showAddLevelForm, setShowAddLevelForm] = useState(false);
@@ -175,6 +176,22 @@ const Levels = () => {
     } catch (error) {
       console.error('Failed to create skill:', error);
       setError(error.response?.data?.error || 'Failed to create skill');
+    }
+  };
+
+  const handleAttachExistingSkill = async (levelId, skillId) => {
+    try {
+      const response = await axios.post(`/api/levels/${levelId}/skills`, { skillId });
+      setLevels(levels.map(level => {
+        if (level.id === levelId) {
+          return { ...level, skills: [...level.skills, response.data] };
+        }
+        return level;
+      }));
+      setShowAttachExistingSkill(null);
+    } catch (error) {
+      console.error('Failed to attach skill:', error);
+      setError(error.response?.data?.error || 'Failed to attach skill');
     }
   };
 
@@ -432,6 +449,7 @@ const Levels = () => {
                     onEditLevel={() => setEditingLevel(level)}
                     onUpdateLevel={handleUpdateLevel}
                     onAddSkill={() => setShowAddSkillForm(level.id)}
+                    onAttachExistingSkill={() => setShowAttachExistingSkill(level.id)}
                     onEditSkill={setEditingSkill}
                     onUpdateSkill={handleUpdateSkill}
                     onDeleteSkill={handleDeleteSkill}
@@ -469,6 +487,7 @@ const Levels = () => {
                       onEditLevel={() => setEditingLevel(level)}
                       onUpdateLevel={handleUpdateLevel}
                       onAddSkill={() => setShowAddSkillForm(level.id)}
+                    onAttachExistingSkill={() => setShowAttachExistingSkill(level.id)}
                       onEditSkill={setEditingSkill}
                       onUpdateSkill={handleUpdateSkill}
                       onDeleteSkill={handleDeleteSkill}
@@ -528,6 +547,16 @@ const Levels = () => {
         />
       )}
 
+      {/* Attach existing library skill */}
+      {showAttachExistingSkill && editMode && (
+        <AttachExistingSkillModal
+          levelId={showAttachExistingSkill}
+          existingSkillIds={(levels.find(l => l.id === showAttachExistingSkill)?.skills || []).map(s => s.id)}
+          onSave={(skillId) => handleAttachExistingSkill(showAttachExistingSkill, skillId)}
+          onCancel={() => setShowAttachExistingSkill(null)}
+        />
+      )}
+
       {/* Add Routine Modal */}
       {showAddRoutineForm && editMode && (
         <AddRoutineModal
@@ -568,8 +597,9 @@ const LevelCard = ({
   onToggleExpansion, 
   onEditLevel, 
   onUpdateLevel, 
-  onAddSkill, 
-  onEditSkill, 
+  onAddSkill,
+  onAttachExistingSkill,
+  onEditSkill,
   onUpdateSkill, 
   onDeleteSkill,
   onAddRoutine,
@@ -658,8 +688,9 @@ const LevelCard = ({
               <p className="text-muted">No skills defined</p>
             )}
             {canEdit && (
-              <div style={{ marginTop: '0.5rem' }}>
-                <button onClick={onAddSkill} className="edit-mode-add-btn">+ Add Skill</button>
+              <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button onClick={onAddSkill} className="edit-mode-add-btn">+ Create new skill</button>
+                <button onClick={onAttachExistingSkill} className="edit-mode-add-btn" style={{ background: '#5b6cff' }}>+ Add from library</button>
               </div>
             )}
           </div>
@@ -1217,6 +1248,108 @@ const EditRoutineModal = ({ routine, onSave, onCancel }) => {
 };
 
 // Add Skill Modal Component
+// Search-driven picker for attaching an existing library skill to a level.
+// Skills already in this level are filtered out.
+const AttachExistingSkillModal = ({ levelId, existingSkillIds, onSave, onCancel }) => {
+  const [allSkills, setAllSkills] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    axios.get('/api/skills')
+      .then(res => { if (!cancelled) setAllSkills(res.data); })
+      .catch(err => { if (!cancelled) setError(err.response?.data?.error || 'Failed to load skills'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const matches = useMemo(() => {
+    const existing = new Set(existingSkillIds || []);
+    const q = query.trim().toLowerCase();
+    return allSkills
+      .filter(s => !existing.has(s.id))
+      .filter(s => {
+        if (!q) return true;
+        const n = (s.name || '').toLowerCase();
+        const f = (s.figNotation || '').toLowerCase();
+        return n.includes(q) || f.includes(q);
+      })
+      .slice(0, 50);
+  }, [allSkills, query, existingSkillIds]);
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal" style={{ maxWidth: 560 }}>
+        <div className="modal-header">
+          <h3>Add existing skill to level</h3>
+          <button onClick={onCancel} className="close-button">×</button>
+        </div>
+        <div style={{ padding: '0.5rem 0' }}>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name or FIG notation…"
+            autoFocus
+            style={{ width: '100%', padding: '0.6rem', border: '1px solid #ccc', borderRadius: 4, fontSize: '1rem' }}
+          />
+          {error && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{error}</p>}
+          {loading && <p style={{ marginTop: '0.5rem' }}>Loading…</p>}
+
+          {!loading && (
+            <div style={{ maxHeight: 360, overflowY: 'auto', marginTop: '0.5rem', border: '1px solid #eee', borderRadius: 4 }}>
+              {matches.length === 0 ? (
+                <p style={{ margin: 0, padding: '1rem', color: '#888', textAlign: 'center' }}>No matches</p>
+              ) : matches.map(s => {
+                const levelLabels = (s.levels && s.levels.length > 0)
+                  ? s.levels.map(l => `L${l.identifier}`).join(', ')
+                  : 'Library';
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => onSave(s.id)}
+                    style={{
+                      display: 'flex',
+                      width: '100%',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.5rem 0.75rem',
+                      border: 'none',
+                      borderBottom: '1px solid #f3f3f3',
+                      background: 'transparent',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f6f6f8'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <span>
+                      <strong>{s.name}</strong>
+                      <span style={{ marginLeft: 8, color: '#888' }}>{levelLabels}</span>
+                    </span>
+                    <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#555', whiteSpace: 'nowrap' }}>
+                      {s.figNotation || '—'} · {s.difficulty != null ? Number(s.difficulty).toFixed(1) : '—'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="modal-actions" style={{ marginTop: '1rem' }}>
+            <button type="button" onClick={onCancel} className="btn btn-secondary">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Add Routine Modal Component
 const AddRoutineModal = ({ levelId, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
