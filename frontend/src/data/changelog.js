@@ -1,6 +1,14 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-04-30',
+    entries: [
+      { type: 'feature', text: 'Skill editor now suggests difficulty and FIG notation automatically using FIG Code of Points 2025-2028 §17.1, with a breakdown of how the score was calculated' },
+      { type: 'feature', text: 'New "All Skills" page in the admin hub (Skill Tracking) — sortable, searchable list of every skill with its level, FIG notation, difficulty, and routine usage' },
+      { type: 'improvement', text: 'Routine construction: replaced the dropdown with a search box that matches by name OR FIG notation, with a single button to add unmatched text as an implicit skill' },
+    ],
+  },
+  {
     date: '2026-04-28',
     entries: [
       { type: 'fix', text: 'Joining the waitlist now correctly accounts for standing-slot commitments — it no longer claims a session has space when the booking page says it is full' },

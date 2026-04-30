@@ -81,6 +81,7 @@ const AdminDashboard = () => {
         <Tile to="/certificates" icon={AcademicCapIcon} label="Certificates" />
         {isClubAdmin && <>
           <Tile to="/levels" icon={ChartBarIcon} label="Levels & Skills" />
+          <Tile to="/skills" icon={ChartBarIcon} label="All Skills" />
           <Tile to="/competitions" icon={TrophyIcon} label="Competitions" />
           <Tile to="/certificate-designer" icon={DocumentTextIcon} label="Certificate Setup" />
         </>}

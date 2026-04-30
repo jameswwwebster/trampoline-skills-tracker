@@ -15,6 +15,7 @@ import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Gymnasts from './pages/Gymnasts';
 import Levels from './pages/Levels';
+import Skills from './pages/Skills';
 import Competitions from './pages/Competitions';
 import Progress from './pages/Progress';
 import MyProgress from './pages/MyProgress';
@@ -179,6 +180,7 @@ function AppContent() {
             <Route path="admin-hub" element={<AdminDashboard />} />
             <Route path="gymnasts" element={<Gymnasts />} />
             <Route path="levels" element={<Levels />} />
+            <Route path="skills" element={<Skills />} />
             <Route path="competitions" element={<Competitions />} />
             <Route path="progress/:gymnastId" element={<Progress />} />
             <Route path="certificates" element={<Certificates />} />

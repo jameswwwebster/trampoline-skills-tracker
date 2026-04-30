@@ -1,6 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { computeFigDifficulty } from '../utils/figDifficulty';
+
+// Encode/decode the halfTwistsPerSom array to the FIG digit string convention.
+//   [0, 1]  ⇄ '-1'
+//   [0, 0]  ⇄ '--'
+//   [4]     ⇄ '4'
+//   []      ⇄ ''
+function encodeHalfTwists(arr) {
+  if (!arr || arr.length === 0) return '';
+  return arr.map(t => (t === 0 || t == null) ? '-' : String(t)).join('');
+}
+function decodeHalfTwists(str) {
+  if (!str) return [];
+  return str.split('').map(c => (c === '-' ? 0 : Number(c) || 0));
+}
 
 const Levels = () => {
   const [levels, setLevels] = useState([]);
@@ -487,7 +502,8 @@ const Levels = () => {
 
       {/* Edit Skill Modal */}
       {editingSkill && editMode && (
-        <EditSkillModal
+        <SkillFormModal
+          mode="edit"
           skill={editingSkill}
           onSave={(skillData) => handleUpdateSkill(editingSkill.levelId, editingSkill.id, skillData)}
           onCancel={() => setEditingSkill(null)}
@@ -505,8 +521,8 @@ const Levels = () => {
 
       {/* Add Skill Modal */}
       {showAddSkillForm && editMode && (
-        <AddSkillModal
-          levelId={showAddSkillForm}
+        <SkillFormModal
+          mode="add"
           onSave={(skillData) => handleCreateSkill(showAddSkillForm, skillData)}
           onCancel={() => setShowAddSkillForm(null)}
         />
@@ -527,7 +543,7 @@ const Levels = () => {
           levelId={showAddSkillToRoutineForm.levelId}
           routineId={showAddSkillToRoutineForm.routineId}
           availableSkills={availableSkills}
-          onSave={(skillId) => handleAddSkillToRoutine(showAddSkillToRoutineForm.levelId, showAddSkillToRoutineForm.routineId, skillId)}
+          onSave={(skillId, customSkillName) => handleAddSkillToRoutine(showAddSkillToRoutineForm.levelId, showAddSkillToRoutineForm.routineId, skillId, customSkillName)}
           onCancel={() => setShowAddSkillToRoutineForm(null)}
         />
       )}
@@ -897,59 +913,231 @@ const EditLevelModal = ({ level, competitions, onSave, onCancel }) => {
 };
 
 // Edit Skill Modal Component
-const EditSkillModal = ({ skill, onSave, onCancel }) => {
-  const [formData, setFormData] = useState({
-    name: skill.name || '',
-    description: skill.description || '',
-    order: skill.order || 1
-  });
+// Unified Add/Edit Skill modal. Structured fields drive the FIG calculator;
+// difficulty / FIG / suggested name auto-populate but stay editable for overrides.
+const SkillFormModal = ({ mode, skill = null, onSave, onCancel }) => {
+  const isEdit = mode === 'edit';
+  const [name, setName] = useState(skill?.name ?? '');
+  const [description, setDescription] = useState(skill?.description ?? '');
+  const [order, setOrder] = useState(skill?.order ?? 1);
+
+  // Structured params
+  const [quarterSoms, setQuarterSoms] = useState(skill?.quarterSoms ?? 0);
+  const [twistsArr, setTwistsArr] = useState(decodeHalfTwists(skill?.halfTwistsPerSom ?? ''));
+  const [shape, setShape] = useState(skill?.shape ?? '');
+  const [landing, setLanding] = useState(skill?.landing ?? 'feet');
+  const [direction, setDirection] = useState(skill?.direction ?? 'backward');
+
+  // Derived (editable)
+  const [difficulty, setDifficulty] = useState(skill?.difficulty != null ? String(skill.difficulty) : '');
+  const [figNotation, setFigNotation] = useState(skill?.figNotation ?? '');
+  // Track whether user has manually edited difficulty/fig since last structured change
+  const [diffOverridden, setDiffOverridden] = useState(isEdit && skill?.difficulty != null);
+  const [figOverridden, setFigOverridden] = useState(isEdit && !!skill?.figNotation);
+
+  // Keep twistsArr length in sync with quarterSoms.
+  // 0 quarters with no twist intent → 0 entries; otherwise at least 1.
+  const expectedTwistEntries = Math.max(quarterSoms > 0 || twistsArr.some(t => t > 0) ? 1 : 0, Math.ceil(quarterSoms / 4));
+  useEffect(() => {
+    setTwistsArr(prev => {
+      const next = prev.slice(0, expectedTwistEntries);
+      while (next.length < expectedTwistEntries) next.push(0);
+      return next;
+    });
+  }, [expectedTwistEntries]);
+
+  const calc = useMemo(() => computeFigDifficulty({
+    quarterSoms,
+    halfTwistsPerSom: twistsArr,
+    shape: shape || null,
+    landing,
+    direction,
+  }), [quarterSoms, twistsArr, shape, landing, direction]);
+
+  // Auto-populate difficulty/fig from calculator unless overridden
+  useEffect(() => {
+    if (!diffOverridden) setDifficulty(String(calc.difficulty));
+  }, [calc.difficulty, diffOverridden]);
+  useEffect(() => {
+    if (!figOverridden) setFigNotation(calc.figNotation);
+  }, [calc.figNotation, figOverridden]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    onSave({
+      name,
+      description,
+      order: parseInt(order) || 1,
+      quarterSoms: Number(quarterSoms) || 0,
+      halfTwistsPerSom: encodeHalfTwists(twistsArr),
+      shape: shape || null,
+      landing: landing || null,
+      direction: direction || null,
+      difficulty: difficulty === '' ? null : Number(difficulty),
+      figNotation: figNotation || null,
+    });
   };
 
   return (
     <div className="modal-overlay">
-      <div className="modal">
+      <div className="modal" style={{ maxWidth: 600 }}>
         <div className="modal-header">
-          <h3>Edit Skill</h3>
+          <h3>{isEdit ? 'Edit Skill' : 'Add New Skill'}</h3>
           <button onClick={onCancel} className="close-button">×</button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Skill Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ whiteSpace: 'nowrap' }}
+                onClick={() => setName(calc.suggestedName)}
+                title="Use the calculator's suggested name"
+              >
+                Use suggested
+              </button>
+            </div>
+            {calc.suggestedName && calc.suggestedName !== name && (
+              <small className="text-muted">Suggested: {calc.suggestedName}</small>
+            )}
           </div>
+
           <div className="form-group">
             <label>Description</label>
             <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows="3"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows="2"
             />
           </div>
-          <div className="form-group">
-            <label>Order</label>
-            <input
-              type="number"
-              value={formData.order}
-              onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
-              min="1"
-            />
+
+          <fieldset style={{ border: '1px solid #ddd', borderRadius: 6, padding: '0.75rem 1rem', marginBottom: '1rem' }}>
+            <legend style={{ padding: '0 0.5rem', fontSize: '0.85rem', fontWeight: 700 }}>Structured parameters (FIG §17.1)</legend>
+
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <div className="form-group" style={{ flex: '1 1 120px' }}>
+                <label>¼ somersaults</label>
+                <input
+                  type="number"
+                  value={quarterSoms}
+                  min="0" max="16"
+                  onChange={(e) => { setQuarterSoms(parseInt(e.target.value) || 0); setDiffOverridden(false); setFigOverridden(false); }}
+                />
+              </div>
+              <div className="form-group" style={{ flex: '1 1 140px' }}>
+                <label>Direction</label>
+                <select value={direction} onChange={e => { setDirection(e.target.value); setDiffOverridden(false); setFigOverridden(false); }}>
+                  <option value="backward">Backward</option>
+                  <option value="forward">Forward</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ flex: '1 1 140px' }}>
+                <label>Shape</label>
+                <select value={shape} onChange={e => { setShape(e.target.value); setDiffOverridden(false); setFigOverridden(false); }}>
+                  <option value="">— none —</option>
+                  <option value="tuck">Tuck</option>
+                  <option value="pike">Pike</option>
+                  <option value="straight">Straight</option>
+                  <option value="straddle">Straddle</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ flex: '1 1 140px' }}>
+                <label>Landing</label>
+                <select value={landing} onChange={e => { setLanding(e.target.value); setDiffOverridden(false); setFigOverridden(false); }}>
+                  <option value="feet">Feet</option>
+                  <option value="seat">Seat</option>
+                  <option value="front">Front</option>
+                  <option value="back">Back</option>
+                  <option value="hands">Hands</option>
+                </select>
+              </div>
+            </div>
+
+            {expectedTwistEntries > 0 && (
+              <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                <label>½ twists per somersault</label>
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  {twistsArr.map((t, i) => (
+                    <input
+                      key={i}
+                      type="number"
+                      min="0"
+                      max="9"
+                      value={t}
+                      onChange={(e) => {
+                        const v = Math.max(0, Math.min(9, parseInt(e.target.value) || 0));
+                        setTwistsArr(arr => arr.map((x, j) => j === i ? v : x));
+                        setDiffOverridden(false);
+                        setFigOverridden(false);
+                      }}
+                      style={{ width: 56, textAlign: 'center' }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ background: '#f6f6f8', padding: '0.5rem 0.75rem', borderRadius: 4, marginTop: '0.5rem', fontSize: '0.85rem' }}>
+              {calc.breakdown.map((b, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{b.label}</span>
+                  <span>{b.points >= 0 ? '+' : ''}{b.points.toFixed(1)}</span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #ddd', paddingTop: 4, marginTop: 4, fontWeight: 700 }}>
+                <span>Computed difficulty</span>
+                <span>{calc.difficulty.toFixed(1)}</span>
+              </div>
+            </div>
+          </fieldset>
+
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <div className="form-group" style={{ flex: '1 1 120px' }}>
+              <label>Difficulty {diffOverridden && <small style={{ color: '#c0392b' }}>(override)</small>}</label>
+              <input
+                type="number"
+                step="0.1"
+                value={difficulty}
+                onChange={e => { setDifficulty(e.target.value); setDiffOverridden(true); }}
+              />
+              {diffOverridden && (
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setDifficulty(String(calc.difficulty)); setDiffOverridden(false); }} style={{ marginTop: 4, fontSize: '0.75rem' }}>Reset to calculated</button>
+              )}
+            </div>
+            <div className="form-group" style={{ flex: '1 1 160px' }}>
+              <label>FIG notation {figOverridden && <small style={{ color: '#c0392b' }}>(override)</small>}</label>
+              <input
+                type="text"
+                value={figNotation}
+                onChange={e => { setFigNotation(e.target.value); setFigOverridden(true); }}
+              />
+              {figOverridden && (
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setFigNotation(calc.figNotation); setFigOverridden(false); }} style={{ marginTop: 4, fontSize: '0.75rem' }}>Reset to calculated</button>
+              )}
+            </div>
+            <div className="form-group" style={{ flex: '0 1 100px' }}>
+              <label>Order</label>
+              <input
+                type="number"
+                value={order}
+                onChange={(e) => setOrder(e.target.value)}
+                min="1"
+              />
+            </div>
           </div>
+
           <div className="modal-actions">
-            <button type="button" onClick={onCancel} className="btn btn-secondary">
-              Cancel
-            </button>
-            <button type="submit" className="btn btn-primary">
-              Save Changes
-            </button>
+            <button type="button" onClick={onCancel} className="btn btn-secondary">Cancel</button>
+            <button type="submit" className="btn btn-primary">{isEdit ? 'Save Changes' : 'Add Skill'}</button>
           </div>
         </form>
       </div>
@@ -1029,66 +1217,6 @@ const EditRoutineModal = ({ routine, onSave, onCancel }) => {
 };
 
 // Add Skill Modal Component
-const AddSkillModal = ({ levelId, onSave, onCancel }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    order: 1
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(formData);
-  };
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal">
-        <div className="modal-header">
-          <h3>Add New Skill</h3>
-          <button onClick={onCancel} className="close-button">×</button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Skill Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows="3"
-            />
-          </div>
-          <div className="form-group">
-            <label>Order (leave blank to add to end)</label>
-            <input
-              type="number"
-              value={formData.order}
-              onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 1 })}
-              min="1"
-            />
-          </div>
-          <div className="modal-actions">
-            <button type="button" onClick={onCancel} className="btn btn-secondary">
-              Cancel
-            </button>
-            <button type="submit" className="btn btn-primary">
-              Add Skill
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
 // Add Routine Modal Component
 const AddRoutineModal = ({ levelId, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -1161,95 +1289,92 @@ const AddRoutineModal = ({ levelId, onSave, onCancel }) => {
 };
 
 // Add Skill to Routine Modal Component
+// Search-driven add-skill flow. Type a name or FIG notation; click a tracked skill
+// to attach it, or hit "Add as implicit" to use the typed text as a free-text skill.
 const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, onCancel }) => {
-  const [skillType, setSkillType] = useState('existing'); // 'existing' or 'implicit'
-  const [selectedSkillId, setSelectedSkillId] = useState('');
-  const [customSkillName, setCustomSkillName] = useState('');
+  const [query, setQuery] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (skillType === 'existing' && selectedSkillId) {
-      onSave(selectedSkillId);
-    } else if (skillType === 'implicit' && customSkillName.trim()) {
-      onSave(null, customSkillName.trim());
-    }
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return availableSkills.slice(0, 30);
+    return availableSkills.filter(s => {
+      const name = (s.name || '').toLowerCase();
+      const fig = (s.figNotation || '').toLowerCase();
+      return name.includes(q) || fig.includes(q);
+    }).slice(0, 30);
+  }, [query, availableSkills]);
+
+  const handleAddImplicit = () => {
+    const text = query.trim();
+    if (!text) return;
+    onSave(null, text);
   };
 
   return (
     <div className="modal-overlay">
-      <div className="modal">
+      <div className="modal" style={{ maxWidth: 520 }}>
         <div className="modal-header">
           <h3>Add Skill to Routine</h3>
           <button onClick={onCancel} className="close-button">×</button>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Skill Type</label>
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <input
-                  type="radio"
-                  name="skillType"
-                  value="existing"
-                  checked={skillType === 'existing'}
-                  onChange={(e) => setSkillType(e.target.value)}
-                />
-                Existing Skill
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <input
-                  type="radio"
-                  name="skillType"
-                  value="implicit"
-                  checked={skillType === 'implicit'}
-                  onChange={(e) => setSkillType(e.target.value)}
-                />
-                Implicit Skill
-              </label>
-            </div>
-          </div>
+        <div style={{ padding: '0.5rem 0' }}>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name or FIG notation, or type a new implicit skill…"
+            autoFocus
+            style={{ width: '100%', padding: '0.6rem', border: '1px solid #ccc', borderRadius: 4, fontSize: '1rem' }}
+          />
 
-          {skillType !== 'implicit' ? (
-            <div className="form-group">
-              <label>Select Skill</label>
-              <select
-                value={selectedSkillId}
-                onChange={(e) => setSelectedSkillId(e.target.value)}
-                required
+          <div style={{ maxHeight: 320, overflowY: 'auto', marginTop: '0.5rem', border: '1px solid #eee', borderRadius: 4 }}>
+            {matches.length === 0 ? (
+              <p style={{ margin: 0, padding: '1rem', color: '#888', textAlign: 'center' }}>No matches</p>
+            ) : matches.map(skill => (
+              <button
+                key={skill.id}
+                type="button"
+                onClick={() => onSave(skill.id)}
+                style={{
+                  display: 'flex',
+                  width: '100%',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '0.5rem 0.75rem',
+                  border: 'none',
+                  borderBottom: '1px solid #f3f3f3',
+                  background: 'transparent',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f6f6f8'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <option value="">Choose a skill...</option>
-                {availableSkills.map(skill => (
-                  <option key={skill.id} value={skill.id}>
-                    {skill.name} (Level {skill.level.identifier})
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div className="form-group">
-              <label>Implicit Skill Name</label>
-              <input
-                type="text"
-                value={customSkillName}
-                onChange={(e) => setCustomSkillName(e.target.value)}
-                placeholder="e.g., To Feet, Back Landing to Feet"
-                required
-              />
-              <small className="text-muted">
-                Use this for automatic/implicit skills that don't need to be tracked separately
-              </small>
-            </div>
-          )}
+                <span>
+                  <strong>{skill.name}</strong>
+                  <span style={{ marginLeft: 8, color: '#888' }}>L{skill.level.identifier}</span>
+                </span>
+                <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#555' }}>
+                  {skill.figNotation || '—'} · {skill.difficulty != null ? Number(skill.difficulty).toFixed(1) : '—'}
+                </span>
+              </button>
+            ))}
+          </div>
 
-          <div className="modal-actions">
-            <button type="button" onClick={onCancel} className="btn btn-secondary">
-              Cancel
-            </button>
-            <button type="submit" className="btn btn-primary">
-              Add Skill
+          <div className="modal-actions" style={{ marginTop: '1rem' }}>
+            <button type="button" onClick={onCancel} className="btn btn-secondary">Cancel</button>
+            <button
+              type="button"
+              onClick={handleAddImplicit}
+              disabled={!query.trim()}
+              className="btn btn-primary"
+              title="Add the typed text as a free-text 'implicit' skill"
+            >
+              Add as implicit
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

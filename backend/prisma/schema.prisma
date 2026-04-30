@@ -256,18 +256,23 @@ model Level {
 }
 
 model Skill {
-  id            String          @id @default(cuid())
-  name          String
-  description   String?
-  levelId       String
-  order         Int
-  difficulty    Decimal?        @db.Decimal(4, 1)
-  figNotation   String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  routineSkills RoutineSkill[]
-  skillProgress SkillProgress[]
-  level         Level           @relation(fields: [levelId], references: [id])
+  id               String          @id @default(cuid())
+  name             String
+  description      String?
+  levelId          String
+  order            Int
+  difficulty       Decimal?        @db.Decimal(4, 1)
+  figNotation      String?
+  quarterSoms      Int?
+  halfTwistsPerSom String?
+  shape            String?
+  landing          String?
+  direction        String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  routineSkills    RoutineSkill[]
+  skillProgress    SkillProgress[]
+  level            Level           @relation(fields: [levelId], references: [id])
 
   @@map("skills")
 }

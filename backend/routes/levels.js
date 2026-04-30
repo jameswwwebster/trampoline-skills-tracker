@@ -50,16 +50,28 @@ const levelUpdateSchema = Joi.object({
   competitionIds: Joi.array().items(Joi.string()).optional()
 });
 
+const skillStructuredFields = {
+  difficulty: Joi.number().min(0).max(99).allow(null).optional(),
+  figNotation: Joi.string().max(20).allow('', null).optional(),
+  quarterSoms: Joi.number().integer().min(0).max(16).allow(null).optional(),
+  halfTwistsPerSom: Joi.string().max(20).allow('', null).optional(),
+  shape: Joi.string().valid('tuck', 'pike', 'straight', 'straddle').allow('', null).optional(),
+  landing: Joi.string().valid('feet', 'seat', 'front', 'back', 'hands').allow('', null).optional(),
+  direction: Joi.string().valid('forward', 'backward').allow('', null).optional(),
+};
+
 const skillCreateSchema = Joi.object({
   name: Joi.string().min(1).max(100).required(),
   description: Joi.string().max(500).allow('', null),
-  order: Joi.number().integer().min(1).optional()
+  order: Joi.number().integer().min(1).optional(),
+  ...skillStructuredFields,
 });
 
 const skillUpdateSchema = Joi.object({
   name: Joi.string().min(1).max(100).optional(),
   description: Joi.string().max(500).allow('', null).optional(),
-  order: Joi.number().integer().min(1).optional()
+  order: Joi.number().integer().min(1).optional(),
+  ...skillStructuredFields,
 });
 
 const routineCreateSchema = Joi.object({
@@ -432,8 +444,6 @@ router.post('/:levelId/skills', auth, requireRole(['CLUB_ADMIN']), async (req, r
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { name, description, order } = value;
-
     // Check if level exists
     const level = await prisma.level.findUnique({
       where: { id: levelId }
@@ -444,7 +454,7 @@ router.post('/:levelId/skills', auth, requireRole(['CLUB_ADMIN']), async (req, r
     }
 
     // If no order specified, add to the end
-    let skillOrder = order;
+    let skillOrder = value.order;
     if (!skillOrder) {
       const lastSkill = await prisma.skill.findFirst({
         where: { levelId },
@@ -455,10 +465,9 @@ router.post('/:levelId/skills', auth, requireRole(['CLUB_ADMIN']), async (req, r
 
     const skill = await prisma.skill.create({
       data: {
-        name,
-        description,
+        ...value,
         levelId,
-        order: skillOrder
+        order: skillOrder,
       }
     });
 
