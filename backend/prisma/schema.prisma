@@ -248,7 +248,7 @@ model Level {
   prerequisite    Level?             @relation("LevelPrerequisites", fields: [prerequisiteId], references: [id])
   dependentLevels Level[]            @relation("LevelPrerequisites")
   routines        Routine[]
-  skills          Skill[]
+  levelSkills     LevelSkill[]
   club            Club?              @relation(fields: [clubId], references: [id])
 
   @@unique([identifier, clubId])
@@ -259,8 +259,6 @@ model Skill {
   id               String          @id @default(cuid())
   name             String
   description      String?
-  levelId          String
-  order            Int
   difficulty       Decimal?        @db.Decimal(4, 1)
   figNotation      String?
   quarterSoms      Int?
@@ -272,9 +270,22 @@ model Skill {
   updatedAt        DateTime        @updatedAt
   routineSkills    RoutineSkill[]
   skillProgress    SkillProgress[]
-  level            Level           @relation(fields: [levelId], references: [id])
+  levelSkills      LevelSkill[]
 
   @@map("skills")
+}
+
+model LevelSkill {
+  id        String   @id @default(cuid())
+  levelId   String
+  skillId   String
+  order     Int
+  createdAt DateTime @default(now())
+  level     Level    @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([levelId, skillId])
+  @@map("level_skills")
 }
 
 model Routine {

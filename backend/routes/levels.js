@@ -5,6 +5,16 @@ const { auth, requireRole } = require('../middleware/auth');
 const router = express.Router();
 const prisma = require('../prisma');
 
+// Flatten Prisma's `levelSkills` join include back to the legacy `level.skills`
+// shape the frontend expects: an array of skill objects, each carrying the join's
+// `order` so the level renders skills in coach-defined order.
+function flattenLevelSkills(levelSkills) {
+  return (levelSkills || [])
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .map(ls => ({ ...ls.skill, order: ls.order }));
+}
+
 // Batch-fetch difficulty/figNotation for implicit skill names, returns name→skill map
 async function lookupImplicitSkillDDs(names) {
   if (!names || names.length === 0) return {};
@@ -111,10 +121,9 @@ router.get('/', auth, async (req, res) => {
   try {
     const levels = await prisma.level.findMany({
       include: {
-        skills: {
-          orderBy: {
-            order: 'asc'
-          }
+        levelSkills: {
+          include: { skill: true },
+          orderBy: { order: 'asc' },
         },
         routines: {
           include: {
@@ -138,7 +147,7 @@ router.get('/', auth, async (req, res) => {
         },
         _count: {
           select: {
-            skills: true,
+            levelSkills: true,
             routines: true
           }
         }
@@ -167,6 +176,8 @@ router.get('/', auth, async (req, res) => {
     // Transform the data to match the expected frontend structure
     const transformedLevels = levels.map(level => ({
       ...level,
+      skills: flattenLevelSkills(level.levelSkills),
+      _count: { ...level._count, skills: level._count.levelSkills },
       routines: level.routines.map(routine => ({
         ...routine,
         skills: transformRoutineSkills(routine.routineSkills, level.id, ddMap)
@@ -269,10 +280,9 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
       return await prisma.level.findUnique({
         where: { id: level.id },
         include: {
-          skills: {
-            orderBy: {
-              order: 'asc'
-            }
+          levelSkills: {
+            include: { skill: true },
+            orderBy: { order: 'asc' },
           },
           routines: {
             include: {
@@ -303,6 +313,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
     const ddMap1 = await lookupImplicitSkillDDs(customNames1);
     const transformedLevel = {
       ...result,
+      skills: flattenLevelSkills(result.levelSkills),
       routines: result.routines.map(routine => ({
         ...routine,
         skills: transformRoutineSkills(routine.routineSkills, result.id, ddMap1)
@@ -379,10 +390,9 @@ router.put('/:levelId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
       return await prisma.level.findUnique({
         where: { id: levelId },
         include: {
-          skills: {
-            orderBy: {
-              order: 'asc'
-            }
+          levelSkills: {
+            include: { skill: true },
+            orderBy: { order: 'asc' },
           },
           routines: {
             include: {
@@ -413,6 +423,7 @@ router.put('/:levelId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
     const ddMap2 = await lookupImplicitSkillDDs(customNames2);
     const transformedLevel = {
       ...result,
+      skills: flattenLevelSkills(result.levelSkills),
       routines: result.routines.map(routine => ({
         ...routine,
         skills: transformRoutineSkills(routine.routineSkills, result.id, ddMap2)
@@ -438,71 +449,83 @@ router.put('/:levelId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
 router.post('/:levelId/skills', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   try {
     const { levelId } = req.params;
-    const { error, value } = skillCreateSchema.validate(req.body);
-    
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
 
-    // Check if level exists
-    const level = await prisma.level.findUnique({
-      where: { id: levelId }
-    });
+    const level = await prisma.level.findUnique({ where: { id: levelId } });
+    if (!level) return res.status(404).json({ error: 'Level not found' });
 
-    if (!level) {
-      return res.status(404).json({ error: 'Level not found' });
-    }
+    // Two body shapes: { skillId, order? } to attach existing, or full skill data to create+attach.
+    if (req.body && typeof req.body.skillId === 'string') {
+      const { skillId, order: orderInput } = req.body;
+      const skill = await prisma.skill.findUnique({ where: { id: skillId } });
+      if (!skill) return res.status(404).json({ error: 'Skill not found' });
 
-    // If no order specified, add to the end
-    let skillOrder = value.order;
-    if (!skillOrder) {
-      const lastSkill = await prisma.skill.findFirst({
-        where: { levelId },
-        orderBy: { order: 'desc' }
+      const already = await prisma.levelSkill.findUnique({
+        where: { levelId_skillId: { levelId, skillId } },
       });
-      skillOrder = lastSkill ? lastSkill.order + 1 : 1;
+      if (already) return res.status(400).json({ error: 'Skill already attached to this level' });
+
+      let order = orderInput;
+      if (!order) {
+        const last = await prisma.levelSkill.findFirst({ where: { levelId }, orderBy: { order: 'desc' } });
+        order = last ? last.order + 1 : 1;
+      }
+      await prisma.levelSkill.create({ data: { levelId, skillId, order } });
+      return res.json({ ...skill, order });
     }
 
-    const skill = await prisma.skill.create({
-      data: {
-        ...value,
-        levelId,
-        order: skillOrder,
-      }
+    // Otherwise: create a new skill and attach in one transaction.
+    const { error, value } = skillCreateSchema.validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    let order = value.order;
+    if (!order) {
+      const last = await prisma.levelSkill.findFirst({ where: { levelId }, orderBy: { order: 'desc' } });
+      order = last ? last.order + 1 : 1;
+    }
+    const { order: _omit, ...skillData } = value;
+
+    const created = await prisma.$transaction(async (tx) => {
+      const skill = await tx.skill.create({ data: skillData });
+      await tx.levelSkill.create({ data: { levelId, skillId: skill.id, order } });
+      return { ...skill, order };
     });
 
-    res.json(skill);
+    res.json(created);
   } catch (error) {
     console.error('Create skill error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Update a skill (club admins only)
+// Update a skill (club admins only). The `order` field updates the LevelSkill row;
+// all other fields update the Skill row directly.
 router.put('/:levelId/skills/:skillId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   try {
     const { levelId, skillId } = req.params;
     const { error, value } = skillUpdateSchema.validate(req.body);
-    
+
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    // Verify skill belongs to the level
-    const existingSkill = await prisma.skill.findUnique({
-      where: { id: skillId }
+    // Verify the skill is attached to this level
+    const link = await prisma.levelSkill.findUnique({
+      where: { levelId_skillId: { levelId, skillId } },
+    });
+    if (!link) return res.status(404).json({ error: 'Skill not found in this level' });
+
+    const { order, ...skillFields } = value;
+    const updated = await prisma.$transaction(async (tx) => {
+      const skill = await tx.skill.update({ where: { id: skillId }, data: skillFields });
+      let finalOrder = link.order;
+      if (order != null && order !== link.order) {
+        await tx.levelSkill.update({ where: { id: link.id }, data: { order } });
+        finalOrder = order;
+      }
+      return { ...skill, order: finalOrder };
     });
 
-    if (!existingSkill || existingSkill.levelId !== levelId) {
-      return res.status(404).json({ error: 'Skill not found in this level' });
-    }
-
-    const skill = await prisma.skill.update({
-      where: { id: skillId },
-      data: value
-    });
-
-    res.json(skill);
+    res.json(updated);
   } catch (error) {
     console.error('Update skill error:', error);
     if (error.code === 'P2025') {
@@ -512,49 +535,22 @@ router.put('/:levelId/skills/:skillId', auth, requireRole(['CLUB_ADMIN']), async
   }
 });
 
-// Delete a skill (club admins only)
+// Detach a skill from a level. The Skill row is preserved (it may be attached to
+// other levels and may have progress / routine references). Use the dedicated
+// DELETE /api/skills/:skillId endpoint to fully remove a skill from the library.
 router.delete('/:levelId/skills/:skillId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   try {
     const { levelId, skillId } = req.params;
 
-    // Verify skill belongs to the level
-    const existingSkill = await prisma.skill.findUnique({
-      where: { id: skillId }
+    const link = await prisma.levelSkill.findUnique({
+      where: { levelId_skillId: { levelId, skillId } },
     });
+    if (!link) return res.status(404).json({ error: 'Skill not attached to this level' });
 
-    if (!existingSkill || existingSkill.levelId !== levelId) {
-      return res.status(404).json({ error: 'Skill not found in this level' });
-    }
-
-    // Check if skill is used in any routine skills
-    const routineSkillUsage = await prisma.routineSkill.findMany({
-      where: { skillId }
-    });
-
-    if (routineSkillUsage.length > 0) {
-      return res.status(400).json({ 
-        error: 'Cannot delete skill that is used in routines. Remove it from routines first.' 
-      });
-    }
-
-    // Check if skill has any progress records
-    const progressRecords = await prisma.skillProgress.findMany({
-      where: { skillId }
-    });
-
-    if (progressRecords.length > 0) {
-      return res.status(400).json({ 
-        error: 'Cannot delete skill that has progress records. This would affect gymnast progress tracking.' 
-      });
-    }
-
-    await prisma.skill.delete({
-      where: { id: skillId }
-    });
-
-    res.json({ message: 'Skill deleted successfully' });
+    await prisma.levelSkill.delete({ where: { id: link.id } });
+    res.json({ message: 'Skill removed from level' });
   } catch (error) {
-    console.error('Delete skill error:', error);
+    console.error('Detach skill error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -886,40 +882,35 @@ router.delete('/:levelId/routines/:routineId/skills/:skillId', auth, requireRole
   }
 });
 
-// Get available skills for adding to routines (coaches and club admins only)
+// Get available skills for adding to routines (coaches and club admins only).
+// Returns all skills with their levels via the join. The frontend treats the
+// first attached level as `level` for backward compatibility.
 router.get('/:levelId/available-skills', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
-    const { levelId } = req.params;
-
-    // Get all skills across all levels for routine building
     const skills = await prisma.skill.findMany({
       include: {
-        level: {
-          select: {
-            id: true,
-            name: true,
-            identifier: true
-          }
-        }
+        levelSkills: {
+          include: {
+            level: { select: { id: true, name: true, identifier: true, number: true } },
+          },
+          orderBy: { level: { number: 'asc' } },
+        },
       },
-      orderBy: [
-        {
-          level: {
-            number: 'asc'
-          }
-        },
-        {
-          level: {
-            identifier: 'asc'
-          }
-        },
-        {
-          order: 'asc'
-        }
-      ]
+      orderBy: { name: 'asc' },
     });
 
-    res.json(skills);
+    // Shape compatible with the routine search modal: first level surfaces as `level`,
+    // full list as `levels`. Library-only skills get a placeholder.
+    const shaped = skills.map(s => {
+      const levels = s.levelSkills.map(ls => ls.level);
+      return {
+        ...s,
+        levels,
+        level: levels[0] ?? { id: null, name: 'Library', identifier: '—' },
+      };
+    });
+
+    res.json(shaped);
   } catch (error) {
     console.error('Get available skills error:', error);
     res.status(500).json({ error: 'Server error' });
