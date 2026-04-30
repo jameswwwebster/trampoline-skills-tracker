@@ -469,8 +469,16 @@ router.post('/:levelId/skills', auth, requireRole(['CLUB_ADMIN']), async (req, r
         const last = await prisma.levelSkill.findFirst({ where: { levelId }, orderBy: { order: 'desc' } });
         order = last ? last.order + 1 : 1;
       }
-      await prisma.levelSkill.create({ data: { levelId, skillId, order } });
-      return res.json({ ...skill, order });
+      const updated = await prisma.$transaction(async (tx) => {
+        await tx.levelSkill.create({ data: { levelId, skillId, order } });
+        // If the skill had no primary level (library skill), set it now so legacy
+        // queries that read skill.level resolve to something.
+        if (!skill.levelId) {
+          await tx.skill.update({ where: { id: skillId }, data: { levelId } });
+        }
+        return await tx.skill.findUnique({ where: { id: skillId } });
+      });
+      return res.json({ ...updated, order });
     }
 
     // Otherwise: create a new skill and attach in one transaction.
@@ -485,7 +493,7 @@ router.post('/:levelId/skills', auth, requireRole(['CLUB_ADMIN']), async (req, r
     const { order: _omit, ...skillData } = value;
 
     const created = await prisma.$transaction(async (tx) => {
-      const skill = await tx.skill.create({ data: skillData });
+      const skill = await tx.skill.create({ data: { ...skillData, levelId } });
       await tx.levelSkill.create({ data: { levelId, skillId: skill.id, order } });
       return { ...skill, order };
     });
@@ -547,7 +555,17 @@ router.delete('/:levelId/skills/:skillId', auth, requireRole(['CLUB_ADMIN']), as
     });
     if (!link) return res.status(404).json({ error: 'Skill not attached to this level' });
 
-    await prisma.levelSkill.delete({ where: { id: link.id } });
+    await prisma.$transaction(async (tx) => {
+      await tx.levelSkill.delete({ where: { id: link.id } });
+      // If this was the primary level, repoint to another attached level (or
+      // null if none remain).
+      const skill = await tx.skill.findUnique({ where: { id: skillId } });
+      if (skill && skill.levelId === levelId) {
+        const next = await tx.levelSkill.findFirst({ where: { skillId }, orderBy: { order: 'asc' } });
+        await tx.skill.update({ where: { id: skillId }, data: { levelId: next ? next.levelId : null } });
+      }
+    });
+
     res.json({ message: 'Skill removed from level' });
   } catch (error) {
     console.error('Detach skill error:', error);

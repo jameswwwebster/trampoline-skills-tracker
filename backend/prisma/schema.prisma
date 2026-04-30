@@ -249,6 +249,7 @@ model Level {
   dependentLevels Level[]            @relation("LevelPrerequisites")
   routines        Routine[]
   levelSkills     LevelSkill[]
+  skills          Skill[]
   club            Club?              @relation(fields: [clubId], references: [id])
 
   @@unique([identifier, clubId])
@@ -259,6 +260,13 @@ model Skill {
   id               String          @id @default(cuid())
   name             String
   description      String?
+  // Denormalized "primary" level for the skill — kept in sync by application
+  // code on attach/detach. The level_skills join is the source of truth for
+  // membership (a skill can belong to many levels); levelId points at one of
+  // them so legacy queries that read skill.level keep working. NULL means the
+  // skill is library-only (not attached to any level).
+  levelId          String?
+  level            Level?          @relation(fields: [levelId], references: [id])
   difficulty       Decimal?        @db.Decimal(4, 1)
   figNotation      String?
   quarterSoms      Int?
