@@ -21,10 +21,11 @@
 //       feet + shape         → 'o' tuck, '<' pike, 'v' straddle, '/' straight
 //       feet + twist only    → (none — feet is implicit)
 //       seat                 → '--'
-//       front                → 'f'
+//       front                → (none — direction='forward' on the structured row implies front)
 //       back                 → '-' (only when there are twists; otherwise implicit at end)
 //   - Pure jumps / landings (no rotation, no twist) collapse to just the landing token:
-//       Tuck Jump = 'o', Pike Jump = '<', Seat Landing = '--', Back Landing = '1-', Front Landing = '1-f'.
+//       Tuck Jump = 'o', Pike Jump = '<', Seat Landing = '--',
+//       Back Landing & Front Landing both = '1-' (direction differentiates).
 
 const SOM_BONUS = { 0: 0, 1: 0.1, 2: 0.2, 3: 0.4, 4: 0.6 };
 
@@ -124,8 +125,7 @@ function computeFigNotation({ quarterSoms = 0, halfTwistsPerSom = [], shape = nu
   // Pure jumps / static landings (no rotation, no twist)
   if (quarterSoms === 0 && totalHalfTwists === 0) {
     if (landing === 'seat') return '--';
-    if (landing === 'back') return '1-';
-    if (landing === 'front') return '1-f';
+    if (landing === 'back' || landing === 'front') return '1-';
     if (landing === 'feet') return SHAPE_TO_SYMBOL[shape] ?? '';
   }
 
@@ -141,9 +141,9 @@ function computeFigNotation({ quarterSoms = 0, halfTwistsPerSom = [], shape = nu
 
   let suffix = '';
   if (landing === 'seat') suffix = '--';
-  else if (landing === 'front') suffix = 'f';
   else if (landing === 'back' && totalHalfTwists > 0) suffix = '-'; // only when twists are present
   else if (landing === 'feet' && quarterSoms > 0) suffix = SHAPE_TO_SYMBOL[shape] ?? '';
+  // landing='front': no suffix — direction='forward' on the structured row implies front
 
   return quarterDigit + twistsPart + suffix;
 }

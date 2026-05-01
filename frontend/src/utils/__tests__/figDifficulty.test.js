@@ -19,7 +19,7 @@ describe('computeFigDifficulty — seed-data difficulty values', () => {
     // Pure landings
     ['Seat Landing', { quarterSoms: 0, halfTwistsPerSom: [], landing: 'seat' }, 0.1, '--'],
     ['Back Landing', { quarterSoms: 0, halfTwistsPerSom: [], landing: 'back' }, 0.1, '1-'],
-    ['Front Landing', { quarterSoms: 0, halfTwistsPerSom: [], landing: 'front' }, 0.1, '1-f'],
+    ['Front Landing', { quarterSoms: 0, halfTwistsPerSom: [], landing: 'front' }, 0.1, '1-'],
 
     // Single som — back
     ['Back Som (T)', { quarterSoms: 4, halfTwistsPerSom: [0], shape: 'tuck',     landing: 'feet', direction: 'backward' }, 0.5, '4-o'],
@@ -60,7 +60,7 @@ describe('computeFigDifficulty — seed-data difficulty values', () => {
     ['Half Front Rudy (T)',{ quarterSoms: 12, halfTwistsPerSom: [1, 0, 3], shape: 'tuck',     landing: 'feet', direction: 'backward' }, 2.6, '121-3o'],
 
     // ½ rotations to non-feet landings
-    ['Back to Front', { quarterSoms: 2, halfTwistsPerSom: [0], landing: 'front', direction: 'backward' }, 0.2, '2-f'],
+    ['Back to Front', { quarterSoms: 2, halfTwistsPerSom: [0], landing: 'front', direction: 'backward' }, 0.2, '2-'],
     ['Front to Back', { quarterSoms: 2, halfTwistsPerSom: [0], landing: 'back',  direction: 'forward'  }, 0.2, '2-'],
 
     // Combinations to feet via ¼ rotations

@@ -14,7 +14,7 @@ const skillCreateSchema = Joi.object({
   quarterSoms: Joi.number().integer().min(0).max(16).allow(null).optional(),
   halfTwistsPerSom: Joi.string().max(20).allow('', null).optional(),
   shape: Joi.string().valid('tuck', 'pike', 'straight', 'straddle').allow('', null).optional(),
-  landing: Joi.string().valid('feet', 'seat', 'front', 'back', 'hands').allow('', null).optional(),
+  landing: Joi.string().valid('feet', 'seat', 'front', 'back').allow('', null).optional(),
   direction: Joi.string().valid('forward', 'backward').allow('', null).optional(),
 });
 
@@ -26,7 +26,7 @@ const skillPatchSchema = Joi.object({
   quarterSoms: Joi.number().integer().min(0).max(16).allow(null).optional(),
   halfTwistsPerSom: Joi.string().max(20).allow('', null).optional(),
   shape: Joi.string().valid('tuck', 'pike', 'straight', 'straddle').allow('', null).optional(),
-  landing: Joi.string().valid('feet', 'seat', 'front', 'back', 'hands').allow('', null).optional(),
+  landing: Joi.string().valid('feet', 'seat', 'front', 'back').allow('', null).optional(),
   direction: Joi.string().valid('forward', 'backward').allow('', null).optional(),
 }).min(1);
 

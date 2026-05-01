@@ -5,7 +5,9 @@ const changelog = [
     entries: [
       { type: 'fix', text: 'Difficulty calculator now applies the §17.1.6.1 backward bonus to twisting backward multi-soms too (e.g. Half In Half Out triple gets +0.1, Half Front Half triple gets +0.2). Previously it only applied to non-twisting backward elements.' },
       { type: 'fix', text: 'Skill editor now lets you enter twists for skills with no somersaults (½ Twist, Full Twist).' },
-      { type: 'improvement', text: 'Backfilled structured FIG parameters (quarter soms, twists per som, shape, landing, direction) on the 80 legacy skills that pre-date the calculator — they now show the correct difficulty breakdown when edited and search/filter cleanly. 15 progression / non-competition skills (Forward Roll, Cradle, Cruise, etc.) intentionally have no FIG params. 4 duplicates of imported FIG-library entries were merged.' },
+      { type: 'improvement', text: 'Backfilled structured FIG parameters (quarter soms, twists per som, shape, landing, direction) on the 80 legacy skills that pre-date the calculator. 4 duplicates of imported FIG-library entries were merged. Progression skills (Forward Roll, Cradle, Cruise, Forward Turnover etc.) intentionally have no FIG params.' },
+      { type: 'improvement', text: 'Skill editor: Direction now has a "None" option for skills without somersault rotation (jumps, twists, landings). Hands removed from Landing options.' },
+      { type: 'improvement', text: 'FIG notation no longer uses letter suffixes (f, s, b) for landing position — direction on the structured row carries that meaning. 9 affected notations updated automatically.' },
     ],
   },
   {

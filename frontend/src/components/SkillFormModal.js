@@ -118,7 +118,8 @@ export default function SkillFormModal({ mode, skill = null, onSave, onCancel, s
               </div>
               <div className="form-group" style={{ flex: '1 1 140px' }}>
                 <label>Direction</label>
-                <select value={direction} onChange={e => { setDirection(e.target.value); setDiffOverridden(false); setFigOverridden(false); }}>
+                <select value={direction || ''} onChange={e => { setDirection(e.target.value); setDiffOverridden(false); setFigOverridden(false); }}>
+                  <option value="">None</option>
                   <option value="backward">Backward</option>
                   <option value="forward">Forward</option>
                 </select>
@@ -140,7 +141,6 @@ export default function SkillFormModal({ mode, skill = null, onSave, onCancel, s
                   <option value="seat">Seat</option>
                   <option value="front">Front</option>
                   <option value="back">Back</option>
-                  <option value="hands">Hands</option>
                 </select>
               </div>
             </div>
