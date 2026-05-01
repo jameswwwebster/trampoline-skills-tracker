@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeftIcon, PencilSquareIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { matchesSkillQuery } from '../utils/skillSearch';
 import SkillFormModal from '../components/SkillFormModal';
 
@@ -94,6 +94,7 @@ export default function Skills() {
   const [sort, setSort] = useState({ key: 'level', dir: 'asc' });
   const [editing, setEditing] = useState(null); // skill object or null
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState(null); // skill object pending confirm, or null
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -127,6 +128,20 @@ export default function Skills() {
       setEditing(null);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to save skill');
+    }
+  };
+
+  const handleDelete = async (skill) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_BASE}/api/skills/${skill.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSkills(prev => prev.filter(s => s.id !== skill.id));
+      setDeleting(null);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to delete skill');
+      setDeleting(null);
     }
   };
 
@@ -258,7 +273,7 @@ export default function Skills() {
                 {headerCell('fig', 'FIG')}
                 {headerCell('difficulty', 'Difficulty')}
                 {headerCell('routines', 'In routines')}
-                {isClubAdmin && <th style={{ padding: '0.5rem', borderBottom: '2px solid #ddd', width: 40 }} />}
+                {isClubAdmin && <th style={{ padding: '0.5rem', borderBottom: '2px solid #ddd', width: 80 }} />}
               </tr>
             </thead>
             <tbody>
@@ -296,15 +311,24 @@ export default function Skills() {
                     </td>
                     <td style={{ padding: '0.5rem' }}>{s.routineCount}</td>
                     {isClubAdmin && (
-                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>
+                      <td style={{ padding: '0.5rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <button
                           type="button"
                           onClick={() => setEditing(s)}
                           className="btn btn-secondary btn-sm"
                           title="Open full editor"
-                          style={{ padding: '0.25rem 0.4rem', display: 'inline-flex', alignItems: 'center' }}
+                          style={{ padding: '0.25rem 0.4rem', display: 'inline-flex', alignItems: 'center', marginRight: 4 }}
                         >
                           <PencilSquareIcon style={{ width: 14, height: 14 }} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleting(s)}
+                          className="btn btn-secondary btn-sm"
+                          title="Delete skill"
+                          style={{ padding: '0.25rem 0.4rem', display: 'inline-flex', alignItems: 'center', color: '#c0392b', borderColor: 'rgba(192,57,43,0.4)' }}
+                        >
+                          <TrashIcon style={{ width: 14, height: 14 }} />
                         </button>
                       </td>
                     )}
@@ -335,6 +359,40 @@ export default function Skills() {
           onSave={handleSaveEdit}
           onCancel={() => setEditing(null)}
         />
+      )}
+      {deleting && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: 460 }}>
+            <div className="modal-header">
+              <h3>Delete skill</h3>
+              <button onClick={() => setDeleting(null)} className="close-button">×</button>
+            </div>
+            <div style={{ padding: '0.75rem 0' }}>
+              <p style={{ margin: 0 }}>Permanently delete <strong>{deleting.name}</strong>?</p>
+              {deleting.routineCount > 0 && (
+                <p style={{ marginTop: '0.5rem', color: '#c0392b', fontSize: '0.9rem' }}>
+                  This skill is used in {deleting.routineCount} routine{deleting.routineCount === 1 ? '' : 's'}. The server will block the delete until you remove it from those routines first.
+                </p>
+              )}
+              {(deleting.levels || []).length > 0 && (
+                <p style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.9rem' }}>
+                  Currently attached to: {deleting.levels.map(l => `L${l.identifier}`).join(', ')}.
+                </p>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn btn-secondary" onClick={() => setDeleting(null)}>Cancel</button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ background: '#c0392b', borderColor: '#c0392b' }}
+                onClick={() => handleDelete(deleting)}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
