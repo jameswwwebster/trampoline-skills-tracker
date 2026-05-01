@@ -9,6 +9,7 @@ const changelog = [
       { type: 'improvement', text: 'Skill search now treats "1/2"/"half"/"½", "1/4"/"quarter"/"¼" and "3/4"/"¾" as the same — matches across the All Skills page, the routine search and the library lookup.' },
       { type: 'fix', text: 'Replacing a skill in a routine no longer fails with "Routine skill not found".' },
       { type: 'improvement', text: 'Skill editor: somersault and twist fields no longer show a leading 0; suggested-name affordance removed.' },
+      { type: 'improvement', text: 'All Skills page: a "New skill" button creates a library skill with the full FIG calculator, and each row has an edit pencil that opens the same editor for changes beyond the inline name/FIG/difficulty fields.' },
     ],
   },
   {

@@ -6,6 +6,18 @@ const { requireRole } = require('../middleware/auth');
 const router = express.Router();
 const prisma = require('../prisma');
 
+const skillCreateSchema = Joi.object({
+  name: Joi.string().min(1).max(100).required(),
+  description: Joi.string().max(500).allow('', null).optional(),
+  difficulty: Joi.number().min(0).max(99).allow(null).optional(),
+  figNotation: Joi.string().max(20).allow('', null).optional(),
+  quarterSoms: Joi.number().integer().min(0).max(16).allow(null).optional(),
+  halfTwistsPerSom: Joi.string().max(20).allow('', null).optional(),
+  shape: Joi.string().valid('tuck', 'pike', 'straight', 'straddle').allow('', null).optional(),
+  landing: Joi.string().valid('feet', 'seat', 'front', 'back', 'hands').allow('', null).optional(),
+  direction: Joi.string().valid('forward', 'backward').allow('', null).optional(),
+});
+
 const skillPatchSchema = Joi.object({
   name: Joi.string().min(1).max(100).optional(),
   description: Joi.string().max(500).allow('', null).optional(),
@@ -71,6 +83,21 @@ router.get('/', auth, async (req, res) => {
     }));
   } catch (error) {
     console.error('Get skills error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Create a new library skill (club admins only). The skill has no level
+// attachment — coaches add it to one or more levels via the Levels page lookup.
+router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { error, value } = skillCreateSchema.validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    const skill = await prisma.skill.create({ data: value });
+    res.json(skill);
+  } catch (err) {
+    console.error('Create library skill error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

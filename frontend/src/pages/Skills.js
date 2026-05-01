@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PencilSquareIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { matchesSkillQuery } from '../utils/skillSearch';
+import SkillFormModal from '../components/SkillFormModal';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -91,6 +92,8 @@ export default function Skills() {
   const [search, setSearch] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
   const [sort, setSort] = useState({ key: 'level', dir: 'asc' });
+  const [editing, setEditing] = useState(null); // skill object or null
+  const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -116,6 +119,30 @@ export default function Skills() {
     });
     setSkills(prev => prev.map(s => s.id === skillId ? { ...s, ...res.data } : s));
   }, []);
+
+  const handleSaveEdit = async (data) => {
+    if (!editing) return;
+    try {
+      await patchSkill(editing.id, data);
+      setEditing(null);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to save skill');
+    }
+  };
+
+  const handleCreate = async (data) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE}/api/skills`, data, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Reload to get the full shape with levels[]/_count etc.
+      await load();
+      setCreating(false);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to create skill');
+    }
+  };
 
   const levelOptions = useMemo(() => {
     const seen = new Map();
@@ -181,6 +208,16 @@ export default function Skills() {
           <ArrowLeftIcon style={{ width: 14, height: 14 }} /> Admin
         </button>
         <h1 style={{ margin: 0 }}>All Skills</h1>
+        {isClubAdmin && (
+          <button
+            type="button"
+            onClick={() => setCreating(true)}
+            className="btn btn-primary"
+            style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+          >
+            <PlusIcon style={{ width: 14, height: 14 }} /> New skill
+          </button>
+        )}
       </div>
 
       {error && <div style={{ background: '#fee', padding: '0.5rem', borderRadius: 4, marginBottom: '1rem' }}>{error}</div>}
@@ -221,6 +258,7 @@ export default function Skills() {
                 {headerCell('fig', 'FIG')}
                 {headerCell('difficulty', 'Difficulty')}
                 {headerCell('routines', 'In routines')}
+                {isClubAdmin && <th style={{ padding: '0.5rem', borderBottom: '2px solid #ddd', width: 40 }} />}
               </tr>
             </thead>
             <tbody>
@@ -257,15 +295,46 @@ export default function Skills() {
                       />
                     </td>
                     <td style={{ padding: '0.5rem' }}>{s.routineCount}</td>
+                    {isClubAdmin && (
+                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>
+                        <button
+                          type="button"
+                          onClick={() => setEditing(s)}
+                          className="btn btn-secondary btn-sm"
+                          title="Open full editor"
+                          style={{ padding: '0.25rem 0.4rem', display: 'inline-flex', alignItems: 'center' }}
+                        >
+                          <PencilSquareIcon style={{ width: 14, height: 14 }} />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
               {sorted.length === 0 && (
-                <tr><td colSpan={5} style={{ padding: '1rem', textAlign: 'center', color: '#888' }}>No skills match.</td></tr>
+                <tr><td colSpan={isClubAdmin ? 6 : 5} style={{ padding: '1rem', textAlign: 'center', color: '#888' }}>No skills match.</td></tr>
               )}
             </tbody>
           </table>
         </>
+      )}
+
+      {creating && (
+        <SkillFormModal
+          mode="add"
+          showOrder={false}
+          onSave={handleCreate}
+          onCancel={() => setCreating(false)}
+        />
+      )}
+      {editing && (
+        <SkillFormModal
+          mode="edit"
+          skill={editing}
+          showOrder={false}
+          onSave={handleSaveEdit}
+          onCancel={() => setEditing(null)}
+        />
       )}
     </div>
   );
