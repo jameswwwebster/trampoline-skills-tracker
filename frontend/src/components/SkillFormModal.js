@@ -37,8 +37,9 @@ export default function SkillFormModal({ mode, skill = null, onSave, onCancel, s
   const [diffOverridden, setDiffOverridden] = useState(isEdit && skill?.difficulty != null);
   const [figOverridden, setFigOverridden] = useState(isEdit && !!skill?.figNotation);
 
-  // Keep twistsArr length in sync with quarterSoms.
-  const expectedTwistEntries = Math.max(quarterSoms > 0 || twistsArr.some(t => t > 0) ? 1 : 0, Math.ceil(quarterSoms / 4));
+  // Keep twistsArr length in sync with quarterSoms — but always show at least
+  // one twist box so 0-som skills (½ Twist, Full Twist) can be entered.
+  const expectedTwistEntries = Math.max(1, Math.ceil(quarterSoms / 4));
   useEffect(() => {
     setTwistsArr(prev => {
       const next = prev.slice(0, expectedTwistEntries);
@@ -146,7 +147,7 @@ export default function SkillFormModal({ mode, skill = null, onSave, onCancel, s
 
             {expectedTwistEntries > 0 && (
               <div className="form-group" style={{ marginTop: '0.5rem' }}>
-                <label>½ twists per somersault</label>
+                <label>{quarterSoms === 0 ? '½ twists' : '½ twists per somersault'}</label>
                 <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                   {twistsArr.map((t, i) => (
                     <input

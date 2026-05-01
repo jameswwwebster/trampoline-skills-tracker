@@ -3,6 +3,13 @@ const changelog = [
   {
     date: '2026-05-01',
     entries: [
+      { type: 'fix', text: 'Difficulty calculator now applies the §17.1.6.1 backward bonus to twisting backward multi-soms too (e.g. Half In Half Out triple gets +0.1, Half Front Half triple gets +0.2). Previously it only applied to non-twisting backward elements.' },
+      { type: 'fix', text: 'Skill editor now lets you enter twists for skills with no somersaults (½ Twist, Full Twist).' },
+    ],
+  },
+  {
+    date: '2026-05-01',
+    entries: [
       { type: 'improvement', text: 'All Skills page: click any Name, FIG notation or Difficulty cell to edit it inline. Enter saves, Esc cancels.' },
       { type: 'improvement', text: 'Routines: each skill row in edit mode now has up/down buttons to reorder, plus a "Replace" button that opens the search modal to swap in a different skill (tracked or implicit) without losing the position.' },
       { type: 'improvement', text: 'Admin dashboard tile renamed from "Levels & Skills" to just "Levels".' },

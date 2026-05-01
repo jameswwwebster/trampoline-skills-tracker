@@ -83,8 +83,9 @@ function computeDifficulty({ quarterSoms = 0, halfTwistsPerSom = [], shape = nul
     }
   }
 
-  // Backward bonus (§17.1.6.1) — backward multi-soms in the listed ranges, no twist
-  if (direction === 'backward' && completeSoms >= 2 && totalHalfTwists === 0) {
+  // Backward bonus (§17.1.6.1) — backward multi-soms in the listed rotation ranges,
+  // with or without twist (§17.1.6.2/3/4 add further bonuses on top for heavy twisters).
+  if (direction === 'backward' && completeSoms >= 2) {
     let backBonus = 0;
     if (completeSoms === 2 && quarterSoms <= 11) backBonus = 0.1;
     else if (completeSoms === 3 && quarterSoms <= 15) backBonus = 0.2;

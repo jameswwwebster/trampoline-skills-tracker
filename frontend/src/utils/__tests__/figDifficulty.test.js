@@ -47,9 +47,17 @@ describe('computeFigDifficulty — seed-data difficulty values', () => {
     ['Double Back (P)', { quarterSoms: 8, halfTwistsPerSom: [0, 0], shape: 'pike',     landing: 'feet', direction: 'backward' }, 1.3, '8--<'],
     ['Double Back (S)', { quarterSoms: 8, halfTwistsPerSom: [0, 0], shape: 'straight', landing: 'feet', direction: 'backward' }, 1.3, '8--/'],
 
-    // Half-out (double back with ½ twist on second som)
-    ['Half Out (T)', { quarterSoms: 8, halfTwistsPerSom: [0, 1], shape: 'tuck', landing: 'feet', direction: 'backward' }, 1.1, '8-1o'],
-    ['Half Out (P)', { quarterSoms: 8, halfTwistsPerSom: [0, 1], shape: 'pike', landing: 'feet', direction: 'backward' }, 1.3, '8-1<'],
+    // Half-out: forward double with ½ twist on second som (front + half-twist out)
+    ['Half Out (T)', { quarterSoms: 8, halfTwistsPerSom: [0, 1], shape: 'tuck', landing: 'feet', direction: 'forward' }, 1.1, '8-1o'],
+    ['Half Out (P)', { quarterSoms: 8, halfTwistsPerSom: [0, 1], shape: 'pike', landing: 'feet', direction: 'forward' }, 1.3, '8-1<'],
+
+    // Backward double with twist (Half In Half Out): gets the §17.1.6.1 backward bonus
+    ['Half In Half Out (T)', { quarterSoms: 8, halfTwistsPerSom: [1, 1], shape: 'tuck',     landing: 'feet', direction: 'backward' }, 1.3, '811o'],
+    ['Half In Half Out (P)', { quarterSoms: 8, halfTwistsPerSom: [1, 1], shape: 'pike',     landing: 'feet', direction: 'backward' }, 1.5, '811<'],
+    // Backward triples
+    ['Triple Back (T)',    { quarterSoms: 12, halfTwistsPerSom: [0, 0, 0], shape: 'tuck',     landing: 'feet', direction: 'backward' }, 1.8, '12---o'],
+    ['Half Front Half (T)',{ quarterSoms: 12, halfTwistsPerSom: [1, 0, 1], shape: 'tuck',     landing: 'feet', direction: 'backward' }, 2.0, '121-1o'],
+    ['Half Front Rudy (T)',{ quarterSoms: 12, halfTwistsPerSom: [1, 0, 3], shape: 'tuck',     landing: 'feet', direction: 'backward' }, 2.6, '121-3o'],
 
     // ½ rotations to non-feet landings
     ['Back to Front', { quarterSoms: 2, halfTwistsPerSom: [0], landing: 'front', direction: 'backward' }, 0.2, '2-f'],
