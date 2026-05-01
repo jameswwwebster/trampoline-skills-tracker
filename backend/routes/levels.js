@@ -29,19 +29,32 @@ async function lookupImplicitSkillDDs(names) {
 function transformRoutineSkills(routineSkills, levelId, ddMap = {}) {
   return routineSkills.map(rs => {
     if (rs.customSkillName) {
+      // Per-routine overrides (rs.difficulty / rs.figNotation) take precedence;
+      // fall back to the name-matching ddMap so legacy implicit skills that pre-
+      // date the override columns still inherit from a like-named tracked skill.
       const dd = ddMap[rs.customSkillName] || {};
       return {
-        id: rs.id,
+        id: rs.id,                       // RoutineSkill row id — unique per row
+        skillId: null,
         name: rs.customSkillName,
         description: null,
         levelId,
         order: rs.order,
         isImplicit: true,
-        difficulty: dd.difficulty ?? null,
-        figNotation: dd.figNotation ?? null,
+        difficulty: rs.difficulty ?? dd.difficulty ?? null,
+        figNotation: rs.figNotation ?? dd.figNotation ?? null,
       };
     }
-    return rs.skill;
+    // Tracked skill — expose RoutineSkill row id as `id` so duplicates render
+    // and act on the specific row; underlying tracked skill id stays as
+    // `skillId` for difficulty deduping and library cross-references.
+    return {
+      ...rs.skill,
+      id: rs.id,
+      skillId: rs.skill.id,
+      order: rs.order,
+      isImplicit: false,
+    };
   });
 }
 
@@ -101,6 +114,9 @@ const routineUpdateSchema = Joi.object({
 const routineSkillSchema = Joi.object({
   skillId: Joi.string().allow(null).optional(),
   customSkillName: Joi.string().min(1).max(100).allow(null).optional(),
+  // Optional overrides for implicit skills. Ignored when skillId is set.
+  difficulty: Joi.number().min(0).max(99).allow(null).optional(),
+  figNotation: Joi.string().max(20).allow('', null).optional(),
   order: Joi.number().integer().min(1).optional()
 }).custom((value, helpers) => {
   // Custom validation to ensure either skillId or customSkillName is provided, but not both
@@ -755,7 +771,7 @@ router.post('/:levelId/routines/:routineId/skills', auth, requireRole(['CLUB_ADM
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { skillId, customSkillName, order } = value;
+    const { skillId, customSkillName, order, difficulty: ddOverride, figNotation: figOverride } = value;
 
     // Verify routine belongs to the level
     const existingRoutine = await prisma.routine.findUnique({
@@ -788,19 +804,8 @@ router.post('/:levelId/routines/:routineId/skills', auth, requireRole(['CLUB_ADM
         return res.status(404).json({ error: 'Skill not found' });
       }
 
-      // Check if skill is already in this routine
-      const existingRoutineSkill = await prisma.routineSkill.findUnique({
-        where: {
-          routineId_skillId: {
-            routineId,
-            skillId
-          }
-        }
-      });
-
-      if (existingRoutineSkill) {
-        return res.status(400).json({ error: 'Skill is already in this routine' });
-      }
+      // Duplicates allowed — same skill can appear multiple times in a routine
+      // (transitions, repeat moves). The frontend dedupes by skillId for total DD.
     }
 
     // If no order specified, add to the end
@@ -814,13 +819,16 @@ router.post('/:levelId/routines/:routineId/skills', auth, requireRole(['CLUB_ADM
     }
 
     if (customSkillName) {
-      // For custom skills, create a RoutineSkill record with customSkillName
+      // For custom skills, create a RoutineSkill record with customSkillName.
+      // Per-routine difficulty / fig overrides are stored on the row itself.
       const routineSkill = await prisma.routineSkill.create({
         data: {
           routineId,
-          skillId: null, // No skillId for custom skills
-          customSkillName: customSkillName,
-          order: skillOrder
+          skillId: null,
+          customSkillName,
+          difficulty: ddOverride ?? null,
+          figNotation: figOverride || null,
+          order: skillOrder,
         }
       });
 
@@ -833,10 +841,10 @@ router.post('/:levelId/routines/:routineId/skills', auth, requireRole(['CLUB_ADM
           description: null,
           order: skillOrder,
           isImplicit: true,
-          difficulty: dd.difficulty ?? null,
-          figNotation: dd.figNotation ?? null,
+          difficulty: routineSkill.difficulty ?? dd.difficulty ?? null,
+          figNotation: routineSkill.figNotation ?? dd.figNotation ?? null,
         },
-        routineSkill: routineSkill
+        routineSkill,
       });
       return;
     } else {
@@ -881,8 +889,11 @@ router.delete('/:levelId/routines/:routineId/skills/:skillId', auth, requireRole
     });
 
     if (!routineSkill) {
-      routineSkill = await prisma.routineSkill.findUnique({
-        where: { routineId_skillId: { routineId, skillId } }
+      // Multiple rows may share the same skillId now that duplicates are allowed —
+      // findFirst grabs the lowest-order match.
+      routineSkill = await prisma.routineSkill.findFirst({
+        where: { routineId, skillId },
+        orderBy: { order: 'asc' },
       });
     }
 
@@ -944,7 +955,7 @@ router.put('/:levelId/routines/:routineId/reorder', auth, requireRole(['CLUB_ADM
 router.put('/:levelId/routines/:routineId/skills/:routineSkillId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   try {
     const { levelId, routineId, routineSkillId } = req.params;
-    const { skillId, customSkillName } = req.body || {};
+    const { skillId, customSkillName, difficulty: ddOverride, figNotation: figOverride } = req.body || {};
 
     if ((!skillId && !customSkillName) || (skillId && customSkillName)) {
       return res.status(400).json({ error: 'Provide exactly one of skillId or customSkillName' });
@@ -957,8 +968,9 @@ router.put('/:levelId/routines/:routineId/skills/:routineSkillId', auth, require
 
     let routineSkill = await prisma.routineSkill.findFirst({ where: { id: routineSkillId, routineId } });
     if (!routineSkill) {
-      routineSkill = await prisma.routineSkill.findUnique({
-        where: { routineId_skillId: { routineId, skillId: routineSkillId } },
+      routineSkill = await prisma.routineSkill.findFirst({
+        where: { routineId, skillId: routineSkillId },
+        orderBy: { order: 'asc' },
       });
     }
     if (!routineSkill) return res.status(404).json({ error: 'Routine skill not found' });
@@ -967,24 +979,25 @@ router.put('/:levelId/routines/:routineId/skills/:routineSkillId', auth, require
       const skill = await prisma.skill.findUnique({ where: { id: skillId } });
       if (!skill) return res.status(404).json({ error: 'Replacement skill not found' });
 
-      // Don't allow replacing with a skill that already exists elsewhere in the same routine
-      const dup = await prisma.routineSkill.findFirst({
-        where: { routineId, skillId, NOT: { id: routineSkill.id } },
-      });
-      if (dup) return res.status(400).json({ error: 'Routine already contains that skill' });
-
+      // Duplicates allowed — replacing with a tracked skill clears any per-row
+      // override (difficulty and figNotation come from the linked Skill row).
       const updated = await prisma.routineSkill.update({
         where: { id: routineSkill.id },
-        data: { skillId, customSkillName: null },
+        data: { skillId, customSkillName: null, difficulty: null, figNotation: null },
         include: { skill: true },
       });
       return res.json(updated);
     }
 
-    // Implicit / custom name
+    // Implicit / custom name. Apply overrides if provided; otherwise clear.
     const updated = await prisma.routineSkill.update({
       where: { id: routineSkill.id },
-      data: { customSkillName: customSkillName.trim(), skillId: null },
+      data: {
+        customSkillName: customSkillName.trim(),
+        skillId: null,
+        difficulty: ddOverride ?? null,
+        figNotation: figOverride || null,
+      },
     });
     res.json(updated);
   } catch (error) {

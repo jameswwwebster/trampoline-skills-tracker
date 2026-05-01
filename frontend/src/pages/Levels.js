@@ -190,11 +190,15 @@ const Levels = () => {
     }
   };
 
-  const handleReplaceRoutineSkill = async (skillId, customSkillName) => {
+  const handleReplaceRoutineSkill = async (skillId, customSkillName, overrides = null) => {
     if (!showReplaceRoutineSkill) return;
     const { levelId, routineId, routineSkillId } = showReplaceRoutineSkill;
     try {
       const body = skillId ? { skillId } : { customSkillName };
+      if (!skillId && overrides) {
+        if (overrides.figNotation != null) body.figNotation = overrides.figNotation;
+        if (overrides.difficulty != null) body.difficulty = overrides.difficulty;
+      }
       await axios.put(`/api/levels/${levelId}/routines/${routineId}/skills/${routineSkillId}`, body);
       // Refresh — easiest way to get the new skill's joined fields without re-implementing the merge.
       const res = await axios.get('/api/levels');
@@ -326,12 +330,14 @@ const Levels = () => {
     }
   };
 
-  const handleAddSkillToRoutine = async (levelId, routineId, skillId, customSkillName = null) => {
+  const handleAddSkillToRoutine = async (levelId, routineId, skillId, customSkillName = null, overrides = null) => {
     try {
-      const response = await axios.post(`/api/levels/${levelId}/routines/${routineId}/skills`, {
-        skillId,
-        customSkillName
-      });
+      const body = { skillId, customSkillName };
+      if (overrides) {
+        if (overrides.figNotation != null) body.figNotation = overrides.figNotation;
+        if (overrides.difficulty != null) body.difficulty = overrides.difficulty;
+      }
+      const response = await axios.post(`/api/levels/${levelId}/routines/${routineId}/skills`, body);
       
       setLevels(levels.map(level => {
         if (level.id === levelId) {
@@ -582,7 +588,7 @@ const Levels = () => {
           routineId={showReplaceRoutineSkill.routineId}
           availableSkills={availableSkills}
           mode="replace"
-          onSave={(skillId, customSkillName) => handleReplaceRoutineSkill(skillId, customSkillName)}
+          onSave={(skillId, customSkillName, overrides) => handleReplaceRoutineSkill(skillId, customSkillName, overrides)}
           onCancel={() => setShowReplaceRoutineSkill(null)}
         />
       )}
@@ -612,7 +618,7 @@ const Levels = () => {
           levelId={showAddSkillToRoutineForm.levelId}
           routineId={showAddSkillToRoutineForm.routineId}
           availableSkills={availableSkills}
-          onSave={(skillId, customSkillName) => handleAddSkillToRoutine(showAddSkillToRoutineForm.levelId, showAddSkillToRoutineForm.routineId, skillId, customSkillName)}
+          onSave={(skillId, customSkillName, overrides) => handleAddSkillToRoutine(showAddSkillToRoutineForm.levelId, showAddSkillToRoutineForm.routineId, skillId, customSkillName, overrides)}
           onCancel={() => setShowAddSkillToRoutineForm(null)}
         />
       )}
@@ -896,8 +902,18 @@ const RoutineCard = ({
                   );
                 })}
                 {(() => {
+                  // Total DD dedupes by tracked-skill id so a skill repeated in
+                  // a routine doesn't double-count. Implicit skills (no shared id)
+                  // each contribute — they may be different physical skills that
+                  // happen to share a name.
+                  const seen = new Set();
                   const totalDD = routine.skills.reduce((sum, skill) => {
-                    return sum + (skill.difficulty != null ? Number(skill.difficulty) : 0);
+                    if (skill.difficulty == null) return sum;
+                    if (!skill.isImplicit && skill.skillId) {
+                      if (seen.has(skill.skillId)) return sum;
+                      seen.add(skill.skillId);
+                    }
+                    return sum + Number(skill.difficulty);
                   }, 0);
                   return totalDD > 0 ? (
                     <div className="routine-skill-item" style={{ borderTop: '1px solid #ddd', marginTop: '0.25rem', paddingTop: '0.25rem', fontWeight: 600 }}>
@@ -1265,6 +1281,8 @@ const AddRoutineModal = ({ levelId, onSave, onCancel }) => {
 // to attach it, or hit "Add as implicit" to use the typed text as a free-text skill.
 const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, onCancel, mode = 'add' }) => {
   const [query, setQuery] = useState('');
+  const [implicitFig, setImplicitFig] = useState('');
+  const [implicitDiff, setImplicitDiff] = useState('');
 
   const matches = useMemo(() => {
     if (!query.trim()) return availableSkills.slice(0, 30);
@@ -1276,7 +1294,11 @@ const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, o
   const handleAddImplicit = () => {
     const text = query.trim();
     if (!text) return;
-    onSave(null, text);
+    const overrides = {
+      figNotation: implicitFig.trim() || null,
+      difficulty: implicitDiff === '' ? null : Number(implicitDiff),
+    };
+    onSave(null, text, overrides);
   };
 
   return (
@@ -1329,6 +1351,30 @@ const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, o
                 </span>
               </button>
             ))}
+          </div>
+
+          {/* Optional FIG / difficulty for implicit skills — used only if you click
+              "Add as implicit" rather than picking a tracked skill above. */}
+          <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: '#f6f6f8', borderRadius: 4, fontSize: '0.85rem' }}>
+            <div style={{ color: '#666', marginBottom: '0.4rem' }}>If adding as implicit (optional FIG and difficulty):</div>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input
+                type="text"
+                value={implicitFig}
+                onChange={(e) => setImplicitFig(e.target.value)}
+                placeholder="FIG notation"
+                style={{ flex: 1, padding: '0.35rem 0.5rem', border: '1px solid #ccc', borderRadius: 3, fontFamily: 'monospace', fontSize: '0.9rem' }}
+              />
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={implicitDiff}
+                onChange={(e) => setImplicitDiff(e.target.value)}
+                placeholder="Difficulty"
+                style={{ width: 100, padding: '0.35rem 0.5rem', border: '1px solid #ccc', borderRadius: 3, fontSize: '0.9rem' }}
+              />
+            </div>
           </div>
 
           <div className="modal-actions" style={{ marginTop: '1rem' }}>

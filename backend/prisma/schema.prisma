@@ -322,12 +322,20 @@ model RoutineSkill {
   routineId       String
   skillId         String?
   customSkillName String?
+  // Optional per-routine overrides for implicit (custom-named) skills. When set,
+  // these take precedence over the name-based lookup. Tracked skills (skillId
+  // set) always read difficulty/figNotation from the linked Skill row.
+  difficulty      Decimal? @db.Decimal(4, 1)
+  figNotation     String?
   order           Int
   createdAt       DateTime @default(now())
   routine         Routine  @relation(fields: [routineId], references: [id])
   skill           Skill?   @relation(fields: [skillId], references: [id])
 
-  @@unique([routineId, skillId])
+  // Same skill may appear multiple times in a routine (e.g. transition skills,
+  // or two implicit "to feet" rows that originate from different body positions).
+  // Difficulty totalling dedupes by skillId on the frontend so duplicates don't
+  // double-count.
   @@map("routine_skills")
 }
 

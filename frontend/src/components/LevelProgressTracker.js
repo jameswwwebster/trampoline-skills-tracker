@@ -275,8 +275,19 @@ const LevelProgressTracker = ({ gymnastId, levelId, onLevelProgressUpdate }) => 
                             })
                           }
                           {(() => {
+                            // Dedupe by tracked skillId so duplicates don't double-count;
+                            // implicit (custom-named) rows each contribute.
+                            const seen = new Set();
                             const totalDD = routine.routineSkills.reduce((sum, rs) => {
-                              return sum + (rs.skill?.difficulty != null ? Number(rs.skill.difficulty) : 0);
+                              const dd = rs.skill?.difficulty != null
+                                ? Number(rs.skill.difficulty)
+                                : (rs.difficulty != null ? Number(rs.difficulty) : null);
+                              if (dd == null) return sum;
+                              if (rs.skillId) {
+                                if (seen.has(rs.skillId)) return sum;
+                                seen.add(rs.skillId);
+                              }
+                              return sum + dd;
                             }, 0);
                             return totalDD > 0 ? (
                               <li style={{ borderTop: '1px solid #ddd', marginTop: '0.25rem', paddingTop: '0.25rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
