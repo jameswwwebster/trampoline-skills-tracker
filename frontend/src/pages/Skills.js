@@ -1,12 +1,89 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
+// Click-to-edit cell. Renders display value until clicked; then becomes an input.
+// Enter or blur saves; Escape cancels. type='number' for numeric fields.
+function EditableCell({ value, type = 'text', step, onSave, disabled, monospace, formatDisplay }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? '');
+  const [saving, setSaving] = useState(false);
+  const [errored, setErrored] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => { if (!editing) setDraft(value ?? ''); }, [value, editing]);
+  useEffect(() => { if (editing && inputRef.current) inputRef.current.select(); }, [editing]);
+
+  const commit = async () => {
+    if (saving) return;
+    const normalized = type === 'number'
+      ? (draft === '' || draft == null ? null : Number(draft))
+      : (draft === '' ? null : String(draft));
+    const current = value ?? null;
+    if (normalized === current) { setEditing(false); return; }
+    setSaving(true);
+    setErrored(false);
+    try {
+      await onSave(normalized);
+      setEditing(false);
+    } catch (e) {
+      setErrored(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing && !disabled) {
+    return (
+      <input
+        ref={inputRef}
+        type={type}
+        step={step}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); commit(); }
+          else if (e.key === 'Escape') { setDraft(value ?? ''); setEditing(false); }
+        }}
+        disabled={saving}
+        style={{
+          width: '100%',
+          padding: '0.25rem 0.4rem',
+          border: `1px solid ${errored ? '#e74c3c' : '#7c35e8'}`,
+          borderRadius: 3,
+          fontSize: '0.9rem',
+          fontFamily: monospace ? 'monospace' : 'inherit',
+        }}
+      />
+    );
+  }
+
+  const display = formatDisplay ? formatDisplay(value) : (value == null || value === '' ? '—' : String(value));
+  return (
+    <span
+      onClick={() => !disabled && setEditing(true)}
+      style={{
+        cursor: disabled ? 'default' : 'pointer',
+        fontFamily: monospace ? 'monospace' : 'inherit',
+        opacity: saving ? 0.5 : 1,
+        color: errored ? '#e74c3c' : 'inherit',
+        borderBottom: disabled ? 'none' : '1px dashed #ccc',
+      }}
+      title={disabled ? '' : 'Click to edit'}
+    >
+      {display}
+    </span>
+  );
+}
+
 export default function Skills() {
   const navigate = useNavigate();
+  const { isClubAdmin } = useAuth();
   const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,6 +107,14 @@ export default function Skills() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const patchSkill = useCallback(async (skillId, patch) => {
+    const token = localStorage.getItem('token');
+    const res = await axios.put(`${API_BASE}/api/skills/${skillId}`, patch, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setSkills(prev => prev.map(s => s.id === skillId ? { ...s, ...res.data } : s));
+  }, []);
 
   const levelOptions = useMemo(() => {
     const seen = new Map();
@@ -148,10 +233,32 @@ export default function Skills() {
                   : <span style={{ color: '#888', fontStyle: 'italic' }}>Library</span>;
                 return (
                   <tr key={s.id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '0.5rem' }}>{s.name}</td>
+                    <td style={{ padding: '0.5rem' }}>
+                      <EditableCell
+                        value={s.name}
+                        disabled={!isClubAdmin}
+                        onSave={(v) => patchSkill(s.id, { name: v })}
+                      />
+                    </td>
                     <td style={{ padding: '0.5rem' }}>{levelLabel}</td>
-                    <td style={{ padding: '0.5rem', fontFamily: 'monospace' }}>{s.figNotation || '—'}</td>
-                    <td style={{ padding: '0.5rem' }}>{s.difficulty != null ? Number(s.difficulty).toFixed(1) : '—'}</td>
+                    <td style={{ padding: '0.5rem' }}>
+                      <EditableCell
+                        value={s.figNotation}
+                        disabled={!isClubAdmin}
+                        monospace
+                        onSave={(v) => patchSkill(s.id, { figNotation: v })}
+                      />
+                    </td>
+                    <td style={{ padding: '0.5rem' }}>
+                      <EditableCell
+                        value={s.difficulty != null ? Number(s.difficulty) : null}
+                        type="number"
+                        step="0.1"
+                        disabled={!isClubAdmin}
+                        formatDisplay={(v) => v == null ? '—' : Number(v).toFixed(1)}
+                        onSave={(v) => patchSkill(s.id, { difficulty: v })}
+                      />
+                    </td>
                     <td style={{ padding: '0.5rem' }}>{s.routineCount}</td>
                   </tr>
                 );

@@ -1,9 +1,22 @@
 const express = require('express');
+const Joi = require('joi');
 const { auth } = require('../middleware/auth');
 const { requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 const prisma = require('../prisma');
+
+const skillPatchSchema = Joi.object({
+  name: Joi.string().min(1).max(100).optional(),
+  description: Joi.string().max(500).allow('', null).optional(),
+  difficulty: Joi.number().min(0).max(99).allow(null).optional(),
+  figNotation: Joi.string().max(20).allow('', null).optional(),
+  quarterSoms: Joi.number().integer().min(0).max(16).allow(null).optional(),
+  halfTwistsPerSom: Joi.string().max(20).allow('', null).optional(),
+  shape: Joi.string().valid('tuck', 'pike', 'straight', 'straddle').allow('', null).optional(),
+  landing: Joi.string().valid('feet', 'seat', 'front', 'back', 'hands').allow('', null).optional(),
+  direction: Joi.string().valid('forward', 'backward').allow('', null).optional(),
+}).min(1);
 
 // Get all skills (with their levels and a routine count). Used by the
 // "All Skills" admin page and the cross-level lookup modal.
@@ -58,6 +71,23 @@ router.get('/', auth, async (req, res) => {
     }));
   } catch (error) {
     console.error('Get skills error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update any subset of skill fields (club admins only). Used by the inline-edit
+// affordance on the All Skills page; works regardless of level attachments.
+router.put('/:skillId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { skillId } = req.params;
+    const { error, value } = skillPatchSchema.validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    const updated = await prisma.skill.update({ where: { id: skillId }, data: value });
+    res.json(updated);
+  } catch (err) {
+    if (err.code === 'P2025') return res.status(404).json({ error: 'Skill not found' });
+    console.error('Update skill error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

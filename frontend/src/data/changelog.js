@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-05-01',
+    entries: [
+      { type: 'improvement', text: 'All Skills page: click any Name, FIG notation or Difficulty cell to edit it inline. Enter saves, Esc cancels.' },
+    ],
+  },
+  {
     date: '2026-04-30',
     entries: [
       { type: 'feature', text: 'Skill editor now suggests difficulty and FIG notation automatically using FIG Code of Points 2025-2028 §17.1, with a breakdown of how the score was calculated' },
