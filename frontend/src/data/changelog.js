@@ -4,6 +4,8 @@ const changelog = [
     date: '2026-05-01',
     entries: [
       { type: 'improvement', text: 'All Skills page: click any Name, FIG notation or Difficulty cell to edit it inline. Enter saves, Esc cancels.' },
+      { type: 'improvement', text: 'Routines: each skill row in edit mode now has up/down buttons to reorder, plus a "Replace" button that opens the search modal to swap in a different skill (tracked or implicit) without losing the position.' },
+      { type: 'improvement', text: 'Admin dashboard tile renamed from "Levels & Skills" to just "Levels".' },
     ],
   },
   {

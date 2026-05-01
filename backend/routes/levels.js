@@ -900,6 +900,90 @@ router.delete('/:levelId/routines/:routineId/skills/:skillId', auth, requireRole
   }
 });
 
+// Reorder skills within a routine. Body: { routineSkillIds: [id, id, ...] }.
+// Order in the array becomes the new order column (1-based).
+router.put('/:levelId/routines/:routineId/reorder', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { levelId, routineId } = req.params;
+    const { routineSkillIds } = req.body || {};
+
+    if (!Array.isArray(routineSkillIds) || routineSkillIds.length === 0) {
+      return res.status(400).json({ error: 'routineSkillIds array required' });
+    }
+
+    const routine = await prisma.routine.findUnique({ where: { id: routineId } });
+    if (!routine || routine.levelId !== levelId) {
+      return res.status(404).json({ error: 'Routine not found in this level' });
+    }
+
+    const existing = await prisma.routineSkill.findMany({ where: { routineId }, select: { id: true } });
+    const existingIds = new Set(existing.map(rs => rs.id));
+    if (routineSkillIds.length !== existingIds.size || routineSkillIds.some(id => !existingIds.has(id))) {
+      return res.status(400).json({ error: 'routineSkillIds must contain every routine skill id exactly once' });
+    }
+
+    await prisma.$transaction(
+      routineSkillIds.map((id, idx) =>
+        prisma.routineSkill.update({ where: { id }, data: { order: idx + 1 } })
+      )
+    );
+
+    res.json({ message: 'Order updated' });
+  } catch (error) {
+    console.error('Reorder routine skills error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Replace a routine skill with a different (tracked or implicit) skill, keeping its order.
+// Body: { skillId } (tracked) OR { customSkillName } (implicit).
+router.put('/:levelId/routines/:routineId/skills/:routineSkillId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { levelId, routineId, routineSkillId } = req.params;
+    const { skillId, customSkillName } = req.body || {};
+
+    if ((!skillId && !customSkillName) || (skillId && customSkillName)) {
+      return res.status(400).json({ error: 'Provide exactly one of skillId or customSkillName' });
+    }
+
+    const routine = await prisma.routine.findUnique({ where: { id: routineId } });
+    if (!routine || routine.levelId !== levelId) {
+      return res.status(404).json({ error: 'Routine not found in this level' });
+    }
+
+    const routineSkill = await prisma.routineSkill.findFirst({ where: { id: routineSkillId, routineId } });
+    if (!routineSkill) return res.status(404).json({ error: 'Routine skill not found' });
+
+    if (skillId) {
+      const skill = await prisma.skill.findUnique({ where: { id: skillId } });
+      if (!skill) return res.status(404).json({ error: 'Replacement skill not found' });
+
+      // Don't allow replacing with a skill that already exists elsewhere in the same routine
+      const dup = await prisma.routineSkill.findFirst({
+        where: { routineId, skillId, NOT: { id: routineSkillId } },
+      });
+      if (dup) return res.status(400).json({ error: 'Routine already contains that skill' });
+
+      const updated = await prisma.routineSkill.update({
+        where: { id: routineSkillId },
+        data: { skillId, customSkillName: null },
+        include: { skill: true },
+      });
+      return res.json(updated);
+    }
+
+    // Implicit / custom name
+    const updated = await prisma.routineSkill.update({
+      where: { id: routineSkillId },
+      data: { customSkillName: customSkillName.trim(), skillId: null },
+    });
+    res.json(updated);
+  } catch (error) {
+    console.error('Replace routine skill error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get available skills for adding to routines (coaches and club admins only).
 // Returns all skills with their levels via the join. The frontend treats the
 // first attached level as `level` for backward compatibility.

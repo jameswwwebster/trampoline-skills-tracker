@@ -28,6 +28,7 @@ const Levels = () => {
   const [editingRoutine, setEditingRoutine] = useState(null);
   const [showAddSkillForm, setShowAddSkillForm] = useState(null);
   const [showAttachExistingSkill, setShowAttachExistingSkill] = useState(null);
+  const [showReplaceRoutineSkill, setShowReplaceRoutineSkill] = useState(null); // { levelId, routineId, routineSkillId }
   const [showAddRoutineForm, setShowAddRoutineForm] = useState(null);
   const [showAddSkillToRoutineForm, setShowAddSkillToRoutineForm] = useState(null);
   const [showAddLevelForm, setShowAddLevelForm] = useState(false);
@@ -176,6 +177,44 @@ const Levels = () => {
     } catch (error) {
       console.error('Failed to create skill:', error);
       setError(error.response?.data?.error || 'Failed to create skill');
+    }
+  };
+
+  const reorderRoutineSkill = async (levelId, routineId, routineSkillId, delta) => {
+    const level = levels.find(l => l.id === levelId);
+    const routine = level?.routines.find(r => r.id === routineId);
+    if (!routine) return;
+    const idx = routine.skills.findIndex(s => s.id === routineSkillId);
+    if (idx < 0) return;
+    const target = idx + delta;
+    if (target < 0 || target >= routine.skills.length) return;
+    const reordered = routine.skills.slice();
+    [reordered[idx], reordered[target]] = [reordered[target], reordered[idx]];
+    const ids = reordered.map(s => s.id);
+
+    try {
+      await axios.put(`/api/levels/${levelId}/routines/${routineId}/reorder`, { routineSkillIds: ids });
+      setLevels(levels.map(l => l.id === levelId ? {
+        ...l,
+        routines: l.routines.map(r => r.id === routineId ? { ...r, skills: reordered } : r),
+      } : l));
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to reorder skills');
+    }
+  };
+
+  const handleReplaceRoutineSkill = async (skillId, customSkillName) => {
+    if (!showReplaceRoutineSkill) return;
+    const { levelId, routineId, routineSkillId } = showReplaceRoutineSkill;
+    try {
+      const body = skillId ? { skillId } : { customSkillName };
+      await axios.put(`/api/levels/${levelId}/routines/${routineId}/skills/${routineSkillId}`, body);
+      // Refresh — easiest way to get the new skill's joined fields without re-implementing the merge.
+      const res = await axios.get('/api/levels');
+      setLevels(res.data);
+      setShowReplaceRoutineSkill(null);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to replace skill');
     }
   };
 
@@ -459,6 +498,8 @@ const Levels = () => {
                     onDeleteRoutine={handleDeleteRoutine}
                     onAddSkillToRoutine={(routineId) => setShowAddSkillToRoutineForm({ levelId: level.id, routineId })}
                     onRemoveSkillFromRoutine={handleRemoveSkillFromRoutine}
+                    onReorderSkill={(routineId, routineSkillId, delta) => reorderRoutineSkill(level.id, routineId, routineSkillId, delta)}
+                    onReplaceSkill={(routineId, routineSkillId) => setShowReplaceRoutineSkill({ levelId: level.id, routineId, routineSkillId })}
                     expandedRoutines={expandedRoutines}
                     onToggleRoutineExpansion={toggleRoutineExpansion}
                     availableSkills={availableSkills}
@@ -547,6 +588,18 @@ const Levels = () => {
         />
       )}
 
+      {/* Replace a skill within a routine */}
+      {showReplaceRoutineSkill && editMode && (
+        <AddSkillToRoutineModal
+          levelId={showReplaceRoutineSkill.levelId}
+          routineId={showReplaceRoutineSkill.routineId}
+          availableSkills={availableSkills}
+          mode="replace"
+          onSave={(skillId, customSkillName) => handleReplaceRoutineSkill(skillId, customSkillName)}
+          onCancel={() => setShowReplaceRoutineSkill(null)}
+        />
+      )}
+
       {/* Attach existing library skill */}
       {showAttachExistingSkill && editMode && (
         <AttachExistingSkillModal
@@ -608,6 +661,8 @@ const LevelCard = ({
   onDeleteRoutine,
   onAddSkillToRoutine,
   onRemoveSkillFromRoutine,
+  onReorderSkill,
+  onReplaceSkill,
   expandedRoutines,
   onToggleRoutineExpansion,
   availableSkills
@@ -718,6 +773,8 @@ const LevelCard = ({
                     onDeleteRoutine={() => onDeleteRoutine(level.id, routine.id)}
                     onAddSkillToRoutine={() => onAddSkillToRoutine(routine.id)}
                     onRemoveSkillFromRoutine={onRemoveSkillFromRoutine}
+                    onReorderSkill={(routineSkillId, delta) => onReorderSkill(routine.id, routineSkillId, delta)}
+                    onReplaceSkill={(routineSkillId) => onReplaceSkill(routine.id, routineSkillId)}
                   />
                 ))}
               </div>
@@ -741,7 +798,9 @@ const RoutineCard = ({
   onEditRoutine, 
   onDeleteRoutine,
   onAddSkillToRoutine,
-  onRemoveSkillFromRoutine
+  onRemoveSkillFromRoutine,
+  onReorderSkill,
+  onReplaceSkill,
 }) => {
   return (
     <div className="routine-card">
@@ -788,8 +847,10 @@ const RoutineCard = ({
 
             {routine.skills.length > 0 ? (
               <div className="routine-skills-list">
-                {routine.skills.map(skill => {
+                {routine.skills.map((skill, idx) => {
                   const dd = skill.difficulty != null ? Number(skill.difficulty) : null;
+                  const isFirst = idx === 0;
+                  const isLast = idx === routine.skills.length - 1;
                   return (
                     <div key={skill.id} className="routine-skill-item">
                       <span className="skill-name" style={{
@@ -812,9 +873,37 @@ const RoutineCard = ({
                         )}
                       </span>
                       {canEdit && (
-                        <button onClick={() => onRemoveSkillFromRoutine(levelId, routine.id, skill.id)} className="edit-mode-btn edit-mode-btn--delete" title="Remove from routine">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', marginLeft: '0.4rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => onReorderSkill(skill.id, -1)}
+                            disabled={isFirst}
+                            className="edit-mode-btn"
+                            title="Move up"
+                            style={{ opacity: isFirst ? 0.35 : 1 }}
+                          >▲</button>
+                          <button
+                            type="button"
+                            onClick={() => onReorderSkill(skill.id, +1)}
+                            disabled={isLast}
+                            className="edit-mode-btn"
+                            title="Move down"
+                            style={{ opacity: isLast ? 0.35 : 1 }}
+                          >▼</button>
+                          <button
+                            type="button"
+                            onClick={() => onReplaceSkill(skill.id)}
+                            className="edit-mode-btn"
+                            title="Replace with another skill"
+                          >↻</button>
+                          <button
+                            onClick={() => onRemoveSkillFromRoutine(levelId, routine.id, skill.id)}
+                            className="edit-mode-btn edit-mode-btn--delete"
+                            title="Remove from routine"
+                          >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                          </button>
+                        </div>
                       )}
                     </div>
                   );
@@ -1424,7 +1513,7 @@ const AddRoutineModal = ({ levelId, onSave, onCancel }) => {
 // Add Skill to Routine Modal Component
 // Search-driven add-skill flow. Type a name or FIG notation; click a tracked skill
 // to attach it, or hit "Add as implicit" to use the typed text as a free-text skill.
-const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, onCancel }) => {
+const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, onCancel, mode = 'add' }) => {
   const [query, setQuery] = useState('');
 
   const matches = useMemo(() => {
@@ -1447,7 +1536,7 @@ const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, o
     <div className="modal-overlay">
       <div className="modal" style={{ maxWidth: 520 }}>
         <div className="modal-header">
-          <h3>Add Skill to Routine</h3>
+          <h3>{mode === 'replace' ? 'Replace Skill' : 'Add Skill to Routine'}</h3>
           <button onClick={onCancel} className="close-button">×</button>
         </div>
         <div style={{ padding: '0.5rem 0' }}>
