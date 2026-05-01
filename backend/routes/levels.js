@@ -458,6 +458,7 @@ router.post('/:levelId/skills', auth, requireRole(['CLUB_ADMIN']), async (req, r
       const { skillId, order: orderInput } = req.body;
       const skill = await prisma.skill.findUnique({ where: { id: skillId } });
       if (!skill) return res.status(404).json({ error: 'Skill not found' });
+      if (skill.archivedAt) return res.status(400).json({ error: 'Skill is archived. Restore it before attaching to a level.' });
 
       const already = await prisma.levelSkill.findUnique({
         where: { levelId_skillId: { levelId, skillId } },
@@ -998,6 +999,7 @@ router.put('/:levelId/routines/:routineId/skills/:routineSkillId', auth, require
 router.get('/:levelId/available-skills', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
     const skills = await prisma.skill.findMany({
+      where: { archivedAt: null },
       include: {
         levelSkills: {
           include: {

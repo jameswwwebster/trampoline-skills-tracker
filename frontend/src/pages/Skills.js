@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeftIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PencilSquareIcon, PlusIcon, ArchiveBoxIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import { matchesSkillQuery } from '../utils/skillSearch';
 import SkillFormModal from '../components/SkillFormModal';
 
@@ -94,13 +94,15 @@ export default function Skills() {
   const [sort, setSort] = useState({ key: 'level', dir: 'asc' });
   const [editing, setEditing] = useState(null); // skill object or null
   const [creating, setCreating] = useState(false);
-  const [deleting, setDeleting] = useState(null); // skill object pending confirm, or null
+  const [archiving, setArchiving] = useState(null); // skill object pending confirm, or null
+  const [showArchived, setShowArchived] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get(`${API_BASE}/api/skills`, {
+        params: showArchived ? { includeArchived: true } : {},
         headers: { Authorization: `Bearer ${token}` },
       });
       setSkills(res.data);
@@ -109,7 +111,7 @@ export default function Skills() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showArchived]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -131,17 +133,32 @@ export default function Skills() {
     }
   };
 
-  const handleDelete = async (skill) => {
+  const handleArchive = async (skill) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${API_BASE}/api/skills/${skill.id}`, {
+      const res = await axios.post(`${API_BASE}/api/skills/${skill.id}/archive`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setSkills(prev => prev.filter(s => s.id !== skill.id));
-      setDeleting(null);
+      // If we're not showing archived, drop from view; otherwise update in place.
+      setSkills(prev => showArchived
+        ? prev.map(s => s.id === skill.id ? { ...s, archivedAt: res.data.archivedAt } : s)
+        : prev.filter(s => s.id !== skill.id));
+      setArchiving(null);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to delete skill');
-      setDeleting(null);
+      setError(err.response?.data?.error || 'Failed to archive skill');
+      setArchiving(null);
+    }
+  };
+
+  const handleRestore = async (skill) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API_BASE}/api/skills/${skill.id}/restore`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSkills(prev => prev.map(s => s.id === skill.id ? { ...s, archivedAt: res.data.archivedAt } : s));
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to restore skill');
     }
   };
 
@@ -256,6 +273,12 @@ export default function Skills() {
             <option key={l.id} value={l.id}>L{l.identifier} — {l.name}</option>
           ))}
         </select>
+        {isClubAdmin && (
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.5rem', fontSize: '0.9rem', color: '#666' }}>
+            <input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />
+            Show archived
+          </label>
+        )}
       </div>
 
       {loading && <p>Loading…</p>}
@@ -281,8 +304,9 @@ export default function Skills() {
                 const levelLabel = (s.levels && s.levels.length > 0)
                   ? s.levels.map(l => `L${l.identifier}`).join(', ')
                   : <span style={{ color: '#888', fontStyle: 'italic' }}>Library</span>;
+                const isArchived = !!s.archivedAt;
                 return (
-                  <tr key={s.id} style={{ borderBottom: '1px solid #eee' }}>
+                  <tr key={s.id} style={{ borderBottom: '1px solid #eee', opacity: isArchived ? 0.55 : 1 }}>
                     <td style={{ padding: '0.5rem' }}>
                       <EditableCell
                         value={s.name}
@@ -321,15 +345,27 @@ export default function Skills() {
                         >
                           <PencilSquareIcon style={{ width: 14, height: 14 }} />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleting(s)}
-                          className="btn btn-secondary btn-sm"
-                          title="Delete skill"
-                          style={{ padding: '0.25rem 0.4rem', display: 'inline-flex', alignItems: 'center', color: '#c0392b', borderColor: 'rgba(192,57,43,0.4)' }}
-                        >
-                          <TrashIcon style={{ width: 14, height: 14 }} />
-                        </button>
+                        {isArchived ? (
+                          <button
+                            type="button"
+                            onClick={() => handleRestore(s)}
+                            className="btn btn-secondary btn-sm"
+                            title="Restore — undoes archive"
+                            style={{ padding: '0.25rem 0.4rem', display: 'inline-flex', alignItems: 'center' }}
+                          >
+                            <ArrowUturnLeftIcon style={{ width: 14, height: 14 }} />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setArchiving(s)}
+                            className="btn btn-secondary btn-sm"
+                            title="Archive — hides the skill from lookups; data and progress records are preserved"
+                            style={{ padding: '0.25rem 0.4rem', display: 'inline-flex', alignItems: 'center' }}
+                          >
+                            <ArchiveBoxIcon style={{ width: 14, height: 14 }} />
+                          </button>
+                        )}
                       </td>
                     )}
                   </tr>
@@ -360,36 +396,32 @@ export default function Skills() {
           onCancel={() => setEditing(null)}
         />
       )}
-      {deleting && (
+      {archiving && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 460 }}>
             <div className="modal-header">
-              <h3>Delete skill</h3>
-              <button onClick={() => setDeleting(null)} className="close-button">×</button>
+              <h3>Archive skill</h3>
+              <button onClick={() => setArchiving(null)} className="close-button">×</button>
             </div>
             <div style={{ padding: '0.75rem 0' }}>
-              <p style={{ margin: 0 }}>Permanently delete <strong>{deleting.name}</strong>?</p>
-              {deleting.routineCount > 0 && (
-                <p style={{ marginTop: '0.5rem', color: '#c0392b', fontSize: '0.9rem' }}>
-                  This skill is used in {deleting.routineCount} routine{deleting.routineCount === 1 ? '' : 's'}. The server will block the delete until you remove it from those routines first.
+              <p style={{ margin: 0 }}>Archive <strong>{archiving.name}</strong>?</p>
+              <p style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.9rem' }}>
+                The skill disappears from the routine search and library lookup. Existing routine references and gymnast progress records are preserved. You can restore it any time via the "Show archived" filter.
+              </p>
+              {archiving.routineCount > 0 && (
+                <p style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.9rem' }}>
+                  Currently used in {archiving.routineCount} routine{archiving.routineCount === 1 ? '' : 's'} — those routines keep working.
                 </p>
               )}
-              {(deleting.levels || []).length > 0 && (
+              {(archiving.levels || []).length > 0 && (
                 <p style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.9rem' }}>
-                  Currently attached to: {deleting.levels.map(l => `L${l.identifier}`).join(', ')}.
+                  Attached to: {archiving.levels.map(l => `L${l.identifier}`).join(', ')}.
                 </p>
               )}
             </div>
             <div className="modal-actions">
-              <button type="button" className="btn btn-secondary" onClick={() => setDeleting(null)}>Cancel</button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                style={{ background: '#c0392b', borderColor: '#c0392b' }}
-                onClick={() => handleDelete(deleting)}
-              >
-                Delete
-              </button>
+              <button type="button" className="btn btn-secondary" onClick={() => setArchiving(null)}>Cancel</button>
+              <button type="button" className="btn btn-primary" onClick={() => handleArchive(archiving)}>Archive</button>
             </div>
           </div>
         </div>

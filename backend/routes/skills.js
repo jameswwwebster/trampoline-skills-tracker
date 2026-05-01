@@ -32,9 +32,13 @@ const skillPatchSchema = Joi.object({
 
 // Get all skills (with their levels and a routine count). Used by the
 // "All Skills" admin page and the cross-level lookup modal.
+// By default archived skills are excluded; pass ?includeArchived=true to see
+// them (used by the All Skills "Archived" filter).
 router.get('/', auth, async (req, res) => {
   try {
+    const includeArchived = req.query.includeArchived === 'true';
     const skills = await prisma.skill.findMany({
+      where: includeArchived ? {} : { archivedAt: null },
       include: {
         levelSkills: {
           include: { level: { select: { id: true, number: true, identifier: true, name: true, clubId: true } } },
@@ -78,6 +82,7 @@ router.get('/', auth, async (req, res) => {
         shape: s.shape,
         landing: s.landing,
         direction: s.direction,
+        archivedAt: s.archivedAt,
         routineCount: s._count.routineSkills,
       };
     }));
@@ -115,6 +120,42 @@ router.put('/:skillId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Skill not found' });
     console.error('Update skill error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Archive a skill (soft delete). The skill stays in the DB along with its
+// progress records, level attachments and routine references — it just
+// disappears from the default lookup views. Restore by clearing archivedAt.
+router.post('/:skillId/archive', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { skillId } = req.params;
+    const skill = await prisma.skill.findUnique({ where: { id: skillId } });
+    if (!skill) return res.status(404).json({ error: 'Skill not found' });
+    const updated = await prisma.skill.update({
+      where: { id: skillId },
+      data: { archivedAt: new Date() },
+    });
+    res.json(updated);
+  } catch (err) {
+    console.error('Archive skill error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Restore an archived skill.
+router.post('/:skillId/restore', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
+  try {
+    const { skillId } = req.params;
+    const skill = await prisma.skill.findUnique({ where: { id: skillId } });
+    if (!skill) return res.status(404).json({ error: 'Skill not found' });
+    const updated = await prisma.skill.update({
+      where: { id: skillId },
+      data: { archivedAt: null },
+    });
+    res.json(updated);
+  } catch (err) {
+    console.error('Restore skill error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
