@@ -937,6 +937,9 @@ router.put('/:levelId/routines/:routineId/reorder', auth, requireRole(['CLUB_ADM
 
 // Replace a routine skill with a different (tracked or implicit) skill, keeping its order.
 // Body: { skillId } (tracked) OR { customSkillName } (implicit).
+// The :routineSkillId param accepts either a RoutineSkill.id (used for implicit
+// skills in the frontend) or the underlying Skill.id (used for tracked skills) —
+// matches the existing DELETE behaviour to keep the frontend simple.
 router.put('/:levelId/routines/:routineId/skills/:routineSkillId', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
   try {
     const { levelId, routineId, routineSkillId } = req.params;
@@ -951,7 +954,12 @@ router.put('/:levelId/routines/:routineId/skills/:routineSkillId', auth, require
       return res.status(404).json({ error: 'Routine not found in this level' });
     }
 
-    const routineSkill = await prisma.routineSkill.findFirst({ where: { id: routineSkillId, routineId } });
+    let routineSkill = await prisma.routineSkill.findFirst({ where: { id: routineSkillId, routineId } });
+    if (!routineSkill) {
+      routineSkill = await prisma.routineSkill.findUnique({
+        where: { routineId_skillId: { routineId, skillId: routineSkillId } },
+      });
+    }
     if (!routineSkill) return res.status(404).json({ error: 'Routine skill not found' });
 
     if (skillId) {
@@ -960,12 +968,12 @@ router.put('/:levelId/routines/:routineId/skills/:routineSkillId', auth, require
 
       // Don't allow replacing with a skill that already exists elsewhere in the same routine
       const dup = await prisma.routineSkill.findFirst({
-        where: { routineId, skillId, NOT: { id: routineSkillId } },
+        where: { routineId, skillId, NOT: { id: routineSkill.id } },
       });
       if (dup) return res.status(400).json({ error: 'Routine already contains that skill' });
 
       const updated = await prisma.routineSkill.update({
-        where: { id: routineSkillId },
+        where: { id: routineSkill.id },
         data: { skillId, customSkillName: null },
         include: { skill: true },
       });
@@ -974,7 +982,7 @@ router.put('/:levelId/routines/:routineId/skills/:routineSkillId', auth, require
 
     // Implicit / custom name
     const updated = await prisma.routineSkill.update({
-      where: { id: routineSkillId },
+      where: { id: routineSkill.id },
       data: { customSkillName: customSkillName.trim(), skillId: null },
     });
     res.json(updated);

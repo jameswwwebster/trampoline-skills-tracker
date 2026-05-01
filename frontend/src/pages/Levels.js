@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { computeFigDifficulty } from '../utils/figDifficulty';
+import { matchesSkillQuery } from '../utils/skillSearch';
 
 // Encode/decode the halfTwistsPerSom array to the FIG digit string convention.
 //   [0, 1]  ⇄ '-1'
@@ -1116,19 +1117,7 @@ const SkillFormModal = ({ mode, skill = null, onSave, onCancel }) => {
                 required
                 style={{ flex: 1 }}
               />
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ whiteSpace: 'nowrap' }}
-                onClick={() => setName(calc.suggestedName)}
-                title="Use the calculator's suggested name"
-              >
-                Use suggested
-              </button>
             </div>
-            {calc.suggestedName && calc.suggestedName !== name && (
-              <small className="text-muted">Suggested: {calc.suggestedName}</small>
-            )}
           </div>
 
           <div className="form-group">
@@ -1148,7 +1137,7 @@ const SkillFormModal = ({ mode, skill = null, onSave, onCancel }) => {
                 <label>¼ somersaults</label>
                 <input
                   type="number"
-                  value={quarterSoms}
+                  value={quarterSoms === 0 ? '' : quarterSoms}
                   min="0" max="16"
                   onChange={(e) => { setQuarterSoms(parseInt(e.target.value) || 0); setDiffOverridden(false); setFigOverridden(false); }}
                 />
@@ -1192,7 +1181,7 @@ const SkillFormModal = ({ mode, skill = null, onSave, onCancel }) => {
                       type="number"
                       min="0"
                       max="9"
-                      value={t}
+                      value={t === 0 ? '' : t}
                       onChange={(e) => {
                         const v = Math.max(0, Math.min(9, parseInt(e.target.value) || 0));
                         setTwistsArr(arr => arr.map((x, j) => j === i ? v : x));
@@ -1356,15 +1345,9 @@ const AttachExistingSkillModal = ({ levelId, existingSkillIds, onSave, onCancel 
 
   const matches = useMemo(() => {
     const existing = new Set(existingSkillIds || []);
-    const q = query.trim().toLowerCase();
     return allSkills
       .filter(s => !existing.has(s.id))
-      .filter(s => {
-        if (!q) return true;
-        const n = (s.name || '').toLowerCase();
-        const f = (s.figNotation || '').toLowerCase();
-        return n.includes(q) || f.includes(q);
-      })
+      .filter(s => matchesSkillQuery(query, s.name, s.figNotation))
       .slice(0, 50);
   }, [allSkills, query, existingSkillIds]);
 
@@ -1517,13 +1500,10 @@ const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, o
   const [query, setQuery] = useState('');
 
   const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return availableSkills.slice(0, 30);
-    return availableSkills.filter(s => {
-      const name = (s.name || '').toLowerCase();
-      const fig = (s.figNotation || '').toLowerCase();
-      return name.includes(q) || fig.includes(q);
-    }).slice(0, 30);
+    if (!query.trim()) return availableSkills.slice(0, 30);
+    return availableSkills
+      .filter(s => matchesSkillQuery(query, s.name, s.figNotation))
+      .slice(0, 30);
   }, [query, availableSkills]);
 
   const handleAddImplicit = () => {

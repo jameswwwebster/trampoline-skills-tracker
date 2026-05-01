@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { matchesSkillQuery } from '../utils/skillSearch';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -127,17 +128,13 @@ export default function Skills() {
   }, [skills]);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
     return skills.filter(s => {
       if (levelFilter === '__library__') {
         if ((s.levels || []).length > 0) return false;
       } else if (levelFilter) {
         if (!(s.levels || []).some(l => l.id === levelFilter)) return false;
       }
-      if (!q) return true;
-      const name = (s.name || '').toLowerCase();
-      const fig = (s.figNotation || '').toLowerCase();
-      return name.includes(q) || fig.includes(q);
+      return matchesSkillQuery(search, s.name, s.figNotation);
     });
   }, [skills, search, levelFilter]);
 

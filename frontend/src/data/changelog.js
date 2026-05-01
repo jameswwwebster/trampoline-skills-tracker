@@ -6,6 +6,9 @@ const changelog = [
       { type: 'improvement', text: 'All Skills page: click any Name, FIG notation or Difficulty cell to edit it inline. Enter saves, Esc cancels.' },
       { type: 'improvement', text: 'Routines: each skill row in edit mode now has up/down buttons to reorder, plus a "Replace" button that opens the search modal to swap in a different skill (tracked or implicit) without losing the position.' },
       { type: 'improvement', text: 'Admin dashboard tile renamed from "Levels & Skills" to just "Levels".' },
+      { type: 'improvement', text: 'Skill search now treats "1/2"/"half"/"½", "1/4"/"quarter"/"¼" and "3/4"/"¾" as the same — matches across the All Skills page, the routine search and the library lookup.' },
+      { type: 'fix', text: 'Replacing a skill in a routine no longer fails with "Routine skill not found".' },
+      { type: 'improvement', text: 'Skill editor: somersault and twist fields no longer show a leading 0; suggested-name affordance removed.' },
     ],
   },
   {
