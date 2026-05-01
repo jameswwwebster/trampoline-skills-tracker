@@ -9,6 +9,7 @@ const changelog = [
       { type: 'improvement', text: 'Skill editor: Direction now has a "None" option for skills without somersault rotation (jumps, twists, landings). Hands removed from Landing options.' },
       { type: 'improvement', text: 'FIG notation no longer uses letter suffixes (f, s, b) for landing position — direction on the structured row carries that meaning. 9 affected notations updated automatically.' },
       { type: 'feature', text: 'All Skills page: archive button next to each skill (club admins only). Archiving hides the skill from routine search and library lookup but preserves its data, level attachments, routine references and gymnast progress records. "Show archived" filter exposes archived skills, with a restore button to bring them back.' },
+      { type: 'fix', text: 'Skill search modals (routine, library lookup) no longer cap typed-query results at 30/50, so common entries like "Tuck Jump" surface even when many earlier-alphabetical skills also match. The list is scrollable.' },
     ],
   },
   {

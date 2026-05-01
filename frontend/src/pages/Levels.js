@@ -1111,10 +1111,11 @@ const AttachExistingSkillModal = ({ levelId, existingSkillIds, onSave, onCancel 
 
   const matches = useMemo(() => {
     const existing = new Set(existingSkillIds || []);
-    return allSkills
+    const all = allSkills
       .filter(s => !existing.has(s.id))
-      .filter(s => matchesSkillQuery(query, s.name, s.figNotation))
-      .slice(0, 50);
+      .filter(s => matchesSkillQuery(query, s.name, s.figNotation));
+    // Cap only when there's no query (browsing) — when typing, show every match.
+    return query.trim() ? all : all.slice(0, 50);
   }, [allSkills, query, existingSkillIds]);
 
   return (
@@ -1267,9 +1268,9 @@ const AddSkillToRoutineModal = ({ levelId, routineId, availableSkills, onSave, o
 
   const matches = useMemo(() => {
     if (!query.trim()) return availableSkills.slice(0, 30);
-    return availableSkills
-      .filter(s => matchesSkillQuery(query, s.name, s.figNotation))
-      .slice(0, 30);
+    // No cap on a typed query — list is scrollable. Cap was hiding "Tuck Jump"
+    // behind dozens of earlier-alphabetical (T)-shape skills that also matched.
+    return availableSkills.filter(s => matchesSkillQuery(query, s.name, s.figNotation));
   }, [query, availableSkills]);
 
   const handleAddImplicit = () => {
