@@ -195,6 +195,7 @@ router.get('/metrics', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
     const skillStats = {};
     gymnasts.forEach(gymnast => {
       gymnast.skillProgress.forEach(sp => {
+        if (!sp.skill?.level) return;
         const levelId = sp.skill.level.identifier;
         if (!skillStats[levelId]) {
           skillStats[levelId] = {
