@@ -986,18 +986,18 @@ router.get('/:id', auth, async (req, res) => {
         ...sp,
         skill: {
           ...sp.skill,
-          level: {
+          level: sp.skill.level ? {
             ...sp.skill.level,
             competitionLevel: sp.skill.level.competitions ? sp.skill.level.competitions.map(lc => lc.competition.code) : []
-          }
+          } : null
         }
       })),
       levelProgress: gymnast.levelProgress.map(lp => ({
         ...lp,
-        level: {
+        level: lp.level ? {
           ...lp.level,
           competitionLevel: lp.level.competitions ? lp.level.competitions.map(lc => lc.competition.code) : []
-        }
+        } : null
       }))
     };
 
