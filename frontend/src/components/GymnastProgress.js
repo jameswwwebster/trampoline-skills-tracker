@@ -354,7 +354,7 @@ const GymnastProgress = ({ gymnastId }) => {
 
           const levelProgressData = availableLvls.map(level => {
             const completedSkills = gymnastResponse.data.skillProgress
-              .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id)
+              .filter(sp => sp.status === 'COMPLETED' && sp.skill.level?.id === level.id)
               .map(sp => sp.skill);
 
             const totalSkills = level.skills ? level.skills.length : 0;
