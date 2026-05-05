@@ -586,7 +586,7 @@ router.get('/my-children', auth, requireRole(['ADULT']), async (req, res) => {
     const childrenWithProgress = myChildren.map(gymnast => {
       // Get highest completed level
       const completedLevels = gymnast.levelProgress
-        .filter(lp => lp.status === 'COMPLETED')
+        .filter(lp => lp.status === 'COMPLETED' && lp.level)
         .map(lp => {
           const level = lp.level;
           return {
@@ -603,7 +603,7 @@ router.get('/my-children', auth, requireRole(['ADULT']), async (req, res) => {
 
       // Get current working level (highest incomplete level with progress)
       const workingLevels = gymnast.levelProgress
-        .filter(lp => lp.status !== 'COMPLETED')
+        .filter(lp => lp.status !== 'COMPLETED' && lp.level)
         .map(lp => {
           const level = lp.level;
           return {
@@ -763,7 +763,7 @@ router.get('/', auth, async (req, res) => {
     const gymnastsWithProgress = gymnasts.map(gymnast => {
       // Get highest completed level
       const completedLevels = gymnast.levelProgress
-        .filter(lp => lp.status === 'COMPLETED')
+        .filter(lp => lp.status === 'COMPLETED' && lp.level)
         .map(lp => {
           const level = lp.level;
           return {
@@ -780,7 +780,7 @@ router.get('/', auth, async (req, res) => {
 
       // Get current working level (highest incomplete level with progress)
       const workingLevels = gymnast.levelProgress
-        .filter(lp => lp.status !== 'COMPLETED')
+        .filter(lp => lp.status !== 'COMPLETED' && lp.level)
         .map(lp => {
           const level = lp.level;
           return {
