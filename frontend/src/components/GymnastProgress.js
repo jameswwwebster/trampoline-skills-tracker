@@ -52,7 +52,7 @@ const GymnastProgress = ({ gymnastId }) => {
 
         // Get all completed main track levels (ignore side tracks)
         const completedMainTrackLevels = gymnast.levelProgress
-          .filter(lp => lp.status === 'COMPLETED')
+          .filter(lp => lp.status === 'COMPLETED' && lp.level)
           .map(lp => lp.level)
           .filter(level => !isSideTrack(level.identifier)) // Only main track levels
           .map(level => parseInt(level.identifier))
@@ -415,16 +415,16 @@ const GymnastProgress = ({ gymnastId }) => {
 
   const levelProgress = availableLevels.map(level => {
     const completedSkills = gymnast.skillProgress
-      .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id)
+      .filter(sp => sp.status === 'COMPLETED' && sp.skill.level?.id === level.id)
       .map(sp => sp.skill);
 
     const totalSkills = level.skills ? level.skills.length : 0;
     const completedCount = completedSkills.length;
     const progressPercentage = totalSkills > 0 ? (completedCount / totalSkills) * 100 : 0;
-    
+
     // Check if level is completed
     const isCompleted = gymnast.levelProgress
-      .some(lp => lp.level.id === level.id && lp.status === 'COMPLETED');
+      .some(lp => lp.level?.id === level.id && lp.status === 'COMPLETED');
 
     return {
       level,
@@ -454,7 +454,7 @@ const GymnastProgress = ({ gymnastId }) => {
   // Remove unused variables - highestCompletedLevel and completedSkills
   
   const workingLevel = gymnast.levelProgress
-    .filter(lp => lp.status !== 'COMPLETED')
+    .filter(lp => lp.status !== 'COMPLETED' && lp.level)
     .map(lp => lp.level)
     .sort(sortLevelsByIdentifier)[0];
 
@@ -851,29 +851,29 @@ const GymnastProgress = ({ gymnastId }) => {
             {levels
               .filter(level => isSideTrackAvailable(level, nextMainLevelNumber))
               .sort((a, b) => {
-                const aCompleted = gymnast.levelProgress.some(lp => lp.level.id === a.id && lp.status === 'COMPLETED');
-                const bCompleted = gymnast.levelProgress.some(lp => lp.level.id === b.id && lp.status === 'COMPLETED');
+                const aCompleted = gymnast.levelProgress.some(lp => lp.level?.id === a.id && lp.status === 'COMPLETED');
+                const bCompleted = gymnast.levelProgress.some(lp => lp.level?.id === b.id && lp.status === 'COMPLETED');
                 if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
                 return sortLevelsByIdentifier(a, b);
               })
               .map((level, idx, arr) => {
               // Calculate progress for each level (including side tracks)
               const completedSkills = gymnast.skillProgress
-                .filter(sp => sp.status === 'COMPLETED' && sp.skill.level.id === level.id)
+                .filter(sp => sp.status === 'COMPLETED' && sp.skill.level?.id === level.id)
                 .map(sp => sp.skill);
 
               const totalSkills = level.skills ? level.skills.length : 0;
               const completedCount = completedSkills.length;
               const progressPercentage = totalSkills > 0 ? (completedCount / totalSkills) * 100 : 0;
-              
+
               // Check if level is completed
               const isCompleted = gymnast.levelProgress
-                .some(lp => lp.level.id === level.id && lp.status === 'COMPLETED');
+                .some(lp => lp.level?.id === level.id && lp.status === 'COMPLETED');
               const isCollapsed = collapsedLevels.has(level.id);
               const isCurrentLevel = !isSideTrack(level.identifier) && parseInt(level.identifier) === getCurrentLevelNumber(gymnast, levels);
-              
+
               const prevLevel = idx > 0 ? arr[idx - 1] : null;
-              const prevCompleted = prevLevel ? gymnast.levelProgress.some(lp => lp.level.id === prevLevel.id && lp.status === 'COMPLETED') : false;
+              const prevCompleted = prevLevel ? gymnast.levelProgress.some(lp => lp.level?.id === prevLevel.id && lp.status === 'COMPLETED') : false;
               const showCompletedDivider = isCompleted && !prevCompleted;
 
               return (

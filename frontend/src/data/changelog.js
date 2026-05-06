@@ -4,6 +4,7 @@ const changelog = [
     date: '2026-05-06',
     entries: [
       { type: 'feature', text: 'BG memberships can now be marked as expired. Admins get a "Mark expired" button on a verified gymnast; bookings continue for a 14-day grace, then pause until renewed. Guardians get a clear email saying they have 14 days to update, and a banner in My Account showing the days remaining.' },
+      { type: 'fix', text: 'Gymnast skill tracking page no longer renders blank when a gymnast has progress on a skill whose level was deleted or detached. The earlier null-level fix only patched one of seven similar accesses; the remaining six in the render path were crashing with a TypeError, leaving the page empty.' },
     ],
   },
   {
