@@ -780,10 +780,20 @@ function BgNumberSection({ gymnast, onUpdated }) {
 
   const isInvalid = gymnast.bgNumberStatus === 'INVALID';
   const isPending = gymnast.bgNumberStatus === 'PENDING';
+  const isExpired = gymnast.bgNumberStatus === 'EXPIRED';
   const hasNumber = !!gymnast.bgNumber;
   const isRequired = gymnast.pastSessionCount >= 2 || gymnast.hasMembership;
   const needs = isRequired && !hasNumber;
   const approachingLimit = !hasNumber && !isRequired && gymnast.pastSessionCount === 1;
+
+  // Days remaining in the EXPIRED grace window (after which bookings hard-block).
+  const expiredGraceDays = gymnast.bgNumberGraceDays ?? 14;
+  const expiredDaysSince = gymnast.bgNumberExpiredAt
+    ? Math.floor((Date.now() - new Date(gymnast.bgNumberExpiredAt)) / (24 * 60 * 60 * 1000))
+    : null;
+  const expiredRemaining = expiredDaysSince != null
+    ? Math.max(0, expiredGraceDays - expiredDaysSince)
+    : null;
 
   const handleSave = async () => {
     if (!input.trim()) return;
@@ -856,7 +866,23 @@ function BgNumberSection({ gymnast, onUpdated }) {
         </div>
       )}
 
-      {!hasNumber || isInvalid || editing ? (
+      {isExpired && (
+        <div style={{
+          background: expiredRemaining === 0 ? 'rgba(231,76,60,0.08)' : 'rgba(230,126,34,0.08)',
+          border: `1px solid ${expiredRemaining === 0 ? 'rgba(231,76,60,0.3)' : 'rgba(230,126,34,0.3)'}`,
+          borderRadius: 'var(--booking-radius)',
+          padding: '0.5rem 0.75rem', marginBottom: '0.5rem', fontSize: '0.85rem',
+          color: expiredRemaining === 0 ? 'var(--booking-danger)' : '#b35900',
+        }}>
+          {gymnast.firstName}'s BG membership has expired.
+          {expiredRemaining === 0
+            ? ' Bookings are paused until you renew and update the number.'
+            : ` You have ${expiredRemaining} day${expiredRemaining === 1 ? '' : 's'} left to renew before bookings are paused.`}
+          {' '}Renew on <a href="https://mybg.british-gymnastics.org/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>mybg.british-gymnastics.org</a>, then update the number below.
+        </div>
+      )}
+
+      {!hasNumber || isInvalid || isExpired || editing ? (
         <>
           {needs && !isInvalid && (
             <p style={{ fontSize: '0.875rem', color: 'var(--booking-danger)', margin: '0 0 0.4rem' }}>

@@ -25,7 +25,7 @@ async function checkBgNumbers(gymnastIds, now, pendingCounts = {}) {
         where: { id: gId },
         select: {
           firstName: true, bgNumber: true, bgNumberStatus: true,
-          bgNumberEnteredAt: true, bgNumberGraceDays: true,
+          bgNumberEnteredAt: true, bgNumberExpiredAt: true, bgNumberGraceDays: true,
         },
       });
       if (!g) return null;
@@ -34,6 +34,15 @@ async function checkBgNumbers(gymnastIds, now, pendingCounts = {}) {
       if (g.bgNumberStatus === 'PENDING' && g.bgNumberEnteredAt && g.bgNumberGraceDays) {
         const graceMs = g.bgNumberGraceDays * 24 * 60 * 60 * 1000;
         if (now - new Date(g.bgNumberEnteredAt) > graceMs) return g; // grace expired
+      }
+      if (g.bgNumberStatus === 'EXPIRED' && g.bgNumberExpiredAt && g.bgNumberGraceDays) {
+        // Soft-block: bookings allowed during the grace window after admin
+        // marked the membership expired, then hard-blocked until renewed.
+        const graceMs = g.bgNumberGraceDays * 24 * 60 * 60 * 1000;
+        if (now - new Date(g.bgNumberExpiredAt) > graceMs) return g;
+      } else if (g.bgNumberStatus === 'EXPIRED' && !g.bgNumberExpiredAt) {
+        // Defensive: if somehow EXPIRED was set without a timestamp, hard-block.
+        return g;
       }
 
       if (!g.bgNumber) {

@@ -28,7 +28,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
     const [selfGymnast, linked] = await Promise.all([
       prisma.gymnast.findFirst({
         where: { userId: req.user.id, isArchived: false },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberGraceDays: true, dmtApproved: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberExpiredAt: true, bgNumberGraceDays: true, dmtApproved: true },
       }),
       prisma.gymnast.findMany({
         where: {
@@ -39,7 +39,7 @@ router.get('/bookable-for-me', auth, async (req, res) => {
             { userId: { not: req.user.id } },
           ],
         },
-        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberGraceDays: true, dmtApproved: true },
+        select: { id: true, firstName: true, lastName: true, dateOfBirth: true, healthNotes: true, emergencyContactName: true, emergencyContactPhone: true, emergencyContactRelationship: true, consents: true, bgNumber: true, bgNumberStatus: true, bgNumberEnteredAt: true, bgNumberVerifiedAt: true, bgNumberExpiredAt: true, bgNumberGraceDays: true, dmtApproved: true },
       }),
     ]);
     const allGymnasts = selfGymnast
@@ -312,29 +312,38 @@ router.patch('/:id/bg-number/verify', auth, async (req, res) => {
     if (gymnast.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
     if (!gymnast.bgNumber) return res.status(400).json({ error: 'No BG number to verify' });
 
-    const { action } = req.body; // 'verify' | 'invalidate'
-    if (!['verify', 'invalidate'].includes(action)) {
-      return res.status(400).json({ error: 'action must be "verify" or "invalidate"' });
+    const { action } = req.body; // 'verify' | 'invalidate' | 'expire'
+    if (!['verify', 'invalidate', 'expire'].includes(action)) {
+      return res.status(400).json({ error: 'action must be "verify", "invalidate" or "expire"' });
     }
 
-    const newStatus = action === 'verify' ? 'VERIFIED' : 'INVALID';
-    await prisma.gymnast.update({
-      where: { id: req.params.id },
-      data: {
-        bgNumberStatus: newStatus,
-        bgNumberVerifiedAt: action === 'verify' ? new Date() : null,
-        bgNumberVerifiedBy: action === 'verify' ? req.user.id : null,
-      },
-    });
+    const EXPIRED_GRACE_DAYS = 14;
+    const now = new Date();
+    const data = {
+      bgNumberStatus:     action === 'verify' ? 'VERIFIED'
+                        : action === 'expire' ? 'EXPIRED'
+                        : 'INVALID',
+      bgNumberVerifiedAt: action === 'verify' ? now : null,
+      bgNumberVerifiedBy: action === 'verify' ? req.user.id : null,
+      // Grace window for soft-block during EXPIRED state.
+      bgNumberExpiredAt:  action === 'expire' ? now : null,
+      // Reuse the existing graceDays field so the booking check has one source of truth.
+      bgNumberGraceDays:  action === 'expire' ? EXPIRED_GRACE_DAYS : (action === 'verify' ? null : gymnast.bgNumberGraceDays),
+    };
+    await prisma.gymnast.update({ where: { id: req.params.id }, data });
 
-    // Send email to parent if invalidated
-    if (action === 'invalidate' && gymnast.club.emailEnabled) {
+    // Send email to parent on invalidate / expire
+    if ((action === 'invalidate' || action === 'expire') && gymnast.club.emailEnabled) {
       const emailService = require('../services/emailService');
-      if (typeof emailService.sendBgNumberInvalidEmail === 'function') {
+      const sendFn = action === 'expire'
+        ? emailService.sendBgNumberExpiredEmail
+        : emailService.sendBgNumberInvalidEmail;
+      if (typeof sendFn === 'function') {
         for (const guardian of gymnast.guardians) {
           if (!guardian.email) continue;
-          await emailService.sendBgNumberInvalidEmail(
-            guardian.email, guardian.firstName, gymnast.firstName
+          await sendFn(
+            guardian.email, guardian.firstName, gymnast.firstName,
+            ...(action === 'expire' ? [EXPIRED_GRACE_DAYS] : [])
           ).catch(() => {});
         }
       }
@@ -388,6 +397,9 @@ router.patch('/:id/bg-number', auth, async (req, res) => {
         bgNumberEnteredBy: req.user.id,
         bgNumberVerifiedAt: isStaff ? new Date() : null,
         bgNumberVerifiedBy: isStaff ? req.user.id : null,
+        // Renewal — clear any prior EXPIRED timestamp so re-running the booking
+        // grace check doesn't see stale data.
+        bgNumberExpiredAt: null,
       },
     });
     res.json(updated);

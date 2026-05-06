@@ -637,7 +637,16 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
               ) : (
                 <>
                   {g.bgNumberStatus === 'VERIFIED' && (
-                    <span style={{ color: 'var(--booking-success)' }}>✓ Verified <span style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>{g.bgNumber}</span></span>
+                    <>
+                      <span style={{ color: 'var(--booking-success)' }}>✓ Verified <span style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>{g.bgNumber}</span></span>
+                      <button
+                        className="bk-btn bk-btn--sm"
+                        disabled={bgSaving}
+                        onClick={() => handleVerifyBgNumber('expire')}
+                        style={{ fontSize: '0.75rem', border: '1px solid var(--booking-border)', color: 'var(--booking-text-muted)' }}
+                        title="Marks the membership expired and starts a 14-day grace; bookings continue during the grace, then pause until renewed"
+                      >Mark expired</button>
+                    </>
                   )}
                   {g.bgNumberStatus === 'PENDING' && (
                     <>
@@ -649,6 +658,24 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
                   {g.bgNumberStatus === 'INVALID' && (
                     <span style={{ color: 'var(--booking-danger)' }}>✗ Invalid <span style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{g.bgNumber}</span></span>
                   )}
+                  {g.bgNumberStatus === 'EXPIRED' && (() => {
+                    const graceDays = g.bgNumberGraceDays ?? 14;
+                    const expiredDays = g.bgNumberExpiredAt
+                      ? Math.floor((Date.now() - new Date(g.bgNumberExpiredAt)) / (24 * 60 * 60 * 1000))
+                      : null;
+                    const remaining = expiredDays != null ? Math.max(0, graceDays - expiredDays) : null;
+                    const blocked = remaining === 0;
+                    return (
+                      <span style={{ color: blocked ? 'var(--booking-danger)' : '#e67e22' }}>
+                        ⏱ Expired <span style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{g.bgNumber}</span>
+                        {remaining != null && (
+                          <span style={{ marginLeft: '0.4rem', fontWeight: blocked ? 700 : 400 }}>
+                            {blocked ? '— bookings blocked' : `— ${remaining}d left in grace`}
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })()}
                   {!g.bgNumber && (
                     <span style={{ color: 'var(--booking-danger)' }}>✗ Not provided</span>
                   )}

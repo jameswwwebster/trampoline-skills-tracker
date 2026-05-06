@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-05-06',
+    entries: [
+      { type: 'feature', text: 'BG memberships can now be marked as expired. Admins get a "Mark expired" button on a verified gymnast; bookings continue for a 14-day grace, then pause until renewed. Guardians get a clear email saying they have 14 days to update, and a banner in My Account showing the days remaining.' },
+    ],
+  },
+  {
     date: '2026-05-01',
     entries: [
       { type: 'fix', text: 'Difficulty calculator now applies the §17.1.6.1 backward bonus to twisting backward multi-soms too (e.g. Half In Half Out triple gets +0.1, Half Front Half triple gets +0.2). Previously it only applied to non-twisting backward elements.' },

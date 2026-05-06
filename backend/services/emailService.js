@@ -381,6 +381,22 @@ class EmailService {
     });
   }
 
+  async sendBgNumberExpiredEmail(guardianEmail, guardianFirstName, gymnastFirstName, graceDays = 14) {
+    return this.sendEmail({
+      to: guardianEmail,
+      subject: `Action needed — BG membership for ${gymnastFirstName} has expired`,
+      html: brandedHtml(
+        `BG membership for ${gymnastFirstName} has expired`,
+        `<p>Hi ${guardianFirstName},</p>
+        <p>${gymnastFirstName}'s British Gymnastics membership has expired.</p>
+        ${infoBox(`<p style="margin:0"><strong>You have ${graceDays} days to renew and update the number in your account.</strong></p>
+          <p style="margin:0.5rem 0 0">During this period, bookings continue to work as normal. After ${graceDays} days, booking will be paused until a renewed number is entered and re-verified.</p>`)}
+        <p>Please renew on the <a href="https://mybg.british-gymnastics.org">British Gymnastics portal</a>, then enter the renewed number in your account here.</p>
+        ${ctaButton(BASE_URL() + '/booking/my-account', 'Update BG number')}`,
+      ),
+    });
+  }
+
   async sendBgNumberInvalidEmail(guardianEmail, guardianFirstName, gymnastFirstName) {
     return this.sendEmail({
       to: guardianEmail,
