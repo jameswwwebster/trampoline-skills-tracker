@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { bookingApi } from '../../../utils/bookingApi';
 import '../booking-shared.css';
 
@@ -419,18 +420,23 @@ export default function AdminIncidents() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [searchParams] = useSearchParams();
 
-  const load = () => {
+  const load = (autoOpenId) => {
     Promise.all([
       bookingApi.getIncidents(),
       bookingApi.getAllClubGymnasts(),
     ]).then(([iRes, gRes]) => {
       setIncidents(iRes.data);
       setGymnasts(gRes.data);
+      if (autoOpenId) {
+        const found = iRes.data.find(i => i.id === autoOpenId);
+        if (found) setSelected(found);
+      }
     }).finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  useEffect(() => { load(searchParams.get('id')); }, []);
 
   const handleCreate = async (e) => {
     e.preventDefault();

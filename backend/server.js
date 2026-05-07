@@ -555,7 +555,7 @@ cron.schedule('* * * * *', async () => {
         }
       }
 
-      const reportUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking/incidents/${incident.id}`;
+      const reportUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking/incidents?id=${incident.id}`;
       for (const r of recipients) {
         await emailService.sendIncidentAdultNotification(
           r.email, r.name, incident.gymnast, incident, reportUrl,
