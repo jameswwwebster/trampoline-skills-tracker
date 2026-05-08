@@ -64,6 +64,10 @@ export const bookingApi = {
   cancelBooking: (bookingId, options = {}) =>
     axios.post(`${API_URL}/booking/bookings/${bookingId}/cancel`, options, { headers: getHeaders() }),
 
+  // Cancel a single gymnast off a multi-gymnast booking. Other lines stay confirmed.
+  cancelBookingLine: (bookingId, lineId, options = {}) =>
+    axios.post(`${API_URL}/booking/bookings/${bookingId}/lines/${lineId}/cancel`, options, { headers: getHeaders() }),
+
   getMyCredits: () =>
     axios.get(`${API_URL}/booking/credits/my`, { headers: getHeaders() }),
 

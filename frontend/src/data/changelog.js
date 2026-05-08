@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-05-08',
+    entries: [
+      { type: 'feature', text: 'Cancel a single gymnast off a multi-gymnast booking. My Bookings shows each gymnast on its own row with a per-row Cancel button when a booking covers more than one; cancelling one issues a credit (subject to the same-day rule) and leaves the others confirmed. Admins get the same per-row cancel in the booking admin attendee list. Cancelling the last remaining gymnast cancels the whole booking.' },
+    ],
+  },
+  {
     date: '2026-05-06',
     entries: [
       { type: 'feature', text: 'BG memberships can now be marked as expired. Admins get a "Mark expired" button on a verified gymnast; bookings continue for a 14-day grace, then pause until renewed. Guardians get a clear email saying they have 14 days to update, and a banner in My Account showing the days remaining.' },

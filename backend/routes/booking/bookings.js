@@ -81,8 +81,17 @@ const batchBookingSchema = Joi.object({
 // Mirrors the logic in sessions.js: counts confirmed bookings + active standing
 // slots (with startDate filter), then subtracts gymnasts marked absent so that
 // freeing a standing slot via the absence toggle is reflected at checkout.
+// Counts only non-cancelled booking lines so that single-line cancellations
+// (POST /lines/:lineId/cancel) free the slot they previously occupied.
+function activeLineCount(bookings) {
+  return bookings.reduce(
+    (sum, b) => sum + b.lines.filter(l => !l.cancelledAt).length,
+    0,
+  );
+}
+
 async function getAvailableSlots(instance) {
-  const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+  const bookedCount = activeLineCount(instance.bookings);
   const sessionDate = new Date(instance.date);
   sessionDate.setHours(0, 0, 0, 0);
   const absentGymnastIds = (await prisma.attendance.findMany({
@@ -136,10 +145,12 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: 'Bookings are not allowed after a session has started' });
     }
 
-    // Prevent duplicate booking for the same gymnast
+    // Prevent duplicate booking for the same gymnast (cancelled lines don't count —
+    // if they were previously cancelled they can be re-booked).
     const alreadyBooked = await prisma.bookingLine.findMany({
       where: {
         gymnastId: { in: gymnastIds },
+        cancelledAt: null,
         booking: { sessionInstanceId, status: 'CONFIRMED' },
       },
       include: { gymnast: { select: { firstName: true } } },
@@ -456,10 +467,11 @@ router.post('/batch', auth, async (req, res) => {
         return res.status(400).json({ error: 'Bookings are not allowed after a session has started' });
       }
 
-      // Prevent duplicate booking for the same gymnast
+      // Prevent duplicate booking for the same gymnast (cancelled lines don't count).
       const alreadyBookedBatch = await prisma.bookingLine.findMany({
         where: {
           gymnastId: { in: gymnastIds },
+          cancelledAt: null,
           booking: { sessionInstanceId, status: 'CONFIRMED' },
         },
         include: { gymnast: { select: { firstName: true } } },
@@ -706,7 +718,7 @@ router.post('/admin-add', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req
     if (!instance) return res.status(404).json({ error: 'Session not found' });
     if (instance.template.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
 
-    const bookedCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+    const bookedCount = activeLineCount(instance.bookings);
     const capacity = instance.openSlotsOverride ?? instance.template.openSlots;
     if (bookedCount + value.gymnastIds.length > capacity) {
       return res.status(400).json({ error: 'Not enough slots available' });
@@ -773,6 +785,10 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + 1);
 
+    // Only credit lines that are still active — already-cancelled lines were
+    // credited at the time they were individually cancelled.
+    const activeLines = booking.lines.filter(l => !l.cancelledAt);
+
     if (!issueCredit) {
       await prisma.booking.update({
         where: { id: booking.id },
@@ -784,7 +800,7 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
           where: { id: booking.id },
           data: { status: 'CANCELLED' },
         }),
-        ...booking.lines.map((line) =>
+        ...activeLines.map((line) =>
           prisma.credit.create({
             data: {
               userId: booking.userId,
@@ -807,10 +823,111 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
     });
 
     const creditMsg = issueCredit
-      ? `Booking cancelled. ${booking.lines.length} credit(s) issued.`
+      ? `Booking cancelled. ${activeLines.length} credit(s) issued.`
       : 'Booking cancelled. No credit issued.';
 
     res.json({ message: creditMsg, creditsIssued: issueCredit });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /bookings/:bookingId/lines/:lineId/cancel
+// Cancel a single gymnast off a multi-gymnast booking. Other lines stay
+// confirmed. Issues a credit for the cancelled line (subject to same-day rule).
+// If the last active line is cancelled, the booking itself transitions to
+// CANCELLED. Whole-booking cancel still goes through POST /:bookingId/cancel.
+router.post('/:bookingId/lines/:lineId/cancel', auth, async (req, res) => {
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: req.params.bookingId },
+      include: {
+        lines: { include: { gymnast: { select: { firstName: true, lastName: true } } } },
+        sessionInstance: { include: { template: true } },
+      },
+    });
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+    const isAdminAction = ['CLUB_ADMIN', 'COACH'].includes(req.user.role);
+    if (booking.userId !== req.user.id && !isAdminAction) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    if (booking.status === 'CANCELLED') {
+      return res.status(400).json({ error: 'Booking is already cancelled' });
+    }
+
+    const line = booking.lines.find(l => l.id === req.params.lineId);
+    if (!line) return res.status(404).json({ error: 'Booking line not found' });
+    if (line.cancelledAt) return res.status(400).json({ error: 'This gymnast has already been cancelled from the booking' });
+
+    // Same-day rule applies per line. Admin can override.
+    const sessionDate = new Date(booking.sessionInstance.date);
+    const today = new Date();
+    const isToday =
+      sessionDate.getFullYear() === today.getFullYear() &&
+      sessionDate.getMonth() === today.getMonth() &&
+      sessionDate.getDate() === today.getDate();
+
+    let issueCredit;
+    if (isAdminAction && req.body.issueCredit !== undefined) {
+      issueCredit = !!req.body.issueCredit;
+    } else {
+      issueCredit = !isToday;
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + 1);
+
+    // After cancelling this line, would any active lines remain on the booking?
+    const remainingActive = booking.lines.filter(l => l.id !== line.id && !l.cancelledAt);
+    const wasLastLine = remainingActive.length === 0;
+
+    const txOps = [
+      prisma.bookingLine.update({
+        where: { id: line.id },
+        data: { cancelledAt: new Date() },
+      }),
+    ];
+    if (issueCredit) {
+      txOps.push(prisma.credit.create({
+        data: {
+          userId: booking.userId,
+          amount: line.amount,
+          expiresAt,
+          sourceBookingId: booking.id,
+        },
+      }));
+    }
+    if (wasLastLine) {
+      txOps.push(prisma.booking.update({
+        where: { id: booking.id },
+        data: { status: 'CANCELLED' },
+      }));
+    }
+    await prisma.$transaction(txOps);
+
+    // Free slot — offer to next person on waitlist (non-critical).
+    processWaitlist(booking.sessionInstanceId).catch(err => console.error('Waitlist processing failed:', err));
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'booking.line.cancel', entityType: 'BookingLine', entityId: line.id,
+      metadata: {
+        bookingId: booking.id,
+        gymnastId: line.gymnastId,
+        gymnastName: `${line.gymnast.firstName} ${line.gymnast.lastName}`,
+        issueCredit,
+        lastLine: wasLastLine,
+      },
+    });
+
+    const name = `${line.gymnast.firstName} ${line.gymnast.lastName}`;
+    const message = wasLastLine
+      ? `${name} cancelled. Booking is now fully cancelled${issueCredit ? ' — credit issued.' : '.'}`
+      : `${name} cancelled${issueCredit ? ' — credit issued.' : '.'}`;
+
+    res.json({ message, creditsIssued: issueCredit, bookingCancelled: wasLastLine });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

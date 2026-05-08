@@ -183,7 +183,9 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
   const [standingSlots, setStandingSlots] = useState(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [absentGymnastIds, setAbsentGymnastIds] = useState([]);
-  const totalGymnasts = sessionDetail.bookings?.reduce((n, b) => n + b.lines.length, 0) ?? 0;
+  const totalGymnasts = sessionDetail.bookings?.reduce(
+    (n, b) => n + b.lines.filter(l => !l.cancelledAt).length, 0,
+  ) ?? 0;
   const capacity = sessionDetail.capacity;
 
   useEffect(() => {
@@ -203,11 +205,15 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
       .finally(() => setSlotsLoading(false));
   }, [sessionDetail.templateId, selectedSession]);
 
-  const handleRemove = async (bookingId, issueCredit) => {
-    setRemoving(bookingId);
+  // Removes a single gymnast from a booking. Other gymnasts on the same
+  // booking remain confirmed. (Previously this called cancelBooking, which
+  // cancelled the whole booking — kicking off other gymnasts the admin
+  // didn't intend to touch.)
+  const handleRemove = async (bookingId, lineId, issueCredit) => {
+    setRemoving(lineId);
     setRemoveError(null);
     try {
-      await bookingApi.cancelBooking(bookingId, { issueCredit });
+      await bookingApi.cancelBookingLine(bookingId, lineId, { issueCredit });
       setConfirmingRemove(null);
       onAdded();
     } catch (err) {
@@ -283,7 +289,7 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
       {showManualAdd && (
         <ManualAddForm
           sessionId={selectedSession}
-          bookedGymnastIds={sessionDetail.bookings?.flatMap(b => b.lines.map(l => l.gymnast.id)) ?? []}
+          bookedGymnastIds={sessionDetail.bookings?.flatMap(b => b.lines.filter(l => !l.cancelledAt).map(l => l.gymnast.id)) ?? []}
           onAdded={onAdded}
         />
       )}
@@ -369,7 +375,7 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
         {totalGymnasts === 0 && <p className="bk-muted" style={{ margin: 0 }}>No bookings yet.</p>}
         {removeError && <p className="bk-error" style={{ margin: '0 0 0.5rem' }}>{removeError}</p>}
         {sessionDetail.bookings?.map(b =>
-          b.lines.map(l => (
+          b.lines.filter(l => !l.cancelledAt).map(l => (
             <div key={l.id} style={{ padding: '0.75rem 0', borderBottom: '1px solid var(--booking-bg-light)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
                 <div>
@@ -390,16 +396,16 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
                   })}
                 </div>
               </div>
-              {confirmingRemove !== b.id && (
+              {confirmingRemove !== l.id && (
                 <button
                   className="bk-btn bk-btn--sm"
-                  onClick={() => { setConfirmingRemove(b.id); setRemoveError(null); }}
+                  onClick={() => { setConfirmingRemove(l.id); setRemoveError(null); }}
                   style={{ marginTop: '0.4rem', color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
                 >
                   Remove
                 </button>
               )}
-              {confirmingRemove === b.id && (
+              {confirmingRemove === l.id && (
                 <div style={{
                   margin: '0.6rem 0 0.25rem', padding: '0.65rem 0.75rem',
                   background: 'rgba(231,76,60,0.06)', border: '1px solid rgba(231,76,60,0.25)',
@@ -409,11 +415,11 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
                     Remove {l.gymnast.firstName} from this session?
                   </p>
                   <div className="bk-row" style={{ gap: '0.4rem', flexWrap: 'wrap' }}>
-                    <button className="bk-btn bk-btn--sm" disabled={!!removing} onClick={() => handleRemove(b.id, true)} style={{ background: 'var(--booking-accent)', color: '#fff', border: 'none' }}>
-                      {removing === b.id ? '…' : 'Remove + issue credit'}
+                    <button className="bk-btn bk-btn--sm" disabled={!!removing} onClick={() => handleRemove(b.id, l.id, true)} style={{ background: 'var(--booking-accent)', color: '#fff', border: 'none' }}>
+                      {removing === l.id ? '…' : 'Remove + issue credit'}
                     </button>
-                    <button className="bk-btn bk-btn--sm" disabled={!!removing} onClick={() => handleRemove(b.id, false)} style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}>
-                      {removing === b.id ? '…' : 'Remove, no credit'}
+                    <button className="bk-btn bk-btn--sm" disabled={!!removing} onClick={() => handleRemove(b.id, l.id, false)} style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}>
+                      {removing === l.id ? '…' : 'Remove, no credit'}
                     </button>
                     <button className="bk-btn bk-btn--sm" disabled={!!removing} onClick={() => setConfirmingRemove(null)} style={{ border: '1px solid var(--booking-border)' }}>
                       Cancel

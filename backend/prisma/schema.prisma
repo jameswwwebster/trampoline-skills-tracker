@@ -772,14 +772,16 @@ model Booking {
 }
 
 model BookingLine {
-  id         String   @id @default(cuid())
-  bookingId  String
-  gymnastId  String
-  amount     Int      // in pence (600 = £6.00)
-  createdAt  DateTime @default(now())
-  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  gymnast    Gymnast  @relation(fields: [gymnastId], references: [id])
+  id          String    @id @default(cuid())
+  bookingId   String
+  gymnastId   String
+  amount      Int       // in pence (600 = £6.00)
+  cancelledAt DateTime?
+  createdAt   DateTime  @default(now())
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  gymnast     Gymnast   @relation(fields: [gymnastId], references: [id])
 
+  @@index([cancelledAt])
   @@map("booking_lines")
 }
 

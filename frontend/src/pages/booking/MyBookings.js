@@ -63,6 +63,26 @@ export default function MyBookings() {
     }
   };
 
+  const handleCancelLine = async (bookingId, line, sessionDate) => {
+    const dayOf = isToday(sessionDate);
+    const name = `${line.gymnast.firstName} ${line.gymnast.lastName}`;
+    const msg = dayOf
+      ? `Cancel ${name} from this session? Same-day cancellations do not receive a credit refund.`
+      : `Cancel ${name} from this session? A credit will be issued.`;
+    if (!window.confirm(msg)) return;
+    const key = `${bookingId}:${line.id}`;
+    setCancelling(key);
+    setCancelError(null);
+    try {
+      await bookingApi.cancelBookingLine(bookingId, line.id);
+      load();
+    } catch {
+      setCancelError('Failed to cancel. Please try again.');
+    } finally {
+      setCancelling(null);
+    }
+  };
+
   if (loading) return <p className="bk-center">Loading...</p>;
   if (error) return <div className="bk-page bk-page--md"><p className="bk-error">{error}</p></div>;
 
@@ -120,30 +140,67 @@ export default function MyBookings() {
         const d = new Date(b.sessionInstance.date);
         const dateStr = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
         const dayOf = isToday(b.sessionInstance.date);
+        const activeLines = (b.lines || []).filter(l => !l.cancelledAt);
+        const multiLine = activeLines.length > 1;
         return (
           <div key={b.id} className="bk-card">
             <strong>{dateStr} — {b.sessionInstance.template.startTime}–{b.sessionInstance.template.endTime}</strong>
-            <p style={{ margin: '0.25rem 0' }} className="bk-muted">
-              {b.lines.map(l => `${l.gymnast.firstName} ${l.gymnast.lastName}`).join(', ')}
-            </p>
-            <p style={{ margin: '0.25rem 0', fontSize: '0.85rem' }}>
-              Total: £{(b.totalAmount / 100).toFixed(2)} · Status: {b.status}
-            </p>
-            {b.status === 'CONFIRMED' && (
-              <>
-                {dayOf && (
+
+            {multiLine ? (
+              <div style={{ marginTop: '0.5rem' }}>
+                {activeLines.map(line => {
+                  const lineKey = `${b.id}:${line.id}`;
+                  const name = `${line.gymnast.firstName} ${line.gymnast.lastName}`;
+                  return (
+                    <div key={line.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0', borderTop: '1px solid var(--booking-border)' }}>
+                      <span>{name}</span>
+                      {b.status === 'CONFIRMED' && (
+                        <button
+                          onClick={() => handleCancelLine(b.id, line, b.sessionInstance.date)}
+                          disabled={cancelling === lineKey}
+                          className="bk-btn bk-btn--sm"
+                          style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+                        >
+                          {cancelling === lineKey ? '…' : 'Cancel'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+                <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem' }}>
+                  Total: £{(b.totalAmount / 100).toFixed(2)} · Status: {b.status}
+                </p>
+                {b.status === 'CONFIRMED' && dayOf && (
                   <p className="bk-muted" style={{ fontSize: '0.8rem', marginTop: '0.4rem' }}>
                     Same-day cancellation — no credit refund.
                   </p>
                 )}
-                <button
-                  onClick={() => handleCancel(b.id, b.sessionInstance.date)}
-                  disabled={cancelling === b.id}
-                  className="bk-btn bk-btn--danger bk-btn--sm"
-                  style={{ marginTop: '0.5rem' }}
-                >
-                  {cancelling === b.id ? 'Cancelling...' : 'Cancel booking'}
-                </button>
+              </div>
+            ) : (
+              <>
+                <p style={{ margin: '0.25rem 0' }} className="bk-muted">
+                  {activeLines.map(l => `${l.gymnast.firstName} ${l.gymnast.lastName}`).join(', ')}
+                </p>
+                <p style={{ margin: '0.25rem 0', fontSize: '0.85rem' }}>
+                  Total: £{(b.totalAmount / 100).toFixed(2)} · Status: {b.status}
+                </p>
+                {b.status === 'CONFIRMED' && (
+                  <>
+                    {dayOf && (
+                      <p className="bk-muted" style={{ fontSize: '0.8rem', marginTop: '0.4rem' }}>
+                        Same-day cancellation — no credit refund.
+                      </p>
+                    )}
+                    <button
+                      onClick={() => handleCancel(b.id, b.sessionInstance.date)}
+                      disabled={cancelling === b.id}
+                      className="bk-btn bk-btn--danger bk-btn--sm"
+                      style={{ marginTop: '0.5rem' }}
+                    >
+                      {cancelling === b.id ? 'Cancelling...' : 'Cancel booking'}
+                    </button>
+                  </>
+                )}
               </>
             )}
           </div>

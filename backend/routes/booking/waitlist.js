@@ -26,7 +26,10 @@ router.post('/:instanceId', auth, async (req, res) => {
 
     // Check session is actually full — must mirror getAvailableSlots in bookings.js
     // (counts confirmed bookings + active commitments, minus absent gymnasts)
-    const bookingCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+    const bookingCount = instance.bookings.reduce(
+      (sum, b) => sum + b.lines.filter(l => !l.cancelledAt).length,
+      0,
+    );
     const sessionDate = new Date(instance.date);
     sessionDate.setHours(0, 0, 0, 0);
     const absentGymnastIds = (await prisma.attendance.findMany({

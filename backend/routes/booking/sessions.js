@@ -35,7 +35,10 @@ router.get('/', auth, async (req, res) => {
 
     const result = await Promise.all(instances.map(async instance => {
       const confirmedBookings = instance.bookings;
-      const bookingCount = confirmedBookings.reduce((sum, b) => sum + b.lines.length, 0);
+      const bookingCount = confirmedBookings.reduce(
+        (sum, b) => sum + b.lines.filter(l => !l.cancelledAt).length,
+        0,
+      );
       const sessionDate = new Date(instance.date);
       sessionDate.setHours(0, 0, 0, 0);
       const absentGymnastIds = (await prisma.attendance.findMany({
@@ -132,7 +135,10 @@ router.get('/:instanceId', auth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const bookingCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+    const bookingCount = instance.bookings.reduce(
+      (sum, b) => sum + b.lines.filter(l => !l.cancelledAt).length,
+      0,
+    );
     const sessionDate = new Date(instance.date);
     sessionDate.setHours(0, 0, 0, 0);
     const absentGymnastIds = (await prisma.attendance.findMany({

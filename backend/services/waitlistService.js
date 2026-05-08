@@ -24,7 +24,10 @@ async function processWaitlist(sessionInstanceId) {
 
   if (!instance || instance.cancelledAt) return;
 
-  const bookingCount = instance.bookings.reduce((sum, b) => sum + b.lines.length, 0);
+  const bookingCount = instance.bookings.reduce(
+    (sum, b) => sum + b.lines.filter(l => !l.cancelledAt).length,
+    0,
+  );
   const sessionDate = new Date(instance.date);
   sessionDate.setHours(0, 0, 0, 0);
   const absentGymnastIds = (await prisma.attendance.findMany({

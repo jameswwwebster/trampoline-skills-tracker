@@ -367,3 +367,145 @@ describe('Commitment enforcement in booking', () => {
     expect(res.status).toBe(200);
   });
 });
+
+// ── Per-line cancellation ───────────────────────────────────────────────────
+describe('POST /api/booking/bookings/:id/lines/:lineId/cancel', () => {
+  let lineClub, lineParent, lineToken, gymnastA, gymnastB, instance, booking;
+
+  beforeAll(async () => {
+    lineClub = await createTestClub();
+    lineParent = await createParent(lineClub);
+    lineToken = tokenFor(lineParent);
+    gymnastA = await createGymnast(lineClub, lineParent);
+    gymnastB = await createGymnast(lineClub, lineParent);
+  });
+
+  beforeEach(async () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setUTCHours(0, 0, 0, 0);
+    const session = await createSession(lineClub, undefined, { pricePerGymnast: 700 });
+    instance = session.instance;
+    await prisma.sessionInstance.update({ where: { id: instance.id }, data: { date: tomorrow } });
+    booking = await prisma.booking.create({
+      data: {
+        userId: lineParent.id,
+        sessionInstanceId: instance.id,
+        status: 'CONFIRMED',
+        totalAmount: 1400,
+        lines: {
+          create: [
+            { gymnastId: gymnastA.id, amount: 700 },
+            { gymnastId: gymnastB.id, amount: 700 },
+          ],
+        },
+      },
+      include: { lines: true },
+    });
+  });
+
+  it('cancels one line and leaves the other confirmed; issues one credit', async () => {
+    const lineA = booking.lines.find(l => l.gymnastId === gymnastA.id);
+    const res = await request(testApp)
+      .post(`/api/booking/bookings/${booking.id}/lines/${lineA.id}/cancel`)
+      .set('Authorization', `Bearer ${lineToken}`)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.creditsIssued).toBe(true);
+    expect(res.body.bookingCancelled).toBe(false);
+
+    const refreshed = await prisma.booking.findUnique({
+      where: { id: booking.id },
+      include: { lines: true },
+    });
+    expect(refreshed.status).toBe('CONFIRMED');
+    const cancelledLine = refreshed.lines.find(l => l.id === lineA.id);
+    const otherLine = refreshed.lines.find(l => l.gymnastId === gymnastB.id);
+    expect(cancelledLine.cancelledAt).not.toBeNull();
+    expect(otherLine.cancelledAt).toBeNull();
+
+    const credits = await prisma.credit.findMany({ where: { sourceBookingId: booking.id } });
+    expect(credits).toHaveLength(1);
+    expect(credits[0].amount).toBe(700);
+  });
+
+  it('transitions booking to CANCELLED when the last line is cancelled', async () => {
+    const lineA = booking.lines.find(l => l.gymnastId === gymnastA.id);
+    const lineB = booking.lines.find(l => l.gymnastId === gymnastB.id);
+
+    await request(testApp)
+      .post(`/api/booking/bookings/${booking.id}/lines/${lineA.id}/cancel`)
+      .set('Authorization', `Bearer ${lineToken}`)
+      .send({});
+
+    const res = await request(testApp)
+      .post(`/api/booking/bookings/${booking.id}/lines/${lineB.id}/cancel`)
+      .set('Authorization', `Bearer ${lineToken}`)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.bookingCancelled).toBe(true);
+    const refreshed = await prisma.booking.findUnique({ where: { id: booking.id } });
+    expect(refreshed.status).toBe('CANCELLED');
+  });
+
+  it('rejects re-cancelling an already-cancelled line', async () => {
+    const lineA = booking.lines.find(l => l.gymnastId === gymnastA.id);
+    await request(testApp)
+      .post(`/api/booking/bookings/${booking.id}/lines/${lineA.id}/cancel`)
+      .set('Authorization', `Bearer ${lineToken}`)
+      .send({});
+    const res = await request(testApp)
+      .post(`/api/booking/bookings/${booking.id}/lines/${lineA.id}/cancel`)
+      .set('Authorization', `Bearer ${lineToken}`)
+      .send({});
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects non-owner non-admin', async () => {
+    const otherParent = await createParent(lineClub);
+    const otherToken = tokenFor(otherParent);
+    const lineA = booking.lines.find(l => l.gymnastId === gymnastA.id);
+    const res = await request(testApp)
+      .post(`/api/booking/bookings/${booking.id}/lines/${lineA.id}/cancel`)
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({});
+    expect(res.status).toBe(403);
+  });
+
+  it('skips credit for same-day cancellation', async () => {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    await prisma.sessionInstance.update({ where: { id: instance.id }, data: { date: today } });
+
+    const lineA = booking.lines.find(l => l.gymnastId === gymnastA.id);
+    const res = await request(testApp)
+      .post(`/api/booking/bookings/${booking.id}/lines/${lineA.id}/cancel`)
+      .set('Authorization', `Bearer ${lineToken}`)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.creditsIssued).toBe(false);
+    const credits = await prisma.credit.findMany({ where: { sourceBookingId: booking.id } });
+    expect(credits).toHaveLength(0);
+  });
+
+  it('does not double-credit when whole-booking cancel runs after a line was already cancelled', async () => {
+    const lineA = booking.lines.find(l => l.gymnastId === gymnastA.id);
+    await request(testApp)
+      .post(`/api/booking/bookings/${booking.id}/lines/${lineA.id}/cancel`)
+      .set('Authorization', `Bearer ${lineToken}`)
+      .send({});
+
+    const res = await request(testApp)
+      .post(`/api/booking/bookings/${booking.id}/cancel`)
+      .set('Authorization', `Bearer ${lineToken}`)
+      .send({});
+
+    expect(res.status).toBe(200);
+    const credits = await prisma.credit.findMany({ where: { sourceBookingId: booking.id } });
+    // 1 from per-line cancel + 1 from the remaining line during whole-booking cancel
+    expect(credits).toHaveLength(2);
+  });
+});
