@@ -4,6 +4,7 @@ const changelog = [
     date: '2026-05-08',
     entries: [
       { type: 'feature', text: 'Cancel a single gymnast off a multi-gymnast booking. My Bookings shows each gymnast on its own row with a per-row Cancel button when a booking covers more than one; cancelling one issues a credit (subject to the same-day rule) and leaves the others confirmed. Admins get the same per-row cancel in the booking admin attendee list. Cancelling the last remaining gymnast cancels the whole booking.' },
+      { type: 'fix', text: 'Rolling session generator no longer creates duplicate sessions one day earlier when the server runs in a non-UTC zone (e.g. BST). Date arithmetic and the (template, date) uniqueness key now both use UTC midnight. 154 spurious duplicate rows that had been generated were cleaned up.' },
     ],
   },
   {

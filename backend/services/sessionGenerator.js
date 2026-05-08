@@ -5,17 +5,19 @@ const prisma = require('../prisma');
  * of `dayOfWeek` (0=Sun..6=Sat), starting from (and including) `fromDate`.
  */
 function getNextNWeeksDates(dayOfWeek, fromDate, weeks) {
+  // Work in UTC — session_instances.date is stored as UTC midnight, and the
+  // (templateId, date) unique key compares exact timestamps. Mixing local and
+  // UTC midnight (e.g. during BST) creates duplicate rows one day earlier.
   const dates = [];
   const current = new Date(fromDate);
-  current.setHours(0, 0, 0, 0);
+  current.setUTCHours(0, 0, 0, 0);
 
-  // Advance to first matching day
-  const diff = (dayOfWeek - current.getDay() + 7) % 7;
-  current.setDate(current.getDate() + diff);
+  const diff = (dayOfWeek - current.getUTCDay() + 7) % 7;
+  current.setUTCDate(current.getUTCDate() + diff);
 
   for (let i = 0; i < weeks; i++) {
     dates.push(new Date(current));
-    current.setDate(current.getDate() + 7);
+    current.setUTCDate(current.getUTCDate() + 7);
   }
   return dates;
 }
@@ -25,12 +27,12 @@ function getNextNWeeksDates(dayOfWeek, fromDate, weeks) {
  */
 function isDateInClosure(date, closures) {
   const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
+  d.setUTCHours(0, 0, 0, 0);
   return closures.some(c => {
     const start = new Date(c.startDate);
-    start.setHours(0, 0, 0, 0);
+    start.setUTCHours(0, 0, 0, 0);
     const end = new Date(c.endDate);
-    end.setHours(23, 59, 59, 999);
+    end.setUTCHours(23, 59, 59, 999);
     return d >= start && d <= end;
   });
 }
@@ -64,7 +66,7 @@ async function generateRollingInstances(clubId) {
       if (template.startDate && date < new Date(template.startDate)) continue;
 
       const dateOnly = new Date(date);
-      dateOnly.setHours(0, 0, 0, 0);
+      dateOnly.setUTCHours(0, 0, 0, 0);
 
       const existing = await prisma.sessionInstance.findUnique({
         where: { templateId_date: { templateId: template.id, date: dateOnly } },
