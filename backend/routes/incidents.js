@@ -261,7 +261,7 @@ router.post('/:id/forward', auth, requireRole(STAFF_ROLES), async (req, res) => 
       include: { forwardedBy: { select: { id: true, firstName: true, lastName: true } } },
     });
 
-    const reportUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking/admin/incidents/${incident.id}`;
+    const reportUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking/admin/incidents?id=${incident.id}`;
     const forwarderName = `${req.user.firstName} ${req.user.lastName}`;
     await emailService.sendIncidentForwardEmail(
       toEmail, toName || null, incident.gymnast, incident, forwarderName, note || null, reportUrl,

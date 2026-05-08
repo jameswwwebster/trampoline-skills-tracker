@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { bookingApi } from '../../utils/bookingApi';
 import './booking-shared.css';
 
@@ -124,10 +125,18 @@ export default function MyIncidents() {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    const idFromUrl = searchParams.get('id');
     bookingApi.getMyIncidents()
-      .then(res => setIncidents(res.data))
+      .then(res => {
+        setIncidents(res.data);
+        if (idFromUrl) {
+          const found = res.data.find(i => i.id === idFromUrl);
+          if (found) setSelected(found);
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 
