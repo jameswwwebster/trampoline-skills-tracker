@@ -546,6 +546,7 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
       }
     }
 
+    let cascadeCommitmentStatus = null;
     if (status === 'PAUSED' && membership.status === 'ACTIVE') {
       if (membership.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
         const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -554,6 +555,7 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
         });
       }
       data.status = 'PAUSED';
+      cascadeCommitmentStatus = 'PAUSED';
     } else if (status === 'ACTIVE' && membership.status === 'PAUSED') {
       if (membership.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
         const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -562,6 +564,7 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
         });
       }
       data.status = 'ACTIVE';
+      cascadeCommitmentStatus = 'ACTIVE';
     }
 
     if (Object.keys(data).length === 0) {
@@ -574,10 +577,28 @@ router.patch('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res
       include: { gymnast: true },
     });
 
+    // Cascade pause/resume to standing slots for this gymnast at this club so
+    // session attendance reflects the membership state.
+    let cascadedCommitmentCount = 0;
+    if (cascadeCommitmentStatus) {
+      const matchStatus = cascadeCommitmentStatus === 'PAUSED' ? 'ACTIVE' : 'PAUSED';
+      const result = await prisma.commitment.updateMany({
+        where: {
+          gymnastId: membership.gymnastId,
+          status: matchStatus,
+          template: { clubId: membership.clubId },
+        },
+        data: cascadeCommitmentStatus === 'PAUSED'
+          ? { status: 'PAUSED', pausedAt: new Date(), pausedById: req.user.id }
+          : { status: 'ACTIVE', pausedAt: null, pausedById: null },
+      });
+      cascadedCommitmentCount = result.count;
+    }
+
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
       action: 'membership.update', entityType: 'Membership', entityId: req.params.id,
-      metadata: { status: data.status, monthlyAmount: data.monthlyAmount },
+      metadata: { status: data.status, monthlyAmount: data.monthlyAmount, cascadedCommitmentCount },
     });
 
     res.json(updated);
@@ -678,10 +699,19 @@ router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
 
     await prisma.membership.update({ where: { id: membership.id }, data: { status: 'CANCELLED' } });
 
+    // Cascade-remove standing slots for this gymnast at this club. Without this,
+    // a cancelled membership leaves the gymnast attending every weekly session.
+    const removedCommitments = await prisma.commitment.deleteMany({
+      where: {
+        gymnastId: membership.gymnastId,
+        template: { clubId: membership.clubId },
+      },
+    });
+
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
       action: 'membership.cancel', entityType: 'Membership', entityId: membership.id,
-      metadata: { gymnastId: membership.gymnastId },
+      metadata: { gymnastId: membership.gymnastId, removedCommitmentCount: removedCommitments.count },
     });
 
     res.json({ success: true });

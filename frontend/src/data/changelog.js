@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-05-10',
+    entries: [
+      { type: 'fix', text: 'Cancelling a monthly subscription now also removes the gymnast from their standing slots; pausing/resuming a subscription pauses/resumes the matching standing slots. Previously the membership was cancelled in Stripe and marked CANCELLED in the system, but the standing-slot commitments were left active so the gymnast kept appearing in every weekly session. Cleaned up 3 orphaned standing slots from previously-cancelled subscriptions (Hector Shipley x2, James Webster x1).' },
+    ],
+  },
+  {
     date: '2026-05-08',
     entries: [
       { type: 'feature', text: 'Cancel a single gymnast off a multi-gymnast booking. My Bookings shows each gymnast on its own row with a per-row Cancel button when a booking covers more than one; cancelling one issues a credit (subject to the same-day rule) and leaves the others confirmed. Admins get the same per-row cancel in the booking admin attendee list. Cancelling the last remaining gymnast cancels the whole booking.' },
