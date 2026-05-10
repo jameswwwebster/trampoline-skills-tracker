@@ -67,7 +67,7 @@ router.put('/:id', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
     });
 
     if (applyToFutureInstances && value.openSlots !== template.openSlots) {
-      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const today = new Date(); today.setUTCHours(0, 0, 0, 0);
       const futureInstances = await prisma.sessionInstance.findMany({
         where: { templateId: template.id, date: { gt: today }, cancelledAt: null },
         include: { bookings: { where: { status: 'CONFIRMED' } } },
@@ -105,7 +105,7 @@ router.patch('/:id/toggle', auth, requireRole(['CLUB_ADMIN']), async (req, res) 
     });
 
     if (!updated.isActive && applyToFutureInstances) {
-      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const today = new Date(); today.setUTCHours(0, 0, 0, 0);
       const futureInstances = await prisma.sessionInstance.findMany({
         where: { templateId: template.id, date: { gt: today }, cancelledAt: null },
         include: { bookings: { where: { status: 'CONFIRMED' } } },

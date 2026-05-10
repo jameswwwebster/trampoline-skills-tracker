@@ -29,7 +29,7 @@ async function processWaitlist(sessionInstanceId) {
     0,
   );
   const sessionDate = new Date(instance.date);
-  sessionDate.setHours(0, 0, 0, 0);
+  sessionDate.setUTCHours(0, 0, 0, 0);
   const absentGymnastIds = (await prisma.attendance.findMany({
     where: { sessionInstanceId: instance.id, status: 'ABSENT' },
     select: { gymnastId: true },
@@ -50,7 +50,7 @@ async function processWaitlist(sessionInstanceId) {
   // Determine offer type based on session proximity
   const [sh, sm] = instance.template.startTime.split(':').map(Number);
   const sessionStart = new Date(instance.date);
-  sessionStart.setHours(sh, sm, 0, 0);
+  sessionStart.setUTCHours(sh, sm, 0, 0);
   const hoursUntilSession = (sessionStart - Date.now()) / (1000 * 60 * 60);
 
   const { startTime, endTime } = instance.template;

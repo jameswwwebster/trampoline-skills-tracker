@@ -388,13 +388,13 @@ router.get('/uncertified-gymnasts', auth, requireRole(['CLUB_ADMIN', 'COACH']), 
 router.get('/birthdays-this-week', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
     const today = new Date();
-    const daysFromMonday = today.getDay() === 0 ? 6 : today.getDay() - 1;
+    const daysFromMonday = today.getUTCDay() === 0 ? 6 : today.getUTCDay() - 1;
     const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - daysFromMonday);
-    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setUTCDate(today.getUTCDate() - daysFromMonday);
+    weekStart.setUTCHours(0, 0, 0, 0);
     const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    weekEnd.setHours(23, 59, 59, 999);
+    weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
+    weekEnd.setUTCHours(23, 59, 59, 999);
 
     const gymnasts = await prisma.gymnast.findMany({
       where: { clubId: req.user.clubId, isArchived: false, dateOfBirth: { not: null } },
@@ -402,20 +402,20 @@ router.get('/birthdays-this-week', auth, requireRole(['CLUB_ADMIN', 'COACH']), a
     });
 
     const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const currentYear = today.getFullYear();
+    const currentYear = today.getUTCFullYear();
 
     const results = gymnasts
       .map(g => {
         const dob = new Date(g.dateOfBirth);
-        const thisYearBirthday = new Date(currentYear, dob.getMonth(), dob.getDate());
+        const thisYearBirthday = new Date(Date.UTC(currentYear, dob.getUTCMonth(), dob.getUTCDate()));
         if (thisYearBirthday < weekStart || thisYearBirthday > weekEnd) return null;
         return {
           id: g.id,
           firstName: g.firstName,
           lastName: g.lastName,
           dateOfBirth: g.dateOfBirth,
-          dayOfWeek: DAYS[thisYearBirthday.getDay()],
-          turnsAge: currentYear - dob.getFullYear(),
+          dayOfWeek: DAYS[thisYearBirthday.getUTCDay()],
+          turnsAge: currentYear - dob.getUTCFullYear(),
         };
       })
       .filter(Boolean)

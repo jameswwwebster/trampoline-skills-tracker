@@ -93,7 +93,7 @@ function activeLineCount(bookings) {
 async function getAvailableSlots(instance) {
   const bookedCount = activeLineCount(instance.bookings);
   const sessionDate = new Date(instance.date);
-  sessionDate.setHours(0, 0, 0, 0);
+  sessionDate.setUTCHours(0, 0, 0, 0);
   const absentGymnastIds = (await prisma.attendance.findMany({
     where: { sessionInstanceId: instance.id, status: 'ABSENT' },
     select: { gymnastId: true },
@@ -140,7 +140,7 @@ router.post('/', auth, async (req, res) => {
     // Prevent booking after the session has started
     const [sh0, sm0] = instance.template.startTime.split(':').map(Number);
     const sessionStart0 = new Date(instance.date);
-    sessionStart0.setHours(sh0, sm0, 0, 0);
+    sessionStart0.setUTCHours(sh0, sm0, 0, 0);
     if (new Date() >= sessionStart0) {
       return res.status(400).json({ error: 'Bookings are not allowed after a session has started' });
     }
@@ -462,7 +462,7 @@ router.post('/batch', auth, async (req, res) => {
       // Prevent booking after the session has started
       const [sh, sm] = instance.template.startTime.split(':').map(Number);
       const sessionStart = new Date(instance.date);
-      sessionStart.setHours(sh, sm, 0, 0);
+      sessionStart.setUTCHours(sh, sm, 0, 0);
       if (now >= sessionStart) {
         return res.status(400).json({ error: 'Bookings are not allowed after a session has started' });
       }
@@ -770,9 +770,9 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
     const sessionDate = new Date(booking.sessionInstance.date);
     const today = new Date();
     const isToday =
-      sessionDate.getFullYear() === today.getFullYear() &&
-      sessionDate.getMonth() === today.getMonth() &&
-      sessionDate.getDate() === today.getDate();
+      sessionDate.getUTCFullYear() === today.getUTCFullYear() &&
+      sessionDate.getUTCMonth() === today.getUTCMonth() &&
+      sessionDate.getUTCDate() === today.getUTCDate();
 
     // Determine whether to issue credits
     let issueCredit;
@@ -789,16 +789,32 @@ router.post('/:bookingId/cancel', auth, async (req, res) => {
     // credited at the time they were individually cancelled.
     const activeLines = booking.lines.filter(l => !l.cancelledAt);
 
+    const cancelledGymnastIds = activeLines.map(l => l.gymnastId);
+
     if (!issueCredit) {
-      await prisma.booking.update({
-        where: { id: booking.id },
-        data: { status: 'CANCELLED' },
-      });
+      await prisma.$transaction([
+        prisma.booking.update({
+          where: { id: booking.id },
+          data: { status: 'CANCELLED' },
+        }),
+        prisma.attendance.deleteMany({
+          where: {
+            sessionInstanceId: booking.sessionInstanceId,
+            gymnastId: { in: cancelledGymnastIds },
+          },
+        }),
+      ]);
     } else {
       await prisma.$transaction([
         prisma.booking.update({
           where: { id: booking.id },
           data: { status: 'CANCELLED' },
+        }),
+        prisma.attendance.deleteMany({
+          where: {
+            sessionInstanceId: booking.sessionInstanceId,
+            gymnastId: { in: cancelledGymnastIds },
+          },
         }),
         ...activeLines.map((line) =>
           prisma.credit.create({
@@ -865,9 +881,9 @@ router.post('/:bookingId/lines/:lineId/cancel', auth, async (req, res) => {
     const sessionDate = new Date(booking.sessionInstance.date);
     const today = new Date();
     const isToday =
-      sessionDate.getFullYear() === today.getFullYear() &&
-      sessionDate.getMonth() === today.getMonth() &&
-      sessionDate.getDate() === today.getDate();
+      sessionDate.getUTCFullYear() === today.getUTCFullYear() &&
+      sessionDate.getUTCMonth() === today.getUTCMonth() &&
+      sessionDate.getUTCDate() === today.getUTCDate();
 
     let issueCredit;
     if (isAdminAction && req.body.issueCredit !== undefined) {
@@ -887,6 +903,13 @@ router.post('/:bookingId/lines/:lineId/cancel', auth, async (req, res) => {
       prisma.bookingLine.update({
         where: { id: line.id },
         data: { cancelledAt: new Date() },
+      }),
+      // Drop any pre-marked register entry for this gymnast on this session.
+      prisma.attendance.deleteMany({
+        where: {
+          sessionInstanceId: booking.sessionInstanceId,
+          gymnastId: line.gymnastId,
+        },
       }),
     ];
     if (issueCredit) {
@@ -1011,7 +1034,7 @@ router.post('/combined', auth, async (req, res) => {
 
         const [shC, smC] = instance.template.startTime.split(':').map(Number);
         const sessionStartC = new Date(instance.date);
-        sessionStartC.setHours(shC, smC, 0, 0);
+        sessionStartC.setUTCHours(shC, smC, 0, 0);
         if (now >= sessionStartC) {
           return res.status(400).json({ error: 'Bookings are not allowed after a session has started' });
         }

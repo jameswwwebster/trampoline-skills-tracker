@@ -31,7 +31,7 @@ router.post('/:instanceId', auth, async (req, res) => {
       0,
     );
     const sessionDate = new Date(instance.date);
-    sessionDate.setHours(0, 0, 0, 0);
+    sessionDate.setUTCHours(0, 0, 0, 0);
     const absentGymnastIds = (await prisma.attendance.findMany({
       where: { sessionInstanceId: instance.id, status: 'ABSENT' },
       select: { gymnastId: true },

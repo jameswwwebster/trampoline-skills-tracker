@@ -33,8 +33,8 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
     const clubId = req.user.clubId;
     const start = new Date(value.startDate);
     const end = new Date(value.endDate);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
+    start.setUTCHours(0, 0, 0, 0);
+    end.setUTCHours(23, 59, 59, 999);
 
     const closure = await prisma.closurePeriod.create({
       data: { clubId, startDate: start, endDate: end, reason: value.reason },
@@ -65,22 +65,25 @@ router.post('/', auth, requireRole(['CLUB_ADMIN']), async (req, res) => {
       });
 
       for (const booking of instance.bookings) {
+        const activeLines = booking.lines.filter(l => !l.cancelledAt);
         await prisma.booking.update({
           where: { id: booking.id },
           data: { status: 'CANCELLED' },
         });
-        await prisma.$transaction(
-          booking.lines.map(() =>
-            prisma.credit.create({
-              data: {
-                userId: booking.userId,
-                amount: 600,
-                expiresAt,
-                sourceBookingId: booking.id,
-              },
-            })
-          )
-        );
+        if (activeLines.length > 0) {
+          await prisma.$transaction(
+            activeLines.map((line) =>
+              prisma.credit.create({
+                data: {
+                  userId: booking.userId,
+                  amount: line.amount,
+                  expiresAt,
+                  sourceBookingId: booking.id,
+                },
+              })
+            )
+          );
+        }
       }
     }
 

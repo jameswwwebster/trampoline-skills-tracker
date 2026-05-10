@@ -409,7 +409,7 @@ router.post('/', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) =>
 
     const startDate = new Date(value.startDate);
     const todayMidnight = new Date();
-    todayMidnight.setHours(0, 0, 0, 0);
+    todayMidnight.setUTCHours(0, 0, 0, 0);
     const isFuture = startDate > todayMidnight;
 
     // Validate templateIds belong to this club and have no existing commitments

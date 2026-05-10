@@ -4,6 +4,11 @@ const changelog = [
     date: '2026-05-10',
     entries: [
       { type: 'fix', text: 'Cancelling a monthly subscription now also removes the gymnast from their standing slots; pausing/resuming a subscription pauses/resumes the matching standing slots. Previously the membership was cancelled in Stripe and marked CANCELLED in the system, but the standing-slot commitments were left active so the gymnast kept appearing in every weekly session. Cleaned up 3 orphaned standing slots from previously-cancelled subscriptions (Hector Shipley x2, James Webster x1).' },
+      { type: 'fix', text: 'Closure cancellations now issue a credit equal to what the user actually paid for each booking line. Previously every cancelled line got a flat £6 credit regardless of the session\'s pricePerGymnast, silently short-credited (or over-credited) anyone on a non-£6 session.' },
+      { type: 'fix', text: 'Cancelling a booking (or a single gymnast off a booking) now removes any pre-marked PRESENT/ABSENT row from the register, and the register no longer lists cancelled gymnasts.' },
+      { type: 'fix', text: 'Timezone bugs across booking flows: same-day cancellation rule, capacity windows, waitlist proximity check, session-start cutoff, closure date range, and the birthdays-this-week dashboard now all compute against UTC. On a non-UTC server these were shifting by a day around midnight (the same family as the recently-fixed session-generator bug).' },
+      { type: 'fix', text: 'A guardian self-cancelling their Stripe subscription now cleans up the gymnast\'s standing slots too. Previously the webhook only flipped the membership to CANCELLED and left commitments live, re-introducing the bug fixed earlier today for admin-side cancels.' },
+      { type: 'fix', text: 'Archiving a gymnast now cascades: any live monthly subscription is cancelled in Stripe, standing slots are removed, and any future confirmed booking lines for that gymnast are cancelled. Previously archive was purely cosmetic, leaving the parent still being billed and the gymnast still on registers.' },
     ],
   },
   {

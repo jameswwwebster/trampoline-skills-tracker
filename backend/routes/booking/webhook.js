@@ -247,11 +247,24 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
 
   if (event.type === 'customer.subscription.deleted') {
     const subscription = event.data.object;
-    await prisma.membership.updateMany({
+    const affected = await prisma.membership.findMany({
       where: { stripeSubscriptionId: subscription.id, status: { not: 'CANCELLED' } },
-      data: { status: 'CANCELLED' },
+      select: { id: true, gymnastId: true, clubId: true },
     });
-    console.log(`Membership cancelled via subscription deletion ${subscription.id}`);
+    if (affected.length > 0) {
+      await prisma.membership.updateMany({
+        where: { id: { in: affected.map(m => m.id) } },
+        data: { status: 'CANCELLED' },
+      });
+      // Mirror the DELETE /memberships/:id cascade — without this, the gymnast
+      // keeps appearing in every weekly session even though the sub is gone.
+      for (const m of affected) {
+        await prisma.commitment.deleteMany({
+          where: { gymnastId: m.gymnastId, template: { clubId: m.clubId } },
+        });
+      }
+    }
+    console.log(`Membership cancelled via subscription deletion ${subscription.id} (${affected.length} affected)`);
   }
 
   res.json({ received: true });

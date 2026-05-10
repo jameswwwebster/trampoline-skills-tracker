@@ -1179,6 +1179,68 @@ router.patch('/:id/archive', auth, requireRole(['CLUB_ADMIN']), async (req, res)
       return res.status(400).json({ error: 'Gymnast is already archived' });
     }
 
+    // Cascade: archiving a gymnast should also remove their standing slots and
+    // cancel any live monthly subscription. Without this they keep appearing on
+    // registers and Stripe keeps billing the parent.
+    const liveMemberships = await prisma.membership.findMany({
+      where: { gymnastId: id, status: { notIn: ['CANCELLED'] } },
+      select: { id: true, stripeSubscriptionId: true, clubId: true },
+    });
+    const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+    for (const m of liveMemberships) {
+      if (m.stripeSubscriptionId && stripe) {
+        try {
+          await stripe.subscriptions.cancel(m.stripeSubscriptionId);
+        } catch (stripeErr) {
+          console.warn('Stripe cancel skipped on archive:', stripeErr.message);
+        }
+      }
+    }
+    if (liveMemberships.length > 0) {
+      await prisma.membership.updateMany({
+        where: { id: { in: liveMemberships.map(m => m.id) } },
+        data: { status: 'CANCELLED' },
+      });
+    }
+    const removedCommitments = await prisma.commitment.deleteMany({
+      where: { gymnastId: id, template: { clubId: req.user.clubId } },
+    });
+
+    // Cancel future CONFIRMED bookings for this gymnast (per-line cancel; if a
+    // booking has no remaining active lines, mark the booking CANCELLED too).
+    const futureLines = await prisma.bookingLine.findMany({
+      where: {
+        gymnastId: id,
+        cancelledAt: null,
+        booking: {
+          status: 'CONFIRMED',
+          sessionInstance: { date: { gte: new Date() }, cancelledAt: null },
+        },
+      },
+      select: { id: true, bookingId: true },
+    });
+    if (futureLines.length > 0) {
+      const now = new Date();
+      await prisma.bookingLine.updateMany({
+        where: { id: { in: futureLines.map(l => l.id) } },
+        data: { cancelledAt: now },
+      });
+      const affectedBookingIds = [...new Set(futureLines.map(l => l.bookingId))];
+      const stillActive = await prisma.booking.findMany({
+        where: { id: { in: affectedBookingIds } },
+        include: { lines: true },
+      });
+      const fullyCancelled = stillActive
+        .filter(b => b.lines.every(l => l.cancelledAt))
+        .map(b => b.id);
+      if (fullyCancelled.length > 0) {
+        await prisma.booking.updateMany({
+          where: { id: { in: fullyCancelled } },
+          data: { status: 'CANCELLED' },
+        });
+      }
+    }
+
     // Archive the gymnast
     const gymnast = await prisma.gymnast.update({
       where: { id },
@@ -1210,7 +1272,12 @@ router.patch('/:id/archive', auth, requireRole(['CLUB_ADMIN']), async (req, res)
 
     res.json({
       message: 'Gymnast archived successfully',
-      gymnast
+      gymnast,
+      cascade: {
+        cancelledMemberships: liveMemberships.length,
+        removedCommitments: removedCommitments.count,
+        cancelledBookingLines: futureLines.length,
+      },
     });
   } catch (error) {
     console.error('Archive gymnast error:', error);

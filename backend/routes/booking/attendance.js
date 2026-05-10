@@ -19,7 +19,7 @@ async function buildExpectedList(instanceId, clubId) {
     include: { lines: { include: { gymnast: true } } },
   });
   const fromBookings = bookings.flatMap(b =>
-    b.lines.map(l => ({
+    b.lines.filter(l => !l.cancelledAt).map(l => ({
       gymnastId: l.gymnast.id,
       firstName: l.gymnast.firstName,
       lastName: l.gymnast.lastName,
@@ -27,7 +27,7 @@ async function buildExpectedList(instanceId, clubId) {
   );
 
   const sessionDate = new Date(instance.date);
-  sessionDate.setHours(0, 0, 0, 0);
+  sessionDate.setUTCHours(0, 0, 0, 0);
 
   const commitments = await prisma.commitment.findMany({
     where: {
