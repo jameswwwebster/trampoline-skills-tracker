@@ -3,6 +3,7 @@ const changelog = [
   {
     date: '2026-05-10',
     entries: [
+      { type: 'feature', text: 'Admins/coaches can now cancel a single session from the booking admin panel. A red "Cancel session" button opens a reason textarea; on confirm every confirmed booking is cancelled with a full credit, register entries are removed, waitlist offers are voided, and every affected parent (and waitlist entrant) is emailed with the reason. Previously the only options were a date-range closure or deactivating the whole template.' },
       { type: 'fix', text: 'Cancelling a monthly subscription now also removes the gymnast from their standing slots; pausing/resuming a subscription pauses/resumes the matching standing slots. Previously the membership was cancelled in Stripe and marked CANCELLED in the system, but the standing-slot commitments were left active so the gymnast kept appearing in every weekly session. Cleaned up 3 orphaned standing slots from previously-cancelled subscriptions (Hector Shipley x2, James Webster x1).' },
       { type: 'fix', text: 'Closure cancellations now issue a credit equal to what the user actually paid for each booking line. Previously every cancelled line got a flat £6 credit regardless of the session\'s pricePerGymnast, silently short-credited (or over-credited) anyone on a non-£6 session.' },
       { type: 'fix', text: 'Cancelling a booking (or a single gymnast off a booking) now removes any pre-marked PRESENT/ABSENT row from the register, and the register no longer lists cancelled gymnasts.' },

@@ -757,6 +757,56 @@ class EmailService {
     }
   }
 
+  async sendSessionCancelledEmail({ email, firstName, sessionDate, startTime, endTime, reason, creditAmount, gymnastNames, isWaitlist }) {
+    const d = new Date(sessionDate);
+    const dateStr = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    const timeStr = `${startTime}–${endTime}`;
+    const subject = `Session cancelled — ${dateStr} at ${startTime}`;
+
+    const namesLine = gymnastNames.length > 0
+      ? `<p>This affects <strong>${gymnastNames.join(', ')}</strong>.</p>`
+      : '';
+    const namesText = gymnastNames.length > 0 ? `This affects ${gymnastNames.join(', ')}.\n\n` : '';
+
+    const creditLine = creditAmount > 0
+      ? `<p>A credit of <strong>£${(creditAmount / 100).toFixed(2)}</strong> has been added to your account, valid for one month.</p>`
+      : '';
+    const creditText = creditAmount > 0
+      ? `A credit of £${(creditAmount / 100).toFixed(2)} has been added to your account, valid for one month.\n\n`
+      : '';
+
+    const waitlistLine = isWaitlist
+      ? `<p>You were on the waitlist for this session, so the offer is no longer valid. You can rejoin a different session's waitlist any time.</p>`
+      : '';
+    const waitlistText = isWaitlist
+      ? `You were on the waitlist for this session, so the offer is no longer valid. You can rejoin a different session's waitlist any time.\n\n`
+      : '';
+
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: email,
+      subject,
+      html: brandedHtml(subject, `
+        <p style="margin-top:0">Hi ${firstName},</p>
+        <p>The session on <strong>${dateStr} at ${timeStr}</strong> has been cancelled.</p>
+        <p><strong>Reason:</strong> ${reason}</p>
+        ${namesLine}
+        ${creditLine}
+        ${waitlistLine}
+        ${ctaButton(`${BASE_URL()}/booking`, 'Open the app')}
+      `),
+      text: `Hi ${firstName},\n\nThe session on ${dateStr} at ${timeStr} has been cancelled.\n\nReason: ${reason}\n\n${namesText}${creditText}${waitlistText}`,
+    }, { to: email, session: `${dateStr} ${timeStr}` });
+  }
+
+  async trySendSessionCancelled(args) {
+    try {
+      await this.sendSessionCancelledEmail(args);
+    } catch (err) {
+      console.error('Session cancelled email failed:', err);
+    }
+  }
+
   async sendCompetitionInviteEmail(email, firstName, gymnast, event, categoryNames, totalAmountPence) {
     const date = new Date(event.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     const deadline = new Date(event.entryDeadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });

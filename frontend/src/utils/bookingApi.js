@@ -49,6 +49,9 @@ export const bookingApi = {
   getSession: (instanceId) =>
     axios.get(`${API_URL}/booking/sessions/${instanceId}`, { headers: getHeaders() }),
 
+  cancelSession: (instanceId, reason) =>
+    axios.patch(`${API_URL}/booking/sessions/${instanceId}/cancel`, { reason }, { headers: getHeaders() }),
+
   createBooking: (data) =>
     axios.post(`${API_URL}/booking/bookings`, data, { headers: getHeaders() }),
 

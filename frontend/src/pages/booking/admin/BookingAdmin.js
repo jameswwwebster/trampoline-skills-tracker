@@ -183,6 +183,10 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
   const [standingSlots, setStandingSlots] = useState(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [absentGymnastIds, setAbsentGymnastIds] = useState([]);
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
   const totalGymnasts = sessionDetail.bookings?.reduce(
     (n, b) => n + b.lines.filter(l => !l.cancelledAt).length, 0,
   ) ?? 0;
@@ -209,6 +213,26 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
   // booking remain confirmed. (Previously this called cancelBooking, which
   // cancelled the whole booking — kicking off other gymnasts the admin
   // didn't intend to touch.)
+  const handleCancelSession = async () => {
+    const reason = cancelReason.trim();
+    if (!reason) {
+      setCancelError('Please give a reason — it goes in the email to affected parents.');
+      return;
+    }
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      await bookingApi.cancelSession(selectedSession, reason);
+      setShowCancelForm(false);
+      setCancelReason('');
+      onAdded();
+    } catch (err) {
+      setCancelError(err.response?.data?.error || 'Failed to cancel session.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const handleRemove = async (bookingId, lineId, issueCredit) => {
     setRemoving(lineId);
     setRemoveError(null);
@@ -292,6 +316,54 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
           bookedGymnastIds={sessionDetail.bookings?.flatMap(b => b.lines.filter(l => !l.cancelledAt).map(l => l.gymnast.id)) ?? []}
           onAdded={onAdded}
         />
+      )}
+
+      {!sessionDetail.cancelledAt && (
+        <>
+          <button
+            className="bk-btn bk-btn--danger"
+            style={{ width: '100%', marginBottom: '1rem' }}
+            onClick={() => setShowCancelForm(v => !v)}
+          >
+            {showCancelForm ? 'Keep session' : 'Cancel session'}
+          </button>
+          {showCancelForm && (
+            <div className="bk-card" style={{ marginBottom: '1rem' }}>
+              <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem' }}>
+                Cancelling refunds every booking with a credit and emails affected parents and waitlist entrants.
+              </p>
+              <label htmlFor="bk-cancel-reason" style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                Reason (shown to parents)
+              </label>
+              <textarea
+                id="bk-cancel-reason"
+                value={cancelReason}
+                onChange={e => setCancelReason(e.target.value)}
+                rows={3}
+                maxLength={500}
+                placeholder="e.g. coach unwell, weather closure"
+                style={{ width: '100%', boxSizing: 'border-box', padding: '0.5rem', fontFamily: 'inherit', fontSize: '0.95rem', marginBottom: '0.5rem' }}
+              />
+              {cancelError && <p className="bk-error" style={{ marginBottom: '0.5rem' }}>{cancelError}</p>}
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  className="bk-btn bk-btn--danger"
+                  onClick={handleCancelSession}
+                  disabled={cancelling || !cancelReason.trim()}
+                >
+                  {cancelling ? 'Cancelling…' : 'Confirm cancel'}
+                </button>
+                <button
+                  className="bk-btn"
+                  onClick={() => { setShowCancelForm(false); setCancelReason(''); setCancelError(null); }}
+                  disabled={cancelling}
+                >
+                  Back
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {sessionDetail.templateId && (

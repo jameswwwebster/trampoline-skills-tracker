@@ -230,3 +230,105 @@ describe('standing slot capacity decrement', () => {
     expect(res.body.availableSlots).toBe(res.body.capacity - 1);
   });
 });
+
+describe('PATCH /api/booking/sessions/:instanceId/cancel', () => {
+  let club, admin, parent, parentToken, adminToken, gymnast, template, instance;
+
+  beforeEach(async () => {
+    await cleanDatabase();
+    club = await createTestClub();
+    admin = await createParent(club, { role: 'CLUB_ADMIN', email: `cs-admin-${Date.now()}@test.tl` });
+    parent = await createParent(club, { email: `cs-parent-${Date.now()}@test.tl` });
+    parentToken = tokenFor(parent);
+    adminToken = tokenFor(admin);
+    gymnast = await createGymnast(club, parent);
+    ({ template, instance } = await createSession(club, undefined, { pricePerGymnast: 750 }));
+  });
+
+  afterAll(async () => {
+    await cleanDatabase();
+    await prisma.$disconnect();
+  });
+
+  it('cancels instance, marks bookings CANCELLED, issues per-line credits, drops attendance + waitlist', async () => {
+    const booking = await prisma.booking.create({
+      data: {
+        userId: parent.id, sessionInstanceId: instance.id, status: 'CONFIRMED',
+        totalAmount: 750, lines: { create: [{ gymnastId: gymnast.id, amount: 750 }] },
+      },
+      include: { lines: true },
+    });
+    await prisma.attendance.create({
+      data: { sessionInstanceId: instance.id, gymnastId: gymnast.id, status: 'PRESENT', markedById: admin.id },
+    });
+    const otherParent = await createParent(club, { email: `cs-other-${Date.now()}@test.tl` });
+    await prisma.waitlistEntry.create({
+      data: { userId: otherParent.id, sessionInstanceId: instance.id, status: 'OFFERED' },
+    });
+
+    const res = await request(app)
+      .patch(`/api/booking/sessions/${instance.id}/cancel`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ reason: 'Coach unwell' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.affectedBookings).toBe(1);
+    expect(res.body.creditCount).toBe(1);
+    expect(res.body.totalCredited).toBe(750);
+    expect(res.body.waitlistAffected).toBe(1);
+
+    const reloaded = await prisma.sessionInstance.findUnique({ where: { id: instance.id } });
+    expect(reloaded.cancelledAt).toBeTruthy();
+    expect(reloaded.cancellationReason).toBe('Coach unwell');
+
+    const reloadedBooking = await prisma.booking.findUnique({
+      where: { id: booking.id },
+      include: { lines: true },
+    });
+    expect(reloadedBooking.status).toBe('CANCELLED');
+    expect(reloadedBooking.lines[0].cancelledAt).toBeTruthy();
+
+    const credits = await prisma.credit.findMany({ where: { userId: parent.id, sourceBookingId: booking.id } });
+    expect(credits.length).toBe(1);
+    expect(credits[0].amount).toBe(750);
+
+    const attendance = await prisma.attendance.findMany({ where: { sessionInstanceId: instance.id } });
+    expect(attendance.length).toBe(0);
+
+    const waitlist = await prisma.waitlistEntry.findMany({ where: { sessionInstanceId: instance.id } });
+    expect(waitlist.every(w => w.status === 'EXPIRED')).toBe(true);
+  });
+
+  it('rejects when reason missing', async () => {
+    const res = await request(app)
+      .patch(`/api/booking/sessions/${instance.id}/cancel`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({});
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects non-admin/coach', async () => {
+    const res = await request(app)
+      .patch(`/api/booking/sessions/${instance.id}/cancel`)
+      .set('Authorization', `Bearer ${parentToken}`)
+      .send({ reason: 'x' });
+    expect(res.status).toBe(403);
+  });
+
+  it('returns 400 when already cancelled', async () => {
+    await prisma.sessionInstance.update({ where: { id: instance.id }, data: { cancelledAt: new Date() } });
+    const res = await request(app)
+      .patch(`/api/booking/sessions/${instance.id}/cancel`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ reason: 'x' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 404 for unknown instance', async () => {
+    const res = await request(app)
+      .patch('/api/booking/sessions/nope/cancel')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ reason: 'x' });
+    expect(res.status).toBe(404);
+  });
+});
