@@ -108,6 +108,17 @@ export default function AdminMemberships() {
     }
   };
 
+  const handleResume = async (id) => {
+    if (!window.confirm('Resume this membership? The scheduled cancellation will be removed and billing continues as normal.')) return;
+    try {
+      await bookingApi.resumeMembership(id);
+      showToast('Membership resumed.', 'success');
+      load();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to resume membership.', 'error');
+    }
+  };
+
   const handleNotifyScheduled = async () => {
     const scheduled = memberships.filter(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt);
     if (!window.confirm(`Send a "membership scheduled" email to ${scheduled.length} guardian${scheduled.length !== 1 ? 's' : ''}?`)) return;
@@ -188,6 +199,58 @@ export default function AdminMemberships() {
         )}
       </div>
 
+      {(() => {
+        const bgExpired = memberships.filter(m =>
+          m.gymnast?.bgNumberStatus === 'EXPIRED' && m.status !== 'CANCELLED'
+        );
+        if (bgExpired.length === 0) return null;
+        return (
+          <div className="bk-card" style={{ marginBottom: '1rem', borderLeft: '4px solid var(--booking-danger)' }}>
+            <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>
+              BG-expired members ({bgExpired.length})
+            </h3>
+            <p className="bk-muted" style={{ fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+              These gymnasts' British Gymnastics memberships have expired. Each subscription is set to cancel at the end of the current billing period. Resume once their BG is renewed and re-verified.
+            </p>
+            <table className="bk-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left' }}>Gymnast</th>
+                  <th style={{ textAlign: 'right' }}>Monthly</th>
+                  <th style={{ textAlign: 'left' }}>Cancels on</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {bgExpired.map(m => {
+                  const cancelDate = m.scheduledCancelAt
+                    ? new Date(m.scheduledCancelAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : 'not yet scheduled';
+                  const stillActive = m.scheduledCancelAt && new Date(m.scheduledCancelAt) > new Date();
+                  return (
+                    <tr key={m.id} style={{ borderTop: '1px solid var(--booking-border)' }}>
+                      <td style={{ padding: '0.5rem' }}>{m.gymnast.firstName} {m.gymnast.lastName}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>£{(m.monthlyAmount / 100).toFixed(2)}</td>
+                      <td style={{ padding: '0.5rem' }}>{cancelDate}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>
+                        <button
+                          className="bk-btn bk-btn--sm bk-btn--primary"
+                          disabled={!stillActive}
+                          title={stillActive ? 'Cancel the scheduled cancellation and keep billing' : 'Sub already ended — create a new membership instead'}
+                          onClick={() => handleResume(m.id)}
+                        >
+                          Resume subscription
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
+
       {memberships.some(m => m.status === 'SCHEDULED' && !m.scheduledNotifiedAt) && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           <button
@@ -210,12 +273,13 @@ export default function AdminMemberships() {
           value={nameSearch}
           onChange={e => setNameSearch(e.target.value)}
         />
-        <select className="bk-input" style={{ maxWidth: 200 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+        <select className="bk-input" style={{ maxWidth: 220 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="">All statuses</option>
           {Object.entries(STATUS_LABELS).map(([k, v]) => (
             <option key={k} value={k}>{v.label}</option>
           ))}
           <option value="CANCELLED">Cancelled</option>
+          <option value="BG_EXPIRED">BG expired</option>
         </select>
         {(nameSearch || statusFilter) && (
           <button className="bk-btn bk-btn--sm" style={{ border: '1px solid var(--booking-border)' }} onClick={() => { setNameSearch(''); setStatusFilter(''); }}>Clear</button>
@@ -224,7 +288,7 @@ export default function AdminMemberships() {
 
       {(() => {
         const filtered = memberships.filter(m => {
-          if (statusFilter && m.status !== statusFilter) return false;
+          if (statusFilter === 'BG_EXPIRED') { if (m.gymnast?.bgNumberStatus !== 'EXPIRED' || m.status === 'CANCELLED') return false; } else if (statusFilter && m.status !== statusFilter) return false;
           if (!statusFilter && m.status === 'CANCELLED') return false;
           if (nameSearch) {
             const q = nameSearch.toLowerCase();
@@ -236,7 +300,7 @@ export default function AdminMemberships() {
       })()}
       {memberships.length > 0 && (() => {
         const filtered = memberships.filter(m => {
-          if (statusFilter && m.status !== statusFilter) return false;
+          if (statusFilter === 'BG_EXPIRED') { if (m.gymnast?.bgNumberStatus !== 'EXPIRED' || m.status === 'CANCELLED') return false; } else if (statusFilter && m.status !== statusFilter) return false;
           if (!statusFilter && m.status === 'CANCELLED') return false;
           if (nameSearch) {
             const q = nameSearch.toLowerCase();

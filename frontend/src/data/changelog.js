@@ -3,6 +3,11 @@ const changelog = [
   {
     date: '2026-05-12',
     entries: [
+      { type: 'feature', text: 'When a coach marks a BG membership as expired, any live monthly subscription for that gymnast is now scheduled to cancel at the end of its current billing period (Stripe cancel_at_period_end). The "you have 14 days" email now also tells the parent the exact date their subscription will end. The standing slot stays live until the sub actually cancels.' },
+    { type: 'feature', text: 'Memberships tab now has a "BG-expired members" section listing gymnasts whose BG has lapsed and whose subscription is scheduled to cancel. Each row shows the cancel date and a "Resume subscription" button (active while the sub is still in its paid period). The status filter dropdown also has a new "BG expired" option.' },
+      { type: 'feature', text: 'Coaches can mark a BG number "Valid but expired" directly from the Pending Verification list. Skips the verify-then-expire dance for numbers that are real but lapsed.' },
+      { type: 'feature', text: 'Parents now see a clear "I\'ve renewed it with British Gymnastics" button on the gymnast\'s BG card when the membership is expired. One click flips status back to pending for a coach to re-check, with a 3-day grace.' },
+      { type: 'improvement', text: 'Admin BG Numbers page now shows every non-archived gymnast whose BG is not currently verified, including missing numbers regardless of past-session count. Status badges, days-in-state, action filter (Action required / Just FYI / All), and per-row verify / valid-but-expired / invalidate actions.' },
       { type: 'fix', text: 'Cart/batch booking no longer blocks a gymnast\'s 2nd free session with a spurious "BG number required" error. The batch flow was counting the current attempt as a past session (past 1 + pending 1 = 2 → blocked), contradicting the single-booking flow and the on-screen "1 free session remaining" message.' },
     ],
   },

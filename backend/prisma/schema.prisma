@@ -876,6 +876,7 @@ model Membership {
   needsPaymentMethod     Boolean          @default(false)
   startDate              DateTime
   scheduledNotifiedAt    DateTime?
+  scheduledCancelAt      DateTime?
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
   gymnast                Gymnast          @relation(fields: [gymnastId], references: [id])

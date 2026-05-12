@@ -777,6 +777,8 @@ function BgNumberSection({ gymnast, onUpdated }) {
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState(null);
+  const [resubmitting, setResubmitting] = useState(false);
+  const [resubmitted, setResubmitted] = useState(false);
 
   const isInvalid = gymnast.bgNumberStatus === 'INVALID';
   const isPending = gymnast.bgNumberStatus === 'PENDING';
@@ -807,6 +809,20 @@ function BgNumberSection({ gymnast, onUpdated }) {
       setError(err.response?.data?.error || 'Failed to save.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleResubmit = async () => {
+    setResubmitting(true);
+    setError(null);
+    try {
+      await bookingApi.resubmitBgNumber(gymnast.id);
+      setResubmitted(true);
+      onUpdated();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed.');
+    } finally {
+      setResubmitting(false);
     }
   };
 
@@ -878,7 +894,26 @@ function BgNumberSection({ gymnast, onUpdated }) {
           {expiredRemaining === 0
             ? ' Bookings are paused until you renew and update the number.'
             : ` You have ${expiredRemaining} day${expiredRemaining === 1 ? '' : 's'} left to renew before bookings are paused.`}
-          {' '}Renew on <a href="https://mybg.british-gymnastics.org/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>mybg.british-gymnastics.org</a>, then update the number below.
+          {' '}Renew on <a href="https://mybg.british-gymnastics.org/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>mybg.british-gymnastics.org</a>.
+          {!resubmitted && (
+            <div style={{ marginTop: '0.6rem' }}>
+              <button
+                className="bk-btn bk-btn--primary bk-btn--sm"
+                disabled={resubmitting}
+                onClick={handleResubmit}
+              >
+                {resubmitting ? 'Submitting…' : "I've renewed it with British Gymnastics"}
+              </button>
+              <span style={{ display: 'block', marginTop: '0.3rem', fontSize: '0.78rem', color: 'inherit', opacity: 0.85 }}>
+                Click this once you've renewed your membership. A coach will re-check it.
+              </span>
+            </div>
+          )}
+          {resubmitted && (
+            <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: 'var(--booking-success)' }}>
+              Thanks — a coach will re-check it.
+            </p>
+          )}
         </div>
       )}
 

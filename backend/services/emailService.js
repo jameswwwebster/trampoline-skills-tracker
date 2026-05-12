@@ -381,7 +381,13 @@ class EmailService {
     });
   }
 
-  async sendBgNumberExpiredEmail(guardianEmail, guardianFirstName, gymnastFirstName, graceDays = 14) {
+  async sendBgNumberExpiredEmail(guardianEmail, guardianFirstName, gymnastFirstName, graceDays = 14, scheduledCancelDate = null) {
+    const subPara = scheduledCancelDate
+      ? `<p><strong>Your monthly subscription will end on ${new Date(scheduledCancelDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> (the close of your current billing period). To keep your standing slot, please renew with British Gymnastics and click "I've renewed it" in your account before then so a coach can re-check it.</p>`
+      : '';
+    const subText = scheduledCancelDate
+      ? `\n\nYour monthly subscription will end on ${new Date(scheduledCancelDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} (the close of your current billing period). To keep your standing slot, please renew with British Gymnastics and click "I've renewed it" in your account before then so a coach can re-check it.\n`
+      : '';
     return this.sendEmail({
       to: guardianEmail,
       subject: `Action needed — BG membership for ${gymnastFirstName} has expired`,
@@ -391,9 +397,11 @@ class EmailService {
         <p>${gymnastFirstName}'s British Gymnastics membership has expired.</p>
         ${infoBox(`<p style="margin:0"><strong>You have ${graceDays} days to renew and update the number in your account.</strong></p>
           <p style="margin:0.5rem 0 0">During this period, bookings continue to work as normal. After ${graceDays} days, booking will be paused until a renewed number is entered and re-verified.</p>`)}
-        <p>Please renew on the <a href="https://mybg.british-gymnastics.org">British Gymnastics portal</a>, then enter the renewed number in your account here.</p>
-        ${ctaButton(BASE_URL() + '/booking/my-account', 'Update BG number')}`,
+        ${subPara}
+        <p>Please renew on the <a href="https://mybg.british-gymnastics.org">British Gymnastics portal</a>, then click "I've renewed it" in your account here.</p>
+        ${ctaButton(BASE_URL() + '/booking/my-account', 'Open My Account')}`,
       ),
+      text: `Hi ${guardianFirstName},\n\n${gymnastFirstName}'s British Gymnastics membership has expired.\nYou have ${graceDays} days to renew and update the number in your account.${subText}\n\nRenew at https://mybg.british-gymnastics.org then open ${BASE_URL()}/booking/my-account.`,
     });
   }
 

@@ -37,8 +37,12 @@ export const bookingApi = {
     axios.patch(`${API_URL}/gymnasts/${gymnastId}/bg-number`, { bgNumber }, { headers: getHeaders() }),
   verifyBgNumber: (gymnastId, action) =>
     axios.patch(`${API_URL}/gymnasts/${gymnastId}/bg-number/verify`, { action }, { headers: getHeaders() }),
+  resubmitBgNumber: (gymnastId) =>
+    axios.patch(`${API_URL}/gymnasts/${gymnastId}/bg-number/resubmit`, {}, { headers: getHeaders() }),
   getAdminBgNumbers: () =>
     axios.get(`${API_URL}/gymnasts/admin/bg-numbers`, { headers: getHeaders() }),
+  resumeMembership: (membershipId) =>
+    axios.post(`${API_URL}/booking/memberships/${membershipId}/resume`, {}, { headers: getHeaders() }),
 
   getSessions: (year, month) =>
     axios.get(`${API_URL}/booking/sessions`, {

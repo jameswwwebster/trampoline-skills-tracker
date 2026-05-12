@@ -312,44 +312,88 @@ router.patch('/:id/bg-number/verify', auth, async (req, res) => {
     if (gymnast.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
     if (!gymnast.bgNumber) return res.status(400).json({ error: 'No BG number to verify' });
 
-    const { action } = req.body; // 'verify' | 'invalidate' | 'expire'
-    if (!['verify', 'invalidate', 'expire'].includes(action)) {
-      return res.status(400).json({ error: 'action must be "verify", "invalidate" or "expire"' });
+    // 'expire-pending' = "valid but expired": admin can take a PENDING number
+    // straight to EXPIRED without verifying first. Same downstream cascade
+    // as 'expire' from VERIFIED.
+    const { action } = req.body;
+    if (!['verify', 'invalidate', 'expire', 'expire-pending'].includes(action)) {
+      return res.status(400).json({ error: 'action must be "verify", "invalidate", "expire" or "expire-pending"' });
+    }
+    if (action === 'expire-pending' && gymnast.bgNumberStatus !== 'PENDING') {
+      return res.status(400).json({ error: '"expire-pending" only applies to PENDING numbers' });
     }
 
     const EXPIRED_GRACE_DAYS = 14;
     const now = new Date();
+    const isExpiry = action === 'expire' || action === 'expire-pending';
     const data = {
       bgNumberStatus:     action === 'verify' ? 'VERIFIED'
-                        : action === 'expire' ? 'EXPIRED'
+                        : isExpiry           ? 'EXPIRED'
                         : 'INVALID',
       bgNumberVerifiedAt: action === 'verify' ? now : null,
       bgNumberVerifiedBy: action === 'verify' ? req.user.id : null,
-      // Grace window for soft-block during EXPIRED state.
-      bgNumberExpiredAt:  action === 'expire' ? now : null,
-      // Reuse the existing graceDays field so the booking check has one source of truth.
-      bgNumberGraceDays:  action === 'expire' ? EXPIRED_GRACE_DAYS : (action === 'verify' ? null : gymnast.bgNumberGraceDays),
+      bgNumberExpiredAt:  isExpiry ? now : null,
+      bgNumberGraceDays:  isExpiry ? EXPIRED_GRACE_DAYS : (action === 'verify' ? null : gymnast.bgNumberGraceDays),
     };
     await prisma.gymnast.update({ where: { id: req.params.id }, data });
 
-    // Send email to parent on invalidate / expire
-    if ((action === 'invalidate' || action === 'expire') && gymnast.club.emailEnabled) {
+    // Cascade BG-expiry to memberships: schedule Stripe cancel at period-end
+    // for any live monthly subscription this gymnast has at this club. Local
+    // status flips happen via the customer.subscription.deleted webhook at
+    // the actual end-of-period.
+    let scheduledCancels = 0;
+    if (isExpiry) {
+      const liveMemberships = await prisma.membership.findMany({
+        where: {
+          gymnastId: gymnast.id,
+          clubId: gymnast.clubId,
+          status: { in: ['ACTIVE', 'PAUSED', 'PENDING_PAYMENT', 'SCHEDULED'] },
+          stripeSubscriptionId: { not: null },
+          scheduledCancelAt: null,
+        },
+      });
+      const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+      for (const m of liveMemberships) {
+        let periodEnd = null;
+        if (stripe) {
+          try {
+            const sub = await stripe.subscriptions.update(m.stripeSubscriptionId, { cancel_at_period_end: true });
+            if (sub.current_period_end) periodEnd = new Date(sub.current_period_end * 1000);
+          } catch (stripeErr) {
+            console.warn('Stripe cancel_at_period_end failed:', stripeErr.message);
+          }
+        }
+        await prisma.membership.update({
+          where: { id: m.id },
+          data: { scheduledCancelAt: periodEnd },
+        });
+        scheduledCancels++;
+      }
+    }
+
+    if ((action === 'invalidate' || isExpiry) && gymnast.club.emailEnabled) {
       const emailService = require('../services/emailService');
-      const sendFn = action === 'expire'
+      const sendFn = isExpiry
         ? emailService.sendBgNumberExpiredEmail
         : emailService.sendBgNumberInvalidEmail;
       if (typeof sendFn === 'function') {
+        const scheduledCancelDate = scheduledCancels > 0
+          ? (await prisma.membership.findFirst({
+              where: { gymnastId: gymnast.id, clubId: gymnast.clubId, scheduledCancelAt: { not: null } },
+              select: { scheduledCancelAt: true },
+            }))?.scheduledCancelAt
+          : null;
         for (const guardian of gymnast.guardians) {
           if (!guardian.email) continue;
           await sendFn(
             guardian.email, guardian.firstName, gymnast.firstName,
-            ...(action === 'expire' ? [EXPIRED_GRACE_DAYS] : [])
+            ...(isExpiry ? [EXPIRED_GRACE_DAYS, scheduledCancelDate] : [])
           ).catch(() => {});
         }
       }
     }
 
-    res.json({ ok: true });
+    res.json({ ok: true, scheduledCancels });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -400,6 +444,41 @@ router.patch('/:id/bg-number', auth, async (req, res) => {
         // Renewal — clear any prior EXPIRED timestamp so re-running the booking
         // grace check doesn't see stale data.
         bgNumberExpiredAt: null,
+      },
+    });
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /api/gymnasts/:id/bg-number/resubmit
+// Guardian-only "I've renewed it" — flips an EXPIRED BG back to PENDING for
+// re-check, without making the parent retype the same number. 3-day grace.
+router.patch('/:id/bg-number/resubmit', auth, async (req, res) => {
+  try {
+    const gymnast = await prisma.gymnast.findUnique({
+      where: { id: req.params.id },
+      include: { guardians: { select: { id: true } } },
+    });
+    if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
+    const isGuardian = gymnast.guardians.some(g => g.id === req.user.id);
+    if (!isGuardian) return res.status(403).json({ error: 'Access denied' });
+    if (gymnast.bgNumberStatus !== 'EXPIRED') {
+      return res.status(400).json({ error: 'Resubmit only applies to expired BG numbers' });
+    }
+    if (!gymnast.bgNumber) return res.status(400).json({ error: 'No BG number on file' });
+
+    const updated = await prisma.gymnast.update({
+      where: { id: gymnast.id },
+      data: {
+        bgNumberStatus: 'PENDING',
+        bgNumberEnteredAt: new Date(),
+        bgNumberEnteredBy: req.user.id,
+        bgNumberVerifiedAt: null,
+        bgNumberVerifiedBy: null,
+        bgNumberGraceDays: 3,
       },
     });
     res.json(updated);
@@ -648,30 +727,23 @@ router.get('/my-children', auth, requireRole(['ADULT']), async (req, res) => {
 });
 
 // GET /api/gymnasts/admin/bg-numbers
-// Staff only: returns gymnasts with PENDING status or no number + 2 sessions
+// Staff only: returns every non-archived gymnast whose BG isn't VERIFIED.
+// Each row carries a synthetic `bgRowState` so the UI can badge it without
+// re-deriving status from individual fields.
 router.get('/admin/bg-numbers', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
   try {
     const now = new Date();
 
-    // Pending numbers
-    const pendingGymnasts = await prisma.gymnast.findMany({
+    const gymnasts = await prisma.gymnast.findMany({
       where: {
         clubId: req.user.clubId,
-        bgNumberStatus: 'PENDING',
         isArchived: false,
-      },
-      include: {
-        guardians: { select: { id: true, firstName: true, lastName: true, email: true } },
-      },
-      orderBy: { bgNumberEnteredAt: 'asc' },
-    });
-
-    // Missing numbers (no BG number + 2+ past confirmed booking lines)
-    const allGymnasts = await prisma.gymnast.findMany({
-      where: {
-        clubId: req.user.clubId,
-        bgNumber: null,
-        isArchived: false,
+        OR: [
+          { bgNumber: null },
+          { bgNumberStatus: 'PENDING' },
+          { bgNumberStatus: 'INVALID' },
+          { bgNumberStatus: 'EXPIRED' },
+        ],
       },
       include: {
         guardians: { select: { id: true, firstName: true, lastName: true, email: true } },
@@ -685,11 +757,32 @@ router.get('/admin/bg-numbers', auth, requireRole(['CLUB_ADMIN', 'COACH']), asyn
       },
       orderBy: { firstName: 'asc' },
     });
-    const missingGymnasts = allGymnasts
-      .filter(g => g._count.bookingLines >= 2)
-      .map(({ _count, ...g }) => ({ ...g, pastSessionCount: _count.bookingLines }));
 
-    res.json({ pending: pendingGymnasts, missing: missingGymnasts });
+    const rows = gymnasts.map(({ _count, ...g }) => {
+      let state, daysInState = null, graceDaysLeft = null;
+      if (!g.bgNumber) {
+        state = 'MISSING';
+      } else if (g.bgNumberStatus === 'PENDING') {
+        state = 'PENDING';
+        if (g.bgNumberEnteredAt) {
+          daysInState = Math.floor((now - new Date(g.bgNumberEnteredAt)) / (24 * 60 * 60 * 1000));
+        }
+      } else if (g.bgNumberStatus === 'INVALID') {
+        state = 'INVALID';
+      } else if (g.bgNumberStatus === 'EXPIRED') {
+        if (g.bgNumberExpiredAt && g.bgNumberGraceDays) {
+          const elapsedDays = Math.floor((now - new Date(g.bgNumberExpiredAt)) / (24 * 60 * 60 * 1000));
+          graceDaysLeft = g.bgNumberGraceDays - elapsedDays;
+          state = graceDaysLeft > 0 ? 'EXPIRED_IN_GRACE' : 'EXPIRED_PAST_GRACE';
+          daysInState = elapsedDays;
+        } else {
+          state = 'EXPIRED_PAST_GRACE';
+        }
+      }
+      return { ...g, bgRowState: state, daysInState, graceDaysLeft, pastSessionCount: _count.bookingLines };
+    });
+
+    res.json({ rows });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

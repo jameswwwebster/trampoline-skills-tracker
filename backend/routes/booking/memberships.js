@@ -721,4 +721,48 @@ router.delete('/:id', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, re
   }
 });
 
+// POST /api/booking/memberships/:id/resume
+// Reverses a BG-expiry-triggered cancel_at_period_end while the sub is still
+// within its paid period. After the Stripe period ends the sub is gone for
+// good and the admin must use the regular membership-setup flow.
+router.post('/:id/resume', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, res) => {
+  try {
+    const membership = await prisma.membership.findUnique({ where: { id: req.params.id } });
+    if (!membership) return res.status(404).json({ error: 'Membership not found' });
+    if (membership.clubId !== req.user.clubId) return res.status(403).json({ error: 'Forbidden' });
+    if (!membership.scheduledCancelAt) {
+      return res.status(400).json({ error: 'Nothing to resume — membership is not scheduled to cancel' });
+    }
+    if (membership.scheduledCancelAt <= new Date()) {
+      return res.status(400).json({ error: 'Subscription period has already ended — set up a new membership instead' });
+    }
+
+    if (membership.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      try {
+        await stripe.subscriptions.update(membership.stripeSubscriptionId, { cancel_at_period_end: false });
+      } catch (stripeErr) {
+        console.error('Stripe resume failed:', stripeErr.message);
+        return res.status(502).json({ error: 'Could not resume Stripe subscription' });
+      }
+    }
+
+    const updated = await prisma.membership.update({
+      where: { id: membership.id },
+      data: { scheduledCancelAt: null },
+    });
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'membership.resume', entityType: 'Membership', entityId: membership.id,
+      metadata: { gymnastId: membership.gymnastId },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    console.error('Resume membership error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;
