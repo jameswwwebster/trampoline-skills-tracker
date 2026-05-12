@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-05-12',
+    entries: [
+      { type: 'fix', text: 'Cart/batch booking no longer blocks a gymnast\'s 2nd free session with a spurious "BG number required" error. The batch flow was counting the current attempt as a past session (past 1 + pending 1 = 2 → blocked), contradicting the single-booking flow and the on-screen "1 free session remaining" message.' },
+    ],
+  },
+  {
     date: '2026-05-10',
     entries: [
       { type: 'feature', text: 'Admins/coaches can now cancel a single session from the booking admin panel. A red "Cancel session" button opens a reason textarea; on confirm every confirmed booking is cancelled with a full credit, register entries are removed, waitlist offers are voided, and every affected parent (and waitlist entrant) is emailed with the reason. Previously the only options were a date-range closure or deactivating the whole template.' },

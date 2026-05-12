@@ -56,7 +56,11 @@ async function checkBgNumbers(gymnastIds, now, pendingCounts = {}) {
         const hasMembership = await prisma.membership.count({
           where: { gymnastId: gId, status: { in: ['ACTIVE', 'PENDING_PAYMENT', 'PAUSED'] } },
         }) > 0;
-        if (pastCount + pending >= 2 || hasMembership) return g;
+        // Policy: first 2 sessions are free, BG number required from the 3rd onwards.
+        // Block if they're already over (past >= 2) OR this batch would push them over
+        // (past + pending > 2). Don't pre-count a single in-batch attempt as a past
+        // session — that previously blocked the legitimate 2nd free booking.
+        if (pastCount >= 2 || (pastCount + pending) > 2 || hasMembership) return g;
       }
 
       return null;
