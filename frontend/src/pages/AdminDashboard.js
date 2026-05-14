@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { shopApi } from '../utils/shopApi';
 import {
   CalendarDaysIcon,
   WrenchScrewdriverIcon,
@@ -26,6 +27,14 @@ import {
 const AdminDashboard = () => {
   const { canManageGymnasts, isClubAdmin } = useAuth();
   const navigate = useNavigate();
+  const [pendingOrderCount, setPendingOrderCount] = useState(0);
+
+  useEffect(() => {
+    if (!canManageGymnasts) return;
+    shopApi.getPendingOrderCount()
+      .then(res => setPendingOrderCount(res.data.count))
+      .catch(() => {});
+  }, [canManageGymnasts]);
 
   if (!canManageGymnasts) {
     navigate('/dashboard', { replace: true });
@@ -39,10 +48,11 @@ const AdminDashboard = () => {
     </div>
   );
 
-  const Tile = ({ to, icon: Icon, label }) => (
-    <Link to={to} className="dashboard-tile">
+  const Tile = ({ to, icon: Icon, label, badge }) => (
+    <Link to={to} className="dashboard-tile" style={badge > 0 ? { position: 'relative' } : undefined}>
       <Icon className="dashboard-tile__icon" />
       <span className="dashboard-tile__label">{label}</span>
+      {badge > 0 && <span className="dashboard-tile__badge">{badge}</span>}
     </Link>
   );
 
@@ -73,7 +83,7 @@ const AdminDashboard = () => {
 
       <Section title="Communications">
         <Tile to="/booking/admin/messages" icon={EnvelopeIcon} label="Messages" />
-        <Tile to="/booking/admin/shop-orders" icon={ShoppingBagIcon} label="Shop Orders" />
+        <Tile to="/booking/admin/shop-orders" icon={ShoppingBagIcon} label="Shop Orders" badge={pendingOrderCount} />
       </Section>
 
       <Section title="Skill Tracking">

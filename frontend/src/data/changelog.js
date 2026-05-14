@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-05-14',
+    entries: [
+      { type: 'improvement', text: 'Pending shop-order count now also shows as a badge on the Shop Orders tile inside the admin dashboard, not just on the top-bar Admin button. Same data, just visible where you\'d actually click through.' },
+    ],
+  },
+  {
     date: '2026-05-12',
     entries: [
       { type: 'feature', text: 'When a coach marks a BG membership as expired, any live monthly subscription for that gymnast is now scheduled to cancel at the end of its current billing period (Stripe cancel_at_period_end). The "you have 14 days" email now also tells the parent the exact date their subscription will end. The standing slot stays live until the sub actually cancels.' },

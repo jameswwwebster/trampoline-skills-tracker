@@ -6086,6 +6086,20 @@ input[type="checkbox"]:checked + .checkbox-custom::after {
   color: var(--secondary-color);
 }
 .dashboard-tile__label { font-size: 0.9rem; }
+.dashboard-tile__badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: var(--booking-accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 99px;
+  padding: 2px 7px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.2;
+}
 .dashboard-tile--bookings,
 .dashboard-tile--shop,
 .dashboard-tile--tracking,
