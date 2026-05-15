@@ -68,7 +68,7 @@ router.get('/:id', auth, async (req, res) => {
       include: INCIDENT_INCLUDE,
     });
     if (!incident || incident.clubId !== req.user.clubId) {
-      return res.status(404).json({ error: 'Incident report not found' });
+      return res.status(404).json({ error: 'First aid report not found' });
     }
 
     const isStaff = STAFF_ROLES.includes(req.user.role);
@@ -164,7 +164,7 @@ router.patch('/:id', auth, requireRole(STAFF_ROLES), async (req, res) => {
       where: { id: req.params.id },
     });
     if (!incident || incident.clubId !== req.user.clubId) {
-      return res.status(404).json({ error: 'Incident report not found' });
+      return res.status(404).json({ error: 'First aid report not found' });
     }
 
     const {
@@ -217,7 +217,7 @@ router.delete('/:id', auth, requireRole(STAFF_ROLES), async (req, res) => {
       where: { id: req.params.id },
     });
     if (!incident || incident.clubId !== req.user.clubId) {
-      return res.status(404).json({ error: 'Incident report not found' });
+      return res.status(404).json({ error: 'First aid report not found' });
     }
 
     await prisma.incidentReport.delete({ where: { id: req.params.id } });
@@ -244,7 +244,7 @@ router.post('/:id/forward', auth, requireRole(STAFF_ROLES), async (req, res) => 
       },
     });
     if (!incident || incident.clubId !== req.user.clubId) {
-      return res.status(404).json({ error: 'Incident report not found' });
+      return res.status(404).json({ error: 'First aid report not found' });
     }
 
     const { toEmail, toName, note } = req.body;

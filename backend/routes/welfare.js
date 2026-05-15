@@ -1,4 +1,8 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const fsp = require('fs').promises;
 const { auth, requireRole } = require('../middleware/auth');
 const { audit } = require('../services/auditLogService');
 
@@ -11,7 +15,45 @@ const WELFARE_ROLES = ['CLUB_ADMIN', 'WELFARE'];
 const WELFARE_INCLUDE = {
   gymnast: { select: { id: true, firstName: true, lastName: true } },
   reportedBy: { select: { id: true, firstName: true, lastName: true } },
+  attachments: {
+    select: {
+      id: true, fileName: true, mimeType: true, fileSize: true, createdAt: true,
+      uploadedById: true,
+      uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+    },
+    orderBy: { createdAt: 'asc' },
+  },
 };
+
+const STORAGE_ROOT = process.env.STORAGE_ROOT || path.join(__dirname, '..');
+const WELFARE_UPLOAD_ROOT = path.join(STORAGE_ROOT, 'uploads', 'welfare');
+const ALLOWED_MIME = new Set([
+  'image/png', 'image/jpeg', 'image/jpg', 'image/heic', 'image/heif',
+  'video/mp4', 'video/quicktime',
+]);
+const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: async (req, file, cb) => {
+      const dir = path.join(WELFARE_UPLOAD_ROOT, req.params.id);
+      try {
+        await fsp.mkdir(dir, { recursive: true });
+        cb(null, dir);
+      } catch (e) { cb(e); }
+    },
+    filename: (req, file, cb) => {
+      const safe = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_').slice(-80);
+      const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      cb(null, `${unique}-${safe}`);
+    },
+  }),
+  limits: { fileSize: MAX_FILE_BYTES, files: 6 },
+  fileFilter: (req, file, cb) => {
+    if (ALLOWED_MIME.has(file.mimetype)) cb(null, true);
+    else cb(new Error(`Unsupported file type: ${file.mimetype}`));
+  },
+});
 
 // GET /api/welfare — list all welfare reports for club
 router.get('/', auth, requireRole(WELFARE_ROLES), async (req, res) => {
@@ -166,9 +208,118 @@ router.delete('/:id', auth, requireRole(WELFARE_ROLES), async (req, res) => {
 
     await prisma.welfareReport.delete({ where: { id: req.params.id } });
 
+    // Best-effort cleanup of on-disk folder. DB cascade already removed rows.
+    const dir = path.join(WELFARE_UPLOAD_ROOT, req.params.id);
+    await fsp.rm(dir, { recursive: true, force: true }).catch(() => {});
+
     await audit({
       userId: req.user.id, clubId: req.user.clubId,
       action: 'welfare.delete', entityType: 'WelfareReport', entityId: req.params.id,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/welfare/:id/attachments — upload up to 6 files
+router.post('/:id/attachments', auth, requireRole(WELFARE_ROLES),
+  (req, res, next) => {
+    upload.array('files', 6)(req, res, (err) => {
+      if (!err) return next();
+      const code = err.code === 'LIMIT_FILE_SIZE' ? 400 : 400;
+      return res.status(code).json({ error: err.message });
+    });
+  },
+  async (req, res) => {
+    try {
+      const report = await prisma.welfareReport.findUnique({ where: { id: req.params.id } });
+      if (!report || report.clubId !== req.user.clubId) {
+        // Roll back any files multer already wrote to disk.
+        if (req.files) await Promise.all(req.files.map(f => fsp.unlink(f.path).catch(() => {})));
+        return res.status(404).json({ error: 'Welfare report not found' });
+      }
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'No files uploaded' });
+      }
+
+      const created = [];
+      for (const f of req.files) {
+        const relPath = path.relative(STORAGE_ROOT, f.path);
+        const row = await prisma.welfareAttachment.create({
+          data: {
+            welfareReportId: report.id,
+            fileName: f.originalname,
+            storedPath: relPath,
+            mimeType: f.mimetype,
+            fileSize: f.size,
+            uploadedById: req.user.id,
+          },
+          select: {
+            id: true, fileName: true, mimeType: true, fileSize: true, createdAt: true,
+            uploadedById: true,
+            uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+          },
+        });
+        created.push(row);
+      }
+
+      await audit({
+        userId: req.user.id, clubId: req.user.clubId,
+        action: 'welfare.attachment.upload', entityType: 'WelfareReport', entityId: report.id,
+        metadata: { count: created.length },
+      });
+
+      res.status(201).json(created);
+    } catch (err) {
+      console.error(err);
+      if (req.files) await Promise.all(req.files.map(f => fsp.unlink(f.path).catch(() => {})));
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
+
+// GET /api/welfare/:id/attachments/:attachmentId/file — stream the file
+router.get('/:id/attachments/:attachmentId/file', auth, requireRole(WELFARE_ROLES), async (req, res) => {
+  try {
+    const att = await prisma.welfareAttachment.findUnique({
+      where: { id: req.params.attachmentId },
+      include: { welfareReport: { select: { clubId: true, id: true } } },
+    });
+    if (!att || att.welfareReportId !== req.params.id || att.welfareReport.clubId !== req.user.clubId) {
+      return res.status(404).json({ error: 'Attachment not found' });
+    }
+    const abs = path.join(STORAGE_ROOT, att.storedPath);
+    if (!fs.existsSync(abs)) return res.status(404).json({ error: 'File missing on disk' });
+    res.setHeader('Content-Type', att.mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${att.fileName.replace(/"/g, '')}"`);
+    fs.createReadStream(abs).pipe(res);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// DELETE /api/welfare/:id/attachments/:attachmentId — remove row + on-disk file
+router.delete('/:id/attachments/:attachmentId', auth, requireRole(WELFARE_ROLES), async (req, res) => {
+  try {
+    const att = await prisma.welfareAttachment.findUnique({
+      where: { id: req.params.attachmentId },
+      include: { welfareReport: { select: { clubId: true } } },
+    });
+    if (!att || att.welfareReportId !== req.params.id || att.welfareReport.clubId !== req.user.clubId) {
+      return res.status(404).json({ error: 'Attachment not found' });
+    }
+
+    await prisma.welfareAttachment.delete({ where: { id: att.id } });
+    await fsp.unlink(path.join(STORAGE_ROOT, att.storedPath)).catch(() => {});
+
+    await audit({
+      userId: req.user.id, clubId: req.user.clubId,
+      action: 'welfare.attachment.delete', entityType: 'WelfareReport', entityId: req.params.id,
+      metadata: { attachmentId: att.id, fileName: att.fileName },
     });
 
     res.json({ success: true });

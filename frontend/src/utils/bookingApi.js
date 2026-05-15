@@ -301,6 +301,20 @@ export const bookingApi = {
     axios.patch(`${API_URL}/welfare/${id}`, data, { headers: getHeaders() }),
   deleteWelfareReport: (id) =>
     axios.delete(`${API_URL}/welfare/${id}`, { headers: getHeaders() }),
+  uploadWelfareAttachments: (id, files) => {
+    const formData = new FormData();
+    for (const f of files) formData.append('files', f);
+    return axios.post(`${API_URL}/welfare/${id}/attachments`, formData, {
+      headers: { ...getHeaders(), 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  fetchWelfareAttachment: (welfareId, attachmentId) =>
+    axios.get(`${API_URL}/welfare/${welfareId}/attachments/${attachmentId}/file`, {
+      headers: getHeaders(),
+      responseType: 'blob',
+    }),
+  deleteWelfareAttachment: (welfareId, attachmentId) =>
+    axios.delete(`${API_URL}/welfare/${welfareId}/attachments/${attachmentId}`, { headers: getHeaders() }),
 
   // Recurring credits
   getRecurringCredits: () =>

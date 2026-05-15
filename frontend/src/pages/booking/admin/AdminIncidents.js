@@ -149,7 +149,7 @@ function IncidentDetail({ incident, gymnasts, onClose, onSaved }) {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Delete this incident report? This cannot be undone.')) return;
+    if (!window.confirm('Delete this first aid report? This cannot be undone.')) return;
     setDeleting(true);
     try {
       await bookingApi.deleteIncident(incident.id);
@@ -173,7 +173,7 @@ function IncidentDetail({ incident, gymnasts, onClose, onSaved }) {
       <div className="bk-modal" style={{ maxWidth: 640 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <div>
-            <h3 style={{ margin: 0 }}>Incident Report</h3>
+            <h3 style={{ margin: 0 }}>First Aid Report</h3>
             <p className="bk-muted" style={{ margin: '0.25rem 0 0', fontSize: '0.9rem' }}>
               {gymnástName} · {dateStr}
             </p>
@@ -452,7 +452,7 @@ export default function AdminIncidents() {
       setShowForm(false);
       load();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to create incident report.');
+      setFormError(err.response?.data?.error || 'Failed to create first aid report.');
       setSubmitting(false);
     }
   };
@@ -462,7 +462,7 @@ export default function AdminIncidents() {
   return (
     <div className="bk-page bk-page--md">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2 style={{ margin: 0 }}>Incident Reports</h2>
+        <h2 style={{ margin: 0 }}>First Aid Reports</h2>
         <button className="bk-btn bk-btn--primary bk-btn--sm" onClick={() => setShowForm(v => !v)}>
           {showForm ? 'Cancel' : '+ New report'}
         </button>
@@ -470,7 +470,7 @@ export default function AdminIncidents() {
 
       {showForm && (
         <div className="bk-card" style={{ marginBottom: '1.5rem' }}>
-          <h3 style={{ margin: '0 0 1rem' }}>New Incident Report</h3>
+          <h3 style={{ margin: '0 0 1rem' }}>New First Aid Report</h3>
           <form onSubmit={handleCreate}>
             <IncidentFormFields form={form} setForm={setForm} gymnasts={gymnasts} />
             {formError && <p className="bk-error" style={{ marginTop: '0.75rem' }}>{formError}</p>}
@@ -489,7 +489,7 @@ export default function AdminIncidents() {
       )}
 
       {incidents.length === 0 && !showForm && (
-        <p className="bk-muted">No incident reports filed yet.</p>
+        <p className="bk-muted">No first aid reports filed yet.</p>
       )}
 
       {incidents.map(inc => {

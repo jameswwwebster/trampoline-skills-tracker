@@ -62,7 +62,7 @@ function IncidentDetailModal({ incident, onClose }) {
       <div className="bk-modal" style={{ maxWidth: 560 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <div>
-            <h3 style={{ margin: 0 }}>Incident Report</h3>
+            <h3 style={{ margin: 0 }}>First Aid Report</h3>
             <p className="bk-muted" style={{ margin: '0.25rem 0 0', fontSize: '0.9rem' }}>
               {gymnástName} · {dateStr}
             </p>
@@ -144,9 +144,9 @@ export default function MyIncidents() {
 
   return (
     <div className="bk-page bk-page--md">
-      <h2>Incident Reports</h2>
+      <h2>First Aid Reports</h2>
       {incidents.length === 0 ? (
-        <p className="bk-muted">No incident reports on file.</p>
+        <p className="bk-muted">No first aid reports on file.</p>
       ) : (
         incidents.map(inc => {
           const gymnástName = inc.gymnast

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { bookingApi } from '../../../utils/bookingApi';
 import '../booking-shared.css';
 
@@ -164,6 +164,114 @@ function WelfareFormFields({ form, setForm, gymnasts }) {
   );
 }
 
+function AttachmentTile({ welfareId, attachment, onDelete }) {
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [loadError, setLoadError] = useState(false);
+  const isVideo = attachment.mimeType?.startsWith('video/');
+
+  useEffect(() => {
+    let cancelled = false;
+    let url = null;
+    bookingApi.fetchWelfareAttachment(welfareId, attachment.id)
+      .then(res => {
+        if (cancelled) return;
+        url = URL.createObjectURL(res.data);
+        setBlobUrl(url);
+      })
+      .catch(() => !cancelled && setLoadError(true));
+    return () => { cancelled = true; if (url) URL.revokeObjectURL(url); };
+  }, [welfareId, attachment.id]);
+
+  const sizeStr = attachment.fileSize > 1024 * 1024
+    ? `${(attachment.fileSize / (1024 * 1024)).toFixed(1)} MB`
+    : `${Math.max(1, Math.round(attachment.fileSize / 1024))} KB`;
+
+  return (
+    <div style={{ border: '1px solid var(--booking-border)', borderRadius: 6, padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', position: 'relative' }}>
+      {loadError && <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', color: 'var(--booking-text-muted)', fontSize: '0.85rem' }}>Failed to load</div>}
+      {!loadError && !blobUrl && <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', color: 'var(--booking-text-muted)', fontSize: '0.85rem' }}>Loading…</div>}
+      {!loadError && blobUrl && !isVideo && (
+        <img src={blobUrl} alt={attachment.fileName} style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 4 }} />
+      )}
+      {!loadError && blobUrl && isVideo && (
+        <video src={blobUrl} controls preload="metadata" style={{ width: '100%', maxHeight: 200, borderRadius: 4, background: '#000' }} />
+      )}
+      <div style={{ fontSize: '0.78rem' }}>
+        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={attachment.fileName}>{attachment.fileName}</div>
+        <div className="bk-muted" style={{ fontSize: '0.72rem' }}>
+          {sizeStr} · {attachment.uploadedBy?.firstName} {attachment.uploadedBy?.lastName}
+        </div>
+      </div>
+      <button
+        className="bk-btn bk-btn--sm"
+        style={{ alignSelf: 'flex-end', color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
+        onClick={onDelete}
+      >
+        Remove
+      </button>
+    </div>
+  );
+}
+
+function AttachmentsPanel({ report, onChange }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
+  const inputRef = useRef(null);
+  const attachments = report.attachments || [];
+
+  const handleFiles = async (files) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const res = await bookingApi.uploadWelfareAttachments(report.id, files);
+      onChange({ ...report, attachments: [...attachments, ...res.data] });
+    } catch (err) {
+      setError(err.response?.data?.error || 'Upload failed.');
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  const handleDelete = async (attachmentId) => {
+    if (!window.confirm('Remove this attachment? This cannot be undone.')) return;
+    try {
+      await bookingApi.deleteWelfareAttachment(report.id, attachmentId);
+      onChange({ ...report, attachments: attachments.filter(a => a.id !== attachmentId) });
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to remove attachment.');
+    }
+  };
+
+  return (
+    <Section title={`Attachments${attachments.length > 0 ? ` (${attachments.length})` : ''}`}>
+      {error && <p className="bk-error" style={{ marginTop: 0 }}>{error}</p>}
+      {attachments.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          {attachments.map(a => (
+            <AttachmentTile key={a.id} welfareId={report.id} attachment={a} onDelete={() => handleDelete(a.id)} />
+          ))}
+        </div>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/heic,image/heif,video/mp4,video/quicktime"
+        multiple
+        capture="environment"
+        onChange={e => handleFiles(e.target.files)}
+        disabled={uploading}
+        style={{ fontSize: '0.85rem' }}
+      />
+      <p className="bk-muted" style={{ fontSize: '0.75rem', margin: '0.25rem 0 0' }}>
+        Photos and short video clips, up to 25 MB each, 6 files at a time.
+      </p>
+      {uploading && <p className="bk-muted" style={{ fontSize: '0.8rem', marginTop: '0.4rem' }}>Uploading…</p>}
+    </Section>
+  );
+}
+
 function WelfareDetail({ report, gymnasts, onClose, onSaved }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...report });
@@ -290,6 +398,8 @@ function WelfareDetail({ report, gymnasts, onClose, onSaved }) {
                 {current.referralDetails && <p style={{ margin: '0.25rem 0 0', whiteSpace: 'pre-wrap' }}>{current.referralDetails}</p>}
               </Section>
             )}
+
+            <AttachmentsPanel report={current} onChange={setCurrent} />
 
             <div className="bk-row" style={{ marginTop: '1.25rem' }}>
               <button className="bk-btn bk-btn--primary bk-btn--sm" onClick={() => { setForm({ ...current }); setEditing(true); }}>

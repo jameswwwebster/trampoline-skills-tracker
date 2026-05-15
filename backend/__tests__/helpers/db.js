@@ -47,6 +47,13 @@ async function cleanDatabase() {
   await prisma.membership.deleteMany({ where: { gymnastId: { in: testGymnastIds } } });
   await prisma.commitment.deleteMany({ where: { gymnastId: { in: testGymnastIds } } });
   await prisma.competitionEntry.deleteMany({ where: { gymnastId: { in: testGymnastIds } } });
+  // Welfare attachments are cascaded by the FK, but the welfare report rows
+  // themselves reference reportedById on User — delete them before users.
+  // Same for incident reports.
+  await prisma.welfareAttachment.deleteMany({ where: { welfareReport: { reportedById: { in: testUserIds } } } });
+  await prisma.welfareReport.deleteMany({ where: { reportedById: { in: testUserIds } } });
+  await prisma.incidentForward.deleteMany({ where: { incidentReport: { reportedById: { in: testUserIds } } } });
+  await prisma.incidentReport.deleteMany({ where: { reportedById: { in: testUserIds } } });
   await prisma.gymnast.deleteMany({ where: { id: { in: testGymnastIds } } });
   await prisma.auditLog.deleteMany({ where: { userId: { in: testUserIds } } });
   await prisma.user.deleteMany({ where: { id: { in: testUserIds } } });

@@ -457,7 +457,7 @@ const Dashboard = () => {
           <div className="dashboard-tiles" style={{ marginTop: '0.75rem' }}>
             <Link to="/booking/admin/incidents" className="dashboard-tile dashboard-tile--incidents">
               <ExclamationTriangleIcon className="dashboard-tile__icon" />
-              <span className="dashboard-tile__label">Incident Reports</span>
+              <span className="dashboard-tile__label">First Aid Reports</span>
             </Link>
             {canViewWelfare && (
               <Link to="/booking/admin/welfare" className="dashboard-tile dashboard-tile--welfare">

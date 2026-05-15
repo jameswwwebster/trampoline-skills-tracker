@@ -266,7 +266,7 @@ export default function AppLayout() {
                   <NavLink to="/booking/my-account" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Account</NavLink>
                   {!isAdmin && <NavLink to="/booking/my-charges" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>My Charges</NavLink>}
                   <NavLink to="/booking/competitions" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Competitions</NavLink>
-                  {!canManageGymnasts && <NavLink to="/booking/incidents" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Incident Reports</NavLink>}
+                  {!canManageGymnasts && <NavLink to="/booking/incidents" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>First Aid Reports</NavLink>}
                   <NavLink to="/profile" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Profile</NavLink>
                   <NavLink to={helpPath} className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Help</NavLink>
                   {isSuperAdmin && <NavLink to="/super-admin" className="app-layout__dropdown-item" onClick={() => setOpenDropdown(null)}>Super Admin</NavLink>}
@@ -326,7 +326,7 @@ export default function AppLayout() {
           <NavLink to="/booking/my-account" className="app-layout__mobile-link" onClick={closeMobile}>My Account</NavLink>
           {!isAdmin && <NavLink to="/booking/my-charges" className="app-layout__mobile-link" onClick={closeMobile}>My Charges</NavLink>}
           <NavLink to="/booking/competitions" className="app-layout__mobile-link" onClick={closeMobile}>Competitions</NavLink>
-          {!canManageGymnasts && <NavLink to="/booking/incidents" className="app-layout__mobile-link" onClick={closeMobile}>Incident Reports</NavLink>}
+          {!canManageGymnasts && <NavLink to="/booking/incidents" className="app-layout__mobile-link" onClick={closeMobile}>First Aid Reports</NavLink>}
           <NavLink to="/profile" className="app-layout__mobile-link" onClick={closeMobile}>Profile</NavLink>
           <NavLink to={helpPath} className="app-layout__mobile-link" onClick={closeMobile}>Help</NavLink>
           {isSuperAdmin && <NavLink to="/super-admin" className="app-layout__mobile-link" onClick={closeMobile}>Super Admin</NavLink>}

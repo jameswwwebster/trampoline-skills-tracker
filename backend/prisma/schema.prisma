@@ -69,6 +69,7 @@ model User {
   incidentReports          IncidentReport[]   @relation("IncidentReportedBy")
   incidentForwards         IncidentForward[]  @relation("IncidentForwardedBy")
   welfareReports           WelfareReport[]    @relation("WelfareReportedBy")
+  welfareAttachmentsUploaded WelfareAttachment[] @relation("WelfareAttachmentUploadedBy")
   guardianInvitesSent      GuardianInvite[]   @relation("GuardianInvitesSent")
   guardianInvitesAccepted  GuardianInvite[]   @relation("GuardianInvitesAccepted")
   namedContactsCreated     NamedContact[]     @relation("NamedContactsCreated")
@@ -1204,29 +1205,46 @@ model IncidentReport {
 }
 
 model WelfareReport {
-  id                 String    @id @default(cuid())
+  id                 String              @id @default(cuid())
   clubId             String
   gymnastId          String?
   reportedById       String
   incidentDate       DateTime
   location           String?
-  concernType        String    // e.g. SAFEGUARDING, BULLYING, EMOTIONAL, PHYSICAL, OTHER
-  severity           String    // MINOR, MODERATE, SEVERE
+  concernType        String              // e.g. SAFEGUARDING, BULLYING, EMOTIONAL, PHYSICAL, OTHER
+  severity           String              // MINOR, MODERATE, SEVERE
   description        String
   actionTaken        String?
   outcome            String?
   witnessName        String?
   witnessContact     String?
   witnessStatement   String?
-  referredExternally Boolean   @default(false)
+  referredExternally Boolean             @default(false)
   referralDetails    String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  club               Club      @relation(fields: [clubId], references: [id])
-  gymnast            Gymnast?  @relation(fields: [gymnastId], references: [id], onDelete: SetNull)
-  reportedBy         User      @relation("WelfareReportedBy", fields: [reportedById], references: [id])
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  club               Club                @relation(fields: [clubId], references: [id])
+  gymnast            Gymnast?            @relation(fields: [gymnastId], references: [id], onDelete: SetNull)
+  reportedBy         User                @relation("WelfareReportedBy", fields: [reportedById], references: [id])
+  attachments        WelfareAttachment[]
 
   @@map("welfare_reports")
+}
+
+model WelfareAttachment {
+  id              String        @id @default(cuid())
+  welfareReportId String
+  fileName        String
+  storedPath      String
+  mimeType        String
+  fileSize        Int
+  uploadedById    String
+  createdAt       DateTime      @default(now())
+  welfareReport   WelfareReport @relation(fields: [welfareReportId], references: [id], onDelete: Cascade)
+  uploadedBy      User          @relation("WelfareAttachmentUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([welfareReportId])
+  @@map("welfare_attachments")
 }
 
 model IncidentForward {

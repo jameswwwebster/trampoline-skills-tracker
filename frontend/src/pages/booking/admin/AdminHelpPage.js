@@ -845,20 +845,20 @@ export default function AdminHelpPage() {
       </Section>
 
       {/* ── INCIDENTS & WELFARE ─────────────────────────────────────── */}
-      <Section title="Incidents &amp; welfare">
+      <Section title="First aid &amp; welfare">
         <p style={S.p}>
-          Two report types are available under <strong>Incidents &amp; Welfare</strong> in the Admin nav —
-          first aid incident reports and welfare concern reports. Both are visible to coaches and admins only;
+          Two report types are available under <strong>First Aid &amp; Welfare</strong> in the Admin nav —
+          first aid reports and welfare concern reports. Both are visible to coaches and admins only;
           members cannot see these records.
         </p>
 
-        <h4 style={S.h4}>First aid incident reports</h4>
+        <h4 style={S.h4}>First aid reports</h4>
         <p style={S.p}>
           File a report any time a first aid situation occurs at a session. Record:
         </p>
         <ul style={{ paddingLeft: '1.2rem', marginBottom: '0.75rem' }}>
           <li style={S.li}>The gymnast involved</li>
-          <li style={S.li}>Date and time of the incident</li>
+          <li style={S.li}>Date and time it happened</li>
           <li style={S.li}>Description of what happened</li>
           <li style={S.li}>First aid treatment given</li>
           <li style={S.li}>Whether follow-up is required</li>
@@ -868,7 +868,7 @@ export default function AdminHelpPage() {
           dashboard indicate whether recent reports exist.
         </p>
         <Note>
-          <strong>Important:</strong> Filing an incident report in the app does not replace any external
+          <strong>Important:</strong> Filing an first aid report in the app does not replace any external
           reporting obligations (e.g. to British Gymnastics or local authorities). Use this as an internal
           record alongside any required external procedures.
         </Note>
@@ -878,7 +878,7 @@ export default function AdminHelpPage() {
         <p style={S.pLast}>
           File a welfare concern report to document a safeguarding matter. Record the gymnast, the date, a
           description of the concern, and any actions already taken. Welfare reports are kept separately from
-          incident reports and are only visible to coaches and admins — they are never shown to the gymnast's
+          first aid reports and are only visible to coaches and admins — they are never shown to the gymnast's
           guardian through the app.
         </p>
       </Section>

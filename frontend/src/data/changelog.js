@@ -1,6 +1,13 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-05-15',
+    entries: [
+      { type: 'improvement', text: '"Incident reports" renamed to "First aid reports" across the app — nav, page titles, buttons, emails and help pages. Underlying URLs and database tables are unchanged so existing links still work.' },
+      { type: 'feature', text: 'Welfare reports can now carry photos and short videos as attachments. Up to 6 files per upload, 25 MB per file, accepted as PNG / JPEG / HEIC / MP4 / MOV. The detail panel shows a thumbnail grid; tap to view, delete from each tile. Deleting a welfare report removes the attachments and the on-disk folder.' },
+    ],
+  },
+  {
     date: '2026-05-14',
     entries: [
       { type: 'improvement', text: 'Pending shop-order count now also shows as a badge on the Shop Orders tile inside the admin dashboard, not just on the top-bar Admin button. Same data, just visible where you\'d actually click through.' },
