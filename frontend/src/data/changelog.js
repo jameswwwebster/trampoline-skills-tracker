@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-05-16',
+    entries: [
+      { type: 'feature', text: 'Shop orders now track per-item status, so an order with kit from different suppliers can move through "Awaiting → Ordered from supplier → Arrived at club → Collected" one line at a time. Each item also has a free-text supplier field. The order-level status (still shown in the tabs and in the parents\' My Orders view) is derived automatically from the items.' },
+    ],
+  },
+  {
     date: '2026-05-15',
     entries: [
       { type: 'improvement', text: '"Incident reports" renamed to "First aid reports" across the app — nav, page titles, buttons, emails and help pages. Underlying URLs and database tables are unchanged so existing links still work.' },

@@ -2,27 +2,119 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { shopApi } from '../../../utils/shopApi';
 import '../shop/shop.css';
 
-const STATUS_LABELS = {
-  ORDERED: 'Order placed',
+const ORDER_STATUS_LABELS = {
+  ORDERED: 'In progress',
   ARRIVED: 'Arrived at club',
   FULFILLED: 'Collected',
 };
 
-const NEXT_STATUS = {
-  ORDERED: 'ARRIVED',
+const ITEM_STATUS_LABELS = {
+  AWAITING: 'Awaiting',
+  ORDERED_FROM_SUPPLIER: 'Ordered from supplier',
+  ARRIVED: 'Arrived at club',
+  FULFILLED: 'Collected',
+};
+
+const ITEM_NEXT = {
+  AWAITING: 'ORDERED_FROM_SUPPLIER',
+  ORDERED_FROM_SUPPLIER: 'ARRIVED',
   ARRIVED: 'FULFILLED',
 };
 
-const NEXT_LABEL = {
-  ORDERED: 'Mark arrived',
+const ITEM_NEXT_LABEL = {
+  AWAITING: 'Mark ordered from supplier',
+  ORDERED_FROM_SUPPLIER: 'Mark arrived',
   ARRIVED: 'Mark collected',
 };
+
+const ITEM_STATUSES = ['AWAITING', 'ORDERED_FROM_SUPPLIER', 'ARRIVED', 'FULFILLED'];
+
+function ItemRow({ orderId, item, busy, onChange, onReplaceOrder }) {
+  const [supplier, setSupplier] = useState(item.supplier ?? '');
+  const [supplierDirty, setSupplierDirty] = useState(false);
+  const [statusEditing, setStatusEditing] = useState(false);
+
+  useEffect(() => {
+    setSupplier(item.supplier ?? '');
+    setSupplierDirty(false);
+  }, [item.supplier]);
+
+  const next = ITEM_NEXT[item.status];
+
+  const submitStatus = async (newStatus) => {
+    setStatusEditing(false);
+    if (newStatus === item.status) return;
+    onChange(item.id, { status: newStatus });
+  };
+  const saveSupplier = () => {
+    if (!supplierDirty) return;
+    onChange(item.id, { supplier: supplier.trim() });
+  };
+
+  return (
+    <tr style={{ borderTop: '1px solid var(--booking-border)' }}>
+      <td style={{ padding: '0.45rem 0.5rem' }}>
+        <div style={{ fontSize: '0.92rem' }}>{item.productName} — {item.size}</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>
+          {item.customisation ? `${item.customisation} · ` : ''}qty {item.quantity}
+        </div>
+      </td>
+      <td style={{ padding: '0.45rem 0.5rem' }}>
+        <input
+          className="bk-input bk-input--sm"
+          style={{ width: 130, fontSize: '0.85rem' }}
+          placeholder="e.g. Champion"
+          value={supplier}
+          onChange={e => { setSupplier(e.target.value); setSupplierDirty(true); }}
+          onBlur={saveSupplier}
+          onKeyDown={e => { if (e.key === 'Enter') { e.target.blur(); } }}
+          disabled={busy}
+        />
+      </td>
+      <td style={{ padding: '0.45rem 0.5rem' }}>
+        {statusEditing ? (
+          <select
+            className="bk-input bk-input--sm"
+            style={{ fontSize: '0.85rem' }}
+            value={item.status}
+            autoFocus
+            onChange={e => submitStatus(e.target.value)}
+            onBlur={() => setStatusEditing(false)}
+          >
+            {ITEM_STATUSES.map(s => <option key={s} value={s}>{ITEM_STATUS_LABELS[s]}</option>)}
+          </select>
+        ) : (
+          <button
+            type="button"
+            className={`shop-order-status ${item.status}`}
+            style={{ cursor: 'pointer', border: 'none', font: 'inherit' }}
+            onClick={() => setStatusEditing(true)}
+            title="Click to correct"
+          >
+            {ITEM_STATUS_LABELS[item.status]}
+          </button>
+        )}
+      </td>
+      <td style={{ padding: '0.45rem 0.5rem', textAlign: 'right' }}>
+        {next && (
+          <button
+            className="bk-btn bk-btn--sm bk-btn--primary"
+            disabled={busy}
+            onClick={() => onChange(item.id, { status: next })}
+          >
+            {busy ? '…' : ITEM_NEXT_LABEL[item.status]}
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+}
 
 export default function AdminShopOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ORDERED');
-  const [advancing, setAdvancing] = useState(null);
+  const [busyItem, setBusyItem] = useState(null);
   const [error, setError] = useState(null);
 
   const fetchOrders = useCallback(() => {
@@ -35,19 +127,18 @@ export default function AdminShopOrders() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  async function handleAdvance(order) {
-    const next = NEXT_STATUS[order.status];
-    if (!next) return;
-    setAdvancing(order.id);
+  const handleItemChange = async (orderId, itemId, payload) => {
+    setBusyItem(itemId);
+    setError(null);
     try {
-      await shopApi.updateOrderStatus(order.id, next);
-      fetchOrders();
+      const res = await shopApi.updateOrderItem(orderId, itemId, payload);
+      setOrders(prev => prev.map(o => o.id === orderId ? res.data : o));
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update order');
+      setError(err.response?.data?.error || 'Failed to update item');
     } finally {
-      setAdvancing(null);
+      setBusyItem(null);
     }
-  }
+  };
 
   const tabs = ['ALL', 'ORDERED', 'ARRIVED', 'FULFILLED'];
 
@@ -62,7 +153,7 @@ export default function AdminShopOrders() {
             className={`shop-orders-tab${activeTab === tab ? ' active' : ''}`}
             onClick={() => setActiveTab(tab)}
           >
-            {tab === 'ALL' ? 'All' : STATUS_LABELS[tab]}
+            {tab === 'ALL' ? 'All' : ORDER_STATUS_LABELS[tab]}
           </button>
         ))}
       </div>
@@ -80,33 +171,35 @@ export default function AdminShopOrders() {
                 {' '}
                 <span style={{ fontWeight: 400, color: '#888' }}>({order.user?.email})</span>
               </p>
-              <span className={`shop-order-status ${order.status}`}>{STATUS_LABELS[order.status]}</span>
+              <span className={`shop-order-status ${order.status}`}>{ORDER_STATUS_LABELS[order.status]}</span>
             </div>
             <span className="shop-order-meta">{new Date(order.createdAt).toLocaleDateString('en-GB')}</span>
           </div>
 
-          <div className="shop-order-items">
-            {order.items.map((item, i) => (
-              <div key={i}>
-                {item.productName} — {item.size}
-                {item.customisation ? ` (${item.customisation})` : ''}
-                {item.quantity > 1 ? ` ×${item.quantity}` : ''}
-              </div>
-            ))}
-          </div>
+          <table style={{ width: '100%', marginTop: '0.5rem', fontSize: '0.9rem' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', color: 'var(--booking-text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <th style={{ padding: '0.25rem 0.5rem', fontWeight: 600 }}>Item</th>
+                <th style={{ padding: '0.25rem 0.5rem', fontWeight: 600 }}>Supplier</th>
+                <th style={{ padding: '0.25rem 0.5rem', fontWeight: 600 }}>Status</th>
+                <th style={{ padding: '0.25rem 0.5rem', fontWeight: 600, textAlign: 'right' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {order.items.map(item => (
+                <ItemRow
+                  key={item.id}
+                  orderId={order.id}
+                  item={item}
+                  busy={busyItem === item.id}
+                  onChange={(itemId, payload) => handleItemChange(order.id, itemId, payload)}
+                />
+              ))}
+            </tbody>
+          </table>
 
-          <p className="shop-order-total">Total: £{(order.total / 100).toFixed(2)}</p>
-          <p className="shop-order-meta" style={{ marginTop: '0.25rem' }}>Ref: {order.id}</p>
-
-          {NEXT_STATUS[order.status] && (
-            <button
-              className="shop-order-advance-btn"
-              disabled={advancing === order.id}
-              onClick={() => handleAdvance(order)}
-            >
-              {advancing === order.id ? 'Updating…' : NEXT_LABEL[order.status]}
-            </button>
-          )}
+          <p className="shop-order-total" style={{ marginTop: '0.5rem' }}>Total: £{(order.total / 100).toFixed(2)}</p>
+          <p className="shop-order-meta">Ref: {order.id}</p>
         </div>
       ))}
     </div>

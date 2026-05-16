@@ -835,15 +835,17 @@ model ShopOrder {
 }
 
 model ShopOrderItem {
-  id            String    @id @default(cuid())
+  id            String              @id @default(cuid())
   orderId       String
-  order         ShopOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order         ShopOrder           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId     String
   productName   String
   size          String
   quantity      Int
   customisation String?
   price         Int
+  status        ShopOrderItemStatus @default(AWAITING)
+  supplier      String?
 
   @@map("shop_order_items")
 }
@@ -974,6 +976,13 @@ enum BookingStatus {
 enum ShopOrderStatus {
   PENDING_PAYMENT
   ORDERED
+  ARRIVED
+  FULFILLED
+}
+
+enum ShopOrderItemStatus {
+  AWAITING
+  ORDERED_FROM_SUPPLIER
   ARRIVED
   FULFILLED
 }

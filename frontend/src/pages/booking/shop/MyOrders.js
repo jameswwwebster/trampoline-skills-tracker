@@ -8,6 +8,13 @@ const STATUS_LABELS = {
   FULFILLED: 'Collected',
 };
 
+const ITEM_STATUS_LABELS = {
+  AWAITING: 'Awaiting',
+  ORDERED_FROM_SUPPLIER: 'Ordered from supplier',
+  ARRIVED: 'Arrived at club',
+  FULFILLED: 'Collected',
+};
+
 export default function MyOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,10 +57,17 @@ export default function MyOrders() {
           </div>
           <div className="shop-order-items">
             {order.items.map((item, i) => (
-              <div key={i}>
-                {item.productName} — {item.size}
-                {item.customisation ? ` (${item.customisation})` : ''}
-                {item.quantity > 1 ? ` ×${item.quantity}` : ''}
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                <span>
+                  {item.productName} — {item.size}
+                  {item.customisation ? ` (${item.customisation})` : ''}
+                  {item.quantity > 1 ? ` ×${item.quantity}` : ''}
+                </span>
+                {item.status && (
+                  <span className={`shop-order-status ${item.status}`} style={{ fontSize: '0.75rem' }}>
+                    {ITEM_STATUS_LABELS[item.status]}
+                  </span>
+                )}
               </div>
             ))}
           </div>

@@ -20,8 +20,8 @@ export const shopApi = {
   getAdminOrders: (status = 'ALL') =>
     axios.get(`${API_URL}/booking/shop/admin/orders`, { params: { status }, headers: getHeaders() }),
 
-  updateOrderStatus: (orderId, status) =>
-    axios.patch(`${API_URL}/booking/shop/admin/orders/${orderId}/status`, { status }, { headers: getHeaders() }),
+  updateOrderItem: (orderId, itemId, payload) =>
+    axios.patch(`${API_URL}/booking/shop/admin/orders/${orderId}/items/${itemId}`, payload, { headers: getHeaders() }),
 
   getPendingOrderCount: () =>
     axios.get(`${API_URL}/booking/shop/admin/orders/pending-count`, { headers: getHeaders() }),
