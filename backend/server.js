@@ -319,15 +319,38 @@ cron.schedule('0 8 * * 1', async () => {
         orderBy: { date: 'asc' },
       });
 
-      // Only include sessions that still have availability
-      const availableSessions = instances
-        .map(inst => {
-          const bookedCount = inst.bookings.reduce((sum, b) => sum + b.lines.length, 0);
-          const capacity = inst.openSlotsOverride ?? inst.template.openSlots;
-          const availableSlots = Math.max(0, capacity - bookedCount);
-          return { date: inst.date, startTime: inst.template.startTime, endTime: inst.template.endTime, availableSlots };
-        })
-        .filter(s => s.availableSlots > 0);
+      // Capacity calc has to match getAvailableSlots in bookings.js: confirmed
+      // booking lines (excluding cancelled), plus active commitments whose
+      // startDate has passed, minus gymnasts marked absent for that instance.
+      const availableSessions = (await Promise.all(instances.map(async (inst) => {
+        const bookedCount = inst.bookings.reduce(
+          (sum, b) => sum + b.lines.filter(l => !l.cancelledAt).length,
+          0,
+        );
+        const sessionDate = new Date(inst.date);
+        sessionDate.setUTCHours(0, 0, 0, 0);
+        const absentGymnastIds = (await prisma.attendance.findMany({
+          where: { sessionInstanceId: inst.id, status: 'ABSENT' },
+          select: { gymnastId: true },
+        })).map(a => a.gymnastId);
+        const activeCommitments = await prisma.commitment.count({
+          where: {
+            templateId: inst.templateId,
+            status: 'ACTIVE',
+            OR: [{ startDate: null }, { startDate: { lte: sessionDate } }],
+            ...(absentGymnastIds.length > 0 ? { gymnastId: { notIn: absentGymnastIds } } : {}),
+          },
+        });
+        const capacity = inst.openSlotsOverride ?? inst.template.openSlots;
+        const availableSlots = Math.max(0, capacity - bookedCount - activeCommitments);
+        return {
+          date: inst.date,
+          startTime: inst.template.startTime,
+          endTime: inst.template.endTime,
+          type: inst.template.type,
+          availableSlots,
+        };
+      }))).filter(s => s.availableSlots > 0);
 
       if (availableSessions.length === 0) continue;
 
@@ -339,6 +362,7 @@ cron.schedule('0 8 * * 1', async () => {
           id: true, email: true, firstName: true,
           gymnasts: {
             select: {
+              dmtApproved: true,
               memberships: { where: { status: 'ACTIVE', clubId: club.id }, select: { id: true } },
             },
           },
@@ -352,8 +376,13 @@ cron.schedule('0 8 * * 1', async () => {
       });
 
       for (const member of members) {
+        // DMT sessions only go to guardians with at least one DMT-approved gymnast.
+        // Self-bookers (no gymnasts) see DMT sessions — they can book themselves.
+        const hasDmtApproved = member.gymnasts.length === 0 || member.gymnasts.some(g => g.dmtApproved);
+        const filtered = availableSessions.filter(s => s.type === 'DMT' ? hasDmtApproved : true);
+        if (filtered.length === 0) continue;
         await emailService.sendWeeklySessionReminderEmail(
-          member.email, member.firstName, availableSessions
+          member.email, member.firstName, filtered
         ).catch(() => {});
       }
     }

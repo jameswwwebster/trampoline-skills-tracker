@@ -314,12 +314,14 @@ class EmailService {
   }
 
   async sendWeeklySessionReminderEmail(email, firstName, sessions) {
-    // sessions: [{ date, startTime, endTime, availableSlots }]
+    // sessions: [{ date, startTime, endTime, type, availableSlots }]
+    const typeLabel = (t) => t === 'DMT' ? 'DMT' : 'Trampoline';
     const rows = sessions.map(s => {
       const dateStr = new Date(s.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
       return `<tr>
         <td style="padding:7px 10px;border-bottom:1px solid #eee">${dateStr}</td>
         <td style="padding:7px 10px;border-bottom:1px solid #eee">${s.startTime}–${s.endTime}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #eee">${typeLabel(s.type)}</td>
         <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:right">${s.availableSlots} space${s.availableSlots !== 1 ? 's' : ''}</td>
       </tr>`;
     }).join('');
@@ -336,6 +338,7 @@ class EmailService {
             <tr style="background-color:#f3eefe">
               <th style="padding:7px 10px;text-align:left">Date</th>
               <th style="padding:7px 10px;text-align:left">Time</th>
+              <th style="padding:7px 10px;text-align:left">Type</th>
               <th style="padding:7px 10px;text-align:right">Spaces</th>
             </tr>
           </thead>
@@ -346,7 +349,7 @@ class EmailService {
       `),
       text: `Hi ${firstName},\n\nHere are the sessions running this week:\n\n${sessions.map(s => {
         const dateStr = new Date(s.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-        return `${dateStr} ${s.startTime}–${s.endTime} (${s.availableSlots} space${s.availableSlots !== 1 ? 's' : ''})`;
+        return `${dateStr} ${s.startTime}–${s.endTime} · ${typeLabel(s.type)} · ${s.availableSlots} space${s.availableSlots !== 1 ? 's' : ''}`;
       }).join('\n')}\n\nBook at: ${base}/booking\n\nTo unsubscribe, log in and update your notification preferences in My Account.`,
     });
   }
