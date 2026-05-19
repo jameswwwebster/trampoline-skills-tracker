@@ -1160,6 +1160,7 @@ function NotificationPreferences({ user, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const isStaff = user?.role === 'CLUB_ADMIN' || user?.role === 'COACH';
 
   const savePreference = async (field, value) => {
     setSaving(true);
@@ -1213,6 +1214,22 @@ function NotificationPreferences({ user, onSaved }) {
             </span>
           </span>
         </label>
+        {isStaff && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={user?.coachLapseAlerts !== false}
+              onChange={() => savePreference('coachLapseAlerts', user?.coachLapseAlerts === false)}
+              disabled={saving}
+            />
+            <span>
+              <strong>Membership lapse alerts</strong>
+              <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--booking-text-muted)', marginTop: '0.1rem' }}>
+                Get an email when a monthly subscription fails to collect, and when it ends. Staff only.
+              </span>
+            </span>
+          </label>
+        )}
         {saved && <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--booking-success)' }}>Saved</p>}
         {saveError && <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--booking-danger)' }}>{saveError}</p>}
       </div>

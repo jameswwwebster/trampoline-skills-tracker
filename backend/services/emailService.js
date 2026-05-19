@@ -283,6 +283,59 @@ class EmailService {
     }, { to: email, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount });
   }
 
+  async sendMembershipLapsingEmail({ coachEmail, coachName, gymnast, parentName, monthlyAmount, attemptCount, nextRetryDate, membershipsUrl }) {
+    const amount = `£${(monthlyAmount / 100).toFixed(2)}`;
+    const nextRetryStr = nextRetryDate
+      ? new Date(nextRetryDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      : null;
+    const subject = `Membership at risk: ${gymnast.firstName} ${gymnast.lastName}`;
+    const attemptLine = attemptCount ? `<p style="margin:0.25rem 0;color:var(--booking-text-muted)">Stripe attempt #${attemptCount}.</p>` : '';
+    const retryLine = nextRetryStr
+      ? `<p>Stripe will retry on <strong>${nextRetryStr}</strong>. If that also fails, the subscription will be cancelled and the gymnast will drop off their standing slots.</p>`
+      : `<p>Stripe has reached the end of its retry schedule — this is likely the last attempt before cancellation.</p>`;
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: coachEmail,
+      subject,
+      html: brandedHtml('Membership at risk', `
+        <p style="margin-top:0">Hi ${coachName || 'there'},</p>
+        <p><strong>${parentName}</strong>'s monthly subscription for <strong>${gymnast.firstName} ${gymnast.lastName}</strong> (${amount}) failed to collect.</p>
+        ${attemptLine}
+        ${retryLine}
+        ${ctaButton(membershipsUrl, 'Open Memberships')}
+        ${muted('You\'re receiving this because you\'re a coach or admin at the club. You can mute these alerts under My Account → Notification preferences.')}
+      `),
+      text: `Hi ${coachName || 'there'},\n\n${parentName}'s monthly subscription for ${gymnast.firstName} ${gymnast.lastName} (${amount}) failed to collect.${attemptCount ? `\nStripe attempt #${attemptCount}.` : ''}${nextRetryStr ? `\nStripe will retry on ${nextRetryStr}.` : '\nStripe has reached the end of its retry schedule.'}\n\nOpen Memberships: ${membershipsUrl}`,
+    }, { to: coachEmail, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount });
+  }
+
+  async sendMembershipLapsedEmail({ coachEmail, coachName, gymnast, parentName, cancellationTrigger, cancelledByName, cancelledAt, membershipsUrl }) {
+    const subject = `Membership ended: ${gymnast.firstName} ${gymnast.lastName}`;
+    const dateStr = cancelledAt
+      ? new Date(cancelledAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+      : null;
+    const triggerLine = cancellationTrigger === 'admin'
+      ? `<p>Cancelled by <strong>${cancelledByName || 'an admin'}</strong>${dateStr ? ` on ${dateStr}` : ''}.</p>`
+      : `<p>Cancelled by Stripe — payment failed and the retry schedule was exhausted.</p>`;
+    const triggerText = cancellationTrigger === 'admin'
+      ? `Cancelled by ${cancelledByName || 'an admin'}${dateStr ? ` on ${dateStr}` : ''}.`
+      : `Cancelled by Stripe — payment failed and the retry schedule was exhausted.`;
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: coachEmail,
+      subject,
+      html: brandedHtml('Membership ended', `
+        <p style="margin-top:0">Hi ${coachName || 'there'},</p>
+        <p><strong>${parentName}</strong>'s monthly subscription for <strong>${gymnast.firstName} ${gymnast.lastName}</strong> has ended.</p>
+        ${triggerLine}
+        <p>Their standing slots have been removed. Set up a new membership through the Memberships tab if they want to continue.</p>
+        ${ctaButton(membershipsUrl, 'Open Memberships')}
+        ${muted('You\'re receiving this because you\'re a coach or admin at the club. You can mute these alerts under My Account → Notification preferences.')}
+      `),
+      text: `Hi ${coachName || 'there'},\n\n${parentName}'s monthly subscription for ${gymnast.firstName} ${gymnast.lastName} has ended.\n${triggerText}\n\nTheir standing slots have been removed. Set up a new membership through the Memberships tab if they want to continue.\n\nOpen Memberships: ${membershipsUrl}`,
+    }, { to: coachEmail, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, trigger: cancellationTrigger });
+  }
+
   async sendMembershipCreatedEmail(email, guardianName, gymnast, amountPence) {
     const amount = `£${(amountPence / 100).toFixed(2)}`;
     const loginUrl = `${BASE_URL()}/booking/my-account`;

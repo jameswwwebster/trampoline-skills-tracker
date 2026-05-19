@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-05-19',
+    entries: [
+      { type: 'feature', text: 'Coaches and admins now get an email when a monthly subscription is at risk (Stripe payment failed) and another when it actually ends. The "ended" email tells you whether an admin cancelled it or Stripe ran out of retries. You can mute these from My Account → Notifications.' },
+    ],
+  },
+  {
     date: '2026-05-18',
     entries: [
       { type: 'fix', text: 'Weekly "sessions available this week" email now reports the correct number of free spaces. The previous count only subtracted confirmed bookings and ignored standing-slot commitments and absences, so a session with 6 standing slots looked like it had 6 more spaces than it really did.' },

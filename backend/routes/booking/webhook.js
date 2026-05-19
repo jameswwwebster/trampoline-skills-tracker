@@ -4,6 +4,86 @@ const emailService = require('../../services/emailService');
 const router = express.Router();
 const prisma = require('../../prisma');
 
+const FRONTEND_URL = () => process.env.FRONTEND_URL || 'http://localhost:3000';
+const MEMBERSHIPS_URL = () => `${FRONTEND_URL()}/booking/admin/memberships`;
+
+async function notifyCoachesLapsing({ membership, invoice }) {
+  if (!membership.club?.emailEnabled) return;
+  const coaches = await prisma.user.findMany({
+    where: {
+      clubId: membership.clubId,
+      role: { in: ['CLUB_ADMIN', 'COACH'] },
+      isArchived: false,
+      email: { not: null },
+      coachLapseAlerts: true,
+    },
+    select: { email: true, firstName: true },
+  });
+  if (coaches.length === 0) return;
+  const guardian = await prisma.user.findFirst({
+    where: { guardedGymnasts: { some: { id: membership.gymnastId } } },
+    select: { firstName: true, lastName: true },
+    orderBy: { createdAt: 'asc' },
+  });
+  const parentName = guardian ? `${guardian.firstName} ${guardian.lastName}` : 'A parent';
+  const nextRetryDate = invoice.next_payment_attempt ? new Date(invoice.next_payment_attempt * 1000) : null;
+  const membershipsUrl = MEMBERSHIPS_URL();
+  for (const coach of coaches) {
+    try {
+      await emailService.sendMembershipLapsingEmail({
+        coachEmail: coach.email,
+        coachName: coach.firstName,
+        gymnast: membership.gymnast,
+        parentName,
+        monthlyAmount: invoice.amount_due ?? membership.monthlyAmount,
+        attemptCount: invoice.attempt_count,
+        nextRetryDate,
+        membershipsUrl,
+      });
+    } catch (err) {
+      console.error('Coach lapsing email failed:', err.message);
+    }
+  }
+}
+
+async function notifyCoachesLapsed({ membership, trigger, cancelledByName, cancelledAt }) {
+  if (!membership.club?.emailEnabled) return;
+  const coaches = await prisma.user.findMany({
+    where: {
+      clubId: membership.clubId,
+      role: { in: ['CLUB_ADMIN', 'COACH'] },
+      isArchived: false,
+      email: { not: null },
+      coachLapseAlerts: true,
+    },
+    select: { email: true, firstName: true },
+  });
+  if (coaches.length === 0) return;
+  const guardian = await prisma.user.findFirst({
+    where: { guardedGymnasts: { some: { id: membership.gymnastId } } },
+    select: { firstName: true, lastName: true },
+    orderBy: { createdAt: 'asc' },
+  });
+  const parentName = guardian ? `${guardian.firstName} ${guardian.lastName}` : 'A parent';
+  const membershipsUrl = MEMBERSHIPS_URL();
+  for (const coach of coaches) {
+    try {
+      await emailService.sendMembershipLapsedEmail({
+        coachEmail: coach.email,
+        coachName: coach.firstName,
+        gymnast: membership.gymnast,
+        parentName,
+        cancellationTrigger: trigger,
+        cancelledByName,
+        cancelledAt,
+        membershipsUrl,
+      });
+    } catch (err) {
+      console.error('Coach lapsed email failed:', err.message);
+    }
+  }
+}
+
 async function handleInvoicePaid(invoice, prisma, emailService) {
   const membership = await prisma.membership.findFirst({
     where: { stripeSubscriptionId: invoice.subscription },
@@ -241,33 +321,66 @@ router.post('/', express.raw({ type: 'application/json' }), async (req, res) => 
           }
         }
       }
+      if (membership) {
+        await notifyCoachesLapsing({ membership, invoice });
+      }
       console.log(`Membership payment failed for subscription ${invoice.subscription}`);
     }
   }
 
   if (event.type === 'customer.subscription.deleted') {
     const subscription = event.data.object;
-    const affected = await prisma.membership.findMany({
-      where: { stripeSubscriptionId: subscription.id, status: { not: 'CANCELLED' } },
-      select: { id: true, gymnastId: true, clubId: true },
+    // Snapshot membership rows BEFORE flipping status so we can tell whether
+    // the local row was already CANCELLED (i.e. admin DELETE triggered this)
+    // vs Stripe-initiated.
+    const before = await prisma.membership.findMany({
+      where: { stripeSubscriptionId: subscription.id },
+      include: { gymnast: true, club: true },
     });
-    if (affected.length > 0) {
+    const newlyCancelled = before.filter(m => m.status !== 'CANCELLED');
+
+    if (newlyCancelled.length > 0) {
       await prisma.membership.updateMany({
-        where: { id: { in: affected.map(m => m.id) } },
+        where: { id: { in: newlyCancelled.map(m => m.id) } },
         data: { status: 'CANCELLED' },
       });
-      // Mirror the DELETE /memberships/:id cascade — without this, the gymnast
-      // keeps appearing in every weekly session even though the sub is gone.
-      for (const m of affected) {
+      for (const m of newlyCancelled) {
         await prisma.commitment.deleteMany({
           where: { gymnastId: m.gymnastId, template: { clubId: m.clubId } },
         });
       }
     }
-    console.log(`Membership cancelled via subscription deletion ${subscription.id} (${affected.length} affected)`);
+
+    // Coach alerts: every row this webhook touches (admin or Stripe).
+    for (const m of before) {
+      const adminInitiated = m.status === 'CANCELLED'; // already cancelled by admin DELETE
+      let cancelledByName = null;
+      let cancelledAt = null;
+      if (adminInitiated) {
+        const log = await prisma.auditLog.findFirst({
+          where: { action: 'membership.cancel', entityType: 'Membership', entityId: m.id },
+          orderBy: { createdAt: 'desc' },
+          include: { user: { select: { firstName: true, lastName: true } } },
+        });
+        if (log?.user) cancelledByName = `${log.user.firstName} ${log.user.lastName}`;
+        cancelledAt = log?.createdAt ?? m.updatedAt;
+      } else {
+        cancelledAt = new Date();
+      }
+      await notifyCoachesLapsed({
+        membership: m,
+        trigger: adminInitiated ? 'admin' : 'stripe',
+        cancelledByName,
+        cancelledAt,
+      });
+    }
+
+    console.log(`Membership cancelled via subscription deletion ${subscription.id} (${newlyCancelled.length} newly affected, ${before.length - newlyCancelled.length} pre-cancelled by admin)`);
   }
 
   res.json({ received: true });
 });
 
 module.exports = router;
+module.exports.notifyCoachesLapsing = notifyCoachesLapsing;
+module.exports.notifyCoachesLapsed = notifyCoachesLapsed;

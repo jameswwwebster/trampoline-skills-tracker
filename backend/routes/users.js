@@ -15,6 +15,7 @@ const updateProfileSchema = Joi.object({
   phone: Joi.string().allow('').optional(),
   weeklySessionReminder: Joi.boolean().optional(),
   bookingReceiptEmail: Joi.boolean().optional(),
+  coachLapseAlerts: Joi.boolean().optional(),
 });
 
 const changePasswordSchema = Joi.object({
@@ -179,7 +180,7 @@ router.put('/profile', auth, async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { firstName, lastName, email, phone, weeklySessionReminder, bookingReceiptEmail } = value;
+    const { firstName, lastName, email, phone, weeklySessionReminder, bookingReceiptEmail, coachLapseAlerts } = value;
 
     // If email is being updated, check if it's already taken
     if (email && email !== req.user.email) {
@@ -202,6 +203,7 @@ router.put('/profile', auth, async (req, res) => {
         ...(phone !== undefined && { phone: phone || null }),
         ...(weeklySessionReminder !== undefined && { weeklySessionReminder }),
         ...(bookingReceiptEmail !== undefined && { bookingReceiptEmail }),
+        ...(coachLapseAlerts !== undefined && { coachLapseAlerts }),
       },
       include: {
         club: true,
