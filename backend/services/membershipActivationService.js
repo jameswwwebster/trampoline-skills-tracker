@@ -75,10 +75,28 @@ async function activateMembership(membershipId, prisma, options = {}) {
     const now = new Date();
     const trialEnd = startDateMidnightUTC > now ? Math.floor(startDateMidnightUTC.getTime() / 1000) : undefined;
 
-    // If the guardian already saved a payment method (via pre-activation setup),
-    // use allow_incomplete so Stripe auto-charges it rather than requiring re-entry.
+    // Find a usable card on the customer. The previous check only honoured
+    // `invoice_settings.default_payment_method`, but our sub-creation uses
+    // `save_default_payment_method: 'on_subscription'` which attaches the
+    // card to the *subscription* and not the customer's invoice default.
+    // Once that sub is cancelled the customer is left with attached payment
+    // methods but no invoice default — and we'd create the next sub with no
+    // card, so recurring charges never auto-fired.
     const stripeCustomer = await stripe.customers.retrieve(stripeCustomerId);
-    const hasDefaultPaymentMethod = !!stripeCustomer.invoice_settings?.default_payment_method;
+    let defaultPaymentMethodId = stripeCustomer.invoice_settings?.default_payment_method ?? null;
+    if (typeof defaultPaymentMethodId === 'object' && defaultPaymentMethodId) {
+      defaultPaymentMethodId = defaultPaymentMethodId.id;
+    }
+    if (!defaultPaymentMethodId) {
+      const pms = await stripe.paymentMethods.list({ customer: stripeCustomerId, type: 'card', limit: 5 });
+      if (pms.data.length > 0) {
+        defaultPaymentMethodId = pms.data[0].id;
+        await stripe.customers.update(stripeCustomerId, {
+          invoice_settings: { default_payment_method: defaultPaymentMethodId },
+        });
+      }
+    }
+    const hasDefaultPaymentMethod = !!defaultPaymentMethodId;
     // When charging a fixed first-month amount, always use default_incomplete so Stripe
     // creates an immediate invoice (which picks up the invoice item). With allow_incomplete
     // and proration_behavior:'none', Stripe skips the initial invoice entirely and the
@@ -117,6 +135,7 @@ async function activateMembership(membershipId, prisma, options = {}) {
       ...(trialEnd ? { trial_end: trialEnd } : {}),
       payment_behavior: paymentBehavior,
       payment_settings: { save_default_payment_method: 'on_subscription' },
+      ...(defaultPaymentMethodId ? { default_payment_method: defaultPaymentMethodId } : {}),
       expand: ['latest_invoice'],
       metadata: { clubId: membership.clubId, gymnastId: gymnast.id },
     });
@@ -187,7 +206,43 @@ async function activateMembership(membershipId, prisma, options = {}) {
     }
   }
 
-  console.log(`Activated membership ${membershipId} → ${newStatus}`);
+  // If we ended up ACTIVE without a card on file (e.g. Stripe customer
+  // balance covered the first invoice), flag this to coaches/admins so
+  // they can chase the parent before the next cycle silently fails.
+  if (needsPaymentMethod && !options.skipEmail) {
+    try {
+      const emailService = require('./emailService');
+      const club = await prisma.club.findUnique({ where: { id: membership.clubId }, select: { emailEnabled: true } });
+      if (club?.emailEnabled) {
+        const coaches = await prisma.user.findMany({
+          where: {
+            clubId: membership.clubId,
+            role: { in: ['CLUB_ADMIN', 'COACH'] },
+            isArchived: false,
+            email: { not: null },
+            coachLapseAlerts: true,
+          },
+          select: { email: true, firstName: true },
+        });
+        const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const membershipsUrl = `${FRONTEND_URL}/booking/admin/memberships`;
+        for (const coach of coaches) {
+          await emailService.sendMembershipActivatedWithoutCardEmail({
+            coachEmail: coach.email,
+            coachName: coach.firstName,
+            gymnast,
+            parentName: `${guardian.firstName} ${guardian.lastName}`,
+            monthlyAmount: membership.monthlyAmount,
+            membershipsUrl,
+          }).catch(err => console.error('Coach no-card email failed:', err.message));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to alert coaches about missing card:', err.message);
+    }
+  }
+
+  console.log(`Activated membership ${membershipId} → ${newStatus}${needsPaymentMethod ? ' (no card on file)' : ''}`);
 }
 
 module.exports = { activateMembership };

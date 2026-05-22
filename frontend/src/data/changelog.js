@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-05-22',
+    entries: [
+      { type: 'fix', text: 'New monthly subscriptions now reuse the card a parent has used on Stripe before, even if the previous subscription has been cancelled. Previously the activation only checked the customer\'s "invoice default" payment method, missing cards saved against past subscriptions — so a freshly-created membership could end up active without anything to charge next cycle. Coaches and admins also now get a one-off alert when activation lands with no card on file at all, so they can chase the parent before the next billing cycle silently fails.' },
+    ],
+  },
+  {
     date: '2026-05-19',
     entries: [
       { type: 'feature', text: 'Coaches and admins now get an email when a monthly subscription is at risk (Stripe payment failed) and another when it actually ends. The "ended" email tells you whether an admin cancelled it or Stripe ran out of retries. You can mute these from My Account → Notifications.' },

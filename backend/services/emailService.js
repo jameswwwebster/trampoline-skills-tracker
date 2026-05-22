@@ -336,6 +336,25 @@ class EmailService {
     }, { to: coachEmail, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, trigger: cancellationTrigger });
   }
 
+  async sendMembershipActivatedWithoutCardEmail({ coachEmail, coachName, gymnast, parentName, monthlyAmount, membershipsUrl }) {
+    const amount = `£${(monthlyAmount / 100).toFixed(2)}`;
+    const subject = `Membership active without a card on file: ${gymnast.firstName} ${gymnast.lastName}`;
+    return this._send({
+      from: process.env.EMAIL_FROM || 'noreply@trampolinelife.com',
+      to: coachEmail,
+      subject,
+      html: brandedHtml('Membership has no card on file', `
+        <p style="margin-top:0">Hi ${coachName || 'there'},</p>
+        <p><strong>${parentName}</strong>'s new monthly subscription for <strong>${gymnast.firstName} ${gymnast.lastName}</strong> (${amount}) is now active, but Stripe doesn't have a card to charge next month.</p>
+        <p>The first invoice was settled from an existing Stripe customer balance. The next billing cycle will fail unless they add a payment method.</p>
+        <p>Please nudge the parent to log into My Account and add card details before the next cycle.</p>
+        ${ctaButton(membershipsUrl, 'Open Memberships')}
+        ${muted('You\'re receiving this because you\'re a coach or admin at the club. You can mute these alerts under My Account → Notification preferences.')}
+      `),
+      text: `Hi ${coachName || 'there'},\n\n${parentName}'s new monthly subscription for ${gymnast.firstName} ${gymnast.lastName} (${amount}) is now active, but Stripe doesn't have a card on file. The first invoice was settled from a Stripe customer balance; the next billing cycle will fail unless they add a payment method.\n\nNudge the parent to add card details in My Account.\n\nOpen Memberships: ${membershipsUrl}`,
+    }, { to: coachEmail, gymnast: `${gymnast.firstName} ${gymnast.lastName}`, amount });
+  }
+
   async sendMembershipCreatedEmail(email, guardianName, gymnast, amountPence) {
     const amount = `£${(amountPence / 100).toFixed(2)}`;
     const loginUrl = `${BASE_URL()}/booking/my-account`;
