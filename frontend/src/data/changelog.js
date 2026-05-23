@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-05-23',
+    entries: [
+      { type: 'feature', text: 'New "Not on BG" state in the BG Numbers admin section for parents who entered a real number but haven\'t added Trampoline Life as a club on the BG portal yet. Clicking it emails the parent with step-by-step instructions and the portal link, and gives them a 14-day soft-block grace before bookings are paused. There\'s a "Re-send nudge" button on each not-on-BG row, and the parent\'s My Account shows a matching how-to-fix-it card.' },
+    ],
+  },
+  {
     date: '2026-05-22',
     entries: [
       { type: 'fix', text: 'New monthly subscriptions now reuse the card a parent has used on Stripe before, even if the previous subscription has been cancelled. Previously the activation only checked the customer\'s "invoice default" payment method, missing cards saved against past subscriptions — so a freshly-created membership could end up active without anything to charge next cycle. Coaches and admins also now get a one-off alert when activation lands with no card on file at all, so they can chase the parent before the next billing cycle silently fails.' },

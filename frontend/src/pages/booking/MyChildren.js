@@ -783,6 +783,7 @@ function BgNumberSection({ gymnast, onUpdated }) {
   const isInvalid = gymnast.bgNumberStatus === 'INVALID';
   const isPending = gymnast.bgNumberStatus === 'PENDING';
   const isExpired = gymnast.bgNumberStatus === 'EXPIRED';
+  const isNotOnBg = gymnast.bgNumberStatus === 'NOT_ON_BG';
   const hasNumber = !!gymnast.bgNumber;
   const isRequired = gymnast.pastSessionCount >= 2 || gymnast.hasMembership;
   const needs = isRequired && !hasNumber;
@@ -795,6 +796,14 @@ function BgNumberSection({ gymnast, onUpdated }) {
     : null;
   const expiredRemaining = expiredDaysSince != null
     ? Math.max(0, expiredGraceDays - expiredDaysSince)
+    : null;
+
+  // Same idea for NOT_ON_BG, but the grace clock anchors on the most recent nudge.
+  const notOnBgDaysSince = gymnast.bgNumberLastNudgedAt
+    ? Math.floor((Date.now() - new Date(gymnast.bgNumberLastNudgedAt)) / (24 * 60 * 60 * 1000))
+    : null;
+  const notOnBgRemaining = notOnBgDaysSince != null
+    ? Math.max(0, (gymnast.bgNumberGraceDays ?? 14) - notOnBgDaysSince)
     : null;
 
   const handleSave = async () => {
@@ -914,6 +923,30 @@ function BgNumberSection({ gymnast, onUpdated }) {
               Thanks — a coach will re-check it.
             </p>
           )}
+        </div>
+      )}
+
+      {isNotOnBg && (
+        <div style={{
+          background: notOnBgRemaining === 0 ? 'rgba(231,76,60,0.08)' : 'rgba(230,126,34,0.08)',
+          border: `1px solid ${notOnBgRemaining === 0 ? 'rgba(231,76,60,0.3)' : 'rgba(230,126,34,0.3)'}`,
+          borderRadius: 'var(--booking-radius)',
+          padding: '0.5rem 0.75rem', marginBottom: '0.5rem', fontSize: '0.85rem',
+          color: notOnBgRemaining === 0 ? 'var(--booking-danger)' : '#b35900',
+        }}>
+          We can see {gymnast.firstName}'s BG number, but we can't confirm the membership from our end — usually because <strong>Trampoline Life</strong> hasn't been added as a club on the BG portal.
+          {notOnBgRemaining === 0
+            ? ' Bookings are paused until this is fixed.'
+            : ` You have ${notOnBgRemaining} day${notOnBgRemaining === 1 ? '' : 's'} before bookings are paused.`}
+          <div style={{ marginTop: '0.5rem' }}>
+            <strong>How to fix it:</strong>
+            <ol style={{ margin: '0.3rem 0 0', paddingLeft: '1.2rem' }}>
+              <li>Log in to <a href="https://mybg.british-gymnastics.org/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>mybg.british-gymnastics.org</a></li>
+              <li>Open {gymnast.firstName}'s profile</li>
+              <li>Add <strong>Trampoline Life</strong> as a club</li>
+              <li>Let a coach know so we can re-check it</li>
+            </ol>
+          </div>
         </div>
       )}
 

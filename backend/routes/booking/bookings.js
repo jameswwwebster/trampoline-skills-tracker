@@ -26,6 +26,7 @@ async function checkBgNumbers(gymnastIds, now, pendingCounts = {}) {
         select: {
           firstName: true, bgNumber: true, bgNumberStatus: true,
           bgNumberEnteredAt: true, bgNumberExpiredAt: true, bgNumberGraceDays: true,
+          bgNumberLastNudgedAt: true,
         },
       });
       if (!g) return null;
@@ -43,6 +44,14 @@ async function checkBgNumbers(gymnastIds, now, pendingCounts = {}) {
       } else if (g.bgNumberStatus === 'EXPIRED' && !g.bgNumberExpiredAt) {
         // Defensive: if somehow EXPIRED was set without a timestamp, hard-block.
         return g;
+      }
+      // NOT_ON_BG mirrors EXPIRED: 14-day soft-block window from the most
+      // recent nudge to the parent. Re-nudging resets the clock.
+      if (g.bgNumberStatus === 'NOT_ON_BG' && g.bgNumberLastNudgedAt && g.bgNumberGraceDays) {
+        const graceMs = g.bgNumberGraceDays * 24 * 60 * 60 * 1000;
+        if (now - new Date(g.bgNumberLastNudgedAt) > graceMs) return g;
+      } else if (g.bgNumberStatus === 'NOT_ON_BG' && !g.bgNumberLastNudgedAt) {
+        return g; // defensive — hard-block if state is set without a timestamp
       }
 
       if (!g.bgNumber) {

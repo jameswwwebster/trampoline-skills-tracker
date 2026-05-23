@@ -3,11 +3,13 @@ import { bookingApi } from '../../../utils/bookingApi';
 import '../booking-shared.css';
 
 const STATE_META = {
-  PENDING:           { label: 'Pending',        color: '#b78900', bg: '#fff8e1', actionRequired: true },
-  INVALID:           { label: 'Invalid',        color: 'var(--booking-danger)', bg: '#fde8e6', actionRequired: false },
-  EXPIRED_IN_GRACE:  { label: 'Expired (grace)',color: '#c25e00', bg: '#fff0e6', actionRequired: false },
-  EXPIRED_PAST_GRACE:{ label: 'Expired',        color: 'var(--booking-danger)', bg: '#fde8e6', actionRequired: true },
-  MISSING:           { label: 'No number',      color: 'var(--booking-text-muted)', bg: '#f1f1f1', actionRequired: false },
+  PENDING:              { label: 'Pending',           color: '#b78900', bg: '#fff8e1', actionRequired: true },
+  INVALID:              { label: 'Invalid',           color: 'var(--booking-danger)', bg: '#fde8e6', actionRequired: false },
+  EXPIRED_IN_GRACE:     { label: 'Expired (grace)',   color: '#c25e00', bg: '#fff0e6', actionRequired: false },
+  EXPIRED_PAST_GRACE:   { label: 'Expired',           color: 'var(--booking-danger)', bg: '#fde8e6', actionRequired: true },
+  NOT_ON_BG_IN_GRACE:   { label: 'Not on BG (grace)', color: '#c25e00', bg: '#fff0e6', actionRequired: false },
+  NOT_ON_BG_PAST_GRACE: { label: 'Not on BG',         color: 'var(--booking-danger)', bg: '#fde8e6', actionRequired: true },
+  MISSING:              { label: 'No number',         color: 'var(--booking-text-muted)', bg: '#f1f1f1', actionRequired: false },
 };
 
 const FILTER_OPTIONS = [
@@ -50,7 +52,15 @@ export default function AdminBgNumbers() {
       const required = STATE_META[r.bgRowState]?.actionRequired;
       return filter === 'action' ? !!required : !required;
     });
-    const stateOrder = ['PENDING', 'EXPIRED_PAST_GRACE', 'EXPIRED_IN_GRACE', 'INVALID', 'MISSING'];
+    const stateOrder = [
+      'PENDING',
+      'EXPIRED_PAST_GRACE',
+      'NOT_ON_BG_PAST_GRACE',
+      'EXPIRED_IN_GRACE',
+      'NOT_ON_BG_IN_GRACE',
+      'INVALID',
+      'MISSING',
+    ];
     list.sort((a, b) => {
       const ao = stateOrder.indexOf(a.bgRowState);
       const bo = stateOrder.indexOf(b.bgRowState);
@@ -110,9 +120,13 @@ export default function AdminBgNumbers() {
             {filtered.map(g => {
               const meta = STATE_META[g.bgRowState] || STATE_META.MISSING;
               const guardian = g.guardians?.[0];
-              const daysText = g.bgRowState === 'EXPIRED_IN_GRACE' && g.graceDaysLeft != null
+              const inGrace = g.bgRowState === 'EXPIRED_IN_GRACE' || g.bgRowState === 'NOT_ON_BG_IN_GRACE';
+              const daysText = inGrace && g.graceDaysLeft != null
                 ? `${g.graceDaysLeft}d left`
                 : (g.daysInState != null ? `${g.daysInState}d` : '—');
+              const nudgedDaysAgo = g.bgNumberLastNudgedAt
+                ? Math.floor((Date.now() - new Date(g.bgNumberLastNudgedAt).getTime()) / (24 * 60 * 60 * 1000))
+                : null;
               return (
                 <tr key={g.id} style={{ borderTop: '1px solid var(--booking-border)' }}>
                   <td style={{ padding: '0.5rem' }}>{g.firstName} {g.lastName}</td>
@@ -129,7 +143,7 @@ export default function AdminBgNumbers() {
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>{daysText}</td>
                   <td style={{ padding: '0.5rem' }}>
                     {g.bgRowState === 'PENDING' && (
-                      <div className="bk-row" style={{ gap: '0.3rem' }}>
+                      <div className="bk-row" style={{ gap: '0.3rem', flexWrap: 'wrap' }}>
                         <button
                           className="bk-btn bk-btn--sm bk-btn--primary"
                           disabled={saving[g.id]}
@@ -145,9 +159,38 @@ export default function AdminBgNumbers() {
                         <button
                           className="bk-btn bk-btn--sm"
                           disabled={saving[g.id]}
+                          style={{ color: '#c25e00', border: '1px solid #c25e00' }}
+                          onClick={() => handleVerify(g.id, 'not-on-bg')}
+                          title="Number looks valid but the club isn't added on the BG portal so we can't see them"
+                        >Not on BG</button>
+                        <button
+                          className="bk-btn bk-btn--sm"
+                          disabled={saving[g.id]}
                           style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }}
                           onClick={() => handleVerify(g.id, 'invalidate')}
                         >Invalid</button>
+                      </div>
+                    )}
+                    {(g.bgRowState === 'NOT_ON_BG_IN_GRACE' || g.bgRowState === 'NOT_ON_BG_PAST_GRACE') && (
+                      <div className="bk-row" style={{ gap: '0.3rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <button
+                          className="bk-btn bk-btn--sm"
+                          disabled={saving[g.id]}
+                          style={{ color: '#c25e00', border: '1px solid #c25e00' }}
+                          onClick={() => handleVerify(g.id, 'not-on-bg-renudge')}
+                          title="Resend the email asking the parent to add Trampoline Life on the BG portal"
+                        >Re-send nudge</button>
+                        <button
+                          className="bk-btn bk-btn--sm bk-btn--primary"
+                          disabled={saving[g.id]}
+                          onClick={() => handleVerify(g.id, 'verify')}
+                          title="Parent has shared the club — verify the membership"
+                        >Verify</button>
+                        {nudgedDaysAgo != null && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--booking-text-muted)' }}>
+                            {nudgedDaysAgo === 0 ? 'Nudged today' : `Nudged ${nudgedDaysAgo}d ago`}
+                          </span>
+                        )}
                       </div>
                     )}
                   </td>

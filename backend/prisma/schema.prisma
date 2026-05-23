@@ -190,6 +190,7 @@ model Gymnast {
   bgNumberVerifiedAt    DateTime?
   bgNumberVerifiedBy    String?
   bgNumberExpiredAt     DateTime?
+  bgNumberLastNudgedAt  DateTime?
   dmtApproved           Boolean           @default(false)
   dmtApprovedAt         DateTime?
   dmtApprovedById       String?
@@ -1163,6 +1164,7 @@ enum BgNumberStatus {
   VERIFIED
   INVALID
   EXPIRED
+  NOT_ON_BG
 }
 
 enum SessionType {

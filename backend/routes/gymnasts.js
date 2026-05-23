@@ -312,29 +312,55 @@ router.patch('/:id/bg-number/verify', auth, async (req, res) => {
     if (gymnast.clubId !== req.user.clubId) return res.status(403).json({ error: 'Access denied' });
     if (!gymnast.bgNumber) return res.status(400).json({ error: 'No BG number to verify' });
 
-    // 'expire-pending' = "valid but expired": admin can take a PENDING number
-    // straight to EXPIRED without verifying first. Same downstream cascade
-    // as 'expire' from VERIFIED.
+    // Actions:
+    // - 'expire-pending' = "valid but expired": PENDING → EXPIRED.
+    // - 'not-on-bg'      = "number looks valid but parent hasn't shared the
+    //                       club on the BG portal so we can't see it". Soft-
+    //                       blocks bookings during a 14-day grace, emails
+    //                       parent with the BG-portal link.
+    // - 'not-on-bg-renudge' = re-send the same email without changing state.
     const { action } = req.body;
-    if (!['verify', 'invalidate', 'expire', 'expire-pending'].includes(action)) {
-      return res.status(400).json({ error: 'action must be "verify", "invalidate", "expire" or "expire-pending"' });
+    const VALID_ACTIONS = ['verify', 'invalidate', 'expire', 'expire-pending', 'not-on-bg', 'not-on-bg-renudge'];
+    if (!VALID_ACTIONS.includes(action)) {
+      return res.status(400).json({ error: `action must be one of ${VALID_ACTIONS.join(', ')}` });
     }
     if (action === 'expire-pending' && gymnast.bgNumberStatus !== 'PENDING') {
       return res.status(400).json({ error: '"expire-pending" only applies to PENDING numbers' });
     }
+    if (action === 'not-on-bg-renudge' && gymnast.bgNumberStatus !== 'NOT_ON_BG') {
+      return res.status(400).json({ error: '"not-on-bg-renudge" only applies to NOT_ON_BG numbers' });
+    }
 
     const EXPIRED_GRACE_DAYS = 14;
+    const NOT_ON_BG_GRACE_DAYS = 14;
     const now = new Date();
     const isExpiry = action === 'expire' || action === 'expire-pending';
-    const data = {
-      bgNumberStatus:     action === 'verify' ? 'VERIFIED'
-                        : isExpiry           ? 'EXPIRED'
-                        : 'INVALID',
-      bgNumberVerifiedAt: action === 'verify' ? now : null,
-      bgNumberVerifiedBy: action === 'verify' ? req.user.id : null,
-      bgNumberExpiredAt:  isExpiry ? now : null,
-      bgNumberGraceDays:  isExpiry ? EXPIRED_GRACE_DAYS : (action === 'verify' ? null : gymnast.bgNumberGraceDays),
-    };
+    const isNotOnBgInitial = action === 'not-on-bg';
+    const isRenudge = action === 'not-on-bg-renudge';
+
+    let data;
+    if (isRenudge) {
+      data = { bgNumberLastNudgedAt: now };
+    } else if (isNotOnBgInitial) {
+      data = {
+        bgNumberStatus: 'NOT_ON_BG',
+        bgNumberVerifiedAt: null,
+        bgNumberVerifiedBy: null,
+        bgNumberExpiredAt: null,
+        bgNumberGraceDays: NOT_ON_BG_GRACE_DAYS,
+        bgNumberLastNudgedAt: now,
+      };
+    } else {
+      data = {
+        bgNumberStatus:     action === 'verify' ? 'VERIFIED'
+                          : isExpiry           ? 'EXPIRED'
+                          : 'INVALID',
+        bgNumberVerifiedAt: action === 'verify' ? now : null,
+        bgNumberVerifiedBy: action === 'verify' ? req.user.id : null,
+        bgNumberExpiredAt:  isExpiry ? now : null,
+        bgNumberGraceDays:  isExpiry ? EXPIRED_GRACE_DAYS : (action === 'verify' ? null : gymnast.bgNumberGraceDays),
+      };
+    }
     await prisma.gymnast.update({ where: { id: req.params.id }, data });
 
     // Cascade BG-expiry to memberships: schedule Stripe cancel at period-end
@@ -388,6 +414,18 @@ router.patch('/:id/bg-number/verify', auth, async (req, res) => {
           await sendFn(
             guardian.email, guardian.firstName, gymnast.firstName,
             ...(isExpiry ? [EXPIRED_GRACE_DAYS, scheduledCancelDate] : [])
+          ).catch(() => {});
+        }
+      }
+    }
+
+    if ((isNotOnBgInitial || isRenudge) && gymnast.club.emailEnabled) {
+      const emailService = require('../services/emailService');
+      if (typeof emailService.sendBgNumberClubNotSharedEmail === 'function') {
+        for (const guardian of gymnast.guardians) {
+          if (!guardian.email) continue;
+          await emailService.sendBgNumberClubNotSharedEmail(
+            guardian.email, guardian.firstName, gymnast.firstName, NOT_ON_BG_GRACE_DAYS
           ).catch(() => {});
         }
       }
@@ -743,6 +781,7 @@ router.get('/admin/bg-numbers', auth, requireRole(['CLUB_ADMIN', 'COACH']), asyn
           { bgNumberStatus: 'PENDING' },
           { bgNumberStatus: 'INVALID' },
           { bgNumberStatus: 'EXPIRED' },
+          { bgNumberStatus: 'NOT_ON_BG' },
         ],
       },
       include: {
@@ -778,8 +817,23 @@ router.get('/admin/bg-numbers', auth, requireRole(['CLUB_ADMIN', 'COACH']), asyn
         } else {
           state = 'EXPIRED_PAST_GRACE';
         }
+      } else if (g.bgNumberStatus === 'NOT_ON_BG') {
+        if (g.bgNumberLastNudgedAt && g.bgNumberGraceDays) {
+          const elapsedDays = Math.floor((now - new Date(g.bgNumberLastNudgedAt)) / (24 * 60 * 60 * 1000));
+          graceDaysLeft = g.bgNumberGraceDays - elapsedDays;
+          state = graceDaysLeft > 0 ? 'NOT_ON_BG_IN_GRACE' : 'NOT_ON_BG_PAST_GRACE';
+          daysInState = elapsedDays;
+        } else {
+          state = 'NOT_ON_BG_PAST_GRACE';
+        }
       }
-      return { ...g, bgRowState: state, daysInState, graceDaysLeft, pastSessionCount: _count.bookingLines };
+      return {
+        ...g,
+        bgRowState: state,
+        daysInState,
+        graceDaysLeft,
+        pastSessionCount: _count.bookingLines,
+      };
     });
 
     res.json({ rows });

@@ -499,6 +499,28 @@ class EmailService {
     });
   }
 
+  async sendBgNumberClubNotSharedEmail(guardianEmail, guardianFirstName, gymnastFirstName, graceDays = 14) {
+    return this.sendEmail({
+      to: guardianEmail,
+      subject: `Action needed — confirm BG membership for ${gymnastFirstName}`,
+      html: brandedHtml(
+        `Confirm BG membership for ${gymnastFirstName}`,
+        `<p>Hi ${guardianFirstName},</p>
+        <p>You've entered ${gymnastFirstName}'s British Gymnastics membership number, but we can't see their membership from the club end — usually because <strong>Trampoline Life</strong> hasn't been added as a club on the BG portal.</p>
+        ${infoBox(`<p style="margin:0"><strong>How to fix it:</strong></p>
+          <ol style="margin:0.5rem 0 0;padding-left:1.2rem">
+            <li>Log in to the British Gymnastics portal</li>
+            <li>Open ${gymnastFirstName}'s profile</li>
+            <li>Add <strong>Trampoline Life</strong> as a club</li>
+            <li>Let a coach know so we can re-check it</li>
+          </ol>`)}
+        <p>You have <strong>${graceDays} days</strong> before bookings are paused.</p>
+        ${ctaButton('https://mybg.british-gymnastics.org', 'Open British Gymnastics portal')}`,
+      ),
+      text: `Hi ${guardianFirstName},\n\nYou've entered ${gymnastFirstName}'s British Gymnastics membership number, but we can't see their membership from the club end. This is usually because Trampoline Life hasn't been added as a club on the BG portal.\n\nHow to fix it:\n  1. Log in to https://mybg.british-gymnastics.org\n  2. Open ${gymnastFirstName}'s profile\n  3. Add Trampoline Life as a club\n  4. Let a coach know so we can re-check it\n\nYou have ${graceDays} days before bookings are paused.`,
+    });
+  }
+
   async sendBgNumberPendingDigestEmail(coachEmail, coachFirstName, pendingGymnasts, adminUrl) {
     const rows = pendingGymnasts.map(g => {
       const days = Math.floor((Date.now() - new Date(g.bgNumberEnteredAt)) / (24 * 60 * 60 * 1000));

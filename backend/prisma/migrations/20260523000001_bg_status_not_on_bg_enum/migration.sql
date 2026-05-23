@@ -1,0 +1,1 @@
+ALTER TYPE "BgNumberStatus" ADD VALUE 'NOT_ON_BG';

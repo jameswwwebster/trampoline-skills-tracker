@@ -214,3 +214,69 @@ describe('admin bg-numbers list', () => {
     expect(states[verified.id]).toBeUndefined();
   });
 });
+
+describe('not-on-bg action', () => {
+  test('PENDING → NOT_ON_BG sets nudge timestamp + grace + status', async () => {
+    await prisma.gymnast.update({
+      where: { id: gymnast.id },
+      data: { bgNumber: 'BG-N1', bgNumberStatus: 'PENDING', bgNumberEnteredAt: new Date() },
+    });
+    const res = await request(app)
+      .patch(`/api/gymnasts/${gymnast.id}/bg-number/verify`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ action: 'not-on-bg' });
+    expect(res.status).toBe(200);
+    const r = await prisma.gymnast.findUnique({ where: { id: gymnast.id } });
+    expect(r.bgNumberStatus).toBe('NOT_ON_BG');
+    expect(r.bgNumberLastNudgedAt).toBeTruthy();
+    expect(r.bgNumberGraceDays).toBe(14);
+    expect(r.bgNumberExpiredAt).toBeNull();
+  });
+
+  test('not-on-bg-renudge only updates the nudge timestamp', async () => {
+    await prisma.gymnast.update({
+      where: { id: gymnast.id },
+      data: { bgNumber: 'BG-N2', bgNumberStatus: 'NOT_ON_BG', bgNumberGraceDays: 14, bgNumberLastNudgedAt: new Date('2026-05-01T00:00:00Z') },
+    });
+    const before = await prisma.gymnast.findUnique({ where: { id: gymnast.id } });
+    const res = await request(app)
+      .patch(`/api/gymnasts/${gymnast.id}/bg-number/verify`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ action: 'not-on-bg-renudge' });
+    expect(res.status).toBe(200);
+    const after = await prisma.gymnast.findUnique({ where: { id: gymnast.id } });
+    expect(after.bgNumberStatus).toBe('NOT_ON_BG');
+    expect(new Date(after.bgNumberLastNudgedAt).getTime()).toBeGreaterThan(new Date(before.bgNumberLastNudgedAt).getTime());
+  });
+
+  test('not-on-bg-renudge rejected when status is not NOT_ON_BG', async () => {
+    await prisma.gymnast.update({
+      where: { id: gymnast.id },
+      data: { bgNumber: 'BG-N3', bgNumberStatus: 'VERIFIED' },
+    });
+    const res = await request(app)
+      .patch(`/api/gymnasts/${gymnast.id}/bg-number/verify`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ action: 'not-on-bg-renudge' });
+    expect(res.status).toBe(400);
+  });
+
+  test('admin BG-numbers list returns NOT_ON_BG_IN_GRACE / NOT_ON_BG_PAST_GRACE', async () => {
+    const inGrace = await createGymnast(club, parent, {
+      bgNumber: 'BG-N4', bgNumberStatus: 'NOT_ON_BG',
+      bgNumberLastNudgedAt: new Date(), bgNumberGraceDays: 14,
+    });
+    const past = await createGymnast(club, parent, {
+      bgNumber: 'BG-N5', bgNumberStatus: 'NOT_ON_BG',
+      bgNumberLastNudgedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      bgNumberGraceDays: 14,
+    });
+    const res = await request(app)
+      .get('/api/gymnasts/admin/bg-numbers')
+      .set('Authorization', `Bearer ${coachToken}`);
+    expect(res.status).toBe(200);
+    const states = Object.fromEntries(res.body.rows.map(r => [r.id, r.bgRowState]));
+    expect(states[inGrace.id]).toBe('NOT_ON_BG_IN_GRACE');
+    expect(states[past.id]).toBe('NOT_ON_BG_PAST_GRACE');
+  });
+});
