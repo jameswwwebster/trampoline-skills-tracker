@@ -298,7 +298,7 @@ const SHOP_PRODUCTS = [
   {
     id: 'body-warmer',
     name: 'Body Warmer',
-    description: 'Padded body warmer with a lightweight shell. Great for warm-ups, travel between events and chilly competitions.',
+    description: 'Padded body warmer with a lightweight shell, embroidered with the Trampoline Life logo. Great for warm-ups, travel between events and chilly competitions.',
     images: [],
     variants: [
       { label: 'Adult XS', price: 3000 },
