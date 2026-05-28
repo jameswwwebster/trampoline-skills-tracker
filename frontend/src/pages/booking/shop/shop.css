@@ -33,6 +33,16 @@
   background: #f5f5f5;
 }
 
+.shop-card-img--placeholder,
+.shop-product-main-img--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 0.85rem;
+  background: #f5f5f5;
+}
+
 .shop-card-body {
   padding: 0.85rem;
   flex: 1;

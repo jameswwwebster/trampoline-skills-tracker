@@ -87,7 +87,7 @@ export default function ShopProduct() {
         quantity: qty,
         customisation: customisation.trim() || null,
         price: selectedVariant.price,
-        image: product.images[0],
+        image: product.images?.[0] ?? null,
       });
     }
 
@@ -103,22 +103,30 @@ export default function ShopProduct() {
   return (
     <div className="shop-product">
       <div className="shop-product-gallery">
-        <img
-          src={product.images[mainImg]}
-          alt={product.name}
-          className="shop-product-main-img"
-        />
-        {product.images.length > 1 && (
-          <div className="shop-product-thumbs">
-            {product.images.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                alt=""
-                className={`shop-product-thumb${mainImg === i ? ' active' : ''}`}
-                onClick={() => setMainImg(i)}
-              />
-            ))}
+        {product.images?.length > 0 ? (
+          <>
+            <img
+              src={product.images[mainImg]}
+              alt={product.name}
+              className="shop-product-main-img"
+            />
+            {product.images.length > 1 && (
+              <div className="shop-product-thumbs">
+                {product.images.map((img, i) => (
+                  <img
+                    key={i}
+                    src={img}
+                    alt=""
+                    className={`shop-product-thumb${mainImg === i ? ' active' : ''}`}
+                    onClick={() => setMainImg(i)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="shop-product-main-img shop-product-main-img--placeholder">
+            <span>Image coming soon</span>
           </div>
         )}
       </div>
