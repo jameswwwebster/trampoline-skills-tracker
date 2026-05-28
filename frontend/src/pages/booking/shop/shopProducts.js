@@ -296,6 +296,30 @@ export const SHOP_PRODUCTS = [
     },
   },
   {
+    id: 'body-warmer',
+    name: 'Body Warmer',
+    description: 'Padded body warmer with a lightweight shell. Great for warm-ups, travel between events and chilly competitions.',
+    images: [],
+    variants: [
+      { label: 'Adult XS', price: 3000 },
+      { label: 'Adult S', price: 3000 },
+      { label: 'Adult M', price: 3000 },
+      { label: 'Adult L', price: 3000 },
+      { label: 'Adult XL', price: 3000 },
+      { label: 'Adult XXL', price: 3000 },
+    ],
+    customisation: null,
+    sizeGuide: {
+      sections: [
+        {
+          title: 'Adult sizes — chest to fit (inches)',
+          headers: ['Size', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL'],
+          rows: [['Chest (to fit)', '34–36', '38', '40–42', '44–46', '48–50', '52', '54–56', '58']],
+        },
+      ],
+    },
+  },
+  {
     id: 'scrunchie',
     name: 'Scrunchie',
     description: 'Club scrunchie.',

@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-05-28',
+    entries: [
+      { type: 'feature', text: 'Body Warmer added to the kit shop — adult XS through XXL at £30. Hidden from the customer-facing listing until an image is uploaded. Shop listing now skips any product with no images, so future incomplete items behave the same.' },
+    ],
+  },
+  {
     date: '2026-05-23',
     entries: [
       { type: 'feature', text: 'New "Not on BG" state in the BG Numbers admin section for parents who entered a real number but haven\'t added Trampoline Life as a club on the BG portal yet. Clicking it emails the parent with step-by-step instructions and the portal link, and gives them a 14-day soft-block grace before bookings are paused. There\'s a "Re-send nudge" button on each not-on-BG row, and the parent\'s My Account shows a matching how-to-fix-it card.' },

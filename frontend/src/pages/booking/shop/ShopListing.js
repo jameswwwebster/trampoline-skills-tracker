@@ -21,7 +21,7 @@ export default function ShopListing() {
         </p>
       </div>
       <div className="shop-grid">
-        {SHOP_PRODUCTS.map(product => (
+        {SHOP_PRODUCTS.filter(p => p.images?.length > 0).map(product => (
           <Link key={product.id} to={`/booking/shop/${product.id}`} className="shop-card">
             <img
               src={product.images[0]}
