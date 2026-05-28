@@ -509,3 +509,32 @@ describe('POST /api/booking/bookings/:id/lines/:lineId/cancel', () => {
     expect(credits).toHaveLength(2);
   });
 });
+
+describe('POST /api/booking/bookings/combined — shop checkout fully covered by credit', () => {
+  it('creates the ShopOrder + marks credits used when credit covers the entire shop total', async () => {
+    // Give the parent a credit that covers a £20 hoodie (price 2000 pence)
+    const expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + 30);
+    const credit = await prisma.credit.create({ data: { userId: parent.id, amount: 2000, expiresAt } });
+
+    const res = await request(testApp)
+      .post('/api/booking/bookings/combined')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        sessions: [],
+        shopItems: [{ productId: 'hoodie', size: 'Adult M', quantity: 1, customisation: 'JW' }],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.shopOrderId).toBeTruthy();
+    expect(res.body.clientSecret).toBeNull();
+    expect(res.body.bookingId).toBeNull();
+
+    const order = await prisma.shopOrder.findUnique({ where: { id: res.body.shopOrderId }, include: { items: true } });
+    expect(order.status).toBe('ORDERED');
+    expect(order.stripePaymentIntentId).toBeNull();
+    expect(order.items).toHaveLength(1);
+
+    const reloadedCredit = await prisma.credit.findUnique({ where: { id: credit.id } });
+    expect(reloadedCredit.usedAt).toBeTruthy();
+  });
+});

@@ -3,6 +3,7 @@ const changelog = [
   {
     date: '2026-05-28',
     entries: [
+      { type: 'fix', text: 'Shop checkout no longer 500s — and silently consumes credit — when credit covers the full order. The ShopOrder.stripePaymentIntentId column required a value, so credit-only shop orders couldn\'t be created; credits had already been marked used before the failure. The column is now nullable, the whole credit-consumption + booking + shop-order block is wrapped in a single Postgres transaction so partial failures roll back together, and any Stripe PaymentIntent we created gets cancelled if the transaction fails.' },
       { type: 'feature', text: 'Body Warmer added to the kit shop — adult XS through XXL at £30. Hidden from the customer-facing listing until an image is uploaded. Shop listing now skips any product with no images, so future incomplete items behave the same.' },
     ],
   },

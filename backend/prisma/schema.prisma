@@ -827,7 +827,7 @@ model ShopOrder {
   userId                String
   user                  User            @relation(fields: [userId], references: [id])
   status                ShopOrderStatus @default(PENDING_PAYMENT)
-  stripePaymentIntentId String          @unique
+  stripePaymentIntentId String?         @unique
   total                 Int
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt

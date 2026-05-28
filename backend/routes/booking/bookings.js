@@ -1204,26 +1204,10 @@ router.post('/combined', auth, async (req, res) => {
     const creditAmount = creditsToUse.reduce((sum, c) => sum + c.consume, 0);
     const paymentAmount = Math.max(0, grandTotal - creditAmount);
 
-    // ── Cancel stale PENDING session bookings ──
-    for (const item of validatedSessions) {
-      const stalePending = await prisma.booking.findMany({
-        where: { userId: req.user.id, sessionInstanceId: item.sessionInstanceId, status: 'PENDING' },
-      });
-      for (const stale of stalePending) {
-        await prisma.credit.updateMany({ where: { usedOnBookingId: stale.id }, data: { usedAt: null, usedOnBookingId: null } });
-        await prisma.booking.update({ where: { id: stale.id }, data: { status: 'CANCELLED' } });
-      }
-    }
-
-    // ── Clear stale paidOnPaymentIntentId on prior abandoned checkouts ──
-    if (outstandingChargeIds.length > 0) {
-      await prisma.charge.updateMany({
-        where: { id: { in: outstandingChargeIds }, paidOnPaymentIntentId: { not: null } },
-        data: { paidOnPaymentIntentId: null },
-      });
-    }
-
-    // ── Stripe PaymentIntent ──
+    // ── Stripe PaymentIntent (created OUTSIDE the DB transaction so we
+    // don't hold a Postgres connection open during a network call). If the
+    // DB transaction below throws, we cancel the PaymentIntent in the
+    // catch so we never leave a charged customer with no order.
     let paymentIntentId = null;
     let clientSecret = null;
     if (paymentAmount > 0) {
@@ -1235,78 +1219,107 @@ router.post('/combined', auth, async (req, res) => {
       });
       paymentIntentId = paymentIntent.id;
       clientSecret = paymentIntent.client_secret;
-
-      // Tag outstanding charges with the PaymentIntent id
-      if (outstandingChargeIds.length > 0) {
-        await prisma.charge.updateMany({
-          where: { id: { in: outstandingChargeIds } },
-          data: { paidOnPaymentIntentId: paymentIntent.id },
-        });
-      }
     }
 
-    // ── Create bookings ──
-    const bookings = [];
-    for (const item of validatedSessions) {
-      const booking = await prisma.booking.create({
-        data: {
-          userId: req.user.id,
-          sessionInstanceId: item.sessionInstanceId,
-          stripePaymentIntentId: paymentIntentId,
-          status: paymentIntentId ? 'PENDING' : 'CONFIRMED',
-          totalAmount: item.itemAmount,
-          lines: { create: item.gymnastIds.map(id => ({ gymnastId: id, amount: item.pricePerGymnast })) },
-        },
-        include: { lines: true },
-      });
-      bookings.push(booking);
-    }
-
-    // ── Mark credits ──
-    for (const c of creditsToUse) {
-      await prisma.credit.update({
-        where: { id: c.id },
-        data: { amount: c.consume, usedAt: new Date(), usedOnBookingId: bookings[0]?.id ?? null },
-      });
-      if (c.remainder > 0) {
-        await prisma.credit.create({ data: { userId: req.user.id, amount: c.remainder, expiresAt: c.expiresAt } });
-      }
-    }
-
-    // ── Settle charges immediately if no payment required ──
-    if (paymentAmount === 0 && outstandingChargeIds.length > 0) {
-      await prisma.charge.updateMany({
-        where: { id: { in: outstandingChargeIds } },
-        data: { paidAt: new Date() },
-      });
-    }
-
-    // ── Create shop order ──
+    let bookings = [];
     let shopOrder = null;
-    if (validatedShopItems.length > 0) {
-      const shopStatus = paymentIntentId ? 'PENDING_PAYMENT' : 'ORDERED';
-      shopOrder = await prisma.shopOrder.create({
-        data: {
-          userId: req.user.id,
-          stripePaymentIntentId: paymentIntentId,
-          total: shopTotal,
-          status: shopStatus,
-          items: { create: validatedShopItems },
-        },
-        include: { items: true },
-      });
-
-      if (shopStatus === 'ORDERED') {
-        try {
-          const shopEmailService = require('../../services/shopEmailService');
-          const user = await prisma.user.findUnique({
-            where: { id: req.user.id },
-            select: { id: true, firstName: true, lastName: true, email: true },
+    try {
+      ({ bookings, shopOrder } = await prisma.$transaction(async (tx) => {
+        // Cancel stale PENDING session bookings inside the tx so failures roll back together.
+        for (const item of validatedSessions) {
+          const stalePending = await tx.booking.findMany({
+            where: { userId: req.user.id, sessionInstanceId: item.sessionInstanceId, status: 'PENDING' },
           });
-          await shopEmailService.sendOrderConfirmationEmail(user, shopOrder);
-        } catch (emailErr) {
-          console.error('Shop confirmation email failed:', emailErr.message);
+          for (const stale of stalePending) {
+            await tx.credit.updateMany({ where: { usedOnBookingId: stale.id }, data: { usedAt: null, usedOnBookingId: null } });
+            await tx.booking.update({ where: { id: stale.id }, data: { status: 'CANCELLED' } });
+          }
         }
+
+        // Clear stale paidOnPaymentIntentId on prior abandoned checkouts, and
+        // tag this attempt's outstanding charges with the new intent (if any).
+        if (outstandingChargeIds.length > 0) {
+          await tx.charge.updateMany({
+            where: { id: { in: outstandingChargeIds }, paidOnPaymentIntentId: { not: null } },
+            data: { paidOnPaymentIntentId: null },
+          });
+          if (paymentIntentId) {
+            await tx.charge.updateMany({
+              where: { id: { in: outstandingChargeIds } },
+              data: { paidOnPaymentIntentId: paymentIntentId },
+            });
+          }
+        }
+
+        const txBookings = [];
+        for (const item of validatedSessions) {
+          const booking = await tx.booking.create({
+            data: {
+              userId: req.user.id,
+              sessionInstanceId: item.sessionInstanceId,
+              stripePaymentIntentId: paymentIntentId,
+              status: paymentIntentId ? 'PENDING' : 'CONFIRMED',
+              totalAmount: item.itemAmount,
+              lines: { create: item.gymnastIds.map(id => ({ gymnastId: id, amount: item.pricePerGymnast })) },
+            },
+            include: { lines: true },
+          });
+          txBookings.push(booking);
+        }
+
+        for (const c of creditsToUse) {
+          await tx.credit.update({
+            where: { id: c.id },
+            data: { amount: c.consume, usedAt: new Date(), usedOnBookingId: txBookings[0]?.id ?? null },
+          });
+          if (c.remainder > 0) {
+            await tx.credit.create({ data: { userId: req.user.id, amount: c.remainder, expiresAt: c.expiresAt } });
+          }
+        }
+
+        if (paymentAmount === 0 && outstandingChargeIds.length > 0) {
+          await tx.charge.updateMany({
+            where: { id: { in: outstandingChargeIds } },
+            data: { paidAt: new Date() },
+          });
+        }
+
+        let txShopOrder = null;
+        if (validatedShopItems.length > 0) {
+          txShopOrder = await tx.shopOrder.create({
+            data: {
+              userId: req.user.id,
+              stripePaymentIntentId: paymentIntentId, // may be null when credit covers the full price
+              total: shopTotal,
+              status: paymentIntentId ? 'PENDING_PAYMENT' : 'ORDERED',
+              items: { create: validatedShopItems },
+            },
+            include: { items: true },
+          });
+        }
+
+        return { bookings: txBookings, shopOrder: txShopOrder };
+      }));
+    } catch (txErr) {
+      // DB transaction failed — roll back the Stripe PaymentIntent so we
+      // never leave a customer billed without an order.
+      if (paymentIntentId) {
+        try { await getStripe().paymentIntents.cancel(paymentIntentId); }
+        catch (cancelErr) { console.error('Failed to cancel orphaned PaymentIntent:', cancelErr.message); }
+      }
+      throw txErr;
+    }
+
+    if (shopOrder && shopOrder.status === 'ORDERED') {
+      try {
+        const shopEmailService = require('../../services/shopEmailService');
+        const user = await prisma.user.findUnique({
+          where: { id: req.user.id },
+          select: { id: true, firstName: true, lastName: true, email: true },
+        });
+        await shopEmailService.sendOrderConfirmationEmail(user, shopOrder);
+      } catch (emailErr) {
+        console.error('Shop confirmation email failed:', emailErr.message);
       }
     }
 
