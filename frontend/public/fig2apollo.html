@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apollo Trampoline Club — NQE 2 2026</title>
+<style>
+  :root {
+    --apollo: #6a1b9a;
+    --border: #e0d8e9;
+    --muted: #666;
+    --sat: #0e8aa3;        /* teal for Saturday */
+    --sat-bg: #e6f6fa;
+    --sat-row-alt: #d9eff5;
+    --sun: #b03060;        /* deep rose for Sunday */
+    --sun-bg: #fbe5ed;
+    --sun-row-alt: #f5c9d8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #fff; color: #222; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { padding: 1.25rem 1rem 0.5rem; max-width: 1200px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 1.4rem; color: var(--apollo); }
+  header p { margin: 0.3rem 0 0; color: var(--muted); font-size: 0.9rem; }
+  main { padding: 0 1rem 2rem; max-width: 1200px; margin: 0 auto; }
+
+  .controls { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin: 0.8rem 0 1rem; }
+  .controls input[type=search] { flex: 1; min-width: 180px; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; }
+  .chip-group { display: inline-flex; gap: 0.25rem; flex-wrap: wrap; }
+  .chip { padding: 0.35rem 0.7rem; border: 1px solid var(--border); border-radius: 99px; background: #fff; font-size: 0.82rem; cursor: pointer; user-select: none; color: #444; }
+  .chip:hover { border-color: var(--apollo); color: var(--apollo); }
+  .chip.active { background: var(--apollo); color: #fff; border-color: var(--apollo); }
+  .count { color: var(--muted); font-size: 0.85rem; margin-left: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  thead th { background: var(--apollo); color: #fff; text-align: left; padding: 0.5rem 0.55rem; font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap; position: sticky; top: 0; }
+  thead th:hover { background: #581778; }
+  thead th .arrow { display: inline-block; width: 0.7em; opacity: 0.6; font-size: 0.85em; margin-left: 0.15em; }
+  thead th.sorted .arrow { opacity: 1; }
+  tbody td { padding: 0.5rem 0.55rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+
+  /* Day-specific row backgrounds */
+  tbody tr[data-day="Sat"] td               { background: var(--sat-bg); }
+  tbody tr[data-day="Sat"]:nth-of-type(even) td { background: var(--sat-row-alt); }
+  tbody tr[data-day="Sun"] td               { background: var(--sun-bg); }
+  tbody tr[data-day="Sun"]:nth-of-type(even) td { background: var(--sun-row-alt); }
+  tbody tr:hover td { filter: brightness(0.96); }
+
+  /* Day pill colours */
+  .day { display: inline-block; padding: 0.05rem 0.5rem; border-radius: 4px; font-size: 0.74rem; font-weight: 700; white-space: nowrap; letter-spacing: 0.02em; color: #fff; }
+  .day.Sat { background: var(--sat); }
+  .day.Sun { background: var(--sun); }
+
+  .gymnast { font-weight: 600; }
+  .discipline { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 99px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; color: #fff; background: #777; }
+  .discipline.TRA { background: #1565c0; }
+  .discipline.TRS { background: #ad1457; }
+  .discipline.DMT { background: #2e7d32; }
+  .nums { text-align: center; font-variant-numeric: tabular-nums; }
+  .times { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .empty { padding: 1.5rem; text-align: center; color: var(--muted); }
+
+  @media (max-width: 720px) {
+    thead { display: none; }
+    table, tbody, tr, td { display: block; width: 100%; }
+    tr { border-radius: 6px; margin-bottom: 0.6rem; padding: 0.45rem 0.7rem; border-left: 4px solid #ccc; }
+    tr[data-day="Sat"] { border-left-color: var(--sat); }
+    tr[data-day="Sun"] { border-left-color: var(--sun); }
+    td { border: none; padding: 0.18rem 0; background: transparent !important; }
+    td::before { content: attr(data-label) ": "; color: var(--muted); font-size: 0.78rem; font-weight: 600; display: inline-block; min-width: 6rem; }
+    td.gymnast { font-size: 1rem; margin-bottom: 0.2rem; }
+    td.gymnast::before { content: ""; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Apollo Trampoline Club — National Qualification Event 2</h1>
+  <p>20–21 June 2026</p>
+</header>
+<main>
+  <div class="controls">
+    <input id="search" type="search" placeholder="Search gymnast…" autocomplete="off">
+    <span class="chip-group" data-filter="day">
+      <span class="chip active" data-value="">All days</span>
+      <span class="chip" data-value="Sat">Sat</span>
+      <span class="chip" data-value="Sun">Sun</span>
+    </span>
+    <span class="chip-group" data-filter="discipline">
+      <span class="chip active" data-value="">All</span>
+      <span class="chip" data-value="TRA">TRA</span>
+      <span class="chip" data-value="TRS">TRS</span>
+      <span class="chip" data-value="DMT">DMT</span>
+    </span>
+    <span class="count" id="count"></span>
+  </div>
+
+  <table id="grid">
+    <thead>
+      <tr>
+        <th data-key="day">Day<span class="arrow"></span></th>
+        <th data-key="gymnast">Gymnast(s)<span class="arrow"></span></th>
+        <th data-key="discipline">Disc.<span class="arrow"></span></th>
+        <th data-key="category">Category<span class="arrow"></span></th>
+        <th data-key="flight" class="nums">Flight<span class="arrow"></span></th>
+        <th data-key="panel" class="nums">Panel<span class="arrow"></span></th>
+        <th data-key="pos" class="nums">#<span class="arrow"></span></th>
+        <th data-key="marchIn" class="times">March in<span class="arrow"></span></th>
+        <th data-key="compete" class="times">Compete<span class="arrow"></span></th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div id="empty" class="empty" hidden>No gymnasts match the filters.</div>
+</main>
+
+<script>
+const DATA = [
+  // Saturday — Day 1
+  { day: 'Sat', gymnast: "Isla Lily Openshaw",                       discipline: 'TRA', category: 'Women 11–12',          flight: 1, panel: 1, pos: 1,  marchIn: '08:20', compete: '08:55' },
+  { day: 'Sat', gymnast: "Emily Swinton",                            discipline: 'DMT', category: 'Women 15–16',          flight: 2, panel: 4, pos: 9,  marchIn: '09:25', compete: '09:55' },
+  { day: 'Sat', gymnast: "Tristan Scott",                            discipline: 'TRA', category: 'Men 11–12',            flight: 2, panel: 2, pos: 15, marchIn: '09:25', compete: '10:00' },
+  { day: 'Sat', gymnast: "Albi Lincoln",                             discipline: 'TRA', category: 'Men 11–12',            flight: 2, panel: 2, pos: 16, marchIn: '09:25', compete: '10:00' },
+  { day: 'Sat', gymnast: "Tate Dixon",                               discipline: 'TRA', category: 'Men 11–12',            flight: 2, panel: 2, pos: 18, marchIn: '09:25', compete: '10:00' },
+  { day: 'Sat', gymnast: "Jaxson Morris",                            discipline: 'TRA', category: 'Men 11–12',            flight: 2, panel: 2, pos: 23, marchIn: '09:25', compete: '10:00' },
+  { day: 'Sat', gymnast: "Harry Gregory",                            discipline: 'DMT', category: 'Men 15–16',            flight: 3, panel: 4, pos: 7,  marchIn: '10:30', compete: '11:00' },
+  { day: 'Sat', gymnast: "Emeli Duff",                               discipline: 'TRA', category: 'Women 11–12',          flight: 4, panel: 1, pos: 3,  marchIn: '11:35', compete: '12:10' },
+  { day: 'Sat', gymnast: "Nancy Holland",                            discipline: 'TRA', category: 'Women 11–12',          flight: 4, panel: 1, pos: 9,  marchIn: '11:35', compete: '12:10' },
+  { day: 'Sat', gymnast: "Caelan Daly",                              discipline: 'TRA', category: 'Men 13–14',            flight: 4, panel: 2, pos: 14, marchIn: '11:35', compete: '12:10' },
+  { day: 'Sat', gymnast: "Sennen White",                             discipline: 'TRA', category: 'Men 13–14',            flight: 4, panel: 2, pos: 18, marchIn: '11:35', compete: '12:10' },
+  { day: 'Sat', gymnast: "Luke Gregory",                             discipline: 'TRA', category: 'Men 13–14',            flight: 4, panel: 2, pos: 20, marchIn: '11:35', compete: '12:10' },
+  { day: 'Sat', gymnast: "Etienne Dewhurst",                         discipline: 'TRA', category: 'Men 10',                flight: 5, panel: 2, pos: 16, marchIn: '12:40', compete: '13:15' },
+  { day: 'Sat', gymnast: "Amelia O'Connor",                          discipline: 'TRA', category: 'Cat 1 Women 9–14',      flight: 5, panel: 3, pos: 25, marchIn: '12:40', compete: '13:15' },
+  { day: 'Sat', gymnast: "Nancy Holland & Isla Lily Openshaw",       discipline: 'TRS', category: 'Youth Women synchro',   flight: 7, panel: 1, pos: 3,  marchIn: '15:55', compete: '16:30' },
+  { day: 'Sat', gymnast: "Tristan Scott & Albi Lincoln",             discipline: 'TRS', category: 'Youth Men synchro',     flight: 7, panel: 2, pos: 14, marchIn: '15:55', compete: '16:30' },
+  { day: 'Sat', gymnast: "Alice Cullen",                             discipline: 'TRA', category: 'Cat 1 Women 15+',       flight: 7, panel: 3, pos: 5,  marchIn: '15:55', compete: '16:30' },
+  { day: 'Sat', gymnast: "Grace Polak",                              discipline: 'TRA', category: 'Cat 1 Women 15+',       flight: 7, panel: 3, pos: 8,  marchIn: '15:55', compete: '16:30' },
+
+  // Sunday — Day 2
+  { day: 'Sun', gymnast: "Jaxson Morris",                            discipline: 'DMT', category: 'Men 11–12',             flight: 2, panel: 4, pos: 1,  marchIn: '09:30', compete: '10:05' },
+  { day: 'Sun', gymnast: "Dhilan Daly",                              discipline: 'TRA', category: 'Men 17–21',             flight: 3, panel: 1, pos: 10, marchIn: '10:40', compete: '11:20' },
+  { day: 'Sun', gymnast: "Amelia O'Connor",                          discipline: 'DMT', category: 'Cat 1 Women 9–14',      flight: 3, panel: 4, pos: 10, marchIn: '10:40', compete: '11:15' },
+  { day: 'Sun', gymnast: "Emily Swinton",                            discipline: 'TRA', category: 'Women 15–16',           flight: 4, panel: 3, pos: 23, marchIn: '11:50', compete: '12:30' },
+  { day: 'Sun', gymnast: "Samantha Cummins",                         discipline: 'TRA', category: 'Women 15–16',           flight: 4, panel: 3, pos: 27, marchIn: '11:50', compete: '12:30' },
+  { day: 'Sun', gymnast: "Chloe Nicol",                              discipline: 'TRA', category: 'Women 15–16',           flight: 4, panel: 3, pos: 30, marchIn: '11:50', compete: '12:30' },
+  { day: 'Sun', gymnast: "Reece Dixon & Harry Gregory",              discipline: 'TRS', category: 'Junior Men synchro',     flight: 5, panel: 3, pos: 4,  marchIn: '13:45', compete: '14:25' },
+  { day: 'Sun', gymnast: "Holly Robinson",                           discipline: 'TRA', category: 'Women 17–21',           flight: 5, panel: 2, pos: 17, marchIn: '13:45', compete: '14:25' },
+  { day: 'Sun', gymnast: "Isla Lily Openshaw",                       discipline: 'DMT', category: 'Women 11–12',           flight: 6, panel: 4, pos: 1,  marchIn: '14:55', compete: '15:30' },
+  { day: 'Sun', gymnast: "Harry Gregory",                            discipline: 'TRA', category: 'Men 15–16',             flight: 7, panel: 3, pos: 16, marchIn: '16:05', compete: '16:45' },
+  { day: 'Sun', gymnast: "Reece Dixon",                              discipline: 'TRA', category: 'Men 15–16',             flight: 7, panel: 3, pos: 17, marchIn: '16:05', compete: '16:45' },
+  { day: 'Sun', gymnast: "Ryley Allman",                             discipline: 'TRA', category: 'Men 15–16',             flight: 7, panel: 3, pos: 19, marchIn: '16:05', compete: '16:45' },
+];
+
+const DAY_LABEL = { Sat: 'Sat 20 Jun', Sun: 'Sun 21 Jun' };
+
+function timeKey(row, field) {
+  const [h, m] = row[field].split(':').map(Number);
+  return (row.day === 'Sat' ? 0 : 1440) + h * 60 + m;
+}
+
+const state = { sort: 'marchIn', dir: 1, filters: { day: '', discipline: '' }, q: '' };
+
+function render() {
+  const q = state.q.trim().toLowerCase();
+  let rows = DATA.filter(r => {
+    if (state.filters.day && r.day !== state.filters.day) return false;
+    if (state.filters.discipline && r.discipline !== state.filters.discipline) return false;
+    if (q && !r.gymnast.toLowerCase().includes(q) && !r.category.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  const k = state.sort;
+  rows.sort((a, b) => {
+    let av, bv;
+    if (k === 'marchIn' || k === 'compete') { av = timeKey(a, k); bv = timeKey(b, k); }
+    else if (k === 'day') { av = a.day; bv = b.day; }
+    else { av = a[k]; bv = b[k]; }
+    if (av < bv) return -1 * state.dir;
+    if (av > bv) return  1 * state.dir;
+    return timeKey(a, 'marchIn') - timeKey(b, 'marchIn');
+  });
+
+  const tbody = document.getElementById('rows');
+  tbody.innerHTML = rows.map(r => `
+    <tr data-day="${r.day}">
+      <td data-label="Day"><span class="day ${r.day}">${DAY_LABEL[r.day]}</span></td>
+      <td class="gymnast" data-label="Gymnast">${r.gymnast}</td>
+      <td data-label="Discipline"><span class="discipline ${r.discipline}">${r.discipline}</span></td>
+      <td data-label="Category">${r.category}</td>
+      <td class="nums" data-label="Flight">${r.flight}</td>
+      <td class="nums" data-label="Panel">${r.panel}</td>
+      <td class="nums" data-label="#">${r.pos}</td>
+      <td class="times" data-label="March in">${r.marchIn}</td>
+      <td class="times" data-label="Compete">${r.compete}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('empty').hidden = rows.length > 0;
+  document.getElementById('count').textContent = `${rows.length} of ${DATA.length}`;
+
+  document.querySelectorAll('thead th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.key === state.sort);
+    const arrow = th.querySelector('.arrow');
+    if (arrow) arrow.textContent = th.dataset.key === state.sort ? (state.dir === 1 ? '▲' : '▼') : '';
+  });
+}
+
+document.querySelectorAll('thead th').forEach(th => {
+  th.addEventListener('click', () => {
+    const k = th.dataset.key;
+    if (state.sort === k) state.dir *= -1;
+    else { state.sort = k; state.dir = 1; }
+    render();
+  });
+});
+
+document.querySelectorAll('.chip-group').forEach(g => {
+  g.addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    g.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c === chip));
+    state.filters[g.dataset.filter] = chip.dataset.value;
+    render();
+  });
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  state.q = e.target.value;
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
