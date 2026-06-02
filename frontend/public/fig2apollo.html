@@ -60,16 +60,36 @@
   .times { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .empty { padding: 1.5rem; text-align: center; color: var(--muted); }
 
+  /* Keep the tabular layout on phones; just tighten and abbreviate. */
+  .h-full { display: inline; }
+  .h-abbr { display: none; }
+  .d-full { display: inline; }
+
   @media (max-width: 720px) {
-    thead { display: none; }
-    table, tbody, tr, td { display: block; width: 100%; }
-    tr { border-radius: 6px; margin-bottom: 0.6rem; padding: 0.45rem 0.7rem; border-left: 4px solid #ccc; }
-    tr[data-day="Sat"] { border-left-color: var(--sat); }
-    tr[data-day="Sun"] { border-left-color: var(--sun); }
-    td { border: none; padding: 0.18rem 0; background: transparent !important; }
-    td::before { content: attr(data-label) ": "; color: var(--muted); font-size: 0.78rem; font-weight: 600; display: inline-block; min-width: 6rem; }
-    td.gymnast { font-size: 1rem; margin-bottom: 0.2rem; }
-    td.gymnast::before { content: ""; }
+    main { padding: 0 0.5rem 2rem; }
+    table { font-size: 0.78rem; }
+    thead th, tbody td { padding: 0.35rem 0.3rem; }
+    .h-full { display: none; }
+    .h-abbr { display: inline; }
+    .d-full { display: none; }
+    /* Discipline pill is enough — no header text on phones. */
+    th[data-key="discipline"] { font-size: 0; padding-left: 0.2rem; padding-right: 0.2rem; }
+    th[data-key="discipline"] .arrow { font-size: 0.7rem; }
+    .discipline { font-size: 0.65rem; padding: 0.04rem 0.3rem; }
+    .day { font-size: 0.7rem; padding: 0.05rem 0.35rem; }
+    /* Category truncates with ellipsis — tap row to see full data if needed. */
+    td[data-label="Category"] {
+      max-width: 7em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .gymnast { line-height: 1.15; }
+  }
+
+  @media (max-width: 420px) {
+    table { font-size: 0.72rem; }
+    thead th, tbody td { padding: 0.3rem 0.22rem; }
+    /* Drop the Discipline column entirely — the row colour shows the day; gymnast cell shows category context. */
+    th[data-key="discipline"], td[data-label="Discipline"] { display: none; }
+    td[data-label="Category"] { max-width: 5.5em; }
   }
 </style>
 </head>
@@ -98,15 +118,15 @@
   <table id="grid">
     <thead>
       <tr>
-        <th data-key="day">Day<span class="arrow"></span></th>
-        <th data-key="gymnast">Gymnast(s)<span class="arrow"></span></th>
-        <th data-key="discipline">Disc.<span class="arrow"></span></th>
-        <th data-key="category">Category<span class="arrow"></span></th>
-        <th data-key="flight" class="nums">Flight<span class="arrow"></span></th>
-        <th data-key="panel" class="nums">Panel<span class="arrow"></span></th>
+        <th data-key="day"><span class="h-full">Day</span><span class="h-abbr">Day</span><span class="arrow"></span></th>
+        <th data-key="gymnast"><span class="h-full">Gymnast(s)</span><span class="h-abbr">Name</span><span class="arrow"></span></th>
+        <th data-key="discipline"><span class="h-full">Disc.</span><span class="h-abbr"></span><span class="arrow"></span></th>
+        <th data-key="category"><span class="h-full">Category</span><span class="h-abbr">Cat.</span><span class="arrow"></span></th>
+        <th data-key="flight" class="nums"><span class="h-full">Flight</span><span class="h-abbr">F</span><span class="arrow"></span></th>
+        <th data-key="panel" class="nums"><span class="h-full">Panel</span><span class="h-abbr">P</span><span class="arrow"></span></th>
         <th data-key="pos" class="nums">#<span class="arrow"></span></th>
-        <th data-key="marchIn" class="times">March in<span class="arrow"></span></th>
-        <th data-key="compete" class="times">Compete<span class="arrow"></span></th>
+        <th data-key="marchIn" class="times"><span class="h-full">March in</span><span class="h-abbr">In</span><span class="arrow"></span></th>
+        <th data-key="compete" class="times"><span class="h-full">Compete</span><span class="h-abbr">Comp</span><span class="arrow"></span></th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
@@ -151,7 +171,7 @@ const DATA = [
   { day: 'Sun', gymnast: "Ryley Allman",                             discipline: 'TRA', category: 'Men 15–16',             flight: 7, panel: 3, pos: 19, marchIn: '16:05', compete: '16:45' },
 ];
 
-const DAY_LABEL = { Sat: 'Sat 20 Jun', Sun: 'Sun 21 Jun' };
+const DAY_DATE = { Sat: ' 20 Jun', Sun: ' 21 Jun' };
 
 function timeKey(row, field) {
   const [h, m] = row[field].split(':').map(Number);
@@ -183,7 +203,7 @@ function render() {
   const tbody = document.getElementById('rows');
   tbody.innerHTML = rows.map(r => `
     <tr data-day="${r.day}">
-      <td data-label="Day"><span class="day ${r.day}">${DAY_LABEL[r.day]}</span></td>
+      <td data-label="Day"><span class="day ${r.day}">${r.day}<span class="d-full">${DAY_DATE[r.day]}</span></span></td>
       <td class="gymnast" data-label="Gymnast">${r.gymnast}</td>
       <td data-label="Discipline"><span class="discipline ${r.discipline}">${r.discipline}</span></td>
       <td data-label="Category">${r.category}</td>
