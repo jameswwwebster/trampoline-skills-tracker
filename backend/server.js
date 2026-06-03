@@ -186,6 +186,7 @@ app.use('/api/booking/admin', require('./routes/booking/admin'));
 app.use('/api/booking/admin/payments', require('./routes/booking/payments'));
 app.use('/api/booking/templates', require('./routes/booking/templates'));
 app.use('/api/booking/attendance', require('./routes/booking/attendance'));
+app.use('/api/booking', require('./routes/booking/coachRegister'));
 app.use('/api/booking/shop/admin', require('./routes/booking/shopAdmin'));
 app.use('/api/booking/shop', require('./routes/booking/shop'));
 app.use('/api/booking/competition-events', require('./routes/booking/competitionEvents'));

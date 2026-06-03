@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { bookingApi } from '../../../utils/bookingApi';
 import CalendarNav from '../CalendarNav';
@@ -187,6 +187,12 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState(null);
+  const [showShareForm, setShowShareForm] = useState(false);
+  const [shareHours, setShareHours] = useState(72);
+  const [shareTokens, setShareTokens] = useState([]);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareError, setShareError] = useState(null);
+  const [shareCopied, setShareCopied] = useState(null);
   const totalGymnasts = sessionDetail.bookings?.reduce(
     (n, b) => n + b.lines.filter(l => !l.cancelledAt).length, 0,
   ) ?? 0;
@@ -213,6 +219,46 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
   // booking remain confirmed. (Previously this called cancelBooking, which
   // cancelled the whole booking — kicking off other gymnasts the admin
   // didn't intend to touch.)
+  const loadShareTokens = useCallback(() => {
+    bookingApi.listRegisterTokens(selectedSession)
+      .then(res => setShareTokens(res.data))
+      .catch(() => setShareTokens([]));
+  }, [selectedSession]);
+
+  useEffect(() => { if (showShareForm) loadShareTokens(); }, [showShareForm, loadShareTokens]);
+
+  const handleCreateShare = async () => {
+    setShareLoading(true);
+    setShareError(null);
+    try {
+      const res = await bookingApi.createRegisterToken(selectedSession, shareHours);
+      setShareCopied(null);
+      // Try to auto-copy the URL
+      try { await navigator.clipboard.writeText(res.data.url); setShareCopied(res.data.id); }
+      catch { /* clipboard might be blocked — user can copy manually */ }
+      loadShareTokens();
+    } catch (err) {
+      setShareError(err.response?.data?.error || 'Failed to generate link.');
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleCopyShare = async (t) => {
+    try { await navigator.clipboard.writeText(t.url); setShareCopied(t.id); }
+    catch { setShareError('Copy failed — select the URL manually.'); }
+  };
+
+  const handleRevokeShare = async (tokenId) => {
+    if (!window.confirm('Revoke this share link? Anyone holding it will no longer be able to open the register.')) return;
+    try {
+      await bookingApi.revokeRegisterToken(tokenId);
+      loadShareTokens();
+    } catch (err) {
+      setShareError(err.response?.data?.error || 'Failed to revoke.');
+    }
+  };
+
   const handleCancelSession = async () => {
     const reason = cancelReason.trim();
     if (!reason) {
@@ -320,6 +366,54 @@ function SessionDetailPanel({ sessionDetail, selectedSession, showManualAdd, set
 
       {!sessionDetail.cancelledAt && (
         <>
+          <button
+            className="bk-btn"
+            style={{ width: '100%', marginBottom: '0.5rem', border: '1px solid var(--booking-border)' }}
+            onClick={() => setShowShareForm(v => !v)}
+          >
+            {showShareForm ? 'Hide share options' : 'Share register with cover coach'}
+          </button>
+          {showShareForm && (
+            <div className="bk-card" style={{ marginBottom: '1rem' }}>
+              <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>
+                Generates a tokenised URL the cover coach can open without logging in. Shows the full register, skills in progress, health notes and emergency contacts. Don't share the link beyond the cover coach.
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                <label style={{ fontSize: '0.85rem' }}>Expires in
+                  <select className="bk-input bk-input--sm" style={{ marginLeft: '0.4rem', fontSize: '0.85rem' }} value={shareHours} onChange={e => setShareHours(Number(e.target.value))}>
+                    <option value={24}>24 hours</option>
+                    <option value={72}>3 days</option>
+                    <option value={168}>7 days</option>
+                  </select>
+                </label>
+                <button className="bk-btn bk-btn--sm bk-btn--primary" onClick={handleCreateShare} disabled={shareLoading}>
+                  {shareLoading ? 'Generating…' : 'Generate link'}
+                </button>
+              </div>
+              {shareError && <p className="bk-error" style={{ marginBottom: '0.5rem' }}>{shareError}</p>}
+              {shareTokens.length > 0 && (
+                <div>
+                  <p className="bk-muted" style={{ fontSize: '0.78rem', margin: '0.5rem 0 0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Active links</p>
+                  {shareTokens.map(t => (
+                    <div key={t.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', padding: '0.4rem 0', borderTop: '1px solid var(--booking-border)' }}>
+                      <input readOnly value={t.url} className="bk-input bk-input--sm" style={{ fontSize: '0.78rem' }} onFocus={e => e.target.select()} />
+                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>
+                        <button className="bk-btn bk-btn--sm" onClick={() => handleCopyShare(t)}>
+                          {shareCopied === t.id ? '✓ Copied' : 'Copy link'}
+                        </button>
+                        <button className="bk-btn bk-btn--sm" style={{ color: 'var(--booking-danger)', border: '1px solid var(--booking-danger)' }} onClick={() => handleRevokeShare(t.id)}>
+                          Revoke
+                        </button>
+                        <span>Expires {new Date(t.expiresAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>· Views: {t.viewCount}{t.lastViewedAt ? ` (last ${new Date(t.lastViewedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })})` : ''}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             className="bk-btn bk-btn--danger"
             style={{ width: '100%', marginBottom: '1rem' }}

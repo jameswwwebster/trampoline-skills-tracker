@@ -56,6 +56,14 @@ export const bookingApi = {
   cancelSession: (instanceId, reason) =>
     axios.patch(`${API_URL}/booking/sessions/${instanceId}/cancel`, { reason }, { headers: getHeaders() }),
 
+  // Cover-coach register share links
+  listRegisterTokens: (instanceId) =>
+    axios.get(`${API_URL}/booking/admin/sessions/${instanceId}/register-tokens`, { headers: getHeaders() }),
+  createRegisterToken: (instanceId, expiresInHours) =>
+    axios.post(`${API_URL}/booking/admin/sessions/${instanceId}/register-token`, { expiresInHours }, { headers: getHeaders() }),
+  revokeRegisterToken: (tokenId) =>
+    axios.delete(`${API_URL}/booking/admin/sessions/register-tokens/${tokenId}`, { headers: getHeaders() }),
+
   createBooking: (data) =>
     axios.post(`${API_URL}/booking/bookings`, data, { headers: getHeaders() }),
 

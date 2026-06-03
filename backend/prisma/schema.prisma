@@ -71,6 +71,7 @@ model User {
   incidentForwards         IncidentForward[]  @relation("IncidentForwardedBy")
   welfareReports           WelfareReport[]    @relation("WelfareReportedBy")
   welfareAttachmentsUploaded WelfareAttachment[] @relation("WelfareAttachmentUploadedBy")
+  sessionRegisterTokensCreated SessionRegisterToken[] @relation("SessionRegisterTokenCreatedBy")
   guardianInvitesSent      GuardianInvite[]   @relation("GuardianInvitesSent")
   guardianInvitesAccepted  GuardianInvite[]   @relation("GuardianInvitesAccepted")
   namedContactsCreated     NamedContact[]     @relation("NamedContactsCreated")
@@ -740,20 +741,37 @@ model Charge {
 }
 
 model SessionInstance {
-  id                 String           @id @default(cuid())
+  id                 String                  @id @default(cuid())
   templateId         String
-  date               DateTime         @db.Date
+  date               DateTime                @db.Date
   openSlotsOverride  Int?
   cancelledAt        DateTime?
   cancellationReason String?
-  createdAt          DateTime         @default(now())
-  template           SessionTemplate  @relation(fields: [templateId], references: [id])
+  createdAt          DateTime                @default(now())
+  template           SessionTemplate         @relation(fields: [templateId], references: [id])
   bookings           Booking[]
   waitlistEntries    WaitlistEntry[]
   attendances        Attendance[]
+  registerTokens     SessionRegisterToken[]
 
   @@unique([templateId, date])
   @@map("session_instances")
+}
+
+model SessionRegisterToken {
+  id                String          @id @default(cuid())
+  token             String          @unique
+  sessionInstanceId String
+  sessionInstance   SessionInstance @relation(fields: [sessionInstanceId], references: [id], onDelete: Cascade)
+  createdById       String
+  createdBy         User            @relation("SessionRegisterTokenCreatedBy", fields: [createdById], references: [id])
+  expiresAt         DateTime
+  lastViewedAt      DateTime?
+  viewCount         Int             @default(0)
+  createdAt         DateTime        @default(now())
+
+  @@index([sessionInstanceId])
+  @@map("session_register_tokens")
 }
 
 model Booking {

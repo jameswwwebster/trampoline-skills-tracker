@@ -50,6 +50,7 @@ async function cleanDatabase() {
   // Welfare attachments are cascaded by the FK, but the welfare report rows
   // themselves reference reportedById on User — delete them before users.
   // Same for incident reports.
+  await prisma.sessionRegisterToken.deleteMany({ where: { createdById: { in: testUserIds } } });
   await prisma.welfareAttachment.deleteMany({ where: { welfareReport: { reportedById: { in: testUserIds } } } });
   await prisma.welfareReport.deleteMany({ where: { reportedById: { in: testUserIds } } });
   await prisma.incidentForward.deleteMany({ where: { incidentReport: { reportedById: { in: testUserIds } } } });

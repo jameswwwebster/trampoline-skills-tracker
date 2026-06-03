@@ -1,6 +1,12 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-06-03',
+    entries: [
+      { type: 'feature', text: 'New "Share register with cover coach" button on the admin session panel. Generates a tokenised, login-free URL that opens a printable register: every gymnast on this session with their age, current level, skills in progress, health notes, emergency contact, BG status, DMT approval (DMT sessions) and photo consent flags. Pick a 24h / 3-day / 7-day expiry; copy with one click; revoke any live link from the same panel and see how many times it has been opened.' },
+    ],
+  },
+  {
     date: '2026-05-28',
     entries: [
       { type: 'fix', text: 'Shop checkout no longer 500s — and silently consumes credit — when credit covers the full order. The ShopOrder.stripePaymentIntentId column required a value, so credit-only shop orders couldn\'t be created; credits had already been marked used before the failure. The column is now nullable, the whole credit-consumption + booking + shop-order block is wrapped in a single Postgres transaction so partial failures roll back together, and any Stripe PaymentIntent we created gets cancelled if the transaction fails.' },
