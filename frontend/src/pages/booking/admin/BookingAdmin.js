@@ -641,11 +641,20 @@ export default function BookingAdmin() {
   const [sessionDetail, setSessionDetail] = useState(null);
   const [showManualAdd, setShowManualAdd] = useState(false);
 
+  // Reload the panel data for the currently-selected session. Guarded with
+  // an effect-scoped `cancelled` flag so that if the user clicks a different
+  // session before the previous fetch returns, the stale response is
+  // discarded — otherwise the panel can end up showing the wrong session.
   const loadDetail = (id) =>
     bookingApi.getSession(id).then(res => setSessionDetail(res.data));
 
   useEffect(() => {
-    if (selectedSession) loadDetail(selectedSession);
+    if (!selectedSession) return;
+    let cancelled = false;
+    bookingApi.getSession(selectedSession).then(res => {
+      if (!cancelled) setSessionDetail(res.data);
+    }).catch(() => { /* keep prior data */ });
+    return () => { cancelled = true; };
   }, [selectedSession]);
 
   const getClosureForDate = (date) => {

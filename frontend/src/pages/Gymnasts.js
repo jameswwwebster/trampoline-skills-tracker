@@ -186,32 +186,41 @@ const Gymnasts = () => {
     fetchData();
   }, [showArchived]);
 
-  // Handle ?session=<instanceId> deep link from "Track these gymnasts" button
+  // Handle ?session=<instanceId> deep link from "Track these gymnasts" button.
+  // Depend on the param value (not just mount) — otherwise clicking "Track
+  // these gymnasts" a second time while already on /gymnasts updates the
+  // URL but the effect never re-fires, so the wrong session stays loaded.
+  // A `cancelled` flag also discards stale fetch results when the user
+  // switches sessions rapidly.
+  const sessionParamFromUrl = searchParams.get('session');
   useEffect(() => {
-    const sessionParam = searchParams.get('session');
-    if (!sessionParam) return;
+    if (!sessionParamFromUrl) return;
+    let cancelled = false;
 
-    // Strip param from URL so refresh returns to default unfiltered state
     const next = new URLSearchParams(searchParams);
     next.delete('session');
     setSearchParams(next, { replace: true });
 
-    // Fetch attendees and activate the session filter
-    setSelectedSessionId(sessionParam);
+    setSelectedSessionId(sessionParamFromUrl);
     setSessionLoading(true);
-    localStorage.setItem('gymnastSessionFilter', sessionParam);
-    bookingApi.getAttendance(sessionParam)
+    localStorage.setItem('gymnastSessionFilter', sessionParamFromUrl);
+
+    bookingApi.getAttendance(sessionParamFromUrl)
       .then(res => {
+        if (cancelled) return;
         setSessionGymnasts(new Set(res.data.attendees.map(a => a.gymnastId)));
         setShowSessionOnly(true);
       })
       .catch(() => {
+        if (cancelled) return;
         setError('Failed to load session attendees. Please try again.');
         setSelectedSessionId(null);
         localStorage.removeItem('gymnastSessionFilter');
       })
-      .finally(() => setSessionLoading(false));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      .finally(() => { if (!cancelled) setSessionLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [sessionParamFromUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check for URL parameters to highlight specific gymnast or apply filters
   useEffect(() => {
