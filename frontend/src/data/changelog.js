@@ -4,6 +4,7 @@ const changelog = [
     date: '2026-06-03',
     entries: [
       { type: 'feature', text: 'New "Share register with cover coach" button on the admin session panel. Generates a tokenised, login-free URL that opens a printable register: every gymnast on this session with their age, current level, skills in progress, health notes, emergency contact, BG status, DMT approval (DMT sessions) and photo consent flags. Pick a 24h / 3-day / 7-day expiry; copy with one click; revoke any live link from the same panel and see how many times it has been opened.' },
+      { type: 'improvement', text: 'Cover-coach register now falls back to the parent\'s phone when the emergency contact is empty, and shows the skills attached to the gymnast\'s current level (with the last level they passed) when nothing is actively marked in progress.' },
     ],
   },
   {

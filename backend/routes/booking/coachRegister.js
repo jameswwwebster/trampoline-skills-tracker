@@ -197,15 +197,31 @@ router.get('/coach-register/:token', async (req, res) => {
     });
     const fromCommitments = commitments.map(c => c.gymnast);
     const seen = new Set();
-    const roster = [...fromBookings, ...fromCommitments].filter(g => {
+    const baseRoster = [...fromBookings, ...fromCommitments].filter(g => {
       if (!g || seen.has(g.id) || absentGymnastIds.has(g.id)) return false;
       seen.add(g.id);
       return true;
-    }).sort((a, b) => a.firstName.localeCompare(b.firstName));
+    });
+
+    // Re-fetch with guardians so we can fall back to the parent's phone if
+    // explicit emergency contact details are missing.
+    const gymnastIds = baseRoster.map(g => g.id);
+    const rosterDetailed = await prisma.gymnast.findMany({
+      where: { id: { in: gymnastIds } },
+      include: {
+        guardians: {
+          select: { firstName: true, lastName: true, phone: true, email: true },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+    const detailedById = new Map(rosterDetailed.map(g => [g.id, g]));
+    const roster = baseRoster
+      .map(g => detailedById.get(g.id) || g)
+      .sort((a, b) => a.firstName.localeCompare(b.firstName));
 
     // Pull skills + level progress + consents per gymnast in one batch.
-    const gymnastIds = roster.map(g => g.id);
-    const [skillsInProgress, levelProgress, consents] = await Promise.all([
+    const [skillsInProgress, levelProgress, consents, clubLevelsWithSkills] = await Promise.all([
       prisma.skillProgress.findMany({
         where: { gymnastId: { in: gymnastIds }, status: 'IN_PROGRESS' },
         include: {
@@ -224,6 +240,19 @@ router.get('/coach-register/:token', async (req, res) => {
       prisma.consent.findMany({
         where: { gymnastId: { in: gymnastIds }, granted: true },
       }),
+      // Levels + their skills for "what should they work on next" fallback.
+      // Restrict to the club's own levels plus the shared (clubId=null) library.
+      prisma.level.findMany({
+        where: { OR: [{ clubId: club.id }, { clubId: null }] },
+        select: {
+          id: true, number: true, identifier: true, name: true,
+          levelSkills: {
+            include: { skill: { select: { name: true } } },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { number: 'asc' },
+      }),
     ]);
 
     const byGymnast = id => ({
@@ -231,6 +260,11 @@ router.get('/coach-register/:token', async (req, res) => {
       levels: levelProgress.filter(l => l.gymnastId === id),
       consents: consents.filter(c => c.gymnastId === id),
     });
+
+    function nextLevelAfter(level) {
+      if (!level) return null;
+      return clubLevelsWithSkills.find(L => (L.number ?? 0) > (level.number ?? 0)) || null;
+    }
 
     const BG_LABEL = {
       VERIFIED: { label: 'Verified', color: '#2e7d32' },
@@ -256,22 +290,48 @@ router.get('/coach-register/:token', async (req, res) => {
           ? `Completed ${completedLevel.level.identifier} — ${completedLevel.level.name}`
           : 'No level on record';
 
-      // Skills grouped by level for readability
-      const skillsByLevel = new Map();
-      for (const sp of ctx.skills) {
-        const levelInfo = sp.skill?.level;
-        const key = levelInfo ? `${String(levelInfo.number ?? 999).padStart(4, '0')}|${levelInfo.identifier} — ${levelInfo.name}` : '9999|(unlinked)';
-        if (!skillsByLevel.has(key)) skillsByLevel.set(key, []);
-        skillsByLevel.get(key).push(sp.skill?.name || '(unnamed skill)');
+      // Build the "skills in progress" list. If nothing is actively in
+      // progress, fall back to the skills attached to the current level
+      // (the in-progress level, else the level right after the highest
+      // completed one) so the cover coach has something concrete to
+      // work on.
+      let skillsList = '';
+      let skillsHeading = 'Skills in progress';
+      let skillsCaption = '';
+      if (ctx.skills.length > 0) {
+        const skillsByLevel = new Map();
+        for (const sp of ctx.skills) {
+          const levelInfo = sp.skill?.level;
+          const key = levelInfo
+            ? `${String(levelInfo.number ?? 999).padStart(4, '0')}|${levelInfo.identifier} — ${levelInfo.name}`
+            : '9999|(unlinked)';
+          if (!skillsByLevel.has(key)) skillsByLevel.set(key, []);
+          skillsByLevel.get(key).push(sp.skill?.name || '(unnamed skill)');
+        }
+        skillsList = [...skillsByLevel.keys()]
+          .sort()
+          .map(k => {
+            const label = k.split('|')[1] || '';
+            const names = skillsByLevel.get(k).sort();
+            return `<li><strong>${escapeHtml(label)}:</strong> ${names.map(escapeHtml).join(', ')}</li>`;
+          })
+          .join('');
+      } else {
+        // Determine "current" level — in-progress beats next-after-completed.
+        const currentLevel = inProgressLevel?.level
+          ? clubLevelsWithSkills.find(L => L.id === inProgressLevel.level.id) || inProgressLevel.level
+          : nextLevelAfter(completedLevel?.level);
+        if (currentLevel && currentLevel.levelSkills && currentLevel.levelSkills.length > 0) {
+          skillsHeading = 'To work on';
+          skillsCaption = completedLevel
+            ? `Last passed: ${completedLevel.level.identifier} — ${completedLevel.level.name}. Now working on ${currentLevel.identifier} — ${currentLevel.name}.`
+            : `Working towards ${currentLevel.identifier} — ${currentLevel.name}.`;
+          const names = currentLevel.levelSkills
+            .map(ls => ls.skill?.name)
+            .filter(Boolean);
+          skillsList = `<li><strong>${escapeHtml(currentLevel.identifier)} — ${escapeHtml(currentLevel.name)}:</strong> ${names.map(escapeHtml).join(', ')}</li>`;
+        }
       }
-      const skillsList = [...skillsByLevel.keys()]
-        .sort()
-        .map(k => {
-          const label = k.split('|')[1] || '';
-          const names = skillsByLevel.get(k).sort();
-          return `<li><strong>${escapeHtml(label)}:</strong> ${names.map(escapeHtml).join(', ')}</li>`;
-        })
-        .join('');
 
       const photoCoaching = ctx.consents.some(c => c.type === 'photo_coaching');
       const photoSocial = ctx.consents.some(c => c.type === 'photo_social_media');
@@ -294,17 +354,29 @@ router.get('/coach-register/:token', async (req, res) => {
 
           <div class="grid">
             <div>
-              <h3>Skills in progress</h3>
-              ${skillsList ? `<ul class="skills">${skillsList}</ul>` : `<p class="quiet">No skills currently marked in progress.</p>`}
+              <h3>${escapeHtml(skillsHeading)}</h3>
+              ${skillsCaption ? `<p class="quiet" style="margin: 0 0 0.4rem">${escapeHtml(skillsCaption)}</p>` : ''}
+              ${skillsList ? `<ul class="skills">${skillsList}</ul>` : `<p class="quiet">No skills on file for this gymnast yet.</p>`}
             </div>
             <div>
               <h3>Emergency contact</h3>
-              ${(g.emergencyContactName || g.emergencyContactPhone) ? `
-                <p>
-                  <strong>${escapeHtml(g.emergencyContactName || '—')}</strong>${g.emergencyContactRelationship ? ` <span class="quiet">(${escapeHtml(g.emergencyContactRelationship)})</span>` : ''}<br>
-                  ${escapeHtml(g.emergencyContactPhone || '')}
-                </p>
-              ` : `<p class="quiet">Not on file.</p>`}
+              ${(() => {
+                if (g.emergencyContactName || g.emergencyContactPhone) {
+                  return `<p>
+                    <strong>${escapeHtml(g.emergencyContactName || '—')}</strong>${g.emergencyContactRelationship ? ` <span class="quiet">(${escapeHtml(g.emergencyContactRelationship)})</span>` : ''}<br>
+                    ${escapeHtml(g.emergencyContactPhone || '')}
+                  </p>`;
+                }
+                // Fall back to the first guardian on the gymnast.
+                const guardian = (g.guardians || [])[0];
+                if (guardian && (guardian.phone || guardian.email)) {
+                  return `<p>
+                    <strong>${escapeHtml((guardian.firstName || '') + ' ' + (guardian.lastName || ''))}</strong> <span class="quiet">(parent)</span><br>
+                    ${escapeHtml(guardian.phone || guardian.email || '')}
+                  </p>`;
+                }
+                return `<p class="quiet">Not on file.</p>`;
+              })()}
               <h3 style="margin-top:0.8rem">Photo consent</h3>
               <p>
                 <span class="badge ${photoCoaching ? 'on' : 'off'}">Coaching photos: ${photoCoaching ? 'Yes' : 'No'}</span><br>

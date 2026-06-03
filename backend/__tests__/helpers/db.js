@@ -51,6 +51,8 @@ async function cleanDatabase() {
   // themselves reference reportedById on User — delete them before users.
   // Same for incident reports.
   await prisma.sessionRegisterToken.deleteMany({ where: { createdById: { in: testUserIds } } });
+  await prisma.skillProgress.deleteMany({ where: { gymnastId: { in: testGymnastIds } } });
+  await prisma.levelProgress.deleteMany({ where: { gymnastId: { in: testGymnastIds } } });
   await prisma.welfareAttachment.deleteMany({ where: { welfareReport: { reportedById: { in: testUserIds } } } });
   await prisma.welfareReport.deleteMany({ where: { reportedById: { in: testUserIds } } });
   await prisma.incidentForward.deleteMany({ where: { incidentReport: { reportedById: { in: testUserIds } } } });
@@ -70,6 +72,10 @@ async function cleanDatabase() {
   // Fallback: delete any remaining gymnasts in the test club (covers stale data from crashed runs)
   await prisma.membership.deleteMany({ where: { gymnast: { club: { name: 'Test Club TL' } } } });
   await prisma.gymnast.deleteMany({ where: { club: { name: 'Test Club TL' } } });
+  // Tests may also create scratch levels/skills against the test club.
+  await prisma.levelSkill.deleteMany({ where: { level: { club: { name: 'Test Club TL' } } } });
+  await prisma.skill.deleteMany({ where: { level: { club: { name: 'Test Club TL' } } } });
+  await prisma.level.deleteMany({ where: { club: { name: 'Test Club TL' } } });
   await prisma.club.deleteMany({ where: { name: 'Test Club TL' } });
   // Also clean up any "Trampoline Life" club left over from auth tests
   // (only if there are no non-test users attached)

@@ -128,3 +128,70 @@ describe('Coach register share-token flow', () => {
     expect(ids).not.toContain(expired.body.id);
   });
 });
+
+describe('Coach register fallbacks', () => {
+  let club, admin, adminToken, parent, gymnast, instance;
+
+  beforeEach(async () => {
+    await cleanDatabase();
+    club = await createTestClub();
+    admin = await createParent(club, { role: 'CLUB_ADMIN', email: `fb-admin-${Date.now()}@test.tl` });
+    parent = await createParent(club, { email: `fb-parent-${Date.now()}@test.tl`, phone: '+44 7900 123456' });
+    adminToken = tokenFor(admin);
+
+    // Gymnast with NO emergency contact and NO in-progress skills.
+    gymnast = await createGymnast(club, parent, {
+      bgNumber: 'BG-AB', bgNumberStatus: 'VERIFIED',
+      // intentionally no emergency contact fields
+      dateOfBirth: new Date(Date.UTC(2014, 5, 1)),
+    });
+    ({ instance } = await createSession(club));
+    await prisma.booking.create({
+      data: {
+        userId: parent.id, sessionInstanceId: instance.id,
+        status: 'CONFIRMED', totalAmount: 600,
+        lines: { create: [{ gymnastId: gymnast.id, amount: 600 }] },
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await cleanDatabase();
+    await prisma.$disconnect();
+  });
+
+  test('emergency contact falls back to parent phone when missing', async () => {
+    const create = await request(app)
+      .post(`/api/booking/admin/sessions/${instance.id}/register-token`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ expiresInHours: 24 });
+    const view = await request(app).get(`/api/booking/coach-register/${create.body.token}`);
+    expect(view.status).toBe(200);
+    expect(view.text).toContain('+44 7900 123456');
+    expect(view.text).toContain('(parent)');
+  });
+
+  test('skills fallback to current level skills when nothing in progress', async () => {
+    // Build two club levels and skills: completed level 1, current level 2.
+    const lvl1 = await prisma.level.create({ data: { number: 1, identifier: 'L1', name: 'Level 1', clubId: club.id } });
+    const lvl2 = await prisma.level.create({ data: { number: 2, identifier: 'L2', name: 'Level 2', clubId: club.id } });
+    const skillA = await prisma.skill.create({ data: { name: 'Tuck jump', levelId: lvl2.id } });
+    const skillB = await prisma.skill.create({ data: { name: 'Pike jump', levelId: lvl2.id } });
+    await prisma.levelSkill.create({ data: { levelId: lvl2.id, skillId: skillA.id, order: 1 } });
+    await prisma.levelSkill.create({ data: { levelId: lvl2.id, skillId: skillB.id, order: 2 } });
+    await prisma.levelProgress.create({
+      data: { gymnastId: gymnast.id, levelId: lvl1.id, userId: admin.id, status: 'COMPLETED' },
+    });
+
+    const create = await request(app)
+      .post(`/api/booking/admin/sessions/${instance.id}/register-token`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ expiresInHours: 24 });
+    const view = await request(app).get(`/api/booking/coach-register/${create.body.token}`);
+    expect(view.status).toBe(200);
+    expect(view.text).toContain('To work on');
+    expect(view.text).toContain('Last passed: L1');
+    expect(view.text).toContain('Tuck jump');
+    expect(view.text).toContain('Pike jump');
+  });
+});
