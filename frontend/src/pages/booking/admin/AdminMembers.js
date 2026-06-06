@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { bookingApi, getTemplates } from '../../../utils/bookingApi';
+import { bookingApi, getTemplates, linkGuardianDirect, removeGuardian } from '../../../utils/bookingApi';
 import AdminRemovedMembers from './AdminRemovedMembers';
 import Toast from '../../../components/Toast';
 import useToast from '../../../hooks/useToast';
@@ -312,7 +312,7 @@ const MEMBERSHIP_BADGE = {
   SCHEDULED:       (m) => ({ label: `Scheduled £${(m.monthlyAmount/100).toFixed(2)}/mo`, color: '#7c35e8', bg: 'rgba(124,53,232,0.1)' }),
 };
 
-function GymnastRow({ g, memberships, templates, onUpdated }) {
+function GymnastRow({ g, memberships, templates, onUpdated, allUsers }) {
   const membership = memberships.find(m => m.gymnastId === g.id && m.status !== 'CANCELLED') ?? null;
 
   const [editingName, setEditingName] = useState(false);
@@ -346,6 +346,12 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
   const [bgInput, setBgInput] = useState(g.bgNumber || '');
   const [bgSaving, setBgSaving] = useState(false);
   const [bgError, setBgError] = useState(null);
+
+  const [showLinkGuardian, setShowLinkGuardian] = useState(false);
+  const [guardianSearch, setGuardianSearch] = useState('');
+  const [linkingUserId, setLinkingUserId] = useState(null);
+  const [linkError, setLinkError] = useState(null);
+  const [removingGuardianId, setRemovingGuardianId] = useState(null);
 
   const handleSaveHealthNotes = async () => {
     setHealthNotesSaving(true);
@@ -490,6 +496,33 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
       await loadCommitments();
     } catch (err) {
       setCommitmentError(err.response?.data?.error || 'Failed to remove commitment.');
+    }
+  };
+
+  const handleLinkGuardian = async (userId) => {
+    setLinkingUserId(userId);
+    setLinkError(null);
+    try {
+      await linkGuardianDirect(g.id, userId);
+      setShowLinkGuardian(false);
+      setGuardianSearch('');
+      onUpdated();
+    } catch (err) {
+      setLinkError(err.response?.data?.error || 'Failed to link account.');
+    } finally {
+      setLinkingUserId(null);
+    }
+  };
+
+  const handleRemoveGuardian = async (userId) => {
+    setRemovingGuardianId(userId);
+    try {
+      await removeGuardian(g.id, userId);
+      onUpdated();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to remove guardian.');
+    } finally {
+      setRemovingGuardianId(null);
     }
   };
 
@@ -900,6 +933,92 @@ function GymnastRow({ g, memberships, templates, onUpdated }) {
         )}
       </div>
 
+      {/* Guardians */}
+      {!g.isSelf && (
+        <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--booking-bg-light)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--booking-text-muted)' }}>
+              Linked accounts
+            </span>
+            {!showLinkGuardian && (
+              <button
+                className="bk-btn bk-btn--sm"
+                style={{ fontSize: '0.75rem', border: '1px solid var(--booking-border)' }}
+                onClick={() => { setShowLinkGuardian(true); setLinkError(null); setGuardianSearch(''); }}
+              >
+                + Link account
+              </button>
+            )}
+          </div>
+
+          {(g.guardians || []).length === 0 && (
+            <p style={{ margin: '0 0 0.4rem', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>No linked accounts.</p>
+          )}
+          {(g.guardians || []).map(gu => (
+            <div key={gu.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.82rem', padding: '0.2rem 0' }}>
+              <span>{gu.firstName} {gu.lastName}</span>
+              <button
+                className="bk-btn bk-btn--sm"
+                style={{ fontSize: '0.72rem', color: 'var(--booking-danger)', border: '1px solid rgba(231,76,60,0.4)' }}
+                disabled={removingGuardianId === gu.id}
+                onClick={() => handleRemoveGuardian(gu.id)}
+              >
+                {removingGuardianId === gu.id ? 'Removing…' : 'Unlink'}
+              </button>
+            </div>
+          ))}
+
+          {showLinkGuardian && (
+            <div style={{ marginTop: '0.5rem' }}>
+              <input
+                className="bk-input"
+                style={{ fontSize: '0.82rem', marginBottom: '0.4rem' }}
+                placeholder="Search by name or email…"
+                value={guardianSearch}
+                onChange={e => setGuardianSearch(e.target.value)}
+                autoFocus
+              />
+              {linkError && <p style={{ color: 'var(--booking-danger)', fontSize: '0.78rem', margin: '0 0 0.3rem' }}>{linkError}</p>}
+              <div style={{ maxHeight: 180, overflowY: 'auto', border: '1px solid var(--booking-border)', borderRadius: 'var(--booking-radius)' }}>
+                {(() => {
+                  const guardianIds = new Set((g.guardians || []).map(gu => gu.id));
+                  const q = guardianSearch.toLowerCase();
+                  const candidates = (allUsers || []).filter(u =>
+                    !guardianIds.has(u.id) &&
+                    `${u.firstName} ${u.lastName} ${u.email || ''}`.toLowerCase().includes(q)
+                  );
+                  if (candidates.length === 0) {
+                    return <p style={{ margin: 0, padding: '0.5rem 0.6rem', fontSize: '0.82rem', color: 'var(--booking-text-muted)' }}>No matching accounts.</p>;
+                  }
+                  return candidates.slice(0, 10).map(u => (
+                    <button
+                      key={u.id}
+                      className="bk-btn"
+                      disabled={linkingUserId === u.id}
+                      onClick={() => handleLinkGuardian(u.id)}
+                      style={{
+                        display: 'block', width: '100%', textAlign: 'left', fontSize: '0.82rem',
+                        padding: '0.4rem 0.6rem', borderRadius: 0, border: 'none',
+                        borderBottom: '1px solid var(--booking-bg-light)',
+                      }}
+                    >
+                      {linkingUserId === u.id ? 'Linking…' : `${u.firstName} ${u.lastName}${u.email ? ` · ${u.email}` : ''}`}
+                    </button>
+                  ));
+                })()}
+              </div>
+              <button
+                className="bk-btn bk-btn--sm"
+                style={{ marginTop: '0.4rem', border: '1px solid var(--booking-border)', fontSize: '0.75rem' }}
+                onClick={() => { setShowLinkGuardian(false); setGuardianSearch(''); setLinkError(null); }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Remove / unlink gymnast */}
       <div style={{ marginTop: '0.75rem' }}>
         {g.isSelf
@@ -1242,7 +1361,7 @@ function CreditsPanel() {
   );
 }
 
-function MemberDetail({ userId, onRemoved }) {
+function MemberDetail({ userId, onRemoved, allUsers }) {
   const [member, setMember] = useState(null);
   const [memberships, setMemberships] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1752,7 +1871,7 @@ function MemberDetail({ userId, onRemoved }) {
         )}
 
         {[...member.gymnasts].sort((a, b) => (b.isSelf ? 1 : 0) - (a.isSelf ? 1 : 0)).map(g => (
-          <GymnastRow key={g.id} g={g} memberships={memberships} templates={templates} onUpdated={load} />
+          <GymnastRow key={g.id} g={g} memberships={memberships} templates={templates} onUpdated={load} allUsers={allUsers} />
         ))}
 
         {showAddChild && (
@@ -2071,7 +2190,7 @@ export default function AdminMembers() {
                   background: 'var(--booking-bg-white)',
                   padding: '1rem',
                 }}>
-                  <MemberDetail key={u.id} userId={u.id} onRemoved={() => { setSelectedId(null); load(); }} />
+                  <MemberDetail key={u.id} userId={u.id} allUsers={members} onRemoved={() => { setSelectedId(null); load(); }} />
                 </div>
               )}
             </div>
