@@ -296,6 +296,7 @@ router.get('/:userId', auth, requireRole(['CLUB_ADMIN', 'COACH']), async (req, r
       include: {
         consents: true,
         dmtApprovedBy: { select: { firstName: true, lastName: true } },
+        guardians: { select: { id: true, firstName: true, lastName: true } },
       },
     });
 

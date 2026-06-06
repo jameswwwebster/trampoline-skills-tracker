@@ -418,6 +418,9 @@ export const cancelGuardianInvite = (id) =>
 export const removeGuardian = (gymnastId, userId) =>
   axios.delete(`${API_URL}/guardian-invites/gymnast/${gymnastId}/guardian/${userId}`, { headers: getHeaders() });
 
+export const linkGuardianDirect = (gymnastId, userId) =>
+  axios.post(`${API_URL}/guardian-invites/gymnast/${gymnastId}/guardian/link`, { userId }, { headers: getHeaders() });
+
 // Named contacts
 export const createNamedContact = (data) =>
   axios.post(`${API_URL}/named-contacts`, data, { headers: getHeaders() });

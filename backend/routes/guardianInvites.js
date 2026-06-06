@@ -229,4 +229,38 @@ router.delete('/gymnast/:gymnastId/guardian/:userId', auth, requireRole(['CLUB_A
   }
 });
 
+// POST /api/guardian-invites/gymnast/:gymnastId/guardian/link — directly link an existing user as guardian (staff only)
+router.post('/gymnast/:gymnastId/guardian/link', auth, requireRole(STAFF_ROLES), async (req, res) => {
+  const { userId: targetUserId } = req.body;
+  if (!targetUserId) return res.status(400).json({ error: 'userId is required' });
+
+  try {
+    const gymnast = await prisma.gymnast.findFirst({
+      where: { id: req.params.gymnastId, clubId: req.user.clubId },
+      include: { guardians: { select: { id: true } } },
+    });
+    if (!gymnast) return res.status(404).json({ error: 'Gymnast not found' });
+
+    const targetUser = await prisma.user.findFirst({
+      where: { id: targetUserId, clubId: req.user.clubId },
+      select: { id: true, firstName: true, lastName: true, email: true },
+    });
+    if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+    if (gymnast.guardians.some(g => g.id === targetUserId)) {
+      return res.status(400).json({ error: 'This user is already a guardian for this gymnast.' });
+    }
+
+    await prisma.gymnast.update({
+      where: { id: req.params.gymnastId },
+      data: { guardians: { connect: { id: targetUserId } } },
+    });
+
+    res.json({ success: true, user: targetUser });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;
