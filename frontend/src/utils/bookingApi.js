@@ -44,6 +44,22 @@ export const bookingApi = {
   resumeMembership: (membershipId) =>
     axios.post(`${API_URL}/booking/memberships/${membershipId}/resume`, {}, { headers: getHeaders() }),
 
+  // Payment method (member-self)
+  getMyPaymentMethod: () =>
+    axios.get(`${API_URL}/booking/payment-method`, { headers: getHeaders() }),
+  createPaymentMethodSetupIntent: () =>
+    axios.post(`${API_URL}/booking/payment-method/setup-intent`, {}, { headers: getHeaders() }),
+  confirmPaymentMethod: (paymentMethodId) =>
+    axios.post(`${API_URL}/booking/payment-method/confirm`, { paymentMethodId }, { headers: getHeaders() }),
+  getMyInvoices: () =>
+    axios.get(`${API_URL}/booking/invoices`, { headers: getHeaders() }),
+
+  // Payment method / invoices (admin read-only)
+  getMemberPaymentMethod: (userId) =>
+    axios.get(`${API_URL}/booking/admin/users/${userId}/payment-method`, { headers: getHeaders() }),
+  getMemberInvoices: (userId) =>
+    axios.get(`${API_URL}/booking/admin/users/${userId}/invoices`, { headers: getHeaders() }),
+
   getSessions: (year, month) =>
     axios.get(`${API_URL}/booking/sessions`, {
       params: { year, month },

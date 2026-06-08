@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PushNotificationSettings from '../../components/PushNotificationSettings';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
@@ -1189,6 +1189,213 @@ function MembershipCard({ membership }) {
   );
 }
 
+// Inline card-input form used by PaymentMethodSection when the user
+// chooses to update. Wraps Stripe's PaymentElement; on success it calls
+// /payment-method/confirm which sets the card as default + repoints
+// every live subscription at it.
+function UpdatePaymentMethodForm({ onDone, onCancel }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setProcessing(true);
+    setError(null);
+    const { error: confirmError, setupIntent } = await stripe.confirmSetup({
+      elements,
+      confirmParams: { return_url: `${window.location.origin}/booking/my-account` },
+      redirect: 'if_required',
+    });
+    if (confirmError) {
+      setError(confirmError.message || 'Failed to save card.');
+      setProcessing(false);
+      return;
+    }
+    try {
+      await bookingApi.confirmPaymentMethod(setupIntent.payment_method);
+      onDone();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Card saved with Stripe but failed to update the club record. Please contact the club.');
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ marginTop: '0.75rem' }}>
+      <PaymentElement />
+      {error && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{error}</p>}
+      <div className="bk-row" style={{ marginTop: '0.75rem', gap: '0.5rem' }}>
+        <button type="submit" disabled={!stripe || processing} className="bk-btn bk-btn--primary">
+          {processing ? 'Saving…' : 'Save card'}
+        </button>
+        <button type="button" className="bk-btn" disabled={processing} onClick={onCancel} style={{ border: '1px solid var(--booking-border)' }}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function CardOnFile({ pm }) {
+  if (!pm) return <p style={{ margin: 0 }}>No card on file.</p>;
+  const brand = pm.brand ? pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1) : 'Card';
+  return (
+    <p style={{ margin: 0 }}>
+      <strong>{brand}</strong> ending <strong>{pm.last4}</strong>
+      <span className="bk-muted" style={{ marginLeft: '0.5rem' }}>
+        Expires {String(pm.expMonth).padStart(2, '0')}/{String(pm.expYear).slice(-2)}
+      </span>
+    </p>
+  );
+}
+
+function PaymentMethodSection() {
+  const [pm, setPm] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [hasCustomer, setHasCustomer] = useState(false);
+  const [clientSecret, setClientSecret] = useState(null);
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState(null);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    bookingApi.getMyPaymentMethod()
+      .then(res => { setPm(res.data.paymentMethod); setHasCustomer(!!res.data.customerId); })
+      .catch(() => setError('Could not load your payment method.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleUpdate = async () => {
+    setStarting(true);
+    setError(null);
+    try {
+      const res = await bookingApi.createPaymentMethodSetupIntent();
+      setClientSecret(res.data.clientSecret);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to start card update.');
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const handleDone = () => { setClientSecret(null); load(); };
+
+  return (
+    <section style={{ marginBottom: '2rem' }}>
+      <h3>Payment method</h3>
+      <div className="bk-card">
+        {loading ? (
+          <p className="bk-muted" style={{ margin: 0 }}>Loading…</p>
+        ) : (
+          <>
+            <CardOnFile pm={pm} />
+            {!pm && hasCustomer && (
+              <p className="bk-muted" style={{ marginTop: '0.4rem', fontSize: '0.85rem' }}>
+                No card saved. Add one to keep your subscription active.
+              </p>
+            )}
+            {!clientSecret && (
+              <button
+                className="bk-btn bk-btn--primary bk-btn--sm"
+                onClick={handleUpdate}
+                disabled={starting}
+                style={{ marginTop: '0.75rem' }}
+              >
+                {starting ? 'Starting…' : pm ? 'Update card' : 'Add card'}
+              </button>
+            )}
+            {error && <p className="bk-error" style={{ marginTop: '0.5rem' }}>{error}</p>}
+            {clientSecret && (
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <UpdatePaymentMethodForm onDone={handleDone} onCancel={() => setClientSecret(null)} />
+              </Elements>
+            )}
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function InvoiceStatusBadge({ status }) {
+  const map = {
+    paid: { label: 'Paid', bg: '#e8f5e9', color: '#2e7d32' },
+    open: { label: 'Open', bg: '#fff8e1', color: '#b78900' },
+    void: { label: 'Void', bg: '#f1f1f1', color: '#666' },
+    uncollectible: { label: 'Failed', bg: '#fde8e6', color: 'var(--booking-danger)' },
+    draft: { label: 'Draft', bg: '#f1f1f1', color: '#666' },
+  };
+  const m = map[status] || { label: status || '—', bg: '#f1f1f1', color: '#666' };
+  return (
+    <span style={{
+      background: m.bg, color: m.color, padding: '0.1rem 0.45rem',
+      borderRadius: 4, fontSize: '0.75rem', fontWeight: 600,
+    }}>{m.label}</span>
+  );
+}
+
+function InvoicesSection() {
+  const [invoices, setInvoices] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    bookingApi.getMyInvoices()
+      .then(res => setInvoices(res.data.invoices || []))
+      .catch(() => setError('Could not load invoices.'));
+  }, []);
+
+  if (invoices === null && !error) return null;
+  if (error) return (
+    <section style={{ marginBottom: '2rem' }}>
+      <h3>Recent invoices</h3>
+      <p className="bk-error" style={{ margin: 0 }}>{error}</p>
+    </section>
+  );
+  if (invoices.length === 0) return null;
+
+  return (
+    <section style={{ marginBottom: '2rem' }}>
+      <h3>Recent invoices</h3>
+      <div className="bk-card" style={{ overflowX: 'auto' }}>
+        <table className="bk-table" style={{ width: '100%', fontSize: '0.88rem' }}>
+          <thead>
+            <tr style={{ textAlign: 'left', color: 'var(--booking-text-muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <th style={{ padding: '0.35rem 0.4rem' }}>Date</th>
+              <th style={{ padding: '0.35rem 0.4rem' }}>Description</th>
+              <th style={{ padding: '0.35rem 0.4rem', textAlign: 'right' }}>Amount</th>
+              <th style={{ padding: '0.35rem 0.4rem' }}>Status</th>
+              <th style={{ padding: '0.35rem 0.4rem' }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoices.map(inv => {
+              const desc = inv.lines.map(l => l.description).filter(Boolean).join(' · ') || '—';
+              return (
+                <tr key={inv.id} style={{ borderTop: '1px solid var(--booking-border)' }}>
+                  <td style={{ padding: '0.4rem' }}>{new Date(inv.created).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                  <td style={{ padding: '0.4rem' }} title={desc}>{desc.length > 60 ? desc.slice(0, 57) + '…' : desc}</td>
+                  <td style={{ padding: '0.4rem', textAlign: 'right' }}>£{(inv.total / 100).toFixed(2)}</td>
+                  <td style={{ padding: '0.4rem' }}><InvoiceStatusBadge status={inv.status} /></td>
+                  <td style={{ padding: '0.4rem' }}>
+                    {inv.hostedInvoiceUrl && (
+                      <a href={inv.hostedInvoiceUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem' }}>View</a>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function NotificationPreferences({ user, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -1573,6 +1780,9 @@ export default function MyChildren() {
           <GymnastCard key={g.id} gymnast={g} onUpdated={load} currentUserId={user?.id} isAdmin={isClubAdmin} />
         ))}
       </section>
+
+      <PaymentMethodSection />
+      <InvoicesSection />
 
       <NotificationPreferences user={user} onSaved={updateUser} />
     </div>

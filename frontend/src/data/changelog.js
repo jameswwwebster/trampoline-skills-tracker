@@ -1,6 +1,13 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-06-05',
+    entries: [
+      { type: 'feature', text: 'My Account now has a "Payment method" section showing the card on file (brand, last 4 digits, expiry) with an "Update card" button that opens an inline Stripe Elements form. The new card is automatically set as the default and applied to every live monthly subscription, so the next billing cycle goes through without anyone having to chase. A "Recent invoices" section below it lists the last 12 months of membership invoices with links to the Stripe-hosted receipts.' },
+      { type: 'feature', text: 'Coaches and admins now see the same payment-method and invoice summary on a member\'s admin profile (read-only — card changes still have to be made by the member from their own My Account).' },
+    ],
+  },
+  {
     date: '2026-06-03',
     entries: [
       { type: 'feature', text: 'New "Share register with cover coach" button on the admin session panel. Generates a tokenised, login-free URL that opens a printable register: every gymnast on this session with their age, current level, skills in progress, health notes, emergency contact, BG status, DMT approval (DMT sessions) and photo consent flags. Pick a 24h / 3-day / 7-day expiry; copy with one click; revoke any live link from the same panel and see how many times it has been opened.' },
