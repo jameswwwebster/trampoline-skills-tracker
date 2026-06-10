@@ -59,6 +59,8 @@ export const bookingApi = {
     axios.get(`${API_URL}/booking/admin/users/${userId}/payment-method`, { headers: getHeaders() }),
   getMemberInvoices: (userId) =>
     axios.get(`${API_URL}/booking/admin/users/${userId}/invoices`, { headers: getHeaders() }),
+  getMemberPayments: (userId) =>
+    axios.get(`${API_URL}/booking/admin/users/${userId}/payments`, { headers: getHeaders() }),
 
   getSessions: (year, month) =>
     axios.get(`${API_URL}/booking/sessions`, {

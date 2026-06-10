@@ -1938,106 +1938,11 @@ function MemberDetail({ userId, onRemoved, allUsers }) {
         )}
       </div>
 
-      <MemberPaymentMethodView userId={userId} />
-      <MemberInvoicesView userId={userId} />
-
       {detailToast && <Toast message={detailToast.message} type={detailToast.type} onDismiss={dismissDetailToast} />}
     </div>
   );
 }
 
-function MemberPaymentMethodView({ userId }) {
-  const [pm, setPm] = useState(null);
-  const [hasCustomer, setHasCustomer] = useState(false);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    setLoading(true);
-    bookingApi.getMemberPaymentMethod(userId)
-      .then(res => { setPm(res.data.paymentMethod); setHasCustomer(!!res.data.customerId); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [userId]);
-  if (loading) return null;
-  if (!hasCustomer) return null; // member has never paid via Stripe
-  const brand = pm?.brand ? pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1) : null;
-  return (
-    <div className="bk-card" style={{ marginTop: '1rem' }}>
-      <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>Payment method</h4>
-      {pm ? (
-        <p style={{ margin: 0, fontSize: '0.9rem' }}>
-          <strong>{brand}</strong> ending <strong>{pm.last4}</strong>
-          <span className="bk-muted" style={{ marginLeft: '0.5rem' }}>
-            Expires {String(pm.expMonth).padStart(2, '0')}/{String(pm.expYear).slice(-2)}
-          </span>
-        </p>
-      ) : (
-        <p style={{ margin: 0, fontSize: '0.9rem' }} className="bk-muted">No card on file.</p>
-      )}
-      <p style={{ margin: '0.5rem 0 0', fontSize: '0.78rem', color: 'var(--booking-text-muted)' }}>
-        Card details can only be changed by the member from their own My Account.
-      </p>
-    </div>
-  );
-}
-
-function MemberInvoicesView({ userId }) {
-  const [invoices, setInvoices] = useState(null);
-  useEffect(() => {
-    bookingApi.getMemberInvoices(userId)
-      .then(res => setInvoices(res.data.invoices || []))
-      .catch(() => setInvoices([]));
-  }, [userId]);
-  if (invoices === null) return null;
-  if (invoices.length === 0) return null;
-  const statusColors = {
-    paid: { bg: '#e8f5e9', color: '#2e7d32' },
-    open: { bg: '#fff8e1', color: '#b78900' },
-    void: { bg: '#f1f1f1', color: '#666' },
-    uncollectible: { bg: '#fde8e6', color: 'var(--booking-danger)' },
-    draft: { bg: '#f1f1f1', color: '#666' },
-  };
-  return (
-    <div className="bk-card" style={{ marginTop: '1rem' }}>
-      <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>Recent invoices</h4>
-      <div style={{ overflowX: 'auto' }}>
-        <table className="bk-table" style={{ width: '100%', fontSize: '0.85rem' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', color: 'var(--booking-text-muted)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              <th style={{ padding: '0.3rem 0.4rem' }}>Date</th>
-              <th style={{ padding: '0.3rem 0.4rem' }}>Description</th>
-              <th style={{ padding: '0.3rem 0.4rem', textAlign: 'right' }}>Amount</th>
-              <th style={{ padding: '0.3rem 0.4rem' }}>Status</th>
-              <th style={{ padding: '0.3rem 0.4rem' }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoices.map(inv => {
-              const desc = inv.lines.map(l => l.description).filter(Boolean).join(' · ') || '—';
-              const sc = statusColors[inv.status] || { bg: '#f1f1f1', color: '#666' };
-              return (
-                <tr key={inv.id} style={{ borderTop: '1px solid var(--booking-border)' }}>
-                  <td style={{ padding: '0.35rem 0.4rem' }}>{new Date(inv.created).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                  <td style={{ padding: '0.35rem 0.4rem' }} title={desc}>{desc.length > 50 ? desc.slice(0, 47) + '…' : desc}</td>
-                  <td style={{ padding: '0.35rem 0.4rem', textAlign: 'right' }}>£{(inv.total / 100).toFixed(2)}</td>
-                  <td style={{ padding: '0.35rem 0.4rem' }}>
-                    <span style={{ background: sc.bg, color: sc.color, padding: '0.1rem 0.4rem', borderRadius: 4, fontSize: '0.72rem', fontWeight: 600 }}>
-                      {inv.status || '—'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '0.35rem 0.4rem' }}>
-                    {inv.hostedInvoiceUrl && (
-                      <a href={inv.hostedInvoiceUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem' }}>View</a>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 const ASSIGNABLE_ROLES_CREATE = [
   { value: 'ADULT', label: 'Adult' },

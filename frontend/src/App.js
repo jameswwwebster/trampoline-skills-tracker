@@ -60,6 +60,7 @@ import AdminCharges from './pages/booking/admin/AdminCharges';
 import AdminCredits from './pages/booking/admin/AdminCredits';
 import AdminMemberships from './pages/booking/admin/AdminMemberships';
 import AdminPayments from './pages/booking/admin/AdminPayments';
+import AdminMemberPayments from './pages/booking/admin/AdminMemberPayments';
 import AdminHelpPage from './pages/booking/admin/AdminHelpPage';
 import AdminRegister from './pages/booking/admin/AdminRegister';
 import AdminCompetitions from './pages/booking/admin/AdminCompetitions';
@@ -224,6 +225,7 @@ function AppContent() {
             <Route path="admin/credits" element={<AdminCredits />} />
             <Route path="admin/memberships" element={<AdminMemberships />} />
             <Route path="admin/payments" element={<AdminPayments />} />
+            <Route path="admin/member-payments" element={<AdminMemberPayments />} />
             <Route path="admin/help" element={<AdminHelpPage />} />
             <Route path="admin/register/:instanceId" element={<AdminRegister />} />
             <Route path="admin/competitions" element={<AdminCompetitions />} />

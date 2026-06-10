@@ -8,6 +8,15 @@ const prisma = require('../../prisma');
 const STAFF_ROLES = ['CLUB_ADMIN', 'COACH'];
 const getStripe = () => require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+function stripeDashboardBase() {
+  const key = process.env.STRIPE_SECRET_KEY || '';
+  return key.startsWith('sk_test_')
+    ? 'https://dashboard.stripe.com/test'
+    : 'https://dashboard.stripe.com';
+}
+function stripePaymentUrl(piId) { return piId ? `${stripeDashboardBase()}/payments/${piId}` : null; }
+function stripeInvoiceLinkUrl(invId) { return invId ? `${stripeDashboardBase()}/invoices/${invId}` : null; }
+
 // Shape the Stripe PaymentMethod into the small projection the UI cares about.
 function paymentMethodView(pm) {
   if (!pm || pm.type !== 'card' || !pm.card) return null;
@@ -258,6 +267,125 @@ router.get('/admin/users/:userId/invoices', auth, requireRole(STAFF_ROLES), asyn
     res.json({ invoices });
   } catch (err) {
     console.error('Admin get invoices error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/booking/admin/users/:userId/payments
+// Unified payment history across Stripe invoices, bookings, shop orders and charges.
+router.get('/admin/users/:userId/payments', auth, requireRole(STAFF_ROLES), async (req, res) => {
+  try {
+    const target = await loadMemberForAdmin(req, res);
+    if (!target) return;
+
+    const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+    const rows = [];
+
+    // Stripe invoices (memberships)
+    if (target.stripeCustomerId) {
+      const stripe = getStripe();
+      const invoices = await fetchInvoiceHistory(stripe, target.stripeCustomerId);
+      for (const inv of invoices) {
+        const desc = inv.lines.map(l => l.description).filter(Boolean).join(' · ') || 'Membership';
+        rows.push({
+          id: `invoice-${inv.id}`,
+          source: 'Membership',
+          date: inv.created,
+          description: desc,
+          amount: inv.total,
+          status: inv.status,
+          stripeUrl: stripeInvoiceLinkUrl(inv.id),
+          hostedInvoiceUrl: inv.hostedInvoiceUrl,
+        });
+      }
+    }
+
+    // Bookings
+    const bookings = await prisma.booking.findMany({
+      where: {
+        userId: target.id,
+        createdAt: { gte: oneYearAgo },
+        stripePaymentIntentId: { not: null },
+      },
+      include: {
+        sessionInstance: { include: { template: true } },
+        lines: { where: { cancelledAt: null } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    for (const b of bookings) {
+      const sessDate = b.sessionInstance?.date
+        ? new Date(b.sessionInstance.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        : '';
+      rows.push({
+        id: `booking-${b.id}`,
+        source: 'Booking',
+        date: b.createdAt,
+        description: `Session booking · ${sessDate} · ${b.lines.length} place${b.lines.length === 1 ? '' : 's'}`,
+        amount: b.totalAmount,
+        status: b.status.toLowerCase(),
+        stripeUrl: stripePaymentUrl(b.stripePaymentIntentId),
+        hostedInvoiceUrl: null,
+      });
+    }
+
+    // Shop orders
+    const orders = await prisma.shopOrder.findMany({
+      where: {
+        userId: target.id,
+        createdAt: { gte: oneYearAgo },
+        stripePaymentIntentId: { not: null },
+      },
+      include: { items: true },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    for (const o of orders) {
+      const itemCount = o.items.length;
+      rows.push({
+        id: `shop-${o.id}`,
+        source: 'Shop',
+        date: o.createdAt,
+        description: `Shop order · ${itemCount} item${itemCount === 1 ? '' : 's'}`,
+        amount: o.total,
+        status: String(o.status || '').toLowerCase(),
+        stripeUrl: stripePaymentUrl(o.stripePaymentIntentId),
+        hostedInvoiceUrl: null,
+      });
+    }
+
+    // Charges (admin-issued, paid)
+    const charges = await prisma.charge.findMany({
+      where: {
+        userId: target.id,
+        paidAt: { not: null, gte: oneYearAgo },
+      },
+      orderBy: { paidAt: 'desc' },
+      take: 50,
+    });
+    for (const c of charges) {
+      rows.push({
+        id: `charge-${c.id}`,
+        source: 'Charge',
+        date: c.paidAt,
+        description: c.description || 'Charge',
+        amount: c.amount,
+        status: c.paidWithCredit ? 'paid (credit)' : 'paid',
+        stripeUrl: stripePaymentUrl(c.paidOnPaymentIntentId),
+        hostedInvoiceUrl: null,
+      });
+    }
+
+    rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json({
+      payments: rows,
+      customerId: target.stripeCustomerId,
+      customerUrl: target.stripeCustomerId ? `${stripeDashboardBase()}/customers/${target.stripeCustomerId}` : null,
+    });
+  } catch (err) {
+    console.error('Admin get payments error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

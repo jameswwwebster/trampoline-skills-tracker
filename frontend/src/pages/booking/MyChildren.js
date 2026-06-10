@@ -1781,8 +1781,14 @@ export default function MyChildren() {
         ))}
       </section>
 
-      <PaymentMethodSection />
-      <InvoicesSection />
+      <section className="bk-section" style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '2px solid var(--booking-border)' }}>
+        <h2 style={{ margin: '0 0 0.25rem' }}>Billing &amp; payments</h2>
+        <p className="bk-muted" style={{ margin: '0 0 1rem', fontSize: '0.88rem' }}>
+          For your monthly subscription. British Gymnastics membership is set up separately on each child above.
+        </p>
+        <PaymentMethodSection />
+        <InvoicesSection />
+      </section>
 
       <NotificationPreferences user={user} onSaved={updateUser} />
     </div>

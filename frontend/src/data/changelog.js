@@ -1,6 +1,14 @@
 // Newest first. Types: 'feature' | 'improvement' | 'fix'
 const changelog = [
   {
+    date: '2026-06-10',
+    entries: [
+      { type: 'improvement', text: 'My Account now has a clearly-titled "Billing & payments" section, separated from the children list with a caption noting that British Gymnastics membership is set up per child above. The card-on-file panel had been confusing parents who were mid-way through entering BG numbers.' },
+      { type: 'feature', text: 'New admin "Member Payments" tile on the dashboard. Pick any member to see the last 12 months of payments across memberships, session bookings, shop orders and admin-issued charges — sorted newest first, totalled at the top, with the card on file shown alongside. Every row links straight to the corresponding object in the Stripe dashboard so refunds and digging can be done without copy-pasting payment intent IDs.' },
+      { type: 'improvement', text: 'Removed the payment-method and invoice panels from the inline admin member detail — they now live on the dedicated Member Payments page instead.' },
+    ],
+  },
+  {
     date: '2026-06-05',
     entries: [
       { type: 'feature', text: 'My Account now has a "Payment method" section showing the card on file (brand, last 4 digits, expiry) with an "Update card" button that opens an inline Stripe Elements form. The new card is automatically set as the default and applied to every live monthly subscription, so the next billing cycle goes through without anyone having to chase. A "Recent invoices" section below it lists the last 12 months of membership invoices with links to the Stripe-hosted receipts.' },

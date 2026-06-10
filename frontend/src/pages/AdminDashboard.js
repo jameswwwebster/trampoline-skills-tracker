@@ -79,6 +79,7 @@ const AdminDashboard = () => {
         <Tile to="/booking/admin/credits" icon={BanknotesIcon} label="Credits" />
         <Tile to="/booking/admin/charges" icon={CreditCardIcon} label="Charges" />
         <Tile to="/booking/admin/payments" icon={BanknotesIcon} label="Payments" />
+        <Tile to="/booking/admin/member-payments" icon={CreditCardIcon} label="Member Payments" />
       </Section>
 
       <Section title="Communications">
