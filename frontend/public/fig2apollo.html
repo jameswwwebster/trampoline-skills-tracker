@@ -125,6 +125,7 @@
         <th data-key="flight" class="nums"><span class="h-full">Flight</span><span class="h-abbr">F</span><span class="arrow"></span></th>
         <th data-key="panel" class="nums"><span class="h-full">Panel</span><span class="h-abbr">P</span><span class="arrow"></span></th>
         <th data-key="pos" class="nums">#<span class="arrow"></span></th>
+        <th data-key="warmup" class="times"><span class="h-full">Floor w-up</span><span class="h-abbr">W-up</span><span class="arrow"></span></th>
         <th data-key="marchIn" class="times"><span class="h-full">March in</span><span class="h-abbr">In</span><span class="arrow"></span></th>
         <th data-key="compete" class="times"><span class="h-full">Compete</span><span class="h-abbr">Comp</span><span class="arrow"></span></th>
       </tr>
@@ -174,8 +175,20 @@ const DATA = [
 const DAY_DATE = { Sat: ' 20 Jun', Sun: ' 21 Jun' };
 
 function timeKey(row, field) {
-  const [h, m] = row[field].split(':').map(Number);
+  const [h, m] = timeFor(row, field).split(':').map(Number);
   return (row.day === 'Sat' ? 0 : 1440) + h * 60 + m;
+}
+
+// Floor warm-up is always 20 minutes before march-in — compute on the fly.
+const WARMUP_OFFSET_MIN = 20;
+function timeFor(row, field) {
+  if (field !== 'warmup') return row[field];
+  const [h, m] = row.marchIn.split(':').map(Number);
+  let total = h * 60 + m - WARMUP_OFFSET_MIN;
+  if (total < 0) total += 24 * 60;
+  const hh = Math.floor(total / 60);
+  const mm = total % 60;
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
 
 const state = { sort: 'marchIn', dir: 1, filters: { day: '', discipline: '' }, q: '' };
@@ -192,7 +205,7 @@ function render() {
   const k = state.sort;
   rows.sort((a, b) => {
     let av, bv;
-    if (k === 'marchIn' || k === 'compete') { av = timeKey(a, k); bv = timeKey(b, k); }
+    if (k === 'marchIn' || k === 'compete' || k === 'warmup') { av = timeKey(a, k); bv = timeKey(b, k); }
     else if (k === 'day') { av = a.day; bv = b.day; }
     else { av = a[k]; bv = b[k]; }
     if (av < bv) return -1 * state.dir;
@@ -210,6 +223,7 @@ function render() {
       <td class="nums" data-label="Flight">${r.flight}</td>
       <td class="nums" data-label="Panel">${r.panel}</td>
       <td class="nums" data-label="#">${r.pos}</td>
+      <td class="times" data-label="Floor warm-up">${timeFor(r, 'warmup')}</td>
       <td class="times" data-label="March in">${r.marchIn}</td>
       <td class="times" data-label="Compete">${r.compete}</td>
     </tr>
