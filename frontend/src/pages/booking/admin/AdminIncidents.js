@@ -104,7 +104,7 @@ function ForwardForm({ incidentId, onForwarded }) {
   );
 }
 
-function IncidentDetail({ incident, gymnasts, onClose, onSaved }) {
+function IncidentDetail({ incident, gymnasts, onClose, onSaved, onRefresh }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...incident });
   const [saving, setSaving] = useState(false);
@@ -140,7 +140,7 @@ function IncidentDetail({ incident, gymnasts, onClose, onSaved }) {
       });
       setCurrent(res.data);
       setEditing(false);
-      onSaved();
+      onRefresh();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to save.');
     } finally {
@@ -531,6 +531,7 @@ export default function AdminIncidents() {
           gymnasts={gymnasts}
           onClose={() => setSelected(null)}
           onSaved={() => { load(); setSelected(null); }}
+          onRefresh={() => load()}
         />
       )}
     </div>
