@@ -523,54 +523,54 @@ cron.schedule('0 9 1 * *', async () => {
   }
 });
 
-// Incident report adult notifications — TEMPORARILY DISABLED (wrong parent issue)
-// cron.schedule('* * * * *', async () => {
-//   try {
-//     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-//     const pending = await prisma.incidentReport.findMany({
-//       where: {
-//         adultNotifiedAt: null,
-//         createdAt: { lte: oneHourAgo },
-//         gymnast: { isNot: null },
-//         club: { emailEnabled: true },
-//       },
-//       include: {
-//         gymnast: {
-//           include: {
-//             guardians: { select: { id: true, email: true, firstName: true } },
-//             user: { select: { id: true, email: true, firstName: true } },
-//           },
-//         },
-//       },
-//     });
-//
-//     for (const incident of pending) {
-//       const recipients = [];
-//       if (incident.gymnast) {
-//         if (incident.gymnast.user?.email) {
-//           recipients.push({ email: incident.gymnast.user.email, name: incident.gymnast.user.firstName });
-//         }
-//         for (const g of incident.gymnast.guardians) {
-//           if (g.email) recipients.push({ email: g.email, name: g.firstName });
-//         }
-//       }
-//
-//       const reportUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking/incidents?id=${incident.id}`;
-//       for (const r of recipients) {
-//         await emailService.sendIncidentAdultNotification(
-//           r.email, r.name, incident.gymnast, incident, reportUrl,
-//         ).catch(err => console.error('Incident adult notification failed:', err));
-//       }
-//
-//       await prisma.incidentReport.update({
-//         where: { id: incident.id },
-//         data: { adultNotifiedAt: new Date() },
-//       });
-//     }
-//   } catch (err) {
-//     console.error('Incident notification cron error:', err);
-//   }
-// });
+// Incident report adult notifications — send 1 hour after report is filed, once per report
+cron.schedule('* * * * *', async () => {
+  try {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const pending = await prisma.incidentReport.findMany({
+      where: {
+        adultNotifiedAt: null,
+        createdAt: { lte: oneHourAgo },
+        gymnast: { isNot: null },
+        club: { emailEnabled: true },
+      },
+      include: {
+        gymnast: {
+          include: {
+            guardians: { select: { id: true, email: true, firstName: true } },
+            user: { select: { id: true, email: true, firstName: true } },
+          },
+        },
+      },
+    });
+
+    for (const incident of pending) {
+      const recipients = [];
+      if (incident.gymnast) {
+        if (incident.gymnast.user?.email) {
+          recipients.push({ email: incident.gymnast.user.email, name: incident.gymnast.user.firstName });
+        }
+        for (const g of incident.gymnast.guardians) {
+          if (g.email) recipients.push({ email: g.email, name: g.firstName });
+        }
+      }
+
+      const reportUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking/incidents?id=${incident.id}`;
+      for (const r of recipients) {
+        await emailService.sendIncidentAdultNotification(
+          r.email, r.name, incident.gymnast, incident, reportUrl,
+        ).catch(err => console.error('Incident adult notification failed:', err));
+      }
+
+      await prisma.incidentReport.update({
+        where: { id: incident.id },
+        data: { adultNotifiedAt: new Date() },
+      });
+    }
+  } catch (err) {
+    console.error('Incident notification cron error:', err);
+  }
+});
 
 // Also run on startup to ensure instances exist immediately after deploy
 (async () => {
